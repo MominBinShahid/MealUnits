@@ -1322,3 +1322,50 @@ in `main.ts`. Had it gone unchallenged it would have delayed the app reaching th
 for, on the strength of a misreading. **The two habits that produced it:** stopping at the first
 observation that matched my hypothesis, and describing a partially-understood mechanism in absolute
 terms ("permanently", "never"). All three records are corrected.
+
+## 55. The installed icon was small because Android uses the MASKABLE one `[FYI]`
+
+**Momin, after installing it on his phone: the icon looks small.** He was right, and note 53's fix
+never reached it — Android's home screen uses the **maskable** icon, and only the `any` icon had been
+enlarged.
+
+**0.62 was not a constraint, it was timidity.** The maskable safe zone is a centred circle of 80% of
+the canvas diameter. The ring's outer edge sits 41 from centre at scale 1, so the safe radius of 40
+permits up to **40/41 = 0.9756**. At 0.62 the mark spanned **50.8 of 100** — it could be half again
+as large and never clip. Now **0.94**: spans 77.1, outer radius 38.5, inside 40 with room for
+rasterisation rounding.
+
+**The earlier comment reasoned from the wrong shape.** It worried about "the squircle", but every
+launcher mask is LARGER than the safe circle — fitting the circle is sufficient for all of them, so
+the squircle was never the binding limit. A number defended by a plausible-sounding comment went
+unexamined for six revisions.
+
+## 56. `.sheet` inside a card, and buttons pushed off the edge `[FYI]`
+
+Two layout defects Momin found on the export screen, both mine, both from reusing a component
+outside the context it was built for.
+
+**1. A 192px block of actions.** The dosing-note card used `.sheet` — the SCREEN's bottom bar, which
+carries `margin-top: auto` and gives every control its own full-width grid row. Inside a card that
+stacked one button and two text links vertically. Measured child by child: 56 + 48 + 48 plus gaps
+and padding = **192px**, which reads as gaps rather than as controls.
+
+`.card-actions` instead, with the two secondary actions sharing a row: **120px**. Each keeps §10.7's
+48px touch target — *only the stacking changed*, and the 48px is why they looked so far apart in the
+first place: a 13px label centred in a 48px box, twice.
+
+**2. The download buttons overflowed their cards** — and this was a consequence of note 29. `.li` is
+a flex row with `space-between`, sized when both buttons read **"Make it"**. Renaming them to
+"Download backup" and "Download report" left the pill unable to fit beside three lines of
+description, so it wrapped its own label and pushed past the card's edge.
+
+**Caught by looking at a screenshot taken for something else** — I was checking the card spacing and
+the overflow was simply visible in the frame. No assertion would have flagged it.
+
+Fixed with a `.li.act` modifier rather than by changing `.li`: only the two export rows carry an
+action, every other `.li` pairs a label with a number. They stack, giving a full-width tap target
+like every other primary action in the app.
+
+**Verified at 360px**, a small Android: no sideways scroll, worst overflow past `.screen` is **0px**,
+and both buttons fit. `tools/smoke.mjs` already asserts the page never scrolls sideways, which is the
+general form of this.

@@ -255,16 +255,28 @@ function dosingQuestion(handlers: ExportHandlers): HTMLElement | null {
         oninput: (event) => { handlers.onDosingDraft((event.target as HTMLInputElement).value); },
       }),
     ),
+    // `card-actions`, not `sheet`. `.sheet` is the SCREEN's bottom bar — full
+     // width, `margin-top: auto`, one control per grid row — and using it inside
+     // a card stacked three controls vertically. Measured: 192px of action block
+     // for one save and two text links, which read as gaps rather than as
+     // controls.
+    //
+    // The two secondary actions share a row instead. Each keeps §10.7's 48px
+    // touch target; only the stacking changes.
     h(
       'div',
-      { class: 'sheet' },
+      { class: 'card-actions' },
       button(COPY.dosingHistory.save, handlers.onDosingSave, { class: 'go quiet' }),
-      // §6.7 v18 — **SKIP IS NOT DECLINE.** "One hurried 'Skip' — at an export,
-      // i.e. precisely when he is busy and heading to an appointment — would
-      // permanently lose the record, unrepairably, because the transition window
-      // does not recur." Skip leaves the state `unanswered`.
-      button(COPY.dosingHistory.skip, handlers.onDosingSkip, { class: 'link' }),
-      answered ? null : button(COPY.dosingHistory.declineAction, () => { handlers.onAskDecline(true); }, { class: 'link' }),
+      h(
+        'div',
+        { class: 'card-actions-row' },
+        // §6.7 v18 — **SKIP IS NOT DECLINE.** "One hurried 'Skip' — at an export,
+        // i.e. precisely when he is busy and heading to an appointment — would
+        // permanently lose the record, unrepairably, because the transition window
+        // does not recur." Skip leaves the state `unanswered`.
+        button(COPY.dosingHistory.skip, handlers.onDosingSkip, { class: 'link' }),
+        answered ? null : button(COPY.dosingHistory.declineAction, () => { handlers.onAskDecline(true); }, { class: 'link' }),
+      ),
     ),
   );
 }
@@ -295,13 +307,13 @@ export function exportScreen(handlers: ExportHandlers): HTMLElement {
       { class: 'list' },
       h(
         'li',
-        { class: 'li' },
+        { class: 'li act' },
         h('div', { class: 'k' }, h('b', {}, COPY.exports.moveTitle), COPY.exports.moveBody),
         button(COPY.exports.makeBackup, handlers.onMove, { class: 'go' }),
       ),
       h(
         'li',
-        { class: 'li' },
+        { class: 'li act' },
         h('div', { class: 'k' }, h('b', {}, COPY.exports.saveTitle), COPY.exports.saveBody),
         button(COPY.exports.makeReport, handlers.onSave, { class: 'go quiet' }),
       ),
