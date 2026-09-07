@@ -645,6 +645,29 @@ body {
   gap: 0.75rem;
 }
 
+/*
+ * A row whose right-hand element is an ACTION rather than a value. Only the two
+ * export rows are: everything else in a `.li` pairs a label with a number.
+ *
+ * They stack. `.li`'s side-by-side flex was sized when both buttons read
+ * "Make it"; renaming them to "Download backup" and "Download report" left the
+ * pill unable to fit beside three lines of description, so it wrapped its own
+ * label and pushed past the card's edge. Stacking also gives a full-width tap
+ * target, which is what every other primary action in this app has.
+ */
+.li.act {
+  flex-wrap: wrap;
+}
+
+.li.act .k,
+.li.act .go {
+  flex: 1 1 100%;
+}
+
+.li.act .go {
+  white-space: nowrap;
+}
+
 .li .k {
   font-size: 0.8125rem;
   color: var(--ink-2);
@@ -861,6 +884,32 @@ body {
   text-align: center;
   margin: 0.25rem 0 0;
   min-height: 2.5em;
+}
+
+/*
+ * Actions inside a CARD, as distinct from `.sheet` which is the screen's bottom
+ * bar. `.sheet` carries `margin-top: auto` and gives every control its own
+ * full-width row — correct at the foot of a screen, wrong inside a panel, where
+ * it produced a 192px block for one button and two text links.
+ *
+ * The secondary actions sit side by side. They keep §10.7's 48px touch target,
+ * which is not negotiable; what changes is that they stop each claiming a row.
+ */
+.card-actions {
+  display: grid;
+  gap: var(--gap);
+  padding-top: 0.5rem;
+}
+
+.card-actions-row {
+  display: flex;
+  gap: var(--gap);
+}
+
+.card-actions-row .link {
+  flex: 1;
+  text-align: center;
+  padding: 0 0.5rem;
 }
 
 .field-icon {
