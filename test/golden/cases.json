@@ -1,0 +1,545 @@
+[
+  {
+    "name": "§2 canonical case, confirmed",
+    "note": "correction (330-150)/30 = 6.0; meal 200/10 = 20.0; total 26.0; nearest -> 26 units. 26 >= threshold 20 so the confirmation is required and is given here.",
+    "input": { "bloodSugar": 330, "carbs": 200, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "largeDoseConfirmed": true },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 2600, "bands": ["A", "E"], "correctionHundredths": 600, "suppressed": false, "advisories": ["band_e_full"] }
+  },
+  {
+    "name": "§2 canonical case, unconfirmed, dose withheld",
+    "note": "Same inputs. §6.3: the dose is withheld until the tap, because the error is in the INPUT and the input is what must be read.",
+    "input": { "bloodSugar": 330, "carbs": 200, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "largeDoseConfirmed": false },
+    "mode": "nearest",
+    "expected": { "kind": "confirm_required", "bands": ["A", "E"], "advisories": ["band_e_full"] }
+  },
+  {
+    "name": "§1.4 his worked case: 330 and a 50 g plate",
+    "note": "correction 6.0; meal 5.0; total 11.0 -> 11 units. Below threshold 20, so no confirmation. This is the number that will differ from the 25 he injects today.",
+    "input": { "bloodSugar": 330, "carbs": 50, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 1100, "bands": ["A", "E"], "correctionHundredths": 600, "suppressed": false, "advisories": ["band_e_full"] }
+  },
+
+  {
+    "name": "§2.2 quantization pair, row one",
+    "note": "correction (105.12-150)/30 = -1.496; meal 5.994; exact total 4.498 -> nearest -> 4 units. Quantizing the components first would give -1.50 + 5.99 = 4.49, which still rounds to 4; row two is the row that demonstrates the defect.",
+    "input": { "bloodSugar": 105.12, "carbs": 59.94, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 400, "bands": ["A"], "correctionHundredths": -150, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§2.2 quantization pair, row two — the defect row",
+    "note": "correction (105.18-150)/30 = -1.494; meal 5.986; exact total 4.492 -> 4 units. Component quantization gives -149 + 599 = 450 hundredths, which reads as 4.5 and rounds to 5. Both exact totals are below 4.5, so 4 is correct in both rows and component quantization is wrong. v2 shipped 5 here.",
+    "input": { "bloodSugar": 105.18, "carbs": 59.86, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 400, "bands": ["A"], "correctionHundredths": -149, "suppressed": false, "advisories": [] }
+  },
+
+  {
+    "name": "§13.3 below target: 120 and 15 g",
+    "note": "correction (120-150)/30 = -1.0; meal 1.5; total 0.5; nearest breaks the tie AWAY FROM ZERO -> 1 unit. Math.round would also give 1 here; the -1.5 case in round.test.ts is where they part.",
+    "input": { "bloodSugar": 120, "carbs": 15, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 100, "bands": ["A"], "correctionHundredths": -100, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§13.3 below target: 135 and 14 g",
+    "note": "correction -0.5; meal 1.4; total 0.9 -> 1 unit.",
+    "input": { "bloodSugar": 135, "carbs": 14, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 100, "bands": ["A"], "correctionHundredths": -50, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§13.3 exact cancellation",
+    "note": "correction -1.0; meal 1.0; total exactly 0 -> 0 units, and never negative zero. §7.2 forbids LOGGING a zero result; producing one is correct.",
+    "input": { "bloodSugar": 120, "carbs": 10, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 0, "bands": ["A"], "correctionHundredths": -100, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§13.3 slightly negative total is clamped, not negated",
+    "note": "correction -1.0; meal 0.9; total -0.1; §2.1 clamps the TOTAL to 0. The correction itself is never floored — it is still reported as -1.00 in the breakdown.",
+    "input": { "bloodSugar": 120, "carbs": 9, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 0, "bands": ["A"], "correctionHundredths": -100, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§13.3 slightly positive total",
+    "note": "correction -1.0; meal 1.1; total 0.1 -> 0 units under nearest.",
+    "input": { "bloodSugar": 120, "carbs": 11, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 0, "bands": ["A"], "correctionHundredths": -100, "suppressed": false, "advisories": [] }
+  },
+
+  {
+    "name": "§3.2 band B fires at exactly -1.5 units of correction",
+    "note": "target 150, isf 30 -> band B fires at 105 and below. correction (105-150)/30 = -1.5 exactly, and the predicate is <=. meal 6.0; total 4.5 -> 5 units. Timing INVERTS to eat-first: a 30-minute fast at this reading is wrong.",
+    "input": { "bloodSugar": 105, "carbs": 60, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 500, "bands": ["B"], "correctionHundredths": -150, "suppressed": false, "advisories": ["band_b_caution"], "timingAdvice": "eat_first" }
+  },
+  {
+    "name": "§3.2 band B does not fire one mg/dL above the boundary",
+    "note": "correction (106-150)/30 = -1.4666...; -1.4667 > -1.5 so band A. meal 6.0; total 4.5333 -> 5 units. Timing is the normal before-eating rule.",
+    "input": { "bloodSugar": 106, "carbs": 60, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 500, "bands": ["A"], "correctionHundredths": -147, "suppressed": false, "advisories": [], "timingAdvice": "before" }
+  },
+  {
+    "name": "§3.2 band B vanishes at target 110 — the whole reason it is derived",
+    "note": "target 110, isf 30 -> the -1.5 correction is reached at 65, which is BELOW the hard gate, so band B correctly never fires. At 70: correction (70-110)/30 = -1.3333 > -1.5 -> band A. A hardcoded 'below 100' boundary would have announced 'well below target' 40 mg/dL under target here.",
+    "input": { "bloodSugar": 70, "carbs": 60, "target": 110, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 500, "bands": ["A"], "correctionHundredths": -133, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§3.2 band B at sensitivity 50 fires at 75",
+    "note": "target 150, isf 50 -> correction (75-150)/50 = -1.5 exactly -> band B. The fired band is NARROWER on screen than at isf 30 (70-75 against 70-105); what widens is the distance below target at which caution begins. v10 called this 'wider' and was wrong.",
+    "input": { "bloodSugar": 75, "carbs": 60, "target": 150, "isf": 50, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 500, "bands": ["B"], "correctionHundredths": -150, "suppressed": false, "advisories": ["band_b_caution"] }
+  },
+  {
+    "name": "§3.2 band B at sensitivity 50 does not fire at 76",
+    "note": "correction (76-150)/50 = -1.48 > -1.5 -> band A.",
+    "input": { "bloodSugar": 76, "carbs": 60, "target": 150, "isf": 50, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 500, "bands": ["A"], "correctionHundredths": -148, "suppressed": false, "advisories": [] }
+  },
+
+  {
+    "name": "§3 band C at 69",
+    "note": "54 <= 69 < 70 -> band C. Terminal: no insulin number anywhere, no timing instruction, no confirmation.",
+    "input": { "bloodSugar": 69, "carbs": 60, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "blocked_low", "bands": ["C"] }
+  },
+  {
+    "name": "§3 band C at exactly 54",
+    "note": "The predicate is 54 <= bloodSugar < 70, so 54 is band C and not band D.",
+    "input": { "bloodSugar": 54, "carbs": 60, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "blocked_low", "bands": ["C"] }
+  },
+  {
+    "name": "§3 band D just below 54",
+    "note": "53.9 < 54 -> band D, escalated wording. Still terminal.",
+    "input": { "bloodSugar": 53.9, "carbs": 60, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "blocked_low", "bands": ["D"] }
+  },
+  {
+    "name": "§3 the gate that matters most on day one: 65 mg/dL",
+    "note": "§1.4 — nothing in his current routine stops him injecting 25 units at a reading of 65. This gate depends on no ratio being correct and is available from the first launch.",
+    "input": { "bloodSugar": 65, "carbs": 50, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "blocked_low", "bands": ["C"] }
+  },
+  {
+    "name": "§3 band A at exactly 70",
+    "note": "The gate is bloodSugar >= 70, so 70 calculates. correction (70-150)/30 = -2.6667 <= -1.5 -> band B fires too.",
+    "input": { "bloodSugar": 70, "carbs": 60, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 300, "bands": ["B"], "correctionHundredths": -267, "suppressed": false, "advisories": ["band_b_caution"] }
+  },
+  {
+    "name": "§4.3 step 3 — a low reading survives invalid carbohydrates",
+    "note": "The low-blood-sugar recognition happens BEFORE the hard validity gates, so 'check the number' never replaces 'treat first'. The carbohydrate error travels alongside.",
+    "input": { "bloodSugar": 65, "carbs": "20g", "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "blocked_low", "bands": ["C"], "alsoInvalid": [{ "field": "carbs", "reason": "not_a_number" }] }
+  },
+  {
+    "name": "§4.3 step 3 — a low reading survives missing settings",
+    "note": "Settings of zero would divide by zero and §4.4 refuses to calculate — but the low-reading response comes first and needs no setting to be correct.",
+    "input": { "bloodSugar": 65, "carbs": 50, "target": 0, "isf": 0, "icr": 0, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "blocked_low", "bands": ["C"] }
+  },
+  {
+    "name": "§4.3 step 3 — a reading of exactly zero is the combined response",
+    "note": "0 is rejected as a reading AND shows the low guidance, rather than the app silently choosing one. Band D because 0 < 54.",
+    "input": { "bloodSugar": 0, "carbs": 50, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "blocked_low", "bands": ["D"], "alsoInvalid": [{ "field": "bloodSugar", "reason": "below_range" }] }
+  },
+  {
+    "name": "§4.5 — a reading below the floor is the combined response, not merely invalid",
+    "note": "19 is below the hard minimum of 20. Band D plus a range error: below-range routes to the low-reading response.",
+    "input": { "bloodSugar": 19, "carbs": 50, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "blocked_low", "bands": ["D"], "alsoInvalid": [{ "field": "bloodSugar", "reason": "below_range" }] }
+  },
+  {
+    "name": "§4.5 — a reading at exactly 20 calculates",
+    "note": "20 is in range and below 54, so it is band D and terminal — blocked because it is low, not because it is invalid.",
+    "input": { "bloodSugar": 20, "carbs": 50, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "blocked_low", "bands": ["D"], "alsoInvalid": [] }
+  },
+  {
+    "name": "§4.5 — 605 gets 'check the number', NOT band E's ketone wording",
+    "note": "605 is a plausible typo for 60.5. §4.5: 'check ketones' is a confusing reply to a typo, so the outcome is an above-range input error and no band is asserted.",
+    "input": { "bloodSugar": 605, "carbs": 50, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "invalid_input", "bands": [], "errors": [{ "field": "bloodSugar", "reason": "above_range" }] }
+  },
+  {
+    "name": "§4.5 — a reading at exactly 600, the meter's HI cap",
+    "note": "correction 450/30 = 15; meal 50/10 = 5; total 20 -> 20 units, which REACHES the threshold of 20, so the confirmation fires. §6.2: 20 equals the top of the reachable band rather than clearing it, and that is why the justification for 20 is the 250 g plate rather than this row.",
+    "input": { "bloodSugar": 600, "carbs": 50, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "largeDoseConfirmed": true },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 2000, "bands": ["A", "E"], "correctionHundredths": 1500, "suppressed": false, "advisories": ["band_e_full"] }
+  },
+
+  {
+    "name": "§3 band E at exactly 250",
+    "note": "correction 100/30 = 3.3333; meal 0; total 3.3333 -> 3 units. Bands A and E co-occur. The dose is shown NORMALLY — §3.1's asymmetry: at high blood sugar, not injecting is the unsafe default.",
+    "input": { "bloodSugar": 250, "carbs": 0, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 300, "bands": ["A", "E"], "correctionHundredths": 333, "suppressed": false, "advisories": ["band_e_full"] }
+  },
+  {
+    "name": "§3 band E does not fire at 249",
+    "note": "correction 99/30 = 3.3; total 3.3 -> 3 units, band A only.",
+    "input": { "bloodSugar": 249, "carbs": 0, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 300, "bands": ["A"], "correctionHundredths": 330, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§10.5 band E de-escalates to a compact line after the first firing today",
+    "note": "Identical inputs to the 250 case, with bandEFullCardShownToday true. Still rank 2, still on screen, never behind 'more'. Only the typography changes; the instruction is asserted identical in bandE.test.ts.",
+    "input": { "bloodSugar": 250, "carbs": 0, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "bandEFullCardShownToday": true },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 300, "bands": ["A", "E"], "correctionHundredths": 333, "suppressed": false, "advisories": ["band_e_compact"] }
+  },
+
+  {
+    "name": "§4.3 step 5 — blank and blank is no result, not zero units",
+    "note": "'0 units' would be an answer to a question nobody asked.",
+    "input": { "bloodSugar": null, "carbs": null, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "no_result", "bands": [] }
+  },
+  {
+    "name": "§4.4 — carbohydrates blank with the reading at target gives no result",
+    "note": "Nothing to correct and nothing to cover.",
+    "input": { "bloodSugar": 150, "carbs": null, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "no_result", "bands": [] }
+  },
+  {
+    "name": "§4.4 — carbohydrates blank with the reading above target is a correction-only dose",
+    "note": "correction (240-150)/30 = 3.0; no meal term -> 3 units.",
+    "input": { "bloodSugar": 240, "carbs": null, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 300, "bands": ["A"], "correctionHundredths": 300, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§4.4 — an explicit zero carbohydrate entry IS a valid correction-only calculation",
+    "note": "Distinct from blank. The four input states have to stay distinguishable, which is why Number('') giving 0 is a hazard rather than a convenience.",
+    "input": { "bloodSugar": 240, "carbs": 0, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 300, "bands": ["A"], "correctionHundredths": 300, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§4.6 — a blank reading needs one explicit tap before a meal dose appears",
+    "note": "The low-blood-sugar check cannot run without a reading, so someone at 60 who skips the fingerstick would otherwise get a full meal dose with no warning.",
+    "input": { "bloodSugar": null, "carbs": 60, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "ack_required", "ack": "blank_blood_sugar" }
+  },
+  {
+    "name": "§4.6 — once acknowledged, the meal dose appears with timing SUPPRESSED",
+    "note": "meal 6.0, no correction term at all -> 6 units. §8.1 suppresses the pre-meal instruction entirely, because the app cannot know the band. No band is asserted.",
+    "input": { "bloodSugar": null, "carbs": 60, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "blankReadingAcknowledged": true },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 600, "bands": [], "correctionHundredths": 0, "suppressed": false, "advisories": [], "timingAdvice": "suppressed" }
+  },
+  {
+    "name": "§4.4 — rejecting the reading never authorises calculating from carbohydrates alone",
+    "note": "An invalid reading is an error, not a blank. It does not fall through to §4.6's blank path.",
+    "input": { "bloodSugar": "1.2.3", "carbs": 60, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "invalid_input", "bands": [], "errors": [{ "field": "bloodSugar", "reason": "not_a_number" }] }
+  },
+  {
+    "name": "§4.2 — a comma is rejected outright and never interpreted",
+    "note": "In Pakistan the plausible comma keystroke means GROUPING: '2,50' intends 250. Reading it as a decimal separator gives 0.25 units instead of 25, a hundredfold under-dose that no cap catches.",
+    "input": { "bloodSugar": 200, "carbs": "2,50", "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "invalid_input", "bands": [], "errors": [{ "field": "carbs", "reason": "comma" }] }
+  },
+  {
+    "name": "§4.5 — carbohydrates above 300 are rejected",
+    "note": "The cap is what catches a 200 -> 2000 over-entry.",
+    "input": { "bloodSugar": 200, "carbs": 301, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "invalid_input", "bands": [], "errors": [{ "field": "carbs", "reason": "above_range" }] }
+  },
+  {
+    "name": "§4.5 — carbohydrates at exactly 300 calculate",
+    "note": "correction (200-150)/30 = 1.6667; meal 30.0; total 31.6667 -> 32 units, past the threshold and confirmed here.",
+    "input": { "bloodSugar": 200, "carbs": 300, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "largeDoseConfirmed": true },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 3200, "bands": ["A"], "correctionHundredths": 167, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§4.4 — a zero insulin sensitivity factor is rejected, never defaulted",
+    "note": "Division by zero. §1.2 forbids prescription defaults, so there is nothing to fall back to and refusing is the only correct answer.",
+    "input": { "bloodSugar": 200, "carbs": 60, "target": 150, "isf": 0, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "invalid_settings", "errors": [{ "field": "isf", "reason": "below_range" }] }
+  },
+
+  {
+    "name": "§6.2 — the confirmation boundary at 50 g is a reading of 435, not 450",
+    "note": "threshold 15. correction (435-150)/30 = 9.5; meal 5.0; exact total 14.5; nearest -> 15 units. The operand includes the ROUNDED dose, and 14.5 rounds to 15, so it fires here. §6.2's own prose said 450 and was wrong.",
+    "input": { "bloodSugar": 435, "carbs": 50, "target": 150, "isf": 30, "icr": 10, "threshold": 15 },
+    "mode": "nearest",
+    "expected": { "kind": "confirm_required", "bands": ["A", "E"], "advisories": ["band_e_full"] }
+  },
+  {
+    "name": "§6.2 — one mg/dL below that boundary does not fire",
+    "note": "correction (434-150)/30 = 9.4667; meal 5.0; exact total 14.4667 -> 14 units. Neither operand reaches 15.",
+    "input": { "bloodSugar": 434, "carbs": 50, "target": 150, "isf": 30, "icr": 10, "threshold": 15 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 1400, "bands": ["A", "E"], "correctionHundredths": 947, "suppressed": false, "advisories": ["band_e_full"] }
+  },
+  {
+    "name": "§6.2 — the boundary at 75 g is 360, not 375",
+    "note": "correction (360-150)/30 = 7.0; meal 7.5; exact total 14.5 -> 15 units, reaching the threshold of 15.",
+    "input": { "bloodSugar": 360, "carbs": 75, "target": 150, "isf": 30, "icr": 10, "threshold": 15 },
+    "mode": "nearest",
+    "expected": { "kind": "confirm_required", "bands": ["A", "E"], "advisories": ["band_e_full"] }
+  },
+  {
+    "name": "§6.2 — a 250 g plate entered as carbohydrate confirms at EVERY blood sugar",
+    "note": "This is what actually justifies a threshold of 20: at target the correction is zero and the meal term alone is 25 units, so the reread prompt fires even on a perfect reading. The food-weight-for-carbohydrate error is caught without depending on a high reading.",
+    "input": { "bloodSugar": 150, "carbs": 250, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "confirm_required", "bands": ["A"], "advisories": [] }
+  },
+  {
+    "name": "§6.2 — a 240 g typo also confirms",
+    "note": "meal term alone is 24 units. §6.6's uncovered gap is 12-19 units, and this row is why it starts at 20 rather than 30.",
+    "input": { "bloodSugar": 150, "carbs": 240, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "confirm_required", "bands": ["A"], "advisories": [] }
+  },
+  {
+    "name": "§6.4 — the maximum reachable dose is NOT a bound failure",
+    "note": "bound = (600-150)/30 + 300/10 = 15 + 30 = 45. The maximum attainable total is exactly 45, so the tripwire must not fire on it: a ceiling that refuses a legitimate dose teaches the user the app is unreliable.",
+    "input": { "bloodSugar": 600, "carbs": 300, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "largeDoseConfirmed": true },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 4500, "bands": ["A", "E"], "correctionHundredths": 1500, "suppressed": false, "advisories": ["band_e_full"] }
+  },
+
+  {
+    "name": "§7.4 — a NEGATIVE correction is never suppressed: 100 mg/dL, 60 g, 6 units two hours ago",
+    "note": "correction (100-150)/30 = -1.6667, which is <= -1.5 so band B also fires. meal 6.0; total 4.3333 -> 4 units. v2's rule suppressed the whole term and produced 6 units — MORE insulin, on top of insulin already on board, while band B said 'you are well below target'. This is the round-2 critical, pinned.",
+    "input": { "bloodSugar": 100, "carbs": 60, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": 2 } },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 400, "bands": ["B"], "correctionHundredths": -167, "suppressed": false, "advisories": ["band_b_caution", "stacking_negative_applied"] }
+  },
+  {
+    "name": "§7.4 — the second traced case: 90 mg/dL, 30 g, two hours ago",
+    "note": "correction -2.0; meal 3.0; total 1.0 -> 1 unit. v2's rule gave 3.",
+    "input": { "bloodSugar": 90, "carbs": 30, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": 2 } },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 100, "bands": ["B"], "correctionHundredths": -200, "suppressed": false, "advisories": ["band_b_caution", "stacking_negative_applied"] }
+  },
+  {
+    "name": "§7.4.1 — the override panel's own worked example",
+    "note": "bloodSugar 330 gives a correction of exactly 6.0, and 40 g gives a meal of 4.0. Inside the four-hour window the POSITIVE correction is held back, so the dose is the meal alone: 4 units. The override candidate is 6 + 4 = 10 units, and the ceiling is 6 injected units x 30 = 180 mg/dL. Neither figure reaches the threshold of 20, so both may be shown.",
+    "input": { "bloodSugar": 330, "carbs": 40, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": 2 } },
+    "mode": "nearest",
+    "expected": { "kind": "meal_only_suppressed", "hundredths": 400, "bands": ["A", "E"], "correctionHundredths": 600, "suppressed": true, "advisories": ["band_e_full", "stacking_suppressed"], "overrideCandidateHundredths": 1000, "stackingCeilingMgDl": 180, "overrideFiguresWithheld": false }
+  },
+  {
+    "name": "§7.4.1 — taking the override restores the correction and re-runs the confirmation",
+    "note": "Same inputs with the override active. total 10.0 -> 10 units, below the threshold, so it reveals. The correction is no longer struck through.",
+    "input": { "bloodSugar": 330, "carbs": 40, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": 2 }, "stackingOverride": true },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 1000, "bands": ["A", "E"], "correctionHundredths": 600, "suppressed": false, "advisories": ["band_e_full"] }
+  },
+  {
+    "name": "§7.4.1 — the override figures are withheld when either reaches the threshold",
+    "note": "bloodSugar 600 with 200 g: correction 15 suppressed, meal 20. The meal-only figure alone is 20 units and reaches the threshold, so v3's button would have disclosed exactly the number §6.3 requires withheld. With the confirmation already given, the dose shows but the override panel still shows no numbers.",
+    "input": { "bloodSugar": 600, "carbs": 200, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": 2 }, "largeDoseConfirmed": true },
+    "mode": "nearest",
+    "expected": { "kind": "meal_only_suppressed", "hundredths": 2000, "bands": ["A", "E"], "correctionHundredths": 1500, "suppressed": true, "advisories": ["band_e_full", "stacking_suppressed"], "overrideCandidateHundredths": 3500, "overrideFiguresWithheld": true }
+  },
+  {
+    "name": "§7.4 — a correction-only dose inside four hours is suppressed to zero units",
+    "note": "correction (300-150)/30 = 5.0, held back; no meal term; total 0 -> 0 units. §7.4: blocking outright is what drove users to delete rows, so the override is offered instead.",
+    "input": { "bloodSugar": 300, "carbs": 0, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": 2 } },
+    "mode": "nearest",
+    "expected": { "kind": "meal_only_suppressed", "hundredths": 0, "bands": ["A", "E"], "correctionHundredths": 500, "suppressed": true, "advisories": ["band_e_full", "stacking_suppressed"], "overrideCandidateHundredths": 500, "stackingCeilingMgDl": 180 }
+  },
+  {
+    "name": "§7.4 — at exactly four hours the correction is applied in full",
+    "note": "The window is 'under 4 hours', so the boundary itself is the advise window: the correction lands and the informational line replaces the suppression.",
+    "input": { "bloodSugar": 330, "carbs": 40, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": 4 } },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 1000, "bands": ["A", "E"], "correctionHundredths": 600, "suppressed": false, "advisories": ["band_e_full", "stacking_recent_dose"] }
+  },
+  {
+    "name": "§7.4 — just under four hours still suppresses",
+    "note": "3.999 hours is inside the window.",
+    "input": { "bloodSugar": 330, "carbs": 40, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": 3.999 } },
+    "mode": "nearest",
+    "expected": { "kind": "meal_only_suppressed", "hundredths": 400, "bands": ["A", "E"], "correctionHundredths": 600, "suppressed": true, "advisories": ["band_e_full", "stacking_suppressed"] }
+  },
+  {
+    "name": "§7.4 — at exactly twelve hours the informational line still shows",
+    "note": "The 4-12 hour row is inclusive at both ends. Twelve was chosen over eight because the line is informational only, so erring long is free.",
+    "input": { "bloodSugar": 330, "carbs": 40, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": 12 } },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 1000, "bands": ["A", "E"], "correctionHundredths": 600, "suppressed": false, "advisories": ["band_e_full", "stacking_recent_dose"] }
+  },
+  {
+    "name": "§7.4 — past twelve hours there is no line at all",
+    "note": "A trusted log with an old dose says nothing, and saying nothing is correct: §7.5's caveat firing after every overnight gap would be furniture on a daily schedule.",
+    "input": { "bloodSugar": 330, "carbs": 40, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": 12.001 } },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 1000, "bands": ["A", "E"], "correctionHundredths": 600, "suppressed": false, "advisories": ["band_e_full"] }
+  },
+  {
+    "name": "§7.6 — a small forward clock skew is treated as elapsed zero, the SAFE direction",
+    "note": "A row stamped 30 minutes in the future lands in the suppression branch rather than being excluded. v3 had two bullets giving opposite outcomes for this row, and exclusion is the dose-RAISING direction.",
+    "input": { "bloodSugar": 330, "carbs": 40, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": -0.5 } },
+    "mode": "nearest",
+    "expected": { "kind": "meal_only_suppressed", "hundredths": 400, "bands": ["A", "E"], "correctionHundredths": 600, "suppressed": true, "advisories": ["band_e_full", "stacking_suppressed"] }
+  },
+  {
+    "name": "§7.5 — no record at all, and suspect provenance, shows the caveat",
+    "note": "'No usable recent record' must never silently assert 'no recent insulin'. A backup from yesterday passes every schema check while omitting an injection from an hour ago.",
+    "input": { "bloodSugar": 330, "carbs": 40, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": null, "historyProvenance": "suspect" },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 1000, "bands": ["A", "E"], "correctionHundredths": 600, "suppressed": false, "advisories": ["band_e_full", "missing_history"] }
+  },
+  {
+    "name": "§7.6 — an excluded row alongside a usable one shows the invalid-time line, not the caveat",
+    "note": "v5 said an excluded row triggers §7.5's caveat, which would display 'Last dose, 5 hours ago' and 'No recent dose recorded' at the same time. The app never claims there is no record when one is visibly in use.",
+    "input": { "bloodSugar": 330, "carbs": 40, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": 5 }, "historyProvenance": "suspect", "excludedTimeRecords": 1 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 1000, "bands": ["A", "E"], "correctionHundredths": 600, "suppressed": false, "advisories": ["band_e_full", "stacking_recent_dose", "invalid_time_record"] }
+  },
+  {
+    "name": "§11.2 — two histories differing ONLY in excludedTimeRecords must differ on screen",
+    "note": "The companion to the row above, with the same lastDose and the same provenance and no excluded records. §11.2 carries the count precisely because a binary provenance flag cannot say WHY history is suspect, and v6 added historyProvenance believing it closed this.",
+    "input": { "bloodSugar": 330, "carbs": 40, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": 5 }, "historyProvenance": "suspect", "excludedTimeRecords": 0 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 1000, "bands": ["A", "E"], "correctionHundredths": 600, "suppressed": false, "advisories": ["band_e_full", "stacking_recent_dose"] }
+  },
+
+  {
+    "name": "§6.5 — the LOW trigger fires on a 200 -> 20 under-entry",
+    "note": "baseline 150 g, so the trigger is below 37.5 g. 20 g gives 2 units instead of 20 — eighteen units missing, roughly 540 mg/dL of untreated trend. This is the only mechanism in the app that looks downward.",
+    "input": { "bloodSugar": 150, "carbs": 20, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "carbBaseline": 150, "eligibleEntryCount": 24 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 200, "bands": ["A"], "correctionHundredths": 0, "suppressed": false, "advisories": ["carb_advisory_low"] }
+  },
+  {
+    "name": "§6.5 — exactly at baseline/4 does not fire",
+    "note": "The predicate is a strict less-than: 37.5 is not below 37.5.",
+    "input": { "bloodSugar": 150, "carbs": 37.5, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "carbBaseline": 150, "eligibleEntryCount": 24 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 400, "bands": ["A"], "correctionHundredths": 0, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§4.3 step 11a — the advisory does NOT fire on a deliberate correction-only dose",
+    "note": "0 < baseline/4 is always true, so without the zero-carb exclusion this would fire on every correction-only dose and the sole under-dose defence would be furniture on a routine path — dead before the one 200 -> 20 firing that matters.",
+    "input": { "bloodSugar": 240, "carbs": 0, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "carbBaseline": 150, "eligibleEntryCount": 24 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 300, "bands": ["A"], "correctionHundredths": 300, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§6.5 — fewer than ten eligible entries disables the advisory entirely",
+    "note": "No baseline exists, so nothing fires in either direction. §6.5 renders this as a settings status line, not a result-screen advisory.",
+    "input": { "bloodSugar": 150, "carbs": 20, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "carbBaseline": null, "eligibleEntryCount": 8 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 200, "bands": ["A"], "correctionHundredths": 0, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§6.5 — the HIGH trigger fires when it is reachable",
+    "note": "baseline 50 g gives a trigger of 150 g, which is below the 300 g cap and therefore live. 151 g fires it.",
+    "input": { "bloodSugar": 150, "carbs": 151, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "carbBaseline": 50, "eligibleEntryCount": 24, "largeDoseConfirmed": true },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 1500, "bands": ["A"], "correctionHundredths": 0, "suppressed": false, "advisories": ["carb_advisory_high"] }
+  },
+  {
+    "name": "§6.5 — the HIGH trigger is disabled and declared when it cannot fire",
+    "note": "baseline 150 g gives a trigger of 450 g, above §4.5's 300 g cap: unreachable. v3's dose-based trigger sat above §6.4's bound in exactly this way and looked like a safety feature while being dead code. 299 g does not fire it.",
+    "input": { "bloodSugar": 150, "carbs": 299, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "carbBaseline": 150, "eligibleEntryCount": 24, "largeDoseConfirmed": true },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 3000, "bands": ["A"], "correctionHundredths": 0, "suppressed": false, "advisories": [] }
+  },
+
+  {
+    "name": "§5.1 — nearest half unit rounds 4.25 up to 4.5",
+    "note": "isf 50, so correction (200-150)/50 = 1.0 exactly; meal 32.5/10 = 3.25; total 4.25 exactly. Doubling is exact in binary and gives 8.5, which breaks half away from zero to 9, so 4.5 units. §5.1's `off` mode was never a half-unit-pen mode: it hands the user 4.37 and makes them choose a rounding direction unaided, which is the exact unguided decision `ceil` is gated to prevent.",
+    "input": { "bloodSugar": 200, "carbs": 32.5, "target": 150, "isf": 50, "icr": 10, "threshold": 20 },
+    "mode": "half",
+    "expected": { "kind": "dose", "hundredths": 450, "bands": ["A"], "correctionHundredths": 100, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§5.1 — ceil rounds a whole unit up, which is why it is gated",
+    "note": "correction (151-150)/30 = 0.03333...; meal 40/10 = 4.0; total 4.03333 -> 5 units under ceil. At an insulin sensitivity factor of 30 one unit is 30 mg/dL of intended movement, so rounding up adds as much as a full unit of unintended extra drop, always toward low blood sugar, on EVERY dose. On a 20-unit meal dose that is 5% and irrelevant; on a 1-unit correction it is a 100% overdose.",
+    "input": { "bloodSugar": 151, "carbs": 40, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "ceil",
+    "expected": { "kind": "dose", "hundredths": 500, "bands": ["A"], "correctionHundredths": 3, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§5.1 — floor on the same inputs gives four",
+    "note": "Same exact total of 4.03333. The modes are not neutral peers: one total gives 5 under ceil and 4 under floor, a full unit apart.",
+    "input": { "bloodSugar": 151, "carbs": 40, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "floor",
+    "expected": { "kind": "dose", "hundredths": 400, "bands": ["A"], "correctionHundredths": 3, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§5.1 — off quantizes the total to hundredths and nothing else",
+    "note": "Same exact total of 4.03333 -> 4.03 units. Display precision, not a pen mode.",
+    "input": { "bloodSugar": 151, "carbs": 40, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "off",
+    "expected": { "kind": "dose", "hundredths": 403, "bands": ["A"], "correctionHundredths": 3, "suppressed": false, "advisories": [] }
+  },
+  {
+    "name": "§13.3 — a recurring quotient survives to the hundredth",
+    "note": "correction (151-150)/30 = 0.03333...; no meal. Under `off` the total quantizes to 0.03 units. §2.2 retires version one's claim that all insulin values are stored in hundredths: recurring values such as 1/30 cannot satisfy it, which is why the quantization happens once, on the total, at the end.",
+    "input": { "bloodSugar": 151, "carbs": 0, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "off",
+    "expected": { "kind": "dose", "hundredths": 3, "bands": ["A"], "correctionHundredths": 3, "suppressed": false, "advisories": [] }
+  },
+
+  {
+    "name": "§10.3 — the control: here the displayed components DO sum to the total",
+    "note": "isf 50, so correction 1.0 displays as 1.00 and meal 3.25 displays as 3.25, against an exact total of 4.25. 100 + 325 = 425 hundredths, so the breakdown adds up on screen and needs no extra line.",
+    "input": { "bloodSugar": 200, "carbs": 32.5, "target": 150, "isf": 50, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 400, "bands": ["A"], "correctionHundredths": 100, "suppressed": false, "advisories": [], "componentsSumToTotal": true }
+  },
+  {
+    "name": "§2.2 — and here they do not, so the total gets its own authoritative line",
+    "note": "correction (151-150)/30 = 0.033333 displays as 0.03; meal 0.33/10 = 0.033 displays as 0.03; the exact total 0.066333 quantizes to 0.07. The displayed components sum to 0.06 and do not reach it. §2.2: displayed components may not visibly sum to the displayed total, and when that happens the breakdown shows the exact total on its own line rather than implying the components add up.",
+    "input": { "bloodSugar": 151, "carbs": 0.33, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "off",
+    "expected": { "kind": "dose", "hundredths": 7, "bands": ["A"], "correctionHundredths": 3, "suppressed": false, "advisories": [], "componentsSumToTotal": false }
+  },
+  {
+    "name": "§1.3 — the basal regimen never touches a calculated dose",
+    "note": "Identical to the canonical case with every basal field changed. §13.3 requires the dose to be BIT-IDENTICAL, and the companion assertion in resolve.test.ts compares the whole outcome object.",
+    "input": { "bloodSugar": 330, "carbs": 200, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "largeDoseConfirmed": true, "basalName": "Toujeo", "basalUnits": 120, "basalTiming": "at bedtime, changed for this test" },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 2600, "bands": ["A", "E"], "correctionHundredths": 600, "suppressed": false, "advisories": ["band_e_full"] }
+  },
+  {
+    "name": "§10.5 — the budget holds at two even when five advisories qualify",
+    "note": "Band B (rank 3), the 4-12 hour line (6) and the invalid-time line (9) qualify together. Band B cannot co-occur with E in practice — E needs a reading of 250 while the target caps at 200, so the correction is positive there. The negative-applied line (8) does NOT fire: its condition is the suppression window, and this row is five hours out. Ranked: band_b_caution, stacking_recent_dose, invalid_time_record — the core returns all three and §10.5 shows the first two, which splitAdvisoryBudget asserts separately.",
+    "input": { "bloodSugar": 100, "carbs": 60, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "lastDose": { "units": 6, "atHoursAgo": 5 }, "historyProvenance": "suspect", "excludedTimeRecords": 2 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 400, "bands": ["B"], "correctionHundredths": -167, "suppressed": false, "advisories": ["band_b_caution", "stacking_recent_dose", "invalid_time_record"] }
+  }
+]

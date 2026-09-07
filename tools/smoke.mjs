@@ -1,0 +1,218 @@
+/**
+ * Real-browser smoke checks, over the Chrome DevTools Protocol.
+ *
+ * WHY THIS EXISTS, and why the 559 unit tests are not enough.
+ *
+ * jsdom does not lay pages out, does not load fonts, does not enforce a content
+ * security policy and has no service worker. Every defect below was invisible to
+ * the whole suite and to the 100% mutation gate, and each was found by hand:
+ *
+ *   * the +/- keys measured 28px wide -- BELOW §10.7's 48px floor -- because a
+ *     flex child with no width shrinks to its glyph. Two guesses at the cause
+ *     preceded one measurement.
+ *   * the foot navigation ran the full window width (1440px) against a 480px
+ *     column, putting Settings and History in opposite corners of a desktop.
+ *   * the app RELOADED ITSELF on a first visit, because `controllerchange`
+ *     fires when the first worker claims a page as well as when a new one
+ *     replaces an old one. Tapping "Log this injection" at the wrong moment
+ *     blanked the screen and looked like the tap was ignored.
+ *
+ * Run against a served build:  npm run build && npm run preview & npm run smoke
+ */
+import { spawn } from 'node:child_process';
+import { setTimeout as wait } from 'node:timers/promises';
+import { rmSync } from 'node:fs';
+
+const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+/**
+ * BOTH origins, and that is the point of the second one.
+ *
+ * `localhost` is a SECURE CONTEXT. A LAN address is not. Some APIs simply do not
+ * exist on an insecure origin — `crypto.randomUUID` among them — and the phone
+ * reaches this app over a LAN address. Every check here passed on localhost
+ * while "Log this injection" threw on the phone, silently, because the id for
+ * the row could not be generated.
+ *
+ * So the everyday path is driven over both. Testing only the secure origin is
+ * testing the one the user is not on.
+ */
+const SECURE_URL = process.env.SMOKE_URL ?? 'http://localhost:4173/MealUnits/';
+const LAN_URL = process.env.SMOKE_LAN_URL ?? null;
+const URL_UNDER_TEST = SECURE_URL;
+const failures = [];
+
+function check(name, actual, expected) {
+  const ok = JSON.stringify(actual) === JSON.stringify(expected);
+  console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : `\n          expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`}`);
+  if (!ok) failures.push(name);
+}
+
+async function session(profile, port, width, body) {
+  const child = spawn(CHROME, [
+    '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+    `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`,
+    `--window-size=${width},915`, 'about:blank',
+  ], { stdio: 'ignore' });
+  let list = [];
+  for (let i = 0; i < 80; i++) {
+    try { list = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json(); if (list.length) break; } catch { /* not up */ }
+    await wait(200);
+  }
+  const page = list.find((t) => t.type === 'page');
+  if (!page) { failures.push('chrome did not start'); child.kill(); return; }
+  const ws = new WebSocket(page.webSocketDebuggerUrl);
+  let id = 0; const pending = new Map();
+  ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } };
+  await new Promise((r) => { ws.onopen = r; });
+  const send = (method, params = {}) => new Promise((res) => { const n = ++id; pending.set(n, res); ws.send(JSON.stringify({ id: n, method, params })); });
+  const ev = async (expr) => (await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true })).result?.result?.value;
+  await send('Page.enable'); await send('Runtime.enable');
+
+  /**
+   * Navigate and WAIT FOR THE APP, rather than for a fixed number of
+   * milliseconds. The first version slept, and the fourth Chrome session in a
+   * run would occasionally not be ready in time — so `ev` returned undefined,
+   * two checks failed, and it looked exactly like the defect they were written
+   * to catch. **A flaky check is worse than no check**, because it teaches you
+   * to ignore the failure that matters.
+   */
+  const open = async (url) => {
+    await send('Page.navigate', { url });
+    for (let i = 0; i < 100; i++) {
+      const ready = await ev(`!!document.querySelector('#app') && document.querySelector('#app').textContent.trim().length > 0`);
+      if (ready === true) return;
+      await wait(100);
+    }
+    failures.push('the app never rendered');
+  };
+
+  try { await body({ send, ev, open }); } finally { ws.close(); child.kill(); }
+}
+
+const setUp = async ({ ev }) => {
+  const tap = async (re) => { await ev(`[...document.querySelectorAll('button')].find(b=>${re}.test(b.textContent))?.click()`); await wait(400); };
+  await tap('/I have read this/i'); await tap('/own risk/i'); await wait(400);
+  for (const [label, value] of [['Which insulin', 'Lantus'], ['How many units', '36'], ['When', 'early']]) {
+    await ev(`(()=>{const q=[...document.querySelectorAll('label')].find(n=>n.textContent.includes(${JSON.stringify(label)}));const i=q.parentElement.querySelector('input');i.focus();i.value=${JSON.stringify(value)};i.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+    await wait(120);
+  }
+  await tap('/^Save and start$/'); await wait(600);
+  return tap;
+};
+
+console.log(`smoke: ${URL_UNDER_TEST}`);
+
+// 1. A first visit must load the document ONCE.
+rmSync('/tmp/mealunits-smoke-cold', { recursive: true, force: true });
+await session('/tmp/mealunits-smoke-cold', 9301, 412, async ({ send, ev, open }) => {
+  await send('Page.addScriptToEvaluateOnNewDocument', {
+    source: `sessionStorage.setItem('loads', String(Number(sessionStorage.getItem('loads')||0)+1));`,
+  });
+  await open(URL_UNDER_TEST);
+  // The reload, if it were still happening, lands after activation — so this
+  // has to wait past it rather than sampling early and passing by luck.
+  await wait(4000);
+  check('a first visit does not reload itself', await ev(`Number(sessionStorage.getItem('loads'))`), 1);
+  check('the worker took control', await ev(`!!navigator.serviceWorker.controller`), true);
+  check('no unstyled flash: a webfont is in use', await ev(`getComputedStyle(document.body).fontFamily.split(',')[0]`), '"Space Grotesk"');
+});
+
+// 2. Layout, at a phone width and a desktop width.
+for (const [width, port] of [[412, 9302], [1440, 9303]]) {
+  rmSync(`/tmp/mealunits-smoke-${width}`, { recursive: true, force: true });
+  await session(`/tmp/mealunits-smoke-${width}`, port, width, async ({ ev, open }) => {
+    await open(URL_UNDER_TEST);
+    const tap = await setUp({ ev });
+    const box = async (sel) => ev(`(()=>{const n=document.querySelector('${sel}');if(!n)return null;const r=n.getBoundingClientRect();return [Math.round(r.x),Math.round(r.width)]})()`);
+    check(`${width}px: the nav sits inside the app column`, await box('.foot-nav'), await box('.screen'));
+    check(`${width}px: the version line sits inside it too`, await box('.foot'), await box('.screen'));
+    for (const d of ['1', '8', '0']) await tap(`/^${d}$/`);
+    await tap('/^Next$/'); for (const d of ['5', '0']) await tap(`/^${d}$/`);
+    await tap('/Work out the dose/'); await wait(500); await tap('/I injected this/'); await wait(600);
+    check(`${width}px: the +/- keys are square and meet §10.7's 48px floor`,
+      await ev(`JSON.stringify([...document.querySelectorAll('.stepper .key')].map(k=>{const r=k.getBoundingClientRect();return [Math.round(r.width),Math.round(r.height)]}))`),
+      JSON.stringify([[68, 68], [68, 68]]));
+  });
+}
+
+// 3. The everyday path must reach a logged row, with nothing on the console.
+rmSync('/tmp/mealunits-smoke-path', { recursive: true, force: true });
+await session('/tmp/mealunits-smoke-path', 9304, 412, async ({ send, ev, open }) => {
+  await send('Log.enable');
+  await open(URL_UNDER_TEST);
+  const tap = await setUp({ ev });
+  for (const d of ['1', '2', '0']) await tap(`/^${d}$/`);
+  await tap('/^Next$/'); for (const d of ['2', '5']) await tap(`/^${d}$/`);
+  await tap('/Work out the dose/'); await wait(500);
+  check('120 mg/dL with 25 g gives 2 units', await ev(`document.querySelector('.result .n')?.textContent`), '2');
+  await tap('/I injected this/'); await wait(500);
+  await tap('/Log this injection/');
+  // Poll: the commit is a chain of IndexedDB round trips (§7.2), and how long
+  // that takes is not ours to predict.
+  let logged = false;
+  for (let i = 0; i < 60; i++) {
+    logged = (await ev(`/Logged 2 units/.test(document.body.innerText)`)) === true;
+    if (logged) break;
+    await wait(100);
+  }
+  check('and logging it says so', logged, true);
+  check('the screen is not blank', await ev(`document.body.innerText.length > 40`), true);
+});
+
+// 3b. The device back gesture, with the app as the FIRST history entry.
+//
+// Momin reported that back at the carbohydrate screen closed the app. It could
+// not be reproduced on the current build — but the first attempt to check it
+// was WEAK, because Chrome starts at `about:blank`, so `history.length` was 2
+// and back had something other than our sentinel to consume. `resetNavigationHistory`
+// makes the app entry 1, which is what a phone opening it fresh looks like and
+// what an installed PWA always looks like. That is the condition the report
+// describes, so that is the condition this checks.
+rmSync('/tmp/mealunits-smoke-back', { recursive: true, force: true });
+await session('/tmp/mealunits-smoke-back', 9306, 412, async ({ send, ev, open }) => {
+  await open(URL_UNDER_TEST);
+  await send('Page.resetNavigationHistory');
+  const tap = await setUp({ ev });
+  check('the app is the first history entry, as on a phone', await ev(`history.length`), 1);
+  for (const d of ['1', '8', '0']) await tap(`/^${d}$/`);
+  await tap('/^Next$/');
+  check('reaching the carbohydrate screen pushes exactly one entry', await ev(`history.length`), 2);
+
+  const entries = (await send('Page.getNavigationHistory')).result.entries;
+  await send('Page.navigateToHistoryEntry', { entryId: entries.at(-2)?.id });
+  await wait(1200);
+  check('and the back gesture returns to the reading screen, not out of the app',
+    await ev(`/What.s your blood sugar/.test(document.body.innerText)`), true);
+  check('the app is still loaded', await ev(`!!document.querySelector('#app')?.textContent`), true);
+});
+
+// 4. The same path over an INSECURE origin, which is what a phone uses.
+if (LAN_URL === null) {
+  console.log('  SKIP  insecure-origin run (set SMOKE_LAN_URL to enable)');
+  failures.push('insecure-origin run was skipped');
+} else {
+  rmSync('/tmp/mealunits-smoke-lan', { recursive: true, force: true });
+  await session('/tmp/mealunits-smoke-lan', 9305, 412, async ({ send, ev, open }) => {
+    await send('Log.enable');
+    await open(LAN_URL);
+    check('insecure origin: this really is not a secure context', await ev(`window.isSecureContext`), false);
+    check('insecure origin: crypto.randomUUID is absent, as on the phone', await ev(`typeof crypto.randomUUID`), 'undefined');
+    const tap = await setUp({ ev });
+    for (const d of ['1', '2', '0']) await tap(`/^${d}$/`);
+    await tap('/^Next$/'); for (const d of ['2', '5']) await tap(`/^${d}$/`);
+    await tap('/Work out the dose/'); await wait(500);
+    check('insecure origin: 120 with 25 g still gives 2 units', await ev(`document.querySelector('.result .n')?.textContent`), '2');
+    await tap('/I injected this/'); await wait(500);
+    await tap('/Log this injection/');
+    let logged = false;
+    for (let i = 0; i < 60; i++) {
+      logged = (await ev(`/Logged 2 units/.test(document.body.innerText)`)) === true;
+      if (logged) break;
+      await wait(100);
+    }
+    check('insecure origin: AND IT LOGS — the defect this run exists for', logged, true);
+  });
+}
+
+console.log(failures.length === 0 ? '\nsmoke: clean.' : `\nsmoke: ${failures.length} FAILURE(S): ${failures.join(', ')}`);
+process.exit(failures.length === 0 ? 0 : 1);

@@ -1,0 +1,1154 @@
+<title>MealUnits Step Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+
+<style>
+  :root{
+    --bg:#F6F8F8; --ink:#14191B; --ink-2:#4C5759; --ink-3:#78827F;
+    --line:#DEE4E3; --line-2:#EBEFEE; --mark:#0B5F5C; --warn:#8E5400; --warn-soft:#F9EFDF;
+    --shadow:0 1px 2px rgba(20,25,27,.05),0 18px 40px -18px rgba(20,25,27,.22);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0C1011; --ink:#E8EDEC; --ink-2:#A5B0AE; --ink-3:#7B8584;
+    --line:#2A3233; --line-2:#1D2425; --mark:#5EE6C5; --warn:#D6A24E; --warn-soft:#2A2013;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 20px 44px -20px rgba(0,0,0,.8);
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0C1011; --ink:#E8EDEC; --ink-2:#A5B0AE; --ink-3:#7B8584;
+    --line:#2A3233; --line-2:#1D2425; --mark:#5EE6C5; --warn:#D6A24E; --warn-soft:#2A2013;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 20px 44px -20px rgba(0,0,0,.8);
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Space Grotesk",-apple-system,BlinkMacSystemFont,sans-serif;
+    font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:56px 24px 96px}
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--mark);margin:0 0 14px}
+  h1{font-size:clamp(30px,4.4vw,46px);line-height:1.06;letter-spacing:-.03em;font-weight:700;
+    margin:0 0 18px;text-wrap:balance;max-width:16ch}
+  .lede{font-size:17px;color:var(--ink-2);max-width:66ch;margin:0}
+  .lede strong{color:var(--ink);font-weight:600}
+  .masthead{border-bottom:1px solid var(--line);padding-bottom:34px}
+  .caveat{margin:26px 0 0;padding:13px 17px;border-left:3px solid var(--warn);
+    background:var(--warn-soft);font-size:14.5px;color:var(--ink-2);max-width:68ch}
+  .caveat b{color:var(--ink)}
+
+  .act-sec{margin-top:74px}
+  .ah{display:flex;align-items:baseline;gap:13px;flex-wrap:wrap;margin-bottom:6px}
+  .ah h2{margin:0;font-size:25px;font-weight:600;letter-spacing:-.022em}
+  .chip{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--ink-3);border:1px solid var(--line);border-radius:3px;padding:2px 7px}
+  .anote{color:var(--ink-2);font-size:15px;max-width:68ch;margin:0 0 30px}
+  .row{display:grid;gap:30px 26px;grid-template-columns:repeat(auto-fit,minmax(262px,1fr))}
+  .cell .cap{font-size:13.5px;color:var(--ink-2);margin:13px 2px 0}
+  .cell .cap b{color:var(--ink);font-weight:600;display:block;margin-bottom:2px}
+  .cell .refs{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+  .ref{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--mark);
+    border:1px solid var(--line);border-radius:3px;padding:2px 6px}
+
+  /* ══ THE PHONE ══ */
+  .ph{min-height:498px;display:flex;flex-direction:column;overflow:hidden;border-radius:28px;
+    box-shadow:var(--shadow);color:#EAF0FA;
+    background:radial-gradient(120% 90% at 50% 0%,#1B2740 0%,#0C1220 62%,#080C16 100%)}
+  .top{padding:19px 20px 0;display:flex;align-items:center;gap:11px}
+  .dots{display:flex;gap:5px;flex:1}
+  .dot{height:3px;flex:1;border-radius:99px;background:rgba(234,240,250,.16)}
+  .dot.on{background:#5EE6C5}
+  .step{font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:rgba(234,240,250,.45);white-space:nowrap}
+  .ask{padding:24px 20px 0;font-size:21px;font-weight:600;letter-spacing:-.022em;line-height:1.26}
+  .hint{padding:8px 20px 0;font-size:12.5px;color:rgba(234,240,250,.45);line-height:1.45}
+  .entry{padding:10px 20px 0;text-align:center}
+  .entry .n{font-size:72px;font-weight:700;line-height:1.12;letter-spacing:-.045em;
+    font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,#FFFFFF 20%,#9FE9D8 125%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .entry .n.ghosted{background:none;color:rgba(234,240,250,.22)}
+  .entry .u{font-size:12px;font-weight:600;color:rgba(234,240,250,.45);letter-spacing:.08em}
+  .pad{margin-top:auto;padding:12px 14px 18px;display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .key{background:rgba(234,240,250,.07);border:1px solid rgba(234,240,250,.09);border-radius:13px;
+    padding:12px 0;text-align:center;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+  .key.dim{color:rgba(234,240,250,.5);font-weight:500}
+  .go.half{grid-column:span 1}
+  .go{background:#5EE6C5;color:#062019;grid-column:span 3;font-size:14.5px;padding:14px 0;
+    border-radius:99px;text-align:center;font-weight:700;margin-top:3px}
+  .go.quiet{background:rgba(234,240,250,.08);color:#EAF0FA;border:1px solid rgba(234,240,250,.12)}
+  .go.alarm{background:#FF7A6B;color:#2A0A09}
+  .pane{flex:1;display:flex;flex-direction:column;padding:24px 20px;gap:5px}
+  .pane.mid{justify-content:center}
+  /* CENTRED on Momin's ruling, 7 Sep 2026. Both entry screens centre their
+     number, so the eye lands in the same place on every screen instead of
+     jumping left at the one that matters most. The app and this file were
+     changed together — a mockup that disagrees with the build is how §20.3's
+     design checks start reporting on fiction. */
+  .result .n{font-size:96px;font-weight:700;line-height:.96;letter-spacing:-.055em;
+    text-align:center;
+    font-variant-numeric:tabular-nums;
+    background:linear-gradient(175deg,#FFFFFF 25%,#5EE6C5 118%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .result .u{font-size:14.5px;font-weight:600;color:rgba(234,240,250,.6);text-align:center}
+  .glass{margin-top:18px;background:rgba(234,240,250,.06);border:1px solid rgba(234,240,250,.1);
+    border-radius:17px;padding:13px 15px;display:grid;gap:7px}
+  .gr{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;color:rgba(234,240,250,.62)}
+    .gr.held { opacity: .58; }
+    .gr.held s { text-decoration-thickness: 1px; }
+  .gr b{color:#EAF0FA;font-variant-numeric:tabular-nums;font-weight:600}
+  .gr.tot{border-top:1px solid rgba(234,240,250,.12);padding-top:7px}
+  .gr.tot span{color:#EAF0FA;font-weight:600}
+  .flag{display:flex;margin-top:13px;background:rgba(255,196,84,.1);
+    border:1px solid rgba(255,196,84,.22);border-radius:13px;padding:11px 13px;
+    font-size:12px;line-height:1.45;color:#FFD79A}
+  .flag b{color:#FFC454;display:block;margin-bottom:2px;font-size:12.5px}
+  .flag.slim{padding:9px 13px;font-size:11.5px}
+  .flag.mint{background:rgba(94,230,197,.09);border-color:rgba(94,230,197,.2);color:#B9F2E5}
+  .flag.mint b{color:#5EE6C5}
+  .halt{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;
+    padding:26px 22px;gap:12px;
+    background:radial-gradient(115% 80% at 50% 0%,#4A1210 0%,#2A0A09 60%,#160504 100%)}
+  .halt .n{font-size:92px;font-weight:700;line-height:1;letter-spacing:-.05em;color:#FF7A6B;
+    font-variant-numeric:tabular-nums}
+  .halt h3{margin:0;font-size:20px;font-weight:700;letter-spacing:-.022em;color:#FFD9D3}
+  .halt p{margin:0;font-size:13.5px;color:#F0B3AB;line-height:1.5}
+  .sheet{padding:0 14px 18px;display:grid;gap:7px}
+  .stepper{display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0 4px}
+  .stepper .pm{width:52px;height:52px;border-radius:50%;background:rgba(234,240,250,.08);
+    border:1px solid rgba(234,240,250,.13);display:flex;align-items:center;justify-content:center;
+    font-size:24px;font-weight:600}
+  .stepper .v{font-size:60px;font-weight:700;letter-spacing:-.04em;font-variant-numeric:tabular-nums;
+    min-width:110px;text-align:center}
+  .list{display:grid;gap:8px;margin-top:14px}
+  .li{background:rgba(234,240,250,.05);border:1px solid rgba(234,240,250,.08);border-radius:14px;
+    padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .li .k{font-size:12.5px;color:rgba(234,240,250,.58);line-height:1.4}
+  .li .k b{color:#EAF0FA;font-weight:600}
+  .li .v{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .li .v .c{color:rgba(234,240,250,.4);font-weight:500}
+  .li .v .i{color:#5EE6C5}
+  .head{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:rgba(234,240,250,.4);margin-top:16px}
+  .disc{background:rgba(255,122,107,.1);border:1px solid rgba(255,122,107,.24);border-radius:15px;
+    padding:14px 15px;font-size:12.5px;line-height:1.5;color:#F5C3BC;margin-top:14px}
+  .disc b{display:block;color:#FF9C8F;font-size:13.5px;margin-bottom:4px;font-weight:700}
+  .check{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:12.5px;
+    color:rgba(234,240,250,.72);line-height:1.45}
+  .check i{width:20px;height:20px;border-radius:6px;border:2px solid #5EE6C5;flex:none;
+    display:flex;align-items:center;justify-content:center;color:#5EE6C5;font-style:normal;
+    font-size:13px;font-weight:700}
+
+  footer{margin-top:74px;padding-top:24px;border-top:1px solid var(--line);
+    font-size:13.5px;color:var(--ink-3);max-width:72ch}
+  @media (max-width:640px){.wrap{padding:36px 18px 64px}.act-sec{margin-top:54px}}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Design 3 · complete flow · 44 screens · matched to PLAN v25</p>
+    <h1>Every screen, one question at a time</h1>
+    <p class="lede">
+      The Step design carried all the way through — setup, the everyday path, every screen that
+      warns or refuses, and the records. <strong>The rule throughout: one decision per screen, and
+      nothing else visible while a number is being typed.</strong>
+    </p>
+    <p class="caveat"><b>Keypad fixed.</b> The earlier version had no zero and no delete key — a
+      real bug, not a stylisation. Both are in now, along with the decimal point that carbohydrate
+      entry needs and blood sugar does not.</p>
+  </header>
+
+  <!-- ══════════ SETUP ══════════ -->
+  <section class="act-sec">
+    <div class="ah"><h2>First run</h2><span class="chip">7 screens · once, ever</span></div>
+    <p class="anote">
+      Nothing is pre-filled. The app ships with no prescription in it, and refuses to calculate
+      until all three numbers are entered by hand.
+    </p>
+    <div class="row">
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></div><span class="step">1 of 7</span></div>
+          <div class="ask">Before you start</div>
+          <div class="pane" style="padding-top:14px">
+            <div class="disc"><b>This is not a medical device</b>
+              It has no regulatory clearance and has not been clinically validated. Check every dose
+              yourself. It is set up for one specific person's prescription.</div>
+            <div class="check"><i>&#10003;</i><span>I've read this and I understand it</span></div>
+          </div>
+          <div class="sheet"><div class="go">Continue</div></div>
+        </div>
+        <p class="cap"><b>The disclaimer</b>Accepted once, stored. Not dismissible by tapping past it.</p>
+        <div class="refs"><span class="ref">§10.6</span><span class="ref">§14</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></div><span class="step">2 of 7</span></div>
+          <div class="ask">If a dose looks nothing like what you usually take</div>
+          <div class="pane" style="padding-top:8px">
+            <div class="flag"><span><b>Don't assume either number is right</b>
+              Neither this app nor your usual dose has been checked against the other. Show your
+              doctor the exported record and let them decide.</span></div>
+            <div class="hint" style="padding:14px 0 0">You can read this again from “How this works”.</div>
+          </div>
+          <div class="sheet"><div class="go">I understand</div></div>
+        </div>
+        <p class="cap"><b>The disagreement, said once</b>Setup-time only, worded to back neither number. Distinct from §6.7's removed per-result line.</p>
+        <div class="refs"><span class="ref">§10.6 item 7</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></div><span class="step">3 of 7</span></div>
+          <div class="ask">What blood sugar should the app aim for?</div>
+          <div class="hint">Your doctor's target. Everything the app works out is measured against this.</div>
+          <div class="entry"><div class="n">150</div><div class="u">MG/DL</div></div>          <div class="pad">
+            <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+            <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+            <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+            <div class="key dim"></div><div class="key">0</div><div class="key dim">&#9003;</div>
+            <div class="go">Next</div>
+          </div>
+        </div>
+        <p class="cap"><b>Target</b>Entered by hand like the rest. The app ships with no value here.</p>
+        <div class="refs"><span class="ref">§1.2</span><span class="ref">§18.1</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></div><span class="step">4 of 7</span></div>
+          <div class="ask">One unit of Humulin R lowers your blood sugar by how much?</div>
+          <div class="hint">Often written as “1 to 30”. Ask your doctor if you're unsure.</div>
+          <div class="entry"><div class="n">30</div><div class="u">MG/DL PER UNIT</div></div>          <div class="pad">
+            <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+            <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+            <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+            <div class="key dim">.</div><div class="key">0</div><div class="key dim">&#9003;</div>
+            <div class="go">Next</div>
+          </div>
+        </div>
+        <p class="cap"><b>Sensitivity</b>No “ISF” anywhere — the question is the label. The decimal key stays: a keypad narrower than the grammar is fine, narrower than the clinic is not (§10.1).</p>
+        <div class="refs"><span class="ref">§10.1</span><span class="ref">§10.2</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i><i class="dot"></i></div><span class="step">5 of 7</span></div>
+          <div class="ask">One unit covers how much carbohydrate?</div>
+          <div class="hint">Often written as “1 to 10”. This is the second half of every dose.</div>
+          <div class="entry"><div class="n">10</div><div class="u">GRAMS PER UNIT</div></div>          <div class="pad">
+            <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+            <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+            <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+            <div class="key dim">.</div><div class="key">0</div><div class="key dim">&#9003;</div>
+            <div class="go">Next</div>
+          </div>
+        </div>
+        <p class="cap"><b>Carb ratio</b>The carb ratio — missing from the first draft of this flow entirely. <b>1 unit per 7.5 g is an ordinary prescription</b>, so this pad must carry a decimal key (§10.1).</p>
+        <div class="refs"><span class="ref">§1.2</span><span class="ref">§10.1</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot"></i></div><span class="step">6 of 7</span></div>
+          <div class="ask">How does your pen dose?</div>
+          <div class="pane" style="padding-top:6px">
+            <div class="list">
+              <div class="li"><span class="k"><b>Whole units</b><br>1, 2, 3 — most pens</span><span class="v" style="color:#5EE6C5">&#10003;</span></div>
+              <div class="li"><span class="k"><b>Half units</b><br>1, 1.5, 2</span><span class="v"></span></div>
+              <div class="li"><span class="k"><b>Round down always</b><br>Never gives more than worked out</span><span class="v"></span></div>
+              <div class="li"><span class="k"><b>No rounding</b><br>Shows the exact figure</span><span class="v"></span></div>
+            </div>
+          </div>
+          <div class="sheet"><div class="go">Next</div></div>
+        </div>
+        <p class="cap"><b>Rounding</b>Changes what every dose is rounded to, and the log and export with it.</p>
+        <div class="refs"><span class="ref">§5</span><span class="ref">§5.1</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i></div><span class="step">7 of 7</span></div>
+          <div class="ask">Do you take a long-acting insulin as well?</div>
+          <div class="hint">Recorded so your record is complete. This app never calculates it and never changes it.</div>
+          <div class="pane" style="padding-top:6px">
+            <div class="list">
+              <div class="li"><span class="k">Which one</span><span class="v" style="font-size:14px">Lantus</span></div>
+              <div class="li"><span class="k">How many units</span><span class="v">36</span></div>
+              <div class="li"><span class="k">When</span><span class="v" style="font-size:13px">early morning</span></div>
+            </div>
+            <div class="flag mint slim" style="margin-top:13px"><span>Kept in settings only. It will
+              never appear on a screen showing a calculated dose.</span></div>
+          </div>
+          <div class="sheet"><div class="go">Next</div></div>
+        </div>
+        <p class="cap"><b>Long-acting insulin</b>A second number labelled “units” is the confusion §1.3 exists to prevent.</p>
+        <div class="refs"><span class="ref">§1.3</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════ EVERYDAY ══════════ -->
+  <section class="act-sec">
+    <div class="ah"><h2>The everyday path</h2><span class="chip">4 screens · three times a day</span></div>
+    <p class="anote">Two questions and an answer. The fourth screen is the one that makes the record honest.</p>
+    <div class="row">
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot"></i><i class="dot"></i></div><span class="step">1 of 3</span></div>
+          <div class="ask">What's your blood sugar right now?</div>
+          <div class="hint">Meter showing HI? Enter 600. Showing LO? Don't enter a number — treat first.</div>
+          <div class="entry"><div class="n">330</div><div class="u">MG/DL</div></div>
+          <div class="pad">
+            <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+            <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+            <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+            <div class="key dim"></div><div class="key">0</div><div class="key dim">&#9003;</div>
+            <div class="go">Next</div>
+          </div>
+        </div>
+        <p class="cap"><b>Blood sugar</b>No decimal key — mg/dL meter readings are whole numbers, and omitting it here makes no clinical value unenterable (§10.1). HI/LO guidance sits above the pad.</p>
+        <div class="refs"><span class="ref">§4.5</span><span class="ref">§4.2</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot"></i></div><span class="step">2 of 3</span></div>
+          <div class="ask">How much carbohydrate is in this meal?</div>
+          <div class="hint">The carbohydrate in the food — not what the plate weighs. A 250 g plate of
+            biryani is about 50 g of carbohydrate.</div>
+          <div class="entry"><div class="n">50</div><div class="u">GRAMS OF CARBOHYDRATE</div></div>
+          <div class="pad">
+            <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+            <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+            <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+            <div class="key dim">.</div><div class="key">0</div><div class="key dim">&#9003;</div>
+            <div class="go">Work out the dose</div>
+          </div>
+        </div>
+        <p class="cap"><b>Carbohydrate</b>The biryani line is the plate-weight defence, at the moment of entry.</p>
+        <div class="refs"><span class="ref">§1.4</span><span class="ref">§10.1</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i></div><span class="step">Done</span></div>
+          <div class="pane result">
+            <div class="n">11</div>
+            <div class="u">units of Humulin R</div>
+            <div class="glass">
+              <div class="gr"><span>330 down to 150</span><b>6</b></div>
+              <div class="gr"><span>50 g of carbohydrate</span><b>5</b></div>
+              <div class="gr tot"><span>Total</span><b>11 units</b></div>
+            </div>
+            <div class="flag"><span><b>Above 250 — check ketones</b>
+              If ketones are present or you feel unwell, contact your clinician.</span></div>
+            <div class="flag mint slim" style="margin-top:8px"><span><b>Inject 20&ndash;30
+              minutes before eating.</b> The clock starts when you confirm the amount on the next
+              screen &mdash; not now, and not when the dose was worked out.</span></div>
+          </div>
+          <div class="sheet"><div class="go">I injected this</div></div>
+        </div>
+        <p class="cap"><b>The dose</b>96px, its own screen, working folded beneath. Nothing competes with it.
+          <b>This tap is not the commit.</b> &sect;7.2 freezes the payload and stamps the clock at <i>one</i> moment,
+          and that moment is the next screen &mdash; so the amount is settled before anything is written, never after.</p>
+        <div class="refs"><span class="ref">§10.3</span><span class="ref">§10.4</span><span class="ref">§8.1</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i></div><span class="step">Recording</span></div>
+          <div class="pane">
+            <div class="ask">How many units did you actually inject?</div>
+            <div class="hint">Starts at what the app worked out. Change it if you injected something
+              different — the record should say what happened.</div>
+            <div class="stepper"><span class="pm">&minus;</span><span class="v">11</span><span class="pm">+</span></div>
+            <div class="flag slim"><span>Set it now — this is the only moment it can be
+              changed. Afterwards a row can be deleted, but never edited.</span></div>
+            <div class="flag mint slim"><span><b>Tapping below is the commit</b>
+              It writes the row and starts the 20&ndash;30 minute clock, in one transaction.</span></div>
+          </div>
+          <div class="sheet"><div class="go">Log this injection</div><div class="go quiet">Type a different amount</div></div>
+        </div>
+        <p class="cap"><b>What actually went in</b>Defaults to the calculated dose, so the common case is two taps and no typing.
+          <b>One commit, and it is here:</b> the row, its timestamp and &sect;8.1's clock are all written by this tap, which is what
+          lets &sect;7.3 offer delete and refuse edit without the two ever disagreeing.</p>
+        <div class="refs"><span class="ref">§7.1</span><span class="ref">§7.2</span><span class="ref">§7.3</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════ REFUSALS ══════════ -->
+  <section class="act-sec">
+    <div class="ah"><h2>When it warns or refuses</h2><span class="chip">4 screens · the ones that matter</span></div>
+    <p class="anote">
+      Two of these withhold a number he came to get. In this design both take the whole screen —
+      there is nothing else to look at and nothing to scroll past.
+    </p>
+    <div class="row">
+
+      <div class="cell">
+        <div class="ph">
+          <div class="halt">
+            <div class="n">65</div>
+            <h3>Treat this first.<br>Do not inject.</h3>
+            <p>15 grams of fast-acting carbohydrate now — juice, glucose tablets, sugar.
+               Re-check in 15 minutes. Do not inject until you are above 70 mg/dL.</p>
+          </div>
+          <div class="sheet"><div class="go alarm">Re-check my blood sugar</div>
+            <div class="go quiet">Record this reading</div></div>
+        </div>
+        <p class="cap"><b>Below 70 — band C</b>No dose, no working, no partial figure. This gate needs none of his ratios to be right.</p>
+        <div class="refs"><span class="ref">§3 band C</span><span class="ref">§10.5 rank 1</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i></div><span class="step">Check</span></div>
+          <div class="pane">
+            <div class="ask">Read these back before you see the dose</div>
+            <div class="hint">This one is larger than usual, so check the two numbers you typed.</div>
+            <div class="list">
+              <div class="li"><span class="k">Blood sugar</span><span class="v">330 <span class="c">mg/dL</span></span></div>
+              <div class="li"><span class="k">Carbohydrate</span><span class="v">250 <span class="c">grams of carbohydrate</span></span></div>
+            </div>
+            <div class="flag slim" style="margin-top:12px"><span>250 g is much larger than your
+              usual meals, which are around 50 g. Check that's right.</span></div>
+          </div>
+          <div class="sheet"><div class="go">These are right — show the dose</div>
+            <div class="go quiet">Go back and change them</div></div>
+        </div>
+        <p class="cap"><b>At 20 units and above</b>The dose is withheld and the inputs shown instead. 250 g would have produced 31 units.</p>
+        <div class="refs"><span class="ref">§6.2</span><span class="ref">§6.3</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i></div><span class="step">Done</span></div>
+          <div class="pane result">
+            <div class="n">10</div>
+            <div class="u">units of Humulin R</div>
+            <div class="glass">
+              <div class="gr"><span>288 down to 150</span><b>4.6</b></div>
+              <div class="gr"><span>55 g of carbohydrate</span><b>5.5</b></div>
+              <div class="gr tot"><span>Total, rounded</span><b>10 units</b></div>
+            </div>
+            <div class="flag slim"><span><b>Above 250 — check ketones.</b> If ketones are present or
+              you feel unwell, contact your clinician.</span></div>
+          </div>
+          <div class="sheet"><div class="go">I injected this</div></div>
+        </div>
+        <p class="cap"><b>Same warning, second time today</b>The card shrinks to a line — but the words never change and it is never hidden behind “more”.</p>
+        <div class="refs"><span class="ref">§3 band E</span><span class="ref">§10.5 rank 2</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i></div><span class="step">Done</span></div>
+          <div class="pane result">
+            <div class="n">5</div>
+            <div class="u">units — for the meal only</div>
+            <div class="glass">
+              <div class="gr held"><span>300 down to 150 &mdash; held back, you injected 2 hours ago</span><b><s>5.0</s></b></div>
+              <div class="gr"><span>50 g of carbohydrate</span><b>5</b></div>
+              <div class="gr tot"><span>Total</span><b>5 units</b></div>
+            </div>
+            <div class="flag"><span><b>You injected 6 units 2 hours ago.</b>
+              That insulin may still lower you by <b>at most about 180 mg/dL &mdash; likely less this
+              far in</b>. So the correction is held back this time; the meal part is unchanged.</span></div>
+          </div>
+          <div class="sheet"><div class="go">I injected this</div>
+            <div class="go quiet">Include the correction anyway</div></div>
+        </div>
+        <p class="cap"><b>Injected recently</b>Meal covered, correction suppressed. &sect;10.3 requires the
+          held-back correction to be <b>shown, struck through, with its reason</b> &mdash; never a bare dash
+          and never silently dropped, or the total looks like an error. &sect;7.4.1 requires the consequence
+          in his own units, and as a <b>ceiling</b>: 6 &times; 30 = 180, stated as &ldquo;at most about&rdquo; because at
+          two hours only ~110&ndash;135 genuinely remains, and overstating it discourages a correction that is
+          actually needed. The override is available and gets recorded as one.</p>
+        <div class="refs"><span class="ref">§7.4</span><span class="ref">§7.4.1</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════ RECORDS ══════════ -->
+  <section class="act-sec">
+    <div class="ah"><h2>The record</h2><span class="chip">3 screens · what the doctor reads</span></div>
+    <p class="anote">
+      Not steps — these are lists, so they keep the ground and the type but drop the progress dots.
+    </p>
+    <div class="row">
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">History</span><span class="step">Last 7 days</span></div>
+          <div class="pane" style="padding-top:14px">
+            <div class="gr" style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+              color:rgba(234,240,250,.38);padding:0 2px"><span>Reading &middot; carbs</span>
+              <span>calculated &rarr; injected</span></div>
+            <div class="head" style="margin-top:0">Today</div>
+            <div class="list">
+              <div class="li"><span class="k"><b>8:15 AM</b><br>330 mg/dL · 50 g</span>
+                <span class="v"><span class="c">11</span> → <span class="i">25</span></span></div>
+            </div>
+            <div class="head">Yesterday</div>
+            <div class="list">
+              <div class="li"><span class="k"><b>8:40 PM</b><br>288 mg/dL · 55 g</span>
+                <span class="v"><span class="c">10</span> → <span class="i">25</span></span></div>
+              <div class="li"><span class="k"><b>12:00 noon</b><br>194 mg/dL · 45 g</span>
+                <span class="v"><span class="c">6</span> → <span class="i">24</span></span></div>
+              <div class="li"><span class="k"><b>7:50 AM</b><br>65 mg/dL · reading only</span>
+                <span class="v"><span class="c">&mdash;</span></span></div>
+              <div class="li"><span class="k"><b>12:00 midnight</b><br>68 mg/dL · reading only</span>
+                <span class="v"><span class="c">&mdash;</span></span></div>
+            </div>
+          </div>
+          <div class="sheet"><div class="go quiet">Keep a copy</div></div>
+        </div>
+        <p class="cap"><b>Calculated → injected</b>Two figures per row, never merged. The 65 is there with no
+          dose &mdash; refusals are part of the record, and the overnight 68 is the kind of row
+          &sect;18.13's clustering question exists to read. <b>&sect;10.4 in practice:</b> the lunch dose renders
+          <b>12:00 noon</b>, spelled out rather than as a bare midday AM/PM marker &mdash; noon is this
+          app's daily case, which is why the rule exists. Midnight carries <b>the date of the day it begins</b>, so an overnight row cannot be read
+          onto the wrong night.</p>
+        <div class="refs"><span class="ref">§7.1</span><span class="ref">§7.7</span><span class="ref">§7.8</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Record a reading</span><span class="step">No dose</span></div>
+          <div class="ask">What did your meter say?</div>
+          <div class="hint">Just the number. This doesn't work out a dose — it's for readings between
+            meals, overnight, or when you felt low.</div>
+          <div class="entry"><div class="n">148</div><div class="u">MG/DL</div></div>
+          <div class="pad" style="grid-template-columns:repeat(2,1fr)">
+            <div class="key" style="font-size:12.5px">Before bed</div>
+            <div class="key" style="font-size:12.5px">Overnight</div>
+            <div class="key" style="font-size:12.5px">Felt low</div>
+            <div class="key" style="font-size:12.5px">After exercise</div>
+            <div class="go" style="grid-column:span 2">Save this reading</div>
+          </div>
+        </div>
+        <p class="cap"><b>A reading on its own</b>The app used to discard every blocked low. Without this screen the record can't answer where the lows happen.</p>
+        <div class="refs"><span class="ref">§7.8</span><span class="ref">§18.13</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Your prescription</span><span class="step">Settings</span></div>
+          <div class="pane" style="padding-top:14px">
+            <div class="list">
+              <div class="li"><span class="k">One unit lowers your blood sugar by about</span><span class="v">30</span></div>
+              <div class="li"><span class="k">One unit covers about</span><span class="v">10 g</span></div>
+              <div class="li"><span class="k">Aim for</span><span class="v">150</span></div>
+              <div class="li"><span class="k">Round to</span><span class="v" style="font-size:13px">whole units</span></div>
+              <div class="li"><span class="k">Check with me before any dose of</span><span class="v">20+</span></div>
+            </div>
+            <div class="flag mint slim" style="margin-top:14px"><span><b>Lantus, 36 units, early morning</b>
+              Set by your doctor — this app never calculates or changes it.</span></div>
+          </div>
+          <div class="sheet"><div class="go quiet">Show as text to screenshot</div></div>
+        </div>
+        <p class="cap"><b>Settings as sentences</b>The Lantus dose is visually separated so a second number labelled “units” can't be mistaken for a dose.</p>
+        <div class="refs"><span class="ref">§10.1</span><span class="ref">§1.3</span><span class="ref">§10.6</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════ KEEPING AND CLEARING ══════════ -->
+  <section class="act-sec">
+    <div class="ah"><h2>Keeping it, and clearing it</h2><span class="chip">6 screens · added in v22</span></div>
+    <p class="anote">
+      &sect;7.7.1 and &sect;7.9 were written into the plan and had no mockup at all &mdash; and neither did the
+      fail-closed screen &sect;11.3 has required since v4. These six close that gap. <strong>Both destructive
+      controls sit at the bottom of a scrolled settings screen, never in the thumb arc, and neither is
+      reachable in one tap from a result</strong> (&sect;10.7).
+    </p>
+    <div class="row">
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Keep a copy</span><span class="step">Export</span></div>
+          <div class="pane" style="padding-top:14px">
+            <div class="list" style="margin-top:0">
+              <div class="li"><span class="k"><b>Move to another phone</b><br>A file only this app can open. This is the one that restores everything.</span>
+                <span class="v"><span class="i">&rarr;</span></span></div>
+              <div class="li"><span class="k"><b>Save the record</b><br>A page you can read, print or send to anyone. It does not restore.</span>
+                <span class="v"><span class="i">&rarr;</span></span></div>
+            </div>
+            <div class="flag mint slim"><span><b>Last made a copy you can restore from: 3 days ago</b>
+              Only the first one counts. Saving the readable page does not back anything up.</span></div>
+          </div>
+          <div class="sheet"><div class="go quiet">Not now</div></div>
+        </div>
+        <p class="cap"><b>Two exports, named by what he is doing</b>Neither is labelled by its file type
+          (&sect;10.1). The counter reads <b>&ldquo;last made a copy you can restore from&rdquo;</b> and not
+          &ldquo;last backup&rdquo; &mdash; a control no button offers &mdash; and it reports only what the app actually saw. Wiring that counter to any
+          export would report a healthy backup while nothing restorable existed, the false safety claim
+          &sect;7.5 condemns.</p>
+        <div class="refs"><span class="ref">§7.7.1</span><span class="ref">§10.1</span><span class="ref">§12</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Save the record</span><span class="step">Preview</span></div>
+          <div class="pane" style="padding-top:14px">
+            <div class="disc" style="background:rgba(234,240,250,.05);border-color:rgba(234,240,250,.14);color:rgba(234,240,250,.66)">
+              <b style="color:#EAF0FA">This is a readable copy, not a backup</b>
+              To move everything to another phone, use <i>Move to another phone</i> instead.</div>
+            <div class="gr" style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+              color:rgba(234,240,250,.38);padding:10px 2px 0"><span>Reading &middot; carbs</span>
+              <span>calculated &rarr; injected</span></div>
+            <div class="head" style="margin-top:9px">1 unit covers 10 g · 1 unit lowers 30 · aim for 150</div>
+            <div class="gr" style="font-size:11px;color:rgba(234,240,250,.42);padding:0 2px">
+              <span>18 Aug &ndash; 2 Sep</span><span>47 doses, 6 readings</span></div>
+            <div class="list">
+              <div class="li"><span class="k"><b>12:00 noon</b><br>194 mg/dL · 45 g</span>
+                <span class="v"><span class="c">6</span> → <span class="i">24</span></span></div>
+            </div>
+            <div class="head">1 unit covers 12 g · 1 unit lowers 30 · aim for 150</div>
+            <div class="gr" style="font-size:11px;color:rgba(234,240,250,.42);padding:0 2px">
+              <span>3 Sep &ndash; 6 Sep</span><span>11 doses, 3 readings</span></div>
+            <div class="list">
+              <div class="li"><span class="k"><b>7:50 AM</b><br>65 mg/dL · reading only</span>
+                <span class="v"><span class="c">&mdash;</span></span></div>
+            </div>
+          </div>
+        </div>
+        <p class="cap"><b>Grouped by prescription, not sorted by date</b>A flat table would print every
+          historical row under today&rsquo;s ratios &mdash; the false claim v9 was corrected to remove. Doses sit
+          under the prescription that <i>produced</i> them, placed by their stored stamp. <b>Readings are
+          placed by their time falling inside the period</b>, because &sect;7.8&rsquo;s row carries no revision and
+          nothing produced a reading. The 65 with no dose is in the file.</p>
+        <div class="refs"><span class="ref">§7.7.1</span><span class="ref">§7.7</span><span class="ref">§7.8</span><span class="ref">§10.4</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Settings</span><span class="step">Scrolled to the end</span></div>
+          <div class="pane" style="padding-top:14px">
+            <div class="list" style="margin-top:0">
+              <div class="li"><span class="k">Aim for</span><span class="v">150</span></div>
+              <div class="li"><span class="k">Check with me before any dose of</span><span class="v">20+</span></div>
+            </div>
+            <div class="head">Removing things</div>
+            <div class="list">
+              <div class="li"><span class="k"><b>Clear the record</b><br>Deletes every dose and reading. Your prescription stays.</span>
+                <span class="v"><span class="i">&rarr;</span></span></div>
+              <div class="li"><span class="k"><b>Start over</b><br>Deletes everything, including your prescription. Setup runs again.</span>
+                <span class="v"><span class="i">&rarr;</span></span></div>
+            </div>
+          </div>
+        </div>
+        <p class="cap"><b>Why these have to be in the app</b>Uninstalling without accepting
+          &ldquo;also clear data&rdquo; leaves everything intact; accepting it is <i>origin-wide</i> and takes the
+          blog&rsquo;s storage with it. Only code inside the app can act on this app&rsquo;s data alone.
+          <b>Neither control touches the cached app files or the service worker</b> &mdash; those hold code, not
+          the record, and deleting them can leave the app unopenable until the next online load.
+          <b>Placement:</b> last block on a scrolled screen, far from any commit button (&sect;10.7).</p>
+        <div class="refs"><span class="ref">§7.9</span><span class="ref">§10.7</span><span class="ref">§11.7</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Clear the record</span><span class="step">Confirm</span></div>
+          <div class="ask">Delete 67 entries?</div>
+          <div class="pane" style="padding-top:8px">
+            <div class="disc"><b>This cannot be undone</b>
+              Everything recorded from 18 August to 6 September, including <b>9 readings with no
+              dose</b>.</div>
+            <div class="flag slim"><span><b>The stacking check is using a dose from 2:00 PM</b>
+              After this it will not know about it, and the next result will not hold anything
+              back.</span></div>
+            <div class="flag mint slim"><span><b>Your prescription and its history stay</b>
+              The app is usable straight afterwards &mdash; nothing to set up again.</span></div>
+          </div>
+          <div class="sheet" style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+            <div class="go quiet half">Save a copy first</div><div class="go alarm half">Delete the record</div>
+          </div>
+        </div>
+        <p class="cap"><b>It says what dies, in his terms</b>Never &ldquo;are you sure?&rdquo; &mdash; &sect;7.4.1&rsquo;s
+          principle applied to deletion. The count names <b>readings as well as doses</b>, since the lows are the
+          part &sect;18.13 exists to read. The left button <b>opens the export screen</b> rather than naming a
+          file: which copy he needs depends on why he is deleting, and only he knows.
+          <b>The amber line is &sect;7.3&rsquo;s, applied to the bulk path in v23:</b> deleting one recent row already
+          demanded a stacking warning, and deleting all 67 was the unguarded door beside it. It appears only
+          when a dose sits inside the window.</p>
+        <div class="refs"><span class="ref">§7.9</span><span class="ref">§7.4.1</span><span class="ref">§7.3</span><span class="ref">§7.7.1</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Start over</span><span class="step">Confirm</span></div>
+          <div class="ask">Erase everything?</div>
+          <div class="pane" style="padding-top:8px">
+            <div class="disc"><b>This cannot be undone</b>
+              67 entries, <b>your three prescription numbers and every change to them</b>, your Lantus
+              regimen, and the note about how you used to dose.</div>
+            <div class="flag slim"><span><b>The stacking check is using a dose from 2:00 PM</b>
+              After this it will not know about it, and the next result will not hold anything
+              back.</span></div>
+            <div class="flag slim"><span><b>Setup will run again from the start</b>
+              There are no defaults. The app cannot work out a dose until all three numbers are typed
+              in again.</span></div>
+          </div>
+          <div class="sheet" style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+            <div class="go quiet half">Save a copy first</div><div class="go alarm half">Erase everything</div>
+          </div>
+        </div>
+        <p class="cap"><b>The second control, and it is not a convenience</b>There is no reliable route back
+          to first run from outside an installed app. It <b>deletes the database by name</b> rather than clearing
+          a list of stores &mdash; a list would rot the day a seventh store is added, leaving a &ldquo;start
+          over&rdquo; that quietly does not, and it can strand the app with no envelope for the next launch to
+          read.</p>
+        <div class="refs"><span class="ref">§7.9</span><span class="ref">§1.2</span><span class="ref">§11.3</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">This app is out of date</span><span class="step">Fail-closed</span></div>
+          <div class="pane" style="padding-top:14px">
+            <div class="disc"><b>It will not work out doses right now</b>
+              Your data was saved by a newer version of this app. Rather than risk misreading it, the
+              calculator has stopped.</div>
+            <div class="head">Your prescription</div>
+            <div class="list">
+              <div class="li"><span class="k">One unit lowers your blood sugar by about</span><span class="v">30</span></div>
+              <div class="li"><span class="k">One unit covers about</span><span class="v">10 g</span></div>
+              <div class="li"><span class="k">Aim for</span><span class="v">150</span></div>
+            </div>
+            <div class="flag slim"><span><b>Write these down before you start over</b>
+              Starting over erases them along with everything else, and a copy cannot be saved from
+              this screen.</span></div>
+          </div>
+          <div class="sheet"><div class="go quiet">Start over and set up again</div></div>
+        </div>
+        <p class="cap"><b>The one screen that had never been drawn</b>Required since v4 and mocked up here
+          first in v23. The numbers come from the <b>frozen recovery block</b>, never the live payload. This is
+          also the only place the escape can live &mdash; settings sits behind the calculator, and the calculator
+          is what refused. <b>It cannot offer an export</b> &mdash; not because nothing is open, but because the
+          recovery connection may read the frozen block and nothing else. <b>That connection is closed before
+          the escape is offered</b>, or the delete blocks on it and hangs behind this screen.</p>
+        <div class="refs"><span class="ref">§11.3</span><span class="ref">§7.9</span><span class="ref">§10.6</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════ REMAINING ══════════ -->
+  <section class="act-sec">
+    <div class="ah"><h2>The rest of the app</h2><span class="chip">15 screens · completing the flow</span></div>
+    <p class="anote">
+      Everything the plan requires that the first eighteen screens did not cover — including the
+      settings edit, which is the single most dangerous action in the app and had no mockup at all.
+    </p>
+    <div class="row">
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Change a setting</span><span class="step">Carb ratio</span></div>
+          <div class="ask">One unit covers how much carbohydrate?</div>
+          <div class="hint">Only change this if your doctor has told you to.</div>
+          <div class="entry"><div class="n">40</div><div class="u">GRAMS PER UNIT</div></div>
+          <div class="pane" style="padding:14px 20px 0;flex:none">
+            <div class="flag"><span><b>was 10 &rarr; now 40</b>
+              That is four times as much carbohydrate per unit. A 50 g meal would go from
+              <b>5 units</b> to <b>1 unit</b>.</span></div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go">Yes, my doctor changed this</div>
+            <div class="go quiet">Cancel</div></div>
+        </div>
+        <p class="cap"><b>The delta confirmation</b>A ratio fat-fingered 10&rarr;40 sits INSIDE the accepted range and passes every other check. Only showing the delta catches it.</p>
+        <div class="refs"><span class="ref">§10.1.6</span><span class="ref">§4.5</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">MealUnits</span><span class="step">Very low</span></div>
+          <div class="halt">
+            <div class="n">48</div>
+            <h3>Treat this now.</h3>
+            <p>15 grams of fast-acting carbohydrate immediately. Repeat if you have not recovered in
+               15 minutes. <b>Get help if you cannot treat yourself.</b></p>
+          </div>
+          <div class="sheet"><div class="go alarm">Re-check my blood sugar</div>
+            <div class="go quiet">Record this reading</div></div>
+        </div>
+        <p class="cap"><b>Below 54 — band D</b>Same block as band C, escalated wording. The recovery instruction and the get-help line are what differ.
+          <b>The recording offer belongs here too</b> &mdash; &sect;7.8 attaches it to band C <i>and</i> band D, and a 48 is
+          exactly the reading the record exists to capture. It sits below the treat-first action, never instead of it.</p>
+        <div class="refs"><span class="ref">§3 band D</span><span class="ref">§7.8</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Result</span><span class="step">Below target</span></div>
+          <div class="pane result">
+            <div class="n">3</div>
+            <div class="u">units of Humulin R</div>
+            <div class="glass">
+              <div class="gr"><span>92 is below your target</span><b>&minus;1.9</b></div>
+              <div class="gr"><span>50 g of carbohydrate</span><b>5</b></div>
+              <div class="gr tot"><span>Total</span><b>3 units</b></div>
+            </div>
+            <div class="flag"><span><b>You are well below target</b>
+              Consider eating before injecting, and re-check afterwards.</span></div>
+          </div>
+          <div class="sheet"><div class="go">I injected this</div></div>
+        </div>
+        <p class="cap"><b>Below target — band B</b>Still calculates, and the correction is genuinely negative. The caution never blocks.</p>
+        <div class="refs"><span class="ref">§3 band B</span><span class="ref">§5</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Meal only</span><span class="step">No reading</span></div>
+          <div class="ask">Work out a dose without a blood sugar reading?</div>
+          <div class="hint">You have not entered a reading, so the app can only cover the food. Nothing will be corrected.</div>
+          <div class="pane" style="padding-top:6px">
+            <div class="flag"><span><b>This covers the meal only</b>
+              If you are running high, this dose will not bring you down. If you are running low, it
+              may take you lower. <b>Test first if you can</b>, and do not use this if you might be
+              below 70.</span></div>
+            <div class="check" style="margin-top:16px"><i>&#10003;</i><span>I understand this is the meal part only</span></div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go">Work out the meal dose</div>
+            <div class="go quiet">Go back and enter a reading</div></div>
+        </div>
+        <p class="cap"><b>No reading entered</b>An explicit acknowledgement, not a silent assumption of zero correction.</p>
+        <div class="refs"><span class="ref">§4.6</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Blood sugar</span><span class="step">Meter says HI</span></div>
+          <div class="pane" style="padding-top:20px">
+            <div class="flag"><span><b>Meter showing HI? Enter 600.</b>
+              This dose treats 600 and is probably too little — treat it as a minimum, not the
+              answer. <b>Check ketones now.</b> If ketones are present, or you are vomiting, this is
+              an emergency: injected insulin alone will not treat ketoacidosis.</span></div>
+            <div class="flag mint slim" style="margin-top:10px"><span><b>Meter showing LO?</b>
+              Do not enter a number. Treat now — 15 grams of fast-acting carbohydrate, re-check in
+              15 minutes.</span></div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go quiet">Back</div></div>
+        </div>
+        <p class="cap"><b>HI and LO</b>The meter caps at 600. The guidance is explicit that the resulting dose is a floor, not a treatment.</p>
+        <div class="refs"><span class="ref">§4.5</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Something is wrong</span><span class="step">Refused</span></div>
+          <div class="halt" style="background:radial-gradient(115% 80% at 50% 0%,#2C2410 0%,#1C1708 60%,#100C04 100%)">
+            <h3 style="color:#FFD79A">This app cannot give you a dose</h3>
+            <p style="color:#E8C48A">Something in the app is wrong — not your numbers. Do not
+               use this app for this dose. Contact your clinician, and tell whoever set it up.</p>
+          </div>
+          <div class="sheet"><div class="go quiet">Show my settings</div></div>
+        </div>
+        <p class="cap"><b>The app refuses itself</b>If the arithmetic exceeds what the settings can possibly produce, the fault is the app's. It says so and gets out of the way.</p>
+        <div class="refs"><span class="ref">§6.4</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Result</span><span class="step">Expired</span></div>
+          <div class="pane mid" style="text-align:center;gap:12px">
+            <div class="u" style="font-size:15px">This dose was worked out<br>more than 15 minutes ago</div>
+            <div class="entry"><div class="n ghosted">&mdash;</div></div>
+            <div class="hint" style="padding:0 10px">Your blood sugar may have moved since. Enter a
+              fresh reading rather than injecting this one.</div>
+          </div>
+          <div class="sheet"><div class="go">Start again</div></div>
+        </div>
+        <p class="cap"><b>Stale result</b>The number is shown greyed so it is recognisable, but it cannot be acted on.</p>
+        <div class="refs"><span class="ref">§8.2</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Delete this row?</span><span class="step">History</span></div>
+          <div class="pane" style="padding-top:16px">
+            <div class="list" style="margin-top:0">
+              <div class="li"><span class="k"><b>8:15 AM today</b><br>330 mg/dL · 50 g</span>
+                <span class="v"><span class="c">11</span> &rarr; <span class="i">25</span></span></div>
+            </div>
+            <div class="flag" style="margin-top:14px"><span><b>Deleting the 25 units you injected</b>
+              The app will stop counting this as insulin still working. A dose worked out in the next
+              few hours may come out higher.</span></div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go alarm">Delete it</div>
+            <div class="go quiet">Keep it</div></div>
+        </div>
+        <p class="cap"><b>Delete, with its consequence</b>Rows can be deleted, never edited. The confirmation names the injected figure and what deleting it changes.</p>
+        <div class="refs"><span class="ref">§7.3</span><span class="ref">§7.4</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Saving</span><span class="step">Retrying</span></div>
+          <div class="pane mid" style="text-align:center;gap:14px">
+            <div class="u" style="font-size:15px">Couldn't save this yet</div>
+            <div class="entry"><div class="n">25</div><div class="u">UNITS · 8:15 AM</div></div>
+            <div class="flag mint slim"><span>Your injection is recorded for this session, so the
+              next dose still knows about it. Retrying the save.</span></div>
+          </div>
+          <div class="sheet"><div class="go quiet">Retry now</div></div>
+        </div>
+        <p class="cap"><b>Write failed</b>The injection already happened. A failed disk write does not make it unknown.</p>
+        <div class="refs"><span class="ref">§7.2</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Before you export</span><span class="step">Optional</span></div>
+          <div class="ask">Before you started using this app, how did you decide your mealtime dose?</div>
+          <div class="hint">It goes in the file for your doctor as history — it is not a setting,
+            and the app never uses it in any calculation.</div>
+          <div class="pane" style="padding-top:14px">
+            <div class="glass" style="margin-top:0;font-size:13px;line-height:1.6;color:rgba(234,240,250,.85)">
+              24&ndash;25 units before every meal, the same amount whatever I ate and whatever the
+              meter said.<span style="color:rgba(234,240,250,.3)">|</span>
+            </div>
+            <div class="flag mint slim" style="margin-top:12px"><span>Saved as
+              <b>patient-reported dosing history before app use</b>, dated today.</span></div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go">Add it to the file</div>
+            <div class="go quiet">Skip for now</div>
+            <div class="go quiet" style="opacity:.62">Don't ask me again&hellip;</div></div>
+        </div>
+        <p class="cap"><b>The pre-app regimen &mdash; NEW, replacing the cut §6.7</b>Free text, not a number:
+          &ldquo;the same amount whatever I ate&rdquo; is the clinically meaningful part, and a stored
+          <code>25</code> loses it. Asked at export, never at setup, so no field exists in settings for a later
+          feature to reach for. <b>&ldquo;Skip for now&rdquo; re-offers at the next export</b> &mdash; one
+          hurried skip at a busy moment would otherwise lose the record permanently, and the
+          transition window does not come back. <b>&ldquo;Don&rsquo;t ask me again&rdquo; carries an
+          ellipsis because it confirms first</b>: it is one tap into a state with no way back, offered
+          at the same hurried moment and sitting right beside Skip.</p>
+        <div class="refs"><span class="ref">§6.7</span><span class="ref">§7.7</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Before you export</span><span class="step">Already answered</span></div>
+          <div class="ask">Before you started using this app, how did you decide your mealtime dose?</div>
+          <div class="hint">You answered this on 6 September. It goes in the file as you wrote it.</div>
+          <div class="pane" style="padding-top:14px">
+            <div class="glass" style="margin-top:0;font-size:13px;line-height:1.6;color:rgba(234,240,250,.85)">
+              24&ndash;25 units before every meal, the same amount whatever I ate and whatever the
+              meter said.</div>
+            <div class="flag mint slim" style="margin-top:12px"><span>Saved as
+              <b>patient-reported dosing history before app use</b>, dated 6 September.</span></div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go">Keep it as it is</div>
+            <div class="go quiet">Change what it says</div></div>
+        </div>
+        <p class="cap"><b>The answer, read back &mdash; NEW IN v20</b>Without this screen the state is
+          absorbing <b>and</b> write-only: a garbled or mistyped answer would be permanent, invisible to
+          him, and sent to the prescriber every time. Correcting it replaces the text and re-stamps the
+          date, because the note is a self-report and its date is the date the standing wording was
+          given.</p>
+        <div class="refs"><span class="ref">§6.7 rule 4</span><span class="ref">§7.7</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Logged</span><span class="step">8:15 AM</span></div>
+          <div class="pane result">
+            <div class="n">11</div>
+            <div class="u">units, injected</div>
+            <div class="flag mint" style="margin-top:14px"><span><b>Injected 8:15 AM &rarr; eat around
+              8:45 AM.</b> The clock started when you tapped, not when the dose was worked out.</span></div>
+            <div class="glass" style="font-size:13px;line-height:1.6">
+              This row is now fixed. If you did not inject it, <b>delete it</b> &mdash; the app cannot
+              tell a correction from a tidy-up, so it only offers the one that is honest.</div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go quiet">Delete this entry</div>
+            <div class="go quiet">Done</div></div>
+        </div>
+        <p class="cap"><b>After the tap &mdash; NEW IN v20</b>&sect;8.1's whole point, and it had no screen
+          at all: before the tap the app shows the <b>rule</b>, after it an <b>absolute time</b> anchored
+          to the injection. Version 1 computed the eat-time from the calculation clock, so calculating at
+          7:10 and injecting at 7:35 gave a five-minute lag instead of thirty, with nothing on screen to
+          show the number had gone stale.</p>
+        <div class="refs"><span class="ref">§8.1</span><span class="ref">§7.2</span><span class="ref">§10.4</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Keep a copy</span><span class="step">What goes in it</span></div>
+          <div class="pane" style="padding-top:16px">
+            <div class="list" style="margin-top:0">
+              <div class="li"><span class="k">Injections and readings</span><span class="v">67</span></div>
+              <div class="li"><span class="k">Covering</span><span class="v" style="font-size:13px">18 Aug – 6 Sep</span></div>
+              <div class="li"><span class="k">Your settings, and when they changed</span><span class="v" style="color:#5EE6C5">&#10003;</span></div>
+            </div>
+            <div class="flag mint slim" style="margin-top:14px"><span>Each dose is saved with the
+              ratios that produced it — so a row from August still reads as August's settings.</span></div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go">Keep a copy</div>
+            <div class="go quiet">Last made a copy you can restore from: 2 days ago</div></div>
+        </div>
+        <p class="cap"><b>The export</b>The thing the whole record exists for. Settings travel with it, versioned.</p>
+        <div class="refs"><span class="ref">§7.7</span><span class="ref">§12</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Carbohydrate</span><span class="step">Check</span></div>
+          <div class="pane" style="padding-top:16px">
+            <div class="entry" style="padding-top:0"><div class="n">8</div><div class="u">GRAMS OF CARBOHYDRATE</div></div>
+            <div class="flag" style="margin-top:16px"><span><b>8 g is smaller than your usual meals</b>
+              Yours are around 50 g. Check that's right — a snack is fine, a mistyped meal is not.</span></div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go">Work out the dose</div></div>
+        </div>
+        <p class="cap"><b>Unusually small entry</b>Reads correctly whether it is a real snack or a typo — the copy cannot accuse, because nothing at entry time distinguishes them.</p>
+        <div class="refs"><span class="ref">§6.5</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">How this works</span><span class="step">Any time</span></div>
+          <div class="pane" style="padding-top:14px">
+            <div class="head" style="margin-top:0">What this app cannot see</div>
+            <div class="list">
+              <div class="li"><span class="k"><b>Exercise and alcohol</b><br>The two most common causes of a low it cannot know about</span></div>
+              <div class="li"><span class="k"><b>Illness and stress</b><br>Both raise what you need</span></div>
+              <div class="li"><span class="k"><b>Fat and protein</b><br>Slow a meal down; not counted here</span></div>
+              <div class="li"><span class="k"><b>Insulin still working</b><br>Only roughly, by the clock</span></div>
+            </div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go quiet">Read the full setup notes</div></div>
+        </div>
+        <p class="cap"><b>What it doesn't know</b>Reachable at any time, not buried in first-run. Disclosing the gap is the alternative to modelling it.</p>
+        <div class="refs"><span class="ref">§10.6</span><span class="ref">§9</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════ FINAL ══════════ -->
+  <section class="act-sec">
+    <div class="ah"><h2>Recovery, disclosure and the override</h2><span class="chip">5 screens · completing 44</span></div>
+    <p class="anote">
+      The last five the plan requires: restoring a backup, the screen you photograph for a doctor,
+      the two-insulins explanation, the stacking override's disclosure, and what a second phone or
+      tab does to a dose already on screen.
+    </p>
+    <div class="row">
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Restore a backup</span><span class="step">Import</span></div>
+          <div class="pane" style="padding-top:16px">
+            <div class="list" style="margin-top:0">
+              <div class="li"><span class="k">Injections and readings in this file</span><span class="v">67</span></div>
+              <div class="li"><span class="k">Already on this phone</span><span class="v">0</span></div>
+              <div class="li"><span class="k">Settings in the file</span><span class="v" style="font-size:13px">proposed</span></div>
+            </div>
+            <div class="flag" style="margin-top:14px"><span><b>Settings are not applied automatically</b>
+              The file suggests 1 unit per 10 g and a target of 150. You will be asked to accept each
+              one, exactly as if you had typed it.</span></div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go">Bring in the records</div>
+            <div class="go quiet">Cancel</div></div>
+        </div>
+        <p class="cap"><b>Import</b>Records merge. Settings are only ever proposed — an import can never silently rewrite a prescription.</p>
+        <div class="refs"><span class="ref">§7.7</span><span class="ref">§11.3</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Your prescription</span><span class="step">As text</span></div>
+          <div class="pane" style="padding-top:16px">
+            <div class="glass" style="margin-top:0;font-size:12.5px;line-height:1.75">
+              <div>MealUnits &mdash; settings on 6 Sep 2026</div>
+              <div style="color:rgba(234,240,250,.5)">&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</div>
+              <div>Target &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;150 mg/dL</div>
+              <div>1 unit &nbsp;&nbsp;&nbsp;&nbsp;lowers by 30 mg/dL</div>
+              <div>1 unit &nbsp;&nbsp;&nbsp;&nbsp;covers 10 g carbohydrate</div>
+              <div>Rounding &nbsp;whole units</div>
+              <div>Confirm &nbsp;&nbsp;at 20 units and above</div>
+              <div>Lantus &nbsp;&nbsp;&nbsp;36 units, early morning</div>
+            </div>
+            <div class="hint" style="padding:14px 0 0">Screenshot this and send it to your doctor.</div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go quiet">Back to settings</div></div>
+        </div>
+        <p class="cap"><b>Settings as plain text</b>Made to be photographed. Everything a clinician needs on one screen, including the long-acting dose the app never calculates.</p>
+        <div class="refs"><span class="ref">§10.6</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">How this works</span><span class="step">Your two insulins</span></div>
+          <div class="pane" style="padding-top:16px">
+            <div class="glass" style="margin-top:0;font-size:13px;line-height:1.6;color:rgba(234,240,250,.8)">
+              There are two kinds of insulin. Your <b style="color:#5EE6C5">Lantus</b> is the slow
+              background one you take once a day &mdash; this app does not calculate it and never
+              changes it.<br><br>
+              Your <b style="color:#5EE6C5">Humulin R</b> is the fast one you take with meals, and
+              that is the only number this app works out.
+            </div>
+            <div class="hint" style="padding:14px 0 0">Neither &ldquo;basal&rdquo; nor
+              &ldquo;bolus&rdquo; appears anywhere in this app.</div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go quiet">Back</div></div>
+        </div>
+        <p class="cap"><b>The two insulins</b>Explained in ordinary words. The clinical terms are deliberately absent from the whole interface.</p>
+        <div class="refs"><span class="ref">§10.6</span><span class="ref">§10.2</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Add the correction?</span><span class="step">Override</span></div>
+          <div class="pane" style="padding-top:14px">
+            <div class="flag"><span><b>You injected 6 units 2 hours ago</b>
+              That insulin may still lower you by up to <b>180 mg/dL</b> on its own &mdash; a ceiling,
+              and likely less this far in.
+              Adding the correction would take this dose from <b>5</b> to <b>11 units</b>.</span></div>
+            <div class="hint" style="padding:14px 0 0">If you add it, this dose is recorded as an
+              override so you and your doctor can see it later.</div>
+          </div>
+          <div class="sheet" style="margin-top:auto"><div class="go alarm">Add the correction</div>
+            <div class="go quiet">Keep the meal dose only</div></div>
+        </div>
+        <p class="cap"><b>The stacking override</b>Discloses exactly what it would add and what is still working. Recorded as an override, and excluded from the app's own baseline afterwards.</p>
+        <div class="refs"><span class="ref">§7.4.1</span><span class="ref">§6.5</span></div>
+      </div>
+
+      <div class="cell">
+        <div class="ph">
+          <div class="top"><span class="step" style="flex:1">Something changed</span><span class="step">Recalculating</span></div>
+          <div class="pane mid" style="text-align:center;gap:12px">
+            <div class="u" style="font-size:15px">Your settings changed<br>in another window</div>
+            <div class="entry"><div class="n ghosted">&mdash;</div></div>
+            <div class="hint" style="padding:0 10px">This dose was worked out with the old carb ratio,
+              so it no longer applies. Working it out again.</div>
+          </div>
+          <div class="sheet"><div class="go">Show the new dose</div></div>
+        </div>
+        <p class="cap"><b>Invalidated elsewhere</b>A dose never outlives the settings that produced it. This is two tabs of the app on the SAME phone — storage is per-browser, so another device cannot reach it. An earlier draft said &ldquo;another device&rdquo;, which is false.</p>
+        <div class="refs"><span class="ref">§4.3</span><span class="ref">§11.3</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    Forty-four screens, one worked example throughout — a 50 g meal at a reading of 330 gives
+    11 units, from PLAN.md v25. Every screen obeys the same rules: no trailing zeros, no bare decimal points,
+    band C shows no dose at all, and the ketone wording never changes between its full and compact
+    forms. Not reviewed, not approved, and no code exists yet.
+  </footer>
+
+</div>

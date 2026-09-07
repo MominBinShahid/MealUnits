@@ -1,0 +1,412 @@
+<title>Three Interfaces for MealUnits</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+
+<style>
+  /* ═══════════ PAGE CHROME (theme-aware) ═══════════ */
+  :root{
+    --bg:#F6F8F8; --ink:#14191B; --ink-2:#4C5759; --ink-3:#78827F;
+    --line:#DEE4E3; --line-2:#EBEFEE; --mark:#0B5F5C; --mark-soft:#E2EEED;
+    --warn:#8E5400; --warn-soft:#F9EFDF;
+    --shadow:0 1px 2px rgba(20,25,27,.05),0 18px 40px -18px rgba(20,25,27,.22);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0C1011; --ink:#E8EDEC; --ink-2:#A5B0AE; --ink-3:#7B8584;
+    --line:#2A3233; --line-2:#1D2425; --mark:#4FB5AF; --mark-soft:#153230;
+    --warn:#D6A24E; --warn-soft:#2A2013;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 20px 44px -20px rgba(0,0,0,.8);
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0C1011; --ink:#E8EDEC; --ink-2:#A5B0AE; --ink-3:#7B8584;
+    --line:#2A3233; --line-2:#1D2425; --mark:#4FB5AF; --mark-soft:#153230;
+    --warn:#D6A24E; --warn-soft:#2A2013;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 20px 44px -20px rgba(0,0,0,.8);
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,sans-serif;
+    font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1220px;margin:0 auto;padding:56px 24px 96px}
+
+  .eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--mark);margin:0 0 14px}
+  h1{font-size:clamp(30px,4.4vw,46px);line-height:1.08;letter-spacing:-.022em;font-weight:600;
+    margin:0 0 18px;text-wrap:balance;max-width:17ch}
+  .lede{font-size:17px;color:var(--ink-2);max-width:66ch;margin:0}
+  .lede strong{color:var(--ink);font-weight:600}
+  .masthead{border-bottom:1px solid var(--line);padding-bottom:34px}
+
+  .design{margin-top:78px}
+  .dh{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .dh h2{margin:0;font-size:26px;font-weight:600;letter-spacing:-.018em}
+  .chip{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--ink-3);border:1px solid var(--line);
+    border-radius:3px;padding:2px 7px}
+  .say{margin:14px 0 8px;font-size:16px;color:var(--ink-2);max-width:68ch}
+  .say strong{color:var(--ink);font-weight:600}
+  .costs{margin:0 0 30px;padding:11px 16px;border-left:3px solid var(--warn);
+    background:var(--warn-soft);font-size:14px;color:var(--ink-2);max-width:68ch}
+  .costs b{color:var(--ink)}
+  .row{display:grid;gap:26px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .cap{font-size:13px;color:var(--ink-3);margin:12px 2px 0;font-family:"IBM Plex Mono",monospace}
+
+  /* ═══════════ SHARED FRAME ═══════════ */
+  .ph{min-height:470px;display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:var(--shadow);position:relative}
+
+  /* ─────────── 1 · CARD ─────────── */
+  .d1 .ph{background:#fff;border:1px solid #D8E0DF;border-radius:24px;padding:20px 18px 22px;gap:15px;
+    font-family:"IBM Plex Sans",sans-serif;color:#131A1B}
+  .d1 .bar{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;
+    font-size:10.5px;color:#727F7E;padding-bottom:5px;border-bottom:1px solid #EAEFEE}
+  .d1 .lab{font-size:13.5px;color:#4A5758;margin-bottom:5px}
+  .d1 .fld{border:1px solid #D8E0DF;border-radius:9px;padding:10px 13px;display:flex;
+    justify-content:space-between;align-items:baseline}
+  .d1 .fld i{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:500}
+  .d1 .fld u{text-decoration:none;font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:#727F7E}
+  .d1 .num{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:72px;font-weight:600;
+    line-height:1;letter-spacing:-.04em;font-variant-numeric:tabular-nums;padding:6px 0 0}
+  .d1 .sub{text-align:center;font-size:14px;color:#4A5758;margin-top:6px}
+  .d1 .calc{border-top:1px solid #EAEFEE;padding-top:12px;display:grid;gap:6px}
+  .d1 .cr{display:flex;justify-content:space-between;font-size:13px;color:#4A5758}
+  .d1 .cr b{font-family:"IBM Plex Mono",monospace;color:#131A1B}
+  .d1 .cr.t{border-top:1px solid #EAEFEE;padding-top:6px;color:#131A1B;font-weight:600}
+  .d1 .box{border-radius:9px;padding:12px 14px;border-left:3px solid;font-size:13px}
+  .d1 .box h4{margin:0 0 4px;font-size:13.5px}
+  .d1 .box p{margin:0;line-height:1.5}
+  .d1 .box.w{border-color:#8E5400;background:#F9EFDF}.d1 .box.w h4{color:#8E5400}
+  .d1 .box.s{border-color:#AB2A21;background:#FAE9E7}.d1 .box.s h4{color:#AB2A21}
+  .d1 .btn{margin-top:auto;text-align:center;border-radius:9px;padding:12px;font-weight:600;
+    font-size:14.5px;background:#0B5F5C;color:#fff}
+  .d1 .btn.g{background:transparent;border:1px solid #D8E0DF;color:#131A1B;margin-top:0}
+  .d1 .stop{text-align:center;font-family:"IBM Plex Mono",monospace;font-size:52px;font-weight:600;
+    line-height:1;color:#AB2A21;padding:4px 0}
+
+  /* ─────────── 2 · BAND — state is the surface ─────────── */
+  .d2 .ph{border-radius:30px;font-family:"Manrope",sans-serif;color:#0F1720;
+    border:0;padding:0;background:#fff}
+  .d2 .hero{padding:22px 22px 26px;background:linear-gradient(165deg,#FFF3DC 0%,#FFE3BE 55%,#FFD79F 100%);
+    display:flex;flex-direction:column;gap:3px}
+  .d2 .hero.low{background:linear-gradient(165deg,#FFE3E0 0%,#FFC9C3 55%,#FFB3AB 100%)}
+  .d2 .hero.ok{background:linear-gradient(165deg,#E3F6EE 0%,#C6EBDC 55%,#AEE2CD 100%)}
+  .d2 .htop{display:flex;justify-content:space-between;font-size:11px;font-weight:600;
+    letter-spacing:.09em;text-transform:uppercase;opacity:.62;margin-bottom:10px}
+  .d2 .hval{font-size:56px;font-weight:800;line-height:1;letter-spacing:-.035em;
+    font-variant-numeric:tabular-nums}
+  .d2 .hval small{font-size:15px;font-weight:600;letter-spacing:0;opacity:.55;margin-left:7px}
+  .d2 .hstate{font-size:14px;font-weight:600;margin-top:5px}
+  .d2 .scale{margin-top:16px;height:8px;border-radius:99px;position:relative;
+    background:linear-gradient(90deg,#E8544A 0%,#E8544A 14%,#2FA37A 26%,#2FA37A 42%,#E8A33C 62%,#D9722B 100%)}
+  .d2 .pin{position:absolute;top:-5px;width:18px;height:18px;border-radius:50%;background:#fff;
+    border:3px solid #0F1720;transform:translateX(-50%)}
+  .d2 .ticks{display:flex;justify-content:space-between;font-size:10px;font-weight:600;
+    opacity:.5;margin-top:7px;font-variant-numeric:tabular-nums}
+  .d2 .body{padding:20px 22px 24px;display:flex;flex-direction:column;gap:14px;flex:1;background:#fff}
+  .d2 .tile{background:#F4F6F8;border-radius:18px;padding:15px 17px}
+  .d2 .tile .k{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    opacity:.5;margin-bottom:7px}
+  .d2 .tile .v{font-size:26px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .d2 .tile .v small{font-size:13px;font-weight:600;opacity:.5;margin-left:5px}
+  .d2 .dose{background:linear-gradient(150deg,#0F3D38 0%,#12514A 100%);color:#fff;
+    border-radius:22px;padding:20px 22px;display:flex;align-items:center;gap:18px}
+  .d2 .dose .n{font-size:60px;font-weight:800;line-height:1;letter-spacing:-.045em;
+    font-variant-numeric:tabular-nums}
+  .d2 .dose .t{font-size:13.5px;font-weight:600;opacity:.82;line-height:1.35}
+  .d2 .pillrow{display:flex;gap:8px;flex-wrap:wrap}
+  .d2 .pill{font-size:12px;font-weight:700;padding:7px 12px;border-radius:99px;
+    background:#FFF1D8;color:#7A4E00}
+  .d2 .pill.red{background:#FFE3E0;color:#98261C}
+  .d2 .sheet{margin-top:auto;padding:16px 22px 22px;background:#fff;
+    border-top:1px solid #ECEFF1;display:flex;flex-direction:column;gap:9px}
+  .d2 .go{text-align:center;border-radius:99px;padding:15px;font-weight:700;font-size:15px;
+    background:#0F3D38;color:#fff}
+  .d2 .go.ghost{background:#F1F4F5;color:#0F1720}
+  .d2 .go.alarm{background:#C42B1F;color:#fff}
+  .d2 .full{flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;
+    padding:30px 24px;text-align:center;
+    background:linear-gradient(170deg,#FFE3E0 0%,#FFC6BF 60%,#F7ABA2 100%)}
+  .d2 .full .n{font-size:92px;font-weight:800;line-height:1;letter-spacing:-.05em;color:#8E1F16;
+    font-variant-numeric:tabular-nums}
+  .d2 .full h3{margin:0;font-size:21px;font-weight:800;letter-spacing:-.02em;color:#6E1710}
+  .d2 .full p{margin:0;font-size:14.5px;font-weight:500;color:#7A2A22;line-height:1.5}
+
+  /* ─────────── 3 · STEP — one thing per screen, dark ─────────── */
+  .d3 .ph{border-radius:28px;border:0;padding:0;font-family:"Space Grotesk",sans-serif;
+    background:radial-gradient(120% 90% at 50% 0%,#1B2740 0%,#0C1220 62%,#080C16 100%);color:#EAF0FA}
+  .d3 .top{padding:20px 22px 0;display:flex;align-items:center;gap:12px}
+  .d3 .dots{display:flex;gap:6px;flex:1}
+  .d3 .dot{height:3px;flex:1;border-radius:99px;background:rgba(234,240,250,.16)}
+  .d3 .dot.on{background:#5EE6C5}
+  .d3 .step{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:rgba(234,240,250,.45)}
+  .d3 .ask{padding:26px 22px 0;font-size:23px;font-weight:600;letter-spacing:-.02em;line-height:1.25}
+  .d3 .entry{padding:8px 22px 0;text-align:center}
+  .d3 .entry .n{font-size:78px;font-weight:700;line-height:1.1;letter-spacing:-.045em;
+    font-variant-numeric:tabular-nums;
+    background:linear-gradient(180deg,#FFFFFF 20%,#9FE9D8 120%);-webkit-background-clip:text;
+    background-clip:text;color:transparent}
+  .d3 .entry .u{font-size:13px;font-weight:600;color:rgba(234,240,250,.45);letter-spacing:.05em}
+  .d3 .pad{margin-top:auto;padding:14px 16px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .d3 .key{background:rgba(234,240,250,.07);border:1px solid rgba(234,240,250,.09);
+    border-radius:14px;padding:13px 0;text-align:center;font-size:20px;font-weight:600}
+  .d3 .key.dim{color:rgba(234,240,250,.5);font-weight:500}
+  .d3 .key.act{background:#5EE6C5;border-color:#5EE6C5;color:#062019;grid-column:span 3;
+    font-size:15px;padding:15px 0;border-radius:99px;letter-spacing:.01em}
+  .d3 .result{flex:1;display:flex;flex-direction:column;justify-content:center;padding:28px 24px;gap:6px}
+  .d3 .result .n{font-size:96px;font-weight:700;line-height:.95;letter-spacing:-.055em;
+    font-variant-numeric:tabular-nums;
+    background:linear-gradient(175deg,#FFFFFF 25%,#5EE6C5 115%);-webkit-background-clip:text;
+    background-clip:text;color:transparent}
+  .d3 .result .u{font-size:15px;font-weight:600;color:rgba(234,240,250,.6)}
+  .d3 .glass{margin-top:20px;background:rgba(234,240,250,.06);
+    border:1px solid rgba(234,240,250,.1);border-radius:18px;padding:14px 16px;display:grid;gap:8px}
+  .d3 .gr{display:flex;justify-content:space-between;font-size:13px;color:rgba(234,240,250,.62)}
+  .d3 .gr b{color:#EAF0FA;font-variant-numeric:tabular-nums}
+  .d3 .flag{display:flex;gap:10px;align-items:flex-start;margin-top:14px;
+    background:rgba(255,196,84,.1);border:1px solid rgba(255,196,84,.22);
+    border-radius:14px;padding:12px 14px;font-size:12.5px;line-height:1.45;color:#FFD79A}
+  .d3 .flag b{color:#FFC454;display:block;margin-bottom:2px}
+  .d3 .halt{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;
+    padding:28px 24px;gap:14px;background:radial-gradient(115% 80% at 50% 0%,#4A1210 0%,#2A0A09 60%,#160504 100%)}
+  .d3 .halt .n{font-size:96px;font-weight:700;line-height:1;letter-spacing:-.05em;color:#FF7A6B;
+    font-variant-numeric:tabular-nums}
+  .d3 .halt h3{margin:0;font-size:21px;font-weight:700;letter-spacing:-.02em;color:#FFD9D3}
+  .d3 .halt p{margin:0;font-size:14px;color:#F0B3AB;line-height:1.5}
+  .d3 .halt .go{margin-top:8px;background:#FF7A6B;color:#2A0A09;border-radius:99px;padding:14px;
+    font-weight:700;font-size:14.5px}
+
+  /* comparison */
+  .compare{margin-top:88px;overflow-x:auto}
+  .compare table{width:100%;border-collapse:collapse;min-width:680px;font-size:14.5px}
+  .compare th{text-align:left;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);font-weight:500;
+    padding:0 18px 10px 0;border-bottom:1px solid var(--line)}
+  .compare td{padding:14px 18px 14px 0;border-bottom:1px solid var(--line-2);color:var(--ink-2);vertical-align:top}
+  .compare td:first-child{color:var(--ink);font-weight:500;white-space:nowrap}
+  footer{margin-top:70px;padding-top:24px;border-top:1px solid var(--line);
+    font-size:13.5px;color:var(--ink-3);max-width:72ch}
+  @media (max-width:640px){.wrap{padding:36px 18px 64px}.design{margin-top:56px}}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Three interfaces · not three palettes</p>
+    <h1>The same job, built three different ways</h1>
+    <p class="lede">
+      Same two inputs, same arithmetic, same refusal at 65. What changes is
+      <strong>the structure of the interface itself</strong> — what you see first, how you enter a
+      number, whether state lives in a card or in the whole screen.
+    </p>
+  </header>
+
+  <!-- ══════════════ 1 ══════════════ -->
+  <section class="design d1">
+    <div class="dh"><h2>1 · Card</h2><span class="chip">the one you have</span></div>
+    <p class="say">
+      <strong>Everything on one screen, in ranked order.</strong> Inputs, dose, working, warnings —
+      a single scroll, nothing hidden. Warnings are cards with a severity stripe; the dose is the
+      largest thing but shares the page.
+    </p>
+    <p class="costs"><b>Costs:</b> it looks like software from a clinic. And on a busy screen the
+      dose competes with everything around it.</p>
+    <div class="row">
+      <div>
+        <div class="ph">
+          <div class="bar"><span>MealUnits</span><span>8:14 AM</span></div>
+          <div><div class="lab">Blood sugar now</div><div class="fld"><i>330</i><u>mg/dL</u></div></div>
+          <div><div class="lab">Carbohydrate in this meal</div><div class="fld"><i>50</i><u>grams of carbohydrate</u></div></div>
+          <div class="btn">Work out the dose</div>
+        </div>
+        <p class="cap">Input · a form</p>
+      </div>
+      <div>
+        <div class="ph">
+          <div class="bar"><span>Result</span><span>8:15 AM</span></div>
+          <div class="num">11</div><div class="sub">units of Humulin R</div>
+          <div class="calc">
+            <div class="cr"><span>330 down to 150</span><b>6</b></div>
+            <div class="cr"><span>50 g of carbohydrate</span><b>5</b></div>
+            <div class="cr t"><span>Total</span><b>11 units</b></div>
+          </div>
+          <div class="box w"><h4>Above 250 — check ketones</h4><p>If ketones are present or you feel unwell, contact your clinician.</p></div>
+          <div class="btn">I injected this</div>
+        </div>
+        <p class="cap">Result · dose plus its working</p>
+      </div>
+      <div>
+        <div class="ph">
+          <div class="bar"><span>MealUnits</span><span>7:50 AM</span></div>
+          <div class="sub" style="margin:0">Your reading</div>
+          <div class="stop">65</div>
+          <div class="box s"><h4>Treat this first. Do not inject.</h4>
+            <p>15 grams of fast-acting carbohydrate now. Re-check in 15 minutes. Do not inject until you are above 70 mg/dL.</p></div>
+          <div class="btn g" style="margin-top:auto">Re-check and work it out again</div>
+          <div class="btn g">Record this reading</div>
+        </div>
+        <p class="cap">Refusal · a card on a normal screen</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ 2 ══════════════ -->
+  <section class="design d2">
+    <div class="dh"><h2>2 · Band</h2><span class="chip">state is the whole surface</span></div>
+    <p class="say">
+      <strong>You see where the reading sits before you read the number.</strong> The top of every
+      screen is tinted by the band — green at target, amber high, red low — and a gradient scale
+      shows the reading's position against 70, 150 and 250. The dose lives on its own dark panel so
+      it never competes. Actions sit in a thumb-zone sheet at the bottom. The refusal takes over the
+      entire screen rather than appearing as a card on it.
+    </p>
+    <p class="costs"><b>Costs:</b> colour is doing real work, so it must survive colour-blindness
+      and sunlight — the number and the words have to carry the same meaning alone. And the gradient
+      is decoration the moment it stops being accurate.</p>
+    <div class="row">
+      <div>
+        <div class="ph">
+          <div class="hero">
+            <div class="htop"><span>Blood sugar</span><span>8:14 AM</span></div>
+            <div class="hval">330<small>mg/dL</small></div>
+            <div class="hstate">High — 180 above your target</div>
+            <div class="scale"><span class="pin" style="left:78%"></span></div>
+            <div class="ticks"><span>54</span><span>70</span><span>150</span><span>250</span><span>600</span></div>
+          </div>
+          <div class="body">
+            <div class="tile"><div class="k">Carbohydrate in this meal</div><div class="v">50<small>grams of carbohydrate</small></div></div>
+            <div class="pillrow"><span class="pill">About a 250 g plate of biryani</span></div>
+          </div>
+          <div class="sheet"><div class="go">Work out the dose</div></div>
+        </div>
+        <p class="cap">Input · reading placed on a scale</p>
+      </div>
+      <div>
+        <div class="ph">
+          <div class="hero">
+            <div class="htop"><span>Result</span><span>8:15 AM</span></div>
+            <div class="hval">330<small>mg/dL</small></div>
+            <div class="hstate">High — check ketones</div>
+            <div class="scale"><span class="pin" style="left:78%"></span></div>
+            <div class="ticks"><span>54</span><span>70</span><span>150</span><span>250</span><span>600</span></div>
+          </div>
+          <div class="body">
+            <div class="dose"><span class="n">11</span><span class="t">units<br>of Humulin R</span></div>
+            <div class="tile"><div class="k">How it adds up</div>
+              <div class="v" style="font-size:15px;font-weight:600">6 to correct + 5 for the meal</div></div>
+            <div class="pillrow"><span class="pill">Inject 20&ndash;30 minutes before eating</span><span class="pill red">Above 250 — check ketones. If ketones are present or you feel unwell, contact your clinician.</span></div>
+          </div>
+          <div class="sheet"><div class="go">I injected this</div></div>
+        </div>
+        <p class="cap">Result · dose isolated on its own panel</p>
+      </div>
+      <div>
+        <div class="ph">
+          <div class="full">
+            <div class="n">65</div>
+            <h3>Treat this first.<br>Do not inject.</h3>
+            <p>15 grams of fast-acting carbohydrate now — juice, glucose tablets, sugar.
+               Re-check in 15 minutes. Do not inject until you are above 70 mg/dL.</p>
+          </div>
+          <div class="sheet"><div class="go alarm">Re-check my blood sugar</div>
+            <div class="go ghost">Record this reading</div></div>
+        </div>
+        <p class="cap">Refusal · takes the whole screen</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ 3 ══════════════ -->
+  <section class="design d3">
+    <div class="dh"><h2>3 · Step</h2><span class="chip">one thing per screen</span></div>
+    <p class="say">
+      <strong>No form at all.</strong> One question per screen, its own keypad, progress along the
+      top — so nothing else is on screen while a number is being typed. Dark ground because this
+      gets used before dawn and after dark. The dose arrives as its own screen, at the largest size
+      of the three, with the working folded into a panel beneath it.
+    </p>
+    <p class="costs"><b>Costs:</b> more taps for something done three times a day, and a
+      custom keypad means rebuilding what the phone already does well. The style is also the most
+      fashionable of the three, which is the one that ages.</p>
+    <div class="row">
+      <div>
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot"></i><i class="dot"></i></div>
+            <span class="step">1 of 3</span></div>
+          <div class="ask">What's your blood sugar right now?</div>
+          <div class="entry"><div class="n">330</div><div class="u">MG/DL</div></div>
+          <div class="pad">
+            <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+            <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+            <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+            <div class="key dim"></div><div class="key">0</div><div class="key dim">&#9003;</div>
+            <div class="key act">Next — what you're eating</div>
+          </div>
+        </div>
+        <p class="cap">Input · one question, own keypad</p>
+      </div>
+      <div>
+        <div class="ph">
+          <div class="top"><div class="dots"><i class="dot on"></i><i class="dot on"></i><i class="dot on"></i></div>
+            <span class="step">Done</span></div>
+          <div class="result">
+            <div class="n">11</div>
+            <div class="u">units of Humulin R</div>
+            <div class="glass">
+              <div class="gr"><span>330 down to 150</span><b>6</b></div>
+              <div class="gr"><span>50 g of carbohydrate</span><b>5</b></div>
+              <div class="gr" style="border-top:1px solid rgba(234,240,250,.12);padding-top:8px">
+                <span style="color:#EAF0FA;font-weight:600">Total</span><b>11 units</b></div>
+            </div>
+            <div class="flag"><span><b>Above 250 — check ketones</b>
+              If ketones are present or you feel unwell, contact your clinician.</span></div>
+          </div>
+          <div class="pad" style="grid-template-columns:1fr"><div class="key act">I injected this</div></div>
+        </div>
+        <p class="cap">Result · its own screen, largest numeral</p>
+      </div>
+      <div>
+        <div class="ph">
+          <div class="halt">
+            <div class="n">65</div>
+            <h3>Treat this first.<br>Do not inject.</h3>
+            <p>15 grams of fast-acting carbohydrate now. Re-check in 15 minutes.
+               Do not inject until you are above 70 mg/dL.</p>
+            <div class="go">Re-check my blood sugar</div>
+            <div class="go ghost">Record this reading</div>
+          </div>
+        </div>
+        <p class="cap">Refusal · full takeover, no dose. <b>&sect;7.8's record affordance stays</b> &mdash;
+          a blocked low produces no injection, so without it the very event that motivated the
+          project leaves no row at all.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- comparison -->
+  <section class="compare">
+    <h2 style="font-size:24px;font-weight:600;letter-spacing:-.015em;margin:0 0 8px">Where they actually differ</h2>
+    <p style="color:var(--ink-2);max-width:68ch;margin:0 0 26px">
+      Structure, not styling. Each row is a decision the interface makes for you.
+    </p>
+    <table>
+      <thead><tr><th></th><th>1 · Card</th><th>2 · Band</th><th>3 · Step</th></tr></thead>
+      <tbody>
+        <tr><td>Entering a number</td><td>Form field, system keyboard</td><td>Form field, system keyboard</td><td>One per screen, custom keypad</td></tr>
+        <tr><td>Where state lives</td><td>A warning card</td><td><b>The whole top of the screen</b> — tint plus a position on a scale</td><td>The screen you're on</td></tr>
+        <tr><td>The dose</td><td>Large, shares the page</td><td>Isolated on a dark panel</td><td><b>Its own screen</b>, 96px</td></tr>
+        <tr><td>The refusal at 65</td><td>A card on a normal screen</td><td>Full-bleed takeover</td><td>Full-bleed takeover, record-only</td></tr>
+        <tr><td>Taps to a dose</td><td>Fewest</td><td>Fewest</td><td>Most — three screens</td></tr>
+        <tr><td>Colour carrying meaning</td><td>Only in warnings</td><td><b>Load-bearing</b> — needs a colour-blind and sunlight check</td><td>Only in warnings</td></tr>
+        <tr><td>Ages well?</td><td>Yes — plain</td><td>Probably</td><td>Least — the most of-its-moment</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Same worked example throughout — a 50 g meal at a reading of 330 gives 11 units, from PLAN.md v25. All three obey the same rules: no trailing zeros, band C shows no dose at all, and the
+    ketone line never changes its words. None is reviewed or approved, and no code exists yet.
+  </footer>
+
+</div>

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- §10.9: never user-scalable=no. Reflow at 320 CSS pixels. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- §10.9: declared before any stylesheet so the launch does not flash white
+         on a phone in a dark room at 3am, which is when band D gets read. -->
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)" />
+    <meta name="description" content="An insulin dose calculator for one person. Not a medical device." />
+    <link rel="manifest" href="/MealUnits/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/MealUnits/icons/apple-touch-icon.png" />
+    <link rel="icon" href="/MealUnits/icons/icon-192.png" />
+    <title>MealUnits</title>
+  </head>
+  <body>
+    <div id="app" role="main"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

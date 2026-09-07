@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    // Deliberately NOT ["node"]. §13.1 requires the core to import nothing —
+    // no DOM, no storage, no clock — and the surest way to keep a Node global
+    // out of a browser bundle is for the app project not to know it exists.
+    "types": ["vite/client"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "useUnknownInCatchVariables": true,
+
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "composite": true,
+    "noEmit": true
+  },
+  "include": ["src", "test"],
+  // The worker compiles against the WebWorker lib, not the DOM. See
+  // tsconfig.sw.json.
+  "exclude": ["src/sw.ts"]
+}

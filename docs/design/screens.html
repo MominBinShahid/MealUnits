@@ -1,0 +1,631 @@
+<title>MealUnits Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600;700&display=swap">
+
+<style>
+  /* ── LIGHT (complete palette; neutrals biased teal-grey, not default grey) ── */
+  :root {
+    --bg:            #F6F8F7;
+    --surface:       #FFFFFF;
+    --surface-2:     #ECF1F0;
+    --screen:        #FFFFFF;
+    --ink:           #131A1B;
+    --ink-2:         #475456;
+    --ink-3:         #6F7C7C;
+    --line:          #D9E1E0;
+    --line-2:        #E9EEED;
+    --accent:        #0B5F5C;
+    --accent-soft:   #E0EEEC;
+    --critical:      #AB2A21;
+    --critical-soft: #FAE9E7;
+    --caution:       #8E5400;
+    --caution-soft:  #F9EFDF;
+    --shadow:        0 1px 2px rgba(19,26,27,.05), 0 12px 28px -12px rgba(19,26,27,.16);
+  }
+  /* ── DARK: only tokens are redefined; guarded so an explicit light choice wins ── */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:            #0D1213;
+      --surface:       #161D1E;
+      --surface-2:     #1E2627;
+      --screen:        #111819;
+      --ink:           #E7EDEC;
+      --ink-2:         #A2AEAD;
+      --ink-3:         #788584;
+      --line:          #293233;
+      --line-2:        #1F2829;
+      --accent:        #4FB5AF;
+      --accent-soft:   #14312F;
+      --critical:      #EE7C71;
+      --critical-soft: #2E1614;
+      --caution:       #D6A24E;
+      --caution-soft:  #2A2013;
+      --shadow:        0 1px 2px rgba(0,0,0,.5), 0 14px 30px -14px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#0D1213; --surface:#161D1E; --surface-2:#1E2627; --screen:#111819;
+    --ink:#E7EDEC; --ink-2:#A2AEAD; --ink-3:#788584; --line:#293233; --line-2:#1F2829;
+    --accent:#4FB5AF; --accent-soft:#14312F; --critical:#EE7C71; --critical-soft:#2E1614;
+    --caution:#D6A24E; --caution-soft:#2A2013;
+    --shadow: 0 1px 2px rgba(0,0,0,.5), 0 14px 30px -14px rgba(0,0,0,.7);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  /* ── page header ── */
+  .masthead { border-bottom: 1px solid var(--line); padding-bottom: 32px; margin-bottom: 12px; }
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(30px, 4.4vw, 46px); line-height: 1.08; letter-spacing: -.022em;
+    font-weight: 600; margin: 0 0 18px; text-wrap: balance; max-width: 18ch;
+  }
+  .standfirst { font-size: 17px; color: var(--ink-2); max-width: 62ch; margin: 0; }
+  .standfirst strong { color: var(--ink); font-weight: 600; }
+
+  .caveat {
+    margin: 28px 0 0; padding: 14px 18px;
+    border-left: 3px solid var(--caution); background: var(--caution-soft);
+    font-size: 14.5px; color: var(--ink-2); max-width: 68ch;
+  }
+  .caveat strong { color: var(--ink); }
+
+  /* ── section headers ── */
+  .band { margin-top: 72px; }
+  .band-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .band-head h2 {
+    font-size: 24px; letter-spacing: -.015em; font-weight: 600; margin: 0;
+  }
+  .band-tag {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-3); border: 1px solid var(--line); border-radius: 3px; padding: 2px 7px;
+  }
+  .band-note { color: var(--ink-2); font-size: 15px; max-width: 66ch; margin: 0 0 34px; }
+
+  /* ── screen grid ── */
+  .screens { display: grid; gap: 44px 40px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .plate { display: flex; flex-direction: column; gap: 18px; }
+
+  .phone {
+    background: var(--screen); border: 1px solid var(--line); border-radius: 26px;
+    box-shadow: var(--shadow); padding: 22px 20px 26px; min-height: 400px;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .status {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px; color: var(--ink-3); letter-spacing: .04em;
+    padding-bottom: 4px; border-bottom: 1px solid var(--line-2);
+  }
+
+  /* ── in-screen components ── */
+  .field-label { font-size: 14px; color: var(--ink-2); margin-bottom: 6px; }
+  .field {
+    border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
+    padding: 11px 14px; display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  }
+  .field-val {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 21px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink);
+  }
+  .field-val.empty { color: var(--ink-3); font-weight: 400; }
+  .field-unit { font-size: 13px; color: var(--ink-3); font-family: "IBM Plex Mono", ui-monospace, monospace; }
+
+  .cta {
+    margin-top: auto; text-align: center; border-radius: 10px; padding: 13px;
+    font-weight: 600; font-size: 15px; background: var(--accent); color: #fff;
+  }
+  .accept { display: flex; align-items: center; gap: 11px; margin: 16px 0 0;
+            padding: 13px 15px; border: 1px solid var(--rule); border-radius: 8px;
+            background: var(--surface-2, transparent); font-size: 14px; }
+  .accept i { width: 21px; height: 21px; border-radius: 5px; flex: none;
+              border: 1.5px solid var(--accent); color: var(--accent);
+              display: grid; place-items: center; font-style: normal; font-size: 13px; }
+  :root[data-theme="dark"] .cta, :root:not([data-theme="light"]) .cta { color: #06201F; }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .cta { color: #fff; } }
+  .cta.ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+
+  .dose { text-align: center; padding: 10px 0 4px; }
+  .dose-num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 76px; line-height: 1; font-weight: 600; letter-spacing: -.04em;
+    font-variant-numeric: tabular-nums; color: var(--ink); display: block;
+  }
+  .dose-unit { font-size: 15px; color: var(--ink-2); margin-top: 6px; display: block; }
+
+  .working { border-top: 1px solid var(--line-2); padding-top: 14px; display: grid; gap: 7px; }
+  .work-row {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    font-size: 13.5px; color: var(--ink-2);
+  }
+  .work-row b {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 500;
+    font-variant-numeric: tabular-nums; color: var(--ink);
+  }
+  .work-row.total { border-top: 1px solid var(--line-2); padding-top: 7px; color: var(--ink); font-weight: 600; }
+
+  .alert { border-radius: 10px; padding: 13px 14px 14px; border-left: 3px solid; font-size: 13.5px; }
+  .alert h4 {
+    margin: 0 0 5px; font-size: 13.5px; font-weight: 700; letter-spacing: -.005em;
+  }
+  .alert p { margin: 0; line-height: 1.5; }
+  .alert.crit { border-color: var(--critical); background: var(--critical-soft); color: var(--ink); }
+  .alert.crit h4 { color: var(--critical); }
+  .alert.warn { border-color: var(--caution); background: var(--caution-soft); color: var(--ink); }
+  .alert.warn h4 { color: var(--caution); }
+  .alert.compact { padding: 10px 14px; }
+  .alert.compact p { font-size: 13px; }
+
+  .reading-big {
+    text-align: center; font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 54px; font-weight: 600; line-height: 1; color: var(--critical);
+    font-variant-numeric: tabular-nums; padding: 6px 0 2px;
+  }
+  .reading-cap { text-align: center; font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
+
+  .setting-line { font-size: 14.5px; color: var(--ink-2); padding: 11px 0; border-bottom: 1px solid var(--line-2); }
+  .setting-line:last-child { border-bottom: 0; }
+  .setting-line b {
+    color: var(--ink); font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-weight: 500; font-variant-numeric: tabular-nums;
+  }
+
+  table.log { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.log th {
+    text-align: right; font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3);
+    font-weight: 500; padding: 0 0 8px; border-bottom: 1px solid var(--line);
+  }
+  table.log th:first-child, table.log td:first-child { text-align: left; }
+  table.log td {
+    text-align: right; padding: 9px 0; border-bottom: 1px solid var(--line-2);
+    font-variant-numeric: tabular-nums; color: var(--ink-2);
+  }
+  table.log td.calc { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--ink-3); }
+  table.log td.inj  { font-family: "IBM Plex Mono", ui-monospace, monospace; color: var(--ink); font-weight: 600; }
+
+  /* ── annotation beneath each screen ── */
+  .note h3 { font-size: 15.5px; font-weight: 600; margin: 0 0 7px; letter-spacing: -.01em; }
+  .note p { margin: 0 0 10px; font-size: 14px; color: var(--ink-2); }
+  .refs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ref {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10.5px;
+    color: var(--accent); background: var(--accent-soft); border-radius: 3px; padding: 3px 7px;
+    letter-spacing: .02em;
+  }
+
+  /* ── traps table ── */
+  .traps { margin-top: 26px; overflow-x: auto; }
+  .traps table { width: 100%; border-collapse: collapse; font-size: 14.5px; min-width: 620px; }
+  .traps th {
+    text-align: left; font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+    font-weight: 500; padding: 0 16px 10px 0; border-bottom: 1px solid var(--line);
+  }
+  .traps td { padding: 14px 16px 14px 0; border-bottom: 1px solid var(--line-2); vertical-align: top; color: var(--ink-2); }
+  .traps td:first-child { color: var(--ink); font-weight: 500; width: 30%; }
+  .traps code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13px;
+    background: var(--surface-2); padding: 1px 5px; border-radius: 3px; color: var(--ink);
+  }
+
+  footer {
+    margin-top: 80px; padding-top: 26px; border-top: 1px solid var(--line);
+    font-size: 13.5px; color: var(--ink-3); max-width: 70ch;
+  }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 36px 18px 64px; }
+    .screens { gap: 36px; }
+    .dose-num { font-size: 64px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Interface mockup · v25 of the plan</p>
+    <h1>What the app actually looks like</h1>
+    <p class="standfirst">
+      Eight screens, drawn from the decisions already made in <strong>PLAN.md</strong>. The point of
+      this page is not the styling — it is to show <strong>what is on screen at the moment a dose is
+      taken</strong>, and what is deliberately absent.
+    </p>
+    <p class="caveat">
+      <strong>Not code, and not approved.</strong> Every number here is a worked example from the plan —
+      a 50 g meal at a reading of 330 gives 11 units. Nothing on this page has been reviewed by
+      either reviewer, and §20.1's two go-aheads still gate any implementation.
+    </p>
+  </header>
+
+  <section class="band">
+    <div class="band-head">
+      <h2>The everyday path</h2>
+      <span class="band-tag">3 screens</span>
+    </div>
+    <p class="band-note">
+      Two numbers in, one number out. This is what he sees at nearly every meal.
+    </p>
+
+    <div class="screens">
+
+      <div class="plate">
+        <div class="phone">
+          <div class="status"><span>MealUnits</span><span>8:14 AM</span></div>
+          <div>
+            <div class="field-label">Blood sugar now</div>
+            <div class="field"><span class="field-val empty">—</span><span class="field-unit">mg/dL</span></div>
+          </div>
+          <div>
+            <div class="field-label">Carbohydrate in this meal</div>
+            <div class="field"><span class="field-val empty">—</span><span class="field-unit">grams of carbohydrate</span></div>
+          </div>
+          <div class="alert warn" style="margin-top:4px">
+            <p>Enter the carbohydrate in the food, not what the plate weighs. A 250 g plate of
+               biryani is about 50 g of carbohydrate.</p>
+          </div>
+          <div class="cta">Work out the dose</div>
+        </div>
+        <div class="note">
+          <h3>Empty, always</h3>
+          <p>
+            No pre-filled values, ever. The single most common failure in dose calculators is a
+            default the user never noticed changing.
+          </p>
+          <p>
+            The field is labelled <em>carbohydrate</em>, never “carbs”, and the reminder is there
+            because both numbers in that sentence are grams and only one belongs in the box.
+          </p>
+          <div class="refs"><span class="ref">§1.2 no defaults</span><span class="ref">§10.1 field naming</span><span class="ref">§1.4 plate weight</span></div>
+        </div>
+      </div>
+
+      <div class="plate">
+        <div class="phone">
+          <div class="status"><span>Result</span><span>8:15 AM</span></div>
+          <div class="dose">
+            <span class="dose-num">11</span>
+            <span class="dose-unit">units of Humulin R</span>
+          </div>
+          <div class="working">
+            <div class="work-row"><span>To bring 330 down to 150</span><b>6</b></div>
+            <div class="work-row"><span>To cover 50 g of carbohydrate</span><b>5</b></div>
+            <div class="work-row total"><span>Total</span><b>11 units</b></div>
+          </div>
+          <div class="alert warn">
+            <h4>Above 250 — check ketones</h4>
+            <p>If ketones are present or you feel unwell, contact your clinician.</p>
+          </div>
+          <div class="alert compact" style="border-color:var(--accent);background:var(--accent-soft)">
+            <p><b>Inject 20&ndash;30 minutes before eating.</b></p>
+          </div>
+          <div class="cta">I injected this</div>
+        </div>
+        <div class="note">
+          <h3>The dose, and its working</h3>
+          <p>
+            One integer, larger than anything else on screen. Beneath it, the two parts it came
+            from — so an error in either input is visible without going back.
+          </p>
+          <p>
+            No trailing zeros, no bare decimal points. “11”, never “11.0”; “0.5”, never “.5”.
+            Both are documented dosing-error sources.
+          </p>
+          <div class="refs"><span class="ref">§10.3 show the working</span><span class="ref">§10.4 ISMP numerals</span><span class="ref">§8.1 pre-meal timing</span></div>
+        </div>
+      </div>
+
+      <div class="plate">
+        <div class="phone">
+          <div class="status"><span>History</span><span>Last 7 days</span></div>
+          <table class="log">
+            <thead>
+              <tr><th>When</th><th>Sugar</th><th>Carbs</th><th>Calc.</th><th>Injected</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Today 8:15 AM</td><td>330</td><td>50 g</td><td class="calc">11</td><td class="inj">25</td></tr>
+              <tr><td>Yest. 8:40 PM</td><td>288</td><td>55 g</td><td class="calc">10</td><td class="inj">25</td></tr>
+              <tr><td>Yest. 1:05 PM</td><td>194</td><td>45 g</td><td class="calc">6</td><td class="inj">24</td></tr>
+              <tr><td>Yest. 7:50 AM</td><td>65</td><td>—</td><td class="calc">—</td><td class="inj">—</td></tr>
+              <tr><td>Wed 8:15 PM</td><td>310</td><td>60 g</td><td class="calc">11</td><td class="inj">25</td></tr>
+            </tbody>
+          </table>
+          <div class="alert compact" style="border-color:var(--accent);background:var(--accent-soft);margin-top:auto">
+            <p>Last made a copy you can restore from: 2 days ago. <b>Keep a copy</b></p>
+          </div>
+        </div>
+        <div class="note">
+          <h3>Two columns, never one</h3>
+          <p>
+            <em>Calculated</em> is what the app said. <em>Injected</em> is what actually went in.
+            Right now those disagree at every meal, and that disagreement is the single most useful
+            thing his doctor can be shown.
+          </p>
+          <p>
+            The 65 has a row with no dose at all — the app refused, and refusals are part of the
+            record too.
+          </p>
+          <p>
+            <b>Updated in v23.</b> This strip used to read <em>&ldquo;Backed up 2 days ago &middot;
+            Export&rdquo;</em>, and &sect;7.7.1 has since split export in two: <em>move to another phone</em>
+            (the file that restores) and <em>save the record</em> (the one anyone can read). Only the
+            first is a backup, so the counter names it &mdash; a strip counting either would promise a
+            recovery that did not exist. The step-flow file draws both screens.
+          </p>
+          <div class="refs"><span class="ref">§7.1 injectedUnits</span><span class="ref">§7.8 readings</span><span class="ref">§7.7 export</span><span class="ref">§7.7.1 two exports</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="band-head">
+      <h2>The screens that refuse</h2>
+      <span class="band-tag">3 screens</span>
+    </div>
+    <p class="band-note">
+      These matter more than the arithmetic. Two of them withhold a number the user came to get,
+      and each has to be unmistakable about why.
+    </p>
+
+    <div class="screens">
+
+      <div class="plate">
+        <div class="phone" style="border-color:var(--critical)">
+          <div class="status"><span>MealUnits</span><span>7:50 AM</span></div>
+          <div class="reading-cap">Your reading</div>
+          <div class="reading-big">65</div>
+          <div class="alert crit">
+            <h4>Treat this first. Do not inject.</h4>
+            <p>
+              Take 15 grams of fast-acting carbohydrate now — juice, glucose tablets, sugar.
+              Re-check in 15 minutes. Do not inject insulin until you are above 70 mg/dL.
+            </p>
+          </div>
+          <div class="cta ghost">Re-check and work it out again</div>
+          <div class="cta ghost" style="margin-top:0">Record this reading</div>
+        </div>
+        <div class="note">
+          <h3>No number at all</h3>
+          <p>
+            Below 70 the app shows no dose, no working, no partial figure it could be talked into.
+            Nothing else renders on this screen — no ketone card, no timing line, nothing to
+            scroll past.
+          </p>
+          <p>
+            This gate needs none of his ratios to be correct, which makes it the most valuable
+            thing in the app on day one.
+          </p>
+          <div class="refs"><span class="ref">§3 band C</span><span class="ref">§10.5 rank 1, terminal</span><span class="ref">§1.4 the 65s</span></div>
+        </div>
+      </div>
+
+      <div class="plate">
+        <div class="phone">
+          <div class="status"><span>Check this</span><span>1:22 PM</span></div>
+          <div class="alert warn">
+            <h4>Read these back before you see the dose</h4>
+            <p>This one is larger than usual, so check the two numbers you typed.</p>
+          </div>
+          <div>
+            <div class="field-label">Blood sugar now</div>
+            <div class="field"><span class="field-val">330</span><span class="field-unit">mg/dL</span></div>
+          </div>
+          <div>
+            <div class="field-label">Carbohydrate in this meal</div>
+            <div class="field"><span class="field-val">250</span><span class="field-unit">grams of carbohydrate</span></div>
+          </div>
+          <div class="cta">These are right — show the dose</div>
+          <div class="cta ghost" style="margin-top:0">Go back and change them</div>
+        </div>
+        <div class="note">
+          <h3>The inputs, not the dose</h3>
+          <p>
+            At 20 units and above the app withholds the number and shows what you typed instead.
+            Once a dose is on screen you stop looking at the inputs — so the pause has to come
+            first.
+          </p>
+          <p>
+            250 g of carbohydrate is a plate weight typed into a carbohydrate field. It would have
+            produced 31 units.
+          </p>
+          <div class="refs"><span class="ref">§6.2 threshold 20</span><span class="ref">§6.3 inputs not dose</span></div>
+        </div>
+      </div>
+
+      <div class="plate">
+        <div class="phone">
+          <div class="status"><span>Result</span><span>8:41 PM</span></div>
+          <div class="dose">
+            <span class="dose-num">10</span>
+            <span class="dose-unit">units of Humulin R</span>
+          </div>
+          <div class="working">
+            <div class="work-row"><span>To bring 288 down to 150</span><b>4.6</b></div>
+            <div class="work-row"><span>To cover 55 g of carbohydrate</span><b>5.5</b></div>
+            <div class="work-row total"><span>Total, rounded</span><b>10 units</b></div>
+          </div>
+          <div class="alert warn compact">
+            <p><b>Above 250 — check ketones.</b> If ketones are present or you feel unwell, contact
+               your clinician.</p>
+          </div>
+          <div class="cta">I injected this</div>
+        </div>
+        <div class="note">
+          <h3>The same warning, second time today</h3>
+          <p>
+            His readings sit above 250 most days, so the ketone card would appear at nearly every
+            meal — and a warning that always fires stops being read.
+          </p>
+          <p>
+            So the <em>card</em> shrinks to a line after the first time each day. The
+            <em>instruction</em> never changes and it never collapses behind “more”. Compare it with
+            the full version two screens up: same words, less furniture.
+          </p>
+          <div class="refs"><span class="ref">§3 band E</span><span class="ref">§10.5 rank 2, never collapsed</span><span class="ref">§18.11</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="band-head">
+      <h2>Setup</h2>
+      <span class="band-tag">2 screens</span>
+    </div>
+    <p class="band-note">
+      His prescription, entered once and shown back as sentences rather than as a form of
+      abbreviations.
+    </p>
+
+    <div class="screens">
+
+      <div class="plate">
+        <div class="phone">
+          <div class="status"><span>Your prescription</span><span>Settings</span></div>
+          <div>
+            <div class="setting-line">One unit lowers your blood sugar by about <b>30 mg/dL</b></div>
+            <div class="setting-line">One unit covers about <b>10 g</b> of carbohydrate</div>
+            <div class="setting-line">Aim for <b>150 mg/dL</b></div>
+            <div class="setting-line">Round to the nearest <b>whole unit</b></div>
+            <div class="setting-line">Check with me before any dose of <b>20 units</b> or more</div>
+          </div>
+          <div class="alert compact" style="border-color:var(--accent);background:var(--accent-soft)">
+            <p><b>Lantus, 36 units, early morning.</b> Set by your doctor — this app does not
+               calculate it and never changes it.</p>
+          </div>
+          <div class="cta ghost" style="margin-top:auto">Show as text to screenshot</div>
+        </div>
+        <div class="note">
+          <h3>Sentences, not abbreviations</h3>
+          <p>
+            No “ISF”, no “ICR”, no “bolus”. Each setting is a sentence a person can check against
+            what their doctor told them, which is the only way a wrong ratio ever gets spotted.
+          </p>
+          <p>
+            The Lantus dose is recorded and visually separated, because a second number labelled
+            “units” next to a calculated dose is exactly the confusion worth avoiding.
+          </p>
+          <div class="refs"><span class="ref">§10.1 naming</span><span class="ref">§10.2 vocabulary</span><span class="ref">§1.3 basal</span></div>
+        </div>
+      </div>
+
+      <div class="plate">
+        <div class="phone">
+          <div class="status"><span>Before you start</span><span>1 of 4</span></div>
+          <div class="alert crit">
+            <h4>This is not a medical device</h4>
+            <p>
+              It has no regulatory clearance and has not been clinically validated. Check every dose
+              yourself. It is set up for one specific person's prescription. Neither the meter
+              manufacturer nor the insulin manufacturer endorses it.
+            </p>
+          </div>
+          <div class="alert warn">
+            <h4>If the number looks nothing like what you usually take</h4>
+            <p>
+              Do not assume either number is the right one. Neither this app nor your usual dose has
+              been checked against the other. Show your doctor the exported record and let them
+              decide.
+            </p>
+          </div>
+          <div class="accept"><i>&#10003;</i><span>I have read this and I understand it</span></div>
+          <div class="cta">Continue</div>
+        </div>
+        <div class="note">
+          <h3>The disagreement, said once, up front</h3>
+          <p>
+            The app will say 11 where he currently injects 25. That gap is the reason the project
+            exists, and the wording deliberately backs neither number.
+          </p>
+          <p>
+            It appears at setup and then lives in the export — never as a line beside a calculated
+            dose, where it would become an anchor pointing at the dose that caused his lows.
+          </p>
+          <div class="refs"><span class="ref">§10.6 first run</span><span class="ref">§6.7</span><span class="ref">§20.6</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="band-head">
+      <h2>What these screens are avoiding</h2>
+      <span class="band-tag">design constraints</span>
+    </div>
+    <p class="band-note">
+      Each of these is a specific failure the layout is built to prevent, not a general principle.
+    </p>
+
+    <div class="traps">
+      <table>
+        <thead>
+          <tr><th>The trap</th><th>What the screens do about it</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Two numbers both labelled “units”</td>
+            <td>The calculated dose is the only large number on a result screen. <em>Injected</em>
+                appears solely in history, in its own column. The Lantus dose lives in settings
+                behind different styling and never on a result screen.</td>
+          </tr>
+          <tr>
+            <td>A warning that fires every time</td>
+            <td>Band E de-escalates from a card to a line after its first appearance each day —
+                but the words never change and it is never hidden behind “more”.</td>
+          </tr>
+          <tr>
+            <td>A dose seen before its inputs</td>
+            <td>At 20 units and up the number is withheld and the inputs are shown instead. There
+                is no partial figure and no preview on that screen.</td>
+          </tr>
+          <tr>
+            <td>Numerals that misread</td>
+            <td>Every figure is IBM Plex Mono with tabular numerals — 1 and 7 are unambiguous,
+                columns align. <code>11</code> never <code>11.0</code>; <code>0.5</code> never
+                <code>.5</code>.</td>
+          </tr>
+          <tr>
+            <td>A low blood sugar screen you can scroll past</td>
+            <td>Below 70, nothing else renders. No ketone card, no timing line, no dose — the
+                treat-first instruction is the entire screen.</td>
+          </tr>
+          <tr>
+            <td>Plate weight typed as carbohydrate</td>
+            <td>The field says “carbohydrate in this meal”, the empty screen carries the biryani
+                example, and a 250 g entry alone reaches 25 units — which trips the confirmation at
+                every blood sugar level.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Drawn from PLAN.md v25 · Numbers are worked examples for one specific prescription:
+    target 150 mg/dL, one unit per 30 mg/dL, one unit per 10 g of carbohydrate.
+    Nothing here is reviewed or approved, and no code exists yet.
+  </footer>
+
+</div>

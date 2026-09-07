@@ -1,0 +1,1056 @@
+@import './fonts.css';
+
+/*
+ * §10.9's accessibility rules, and the Step design's visual language.
+ *
+ * Two themes, both defined in full. §10.9: "`prefers-color-scheme` plus
+ * `color-scheme: light dark` on `:root` for form-control theming, plus the
+ * `<meta name="color-scheme">` tag to prevent a white launch flash." The primary
+ * readout holds 7:1 in both — never the large-text allowance.
+ *
+ * Type is in `rem` and the layout reflows at 320 CSS pixels, because §10.9 says
+ * so and because the phone this runs on is the only one that matters.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #f6f8f8;
+  --surface: #ffffff;
+  --surface-2: #eef2f2;
+  --ink: #14191b;
+  --ink-2: #46514f;
+  --ink-3: #6b7573;
+  --line: #dee4e3;
+  --mark: #0b5f5c;
+  --mark-ink: #ffffff;
+  --warn: #7a4600;
+  --warn-bg: #fdf3e3;
+  --warn-line: #e8cf9f;
+  --halt: #8c1d13;
+  --halt-bg: #fdeeec;
+  --halt-line: #f0c2bb;
+  --shadow: 0 1px 2px rgba(20, 25, 27, 0.06), 0 18px 40px -22px rgba(20, 25, 27, 0.28);
+
+  --touch: 3rem; /* §10.7 — 48 CSS pixels, the FLOOR and never lowered */
+  --touch-key: 3.5rem; /* 56px: primary actions, above the floor */
+  --touch-pad: 4.25rem; /* 68px: keypad keys. The mockup's keys are the most
+                           prominent thing on an entry screen, and this is the
+                           control a shaking hand uses most. */
+  --gap: 0.5rem; /* §10.7 — 8 dp */
+  --radius: 0.875rem;
+  --column: 30rem; /* the app's measure. EVERYTHING is inside it. */
+
+  /* The page wash, per mood. Light theme keeps it very quiet — a tint, not a
+     gradient you would notice as one — because a bright screen in daylight is
+     what this phone is usually read in. */
+  --wash: radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #f2f6f6 55%, #eaf0ef 100%);
+  --wash-halt: radial-gradient(115% 80% at 50% 0%, #fff5f3 0%, #fdeeec 55%, #f8e4e1 100%);
+  --dose-sheen: linear-gradient(175deg, #0b5f5c 20%, #0a4b49 118%);
+  /* The number being TYPED, not the dose. Deliberately a different and quieter
+     sweep: the result's sheen is the app's answer, and an input should not wear
+     the same finish as the conclusion. Ink to ink, no accent. */
+  --entry-sheen: linear-gradient(185deg, #14191b 30%, #46514f 130%);
+  /* The keypad's own surface, so it can be more pronounced than a plain card
+     without dragging every other panel with it. Translucent for the same reason
+     the dark values are — the light wash is a gradient too. */
+  --key-bg: rgb(255 255 255 / 72%);
+  --key-line: rgb(20 25 27 / 12%);
+  --key-press: rgb(11 95 92 / 10%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0c1011;
+    --surface: #151b1d;
+    --surface-2: #1d2527;
+    --ink: #e8edec;
+    --ink-2: #a8b3b1;
+    --ink-3: #7b8584;
+    --line: #2a3233;
+    --mark: #5ee6c5;
+    --mark-ink: #062019;
+    --warn: #ffc454;
+    --warn-bg: #2a2013;
+    --warn-line: #4a3a1c;
+    --halt: #ff7a6b;
+    --halt-bg: #2a0a09;
+    --halt-line: #5a1d18;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 20px 44px -24px rgba(0, 0, 0, 0.8);
+
+    /* Dark carries the mockup's actual values: a deep blue-black lit from the
+       top, turning red on a halt and amber on a warning. */
+    --wash: radial-gradient(120% 90% at 50% 0%, #1b2740 0%, #0c1220 62%, #080c16 100%);
+    --wash-halt: radial-gradient(115% 80% at 50% 0%, #4a1210 0%, #2a0a09 60%, #160504 100%);
+    --dose-sheen: linear-gradient(175deg, #ffffff 25%, #5ee6c5 118%);
+    --entry-sheen: linear-gradient(185deg, #ffffff 30%, #a8b3b1 130%);
+    /* The mockup's values LITERALLY, and the translucency is the point: the keys
+       sit ON the wash rather than covering it, so the gradient shows through and
+       they read as glass instead of flat opaque panels. Ours were opaque hexes
+       approximating these, which is why the keypad looked heavier than the
+       design did. */
+    --key-bg: rgb(234 240 250 / 7%);
+    --key-line: rgb(234 240 250 / 9%);
+    --key-press: rgb(234 240 250 / 16%);
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #0c1011;
+  --surface: #151b1d;
+  --surface-2: #1d2527;
+  --ink: #e8edec;
+  --ink-2: #a8b3b1;
+  --ink-3: #7b8584;
+  --line: #2a3233;
+  --mark: #5ee6c5;
+  --mark-ink: #062019;
+  --warn: #ffc454;
+  --warn-bg: #2a2013;
+  --warn-line: #4a3a1c;
+  --halt: #ff7a6b;
+  --halt-bg: #2a0a09;
+  --halt-line: #5a1d18;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 20px 44px -24px rgba(0, 0, 0, 0.8);
+
+    /* Dark carries the mockup's actual values: a deep blue-black lit from the
+       top, turning red on a halt and amber on a warning. */
+    --wash: radial-gradient(120% 90% at 50% 0%, #1b2740 0%, #0c1220 62%, #080c16 100%);
+    --wash-halt: radial-gradient(115% 80% at 50% 0%, #4a1210 0%, #2a0a09 60%, #160504 100%);
+    --dose-sheen: linear-gradient(175deg, #ffffff 25%, #5ee6c5 118%);
+    --entry-sheen: linear-gradient(185deg, #ffffff 30%, #a8b3b1 130%);
+    /* The mockup's values LITERALLY, and the translucency is the point: the keys
+       sit ON the wash rather than covering it, so the gradient shows through and
+       they read as glass instead of flat opaque panels. Ours were opaque hexes
+       approximating these, which is why the keypad looked heavier than the
+       design did. */
+    --key-bg: rgb(234 240 250 / 7%);
+    --key-line: rgb(234 240 250 / 9%);
+    --key-press: rgb(234 240 250 / 16%);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  /* The design's face, self-hosted under 'self' (see fonts.css). The system
+     stack behind it is a REAL fallback, not decoration: `font-display: swap`
+     paints with it on a cold offline start, and on his phone that is Roboto —
+     already resident, no delay, no blank text. */
+  font-family: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+
+  /* Flat, so overscroll and the area behind a short screen match. The wash
+     itself sits on #app — see there for why. */
+  background: var(--bg);
+  min-height: 100%;
+}
+
+/*
+ * The ATMOSPHERE from `docs/design/step-flow.html`. The first build carried the
+ * mockup's palette across and left its depth behind — an omission, not a
+ * decision; nothing in §11.5 blocks a gradient, which is pure CSS with no
+ * origin to fetch from.
+ *
+ * It is not only decoration. `--wash` is re-pointed by a mood class the shell
+ * sets from the OUTCOME, so a band-C/D block turns the whole page red and a
+ * warning turns it amber — colour arriving ahead of any word. §3.3 already
+ * refuses to print an insulin number on a block; this makes the refusal visible
+ * from across the room.
+ *
+ * On #app rather than <body> because custom properties inherit DOWNWARD: the
+ * shell can only set a class on its own root, and a token redefined there
+ * cannot reach an ancestor.
+ */
+#app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-image: var(--wash);
+  background-attachment: fixed;
+  transition: background-image 220ms ease;
+}
+
+#app.mood-halt {
+  --wash: var(--wash-halt);
+}
+
+/* §10.9 — motion is a preference, and a full-page colour change is exactly the
+   kind of thing that triggers people. The colour still changes; only the fade
+   is dropped. */
+@media (prefers-reduced-motion: reduce) {
+  #app {
+    transition: none;
+  }
+}
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: var(--column);
+  width: 100%;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 0;
+}
+
+/* ── the wizard's position, which §18.14 makes a first-class thing ────────── */
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 0.6875rem;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.dots .track {
+  display: flex;
+  gap: 0.3125rem;
+  flex: 1;
+}
+
+.dots i {
+  height: 0.1875rem;
+  flex: 1;
+  border-radius: 99px;
+  background: var(--line);
+}
+
+.dots i.on {
+  background: var(--mark);
+}
+
+/* The mockup's `.eyebrow`: IBM Plex Mono at 400, wide tracking, uppercase, in
+   the mark colour. It is the only place weight 400 of that face is used — the
+   file was otherwise 10 KB of unreferenced payload, which is the kind of thing
+   that ships once and is never noticed again. */
+.dots .where {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mark);
+  white-space: nowrap;
+}
+
+/* The mockup's h1: a real display size with tight tracking, which is most of
+   what made the design look designed. `text-wrap: balance` so a two-line
+   question breaks evenly instead of leaving one word alone. */
+.ask {
+  font-size: clamp(1.5rem, 6vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  margin: 1rem 0 0;
+  text-wrap: balance;
+}
+
+.hint {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  line-height: 1.45;
+  margin: 0.5rem 0 0;
+}
+
+.clinical {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  margin: 0.25rem 0 0;
+}
+
+/* ── the entry ──────────────────────────────────────────────────────────── */
+.entry {
+  text-align: center;
+  padding: 0.75rem 0 0;
+}
+
+.entry .n {
+  font-size: 4.5rem;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+  /* §10.4 — so a digit appearing or disappearing is noticeable. */
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  min-height: 1.12em;
+  /* `color` is set FIRST and is the fallback, as on the dose: if
+     `background-clip: text` is unsupported the number renders in full-contrast
+     ink rather than as a transparent fill. A number that vanishes is worse than
+     a number without a gradient — and this one is being typed, so it is being
+     read while it changes. */
+  background-image: var(--entry-sheen);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* The empty placeholder is an em-dash, and at 4.5rem an em-dash is a solid
+   grey BAR — it read as a broken element rather than as "nothing entered yet".
+   Held at a normal type size so it reads as punctuation, and the box keeps the
+   full height so the keypad does not jump when the first digit lands. */
+.entry .n.empty {
+  color: var(--ink-3);
+  opacity: 0.45;
+  font-size: 2rem;
+  line-height: 2.52;
+  /* No sheen on the placeholder: it is punctuation, not a value. */
+  background-image: none;
+  -webkit-text-fill-color: currentcolor;
+}
+
+.entry .u {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-3);
+  letter-spacing: 0.14em;
+}
+
+/* §10.4 — never wrap between a number and its unit. */
+.qty {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── the keypad ─────────────────────────────────────────────────────────── */
+.pad {
+  margin-top: auto;
+  padding: 0.75rem 0 max(0.75rem, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4375rem;
+}
+
+.key {
+  /* §10.7 sets the FLOOR at 48 CSS pixels, and WCAG 2.5.5's intent names hand
+     tremor — tremor is a low-blood-sugar symptom, so the target user is
+     periodically in that population. `--touch-key` is deliberately ABOVE that
+     floor: the mockup's keys carry 12px of padding around 19px type, and a
+     bigger target is strictly better for the hand this is built for. */
+  min-height: var(--touch-pad);
+  border: 1px solid var(--key-line);
+  background: var(--key-bg);
+  color: var(--ink);
+  border-radius: 0.875rem;
+  font: inherit;
+  font-size: 1.375rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.key:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.key.dim {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+/* ── actions ────────────────────────────────────────────────────────────── */
+/* The keypad's primary action, spanning the three key columns. In a class
+   rather than a `style` attribute, because §11.5's `style-src 'self'` blocks
+   the attribute form and the element would silently lose its layout. */
+.sheet.pad-action {
+  grid-column: span 3;
+  margin-top: 0;
+  padding: 0;
+}
+
+.sheet {
+  margin-top: auto;
+  padding: 0.75rem 0 max(0.75rem, env(safe-area-inset-bottom));
+  display: grid;
+  gap: var(--gap);
+}
+
+.go {
+  min-height: var(--touch-key);
+  border: 1px solid transparent;
+  border-radius: 99px;
+  background: var(--mark);
+  color: var(--mark-ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+}
+
+.go.quiet {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+  font-weight: 600;
+}
+
+/* §10.7 — destructive controls OUT of the primary thumb arc. Never beside a
+   commit button, and visually distinct from it. */
+.go.danger {
+  background: var(--halt-bg);
+  color: var(--halt);
+  border-color: var(--halt-line);
+}
+
+.go:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* §10.9 — keyboard focus gets a visible state. */
+:where(button, a, input, select):focus-visible {
+  outline: 2px solid var(--mark);
+  outline-offset: 2px;
+}
+
+/* ── the result ─────────────────────────────────────────────────────────── */
+.result {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 1rem;
+}
+
+.result .n {
+  /* The mockup's values exactly: 96px, line-height .96, and the 175deg sweep to
+     #5EE6C5 rather than the 180deg one the entry screens use. */
+  font-size: 6rem;
+  font-weight: 700;
+  line-height: 0.96;
+  letter-spacing: -0.055em;
+  /* Momin's call: CENTRED. The mockup left-aligns it, and the design file has
+     been updated to match rather than left to disagree. The reason is the flow —
+     both entry screens centre their number, so the eye lands in the same place
+     on every screen instead of jumping left at the one that matters most. */
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  /* The mockup's sheen on the headline dose. `color` above is set FIRST and
+     stays as the fallback: if `background-clip: text` is unsupported the number
+     still renders in full-contrast ink rather than disappearing into a
+     transparent fill. A dose that vanishes is worse than a dose without a
+     gradient. */
+  background-image: var(--dose-sheen);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* §10.9 — DO NOT ANIMATE THE DOSE NUMBER. A count-up puts transient wrong
+     values on screen and into the live region. There is no transition here on
+     purpose, and this comment is why. */
+}
+
+.result .u {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+/* §8.2 — a stale result is dimmed, and the sheen goes with it. Leaving a
+   gradient on an expired dose makes the most eye-catching thing on screen the
+   number you must not use. */
+.result.stale .n {
+  background-image: none;
+  -webkit-text-fill-color: currentcolor;
+}
+
+.result.stale .n,
+.result.stale .u {
+  color: var(--ink-3);
+  opacity: 0.55;
+}
+
+/* §10.3 — show the working. */
+.working {
+  margin-top: 1.125rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1.0625rem;
+  padding: 0.8125rem 0.9375rem;
+  display: grid;
+  gap: 0.4375rem;
+}
+
+.working .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.working .row b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* §10.3 — a suppressed correction is SHOWN, STRUCK THROUGH, with its reason.
+   Never silently omitted, and never left as a line that visibly fails to reach
+   the total. */
+.working .row.held {
+  opacity: 0.62;
+}
+
+.working .row.held s {
+  text-decoration-thickness: 1px;
+}
+
+.working .row.total {
+  border-top: 1px solid var(--line);
+  padding-top: 0.4375rem;
+}
+
+.working .row.total span,
+.working .row.total b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* §2.2 — when the displayed components do not visibly sum to the total, the
+   breakdown says so rather than implying they add up. */
+.working .exact {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+}
+
+/* ── advisories (§10.5) ─────────────────────────────────────────────────── */
+.flag {
+  margin-top: 0.8125rem;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
+  border-radius: 0.8125rem;
+  padding: 0.6875rem 0.8125rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.flag b {
+  color: var(--warn);
+  display: block;
+  margin-bottom: 0.125rem;
+}
+
+/* §10.5 — band E de-escalates in FORM only. Same words, same rank, never
+   behind "more". */
+.flag.compact {
+  padding: 0.5rem 0.8125rem;
+  font-size: 0.75rem;
+}
+
+.flag.compact b {
+  display: inline;
+  margin: 0;
+}
+
+.flag.mint {
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+
+.flag.mint b {
+  color: var(--mark);
+}
+
+/* §11.4's update prompt, which the shell prepends to the body. */
+.update-prompt {
+  margin: 0.75rem 1.25rem;
+}
+
+.more {
+  margin-top: 0.5rem;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  text-align: left;
+  min-height: var(--touch);
+}
+
+/* ── the refusal (§3 bands C and D) ─────────────────────────────────────── */
+.halt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 1.5rem 0.5rem;
+  background: var(--halt-bg);
+  border: 1px solid var(--halt-line);
+  border-radius: 1.25rem;
+  margin-top: 1rem;
+}
+
+.halt .n {
+  font-size: 5rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: var(--halt);
+  font-variant-numeric: tabular-nums;
+}
+
+.halt h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  color: var(--ink);
+}
+
+.halt p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+/* ── lists and rows ─────────────────────────────────────────────────────── */
+.list {
+  display: grid;
+  gap: var(--gap);
+  margin-top: 0.875rem;
+  padding: 0;
+  list-style: none;
+}
+
+.li {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.875rem;
+  padding: 0.75rem 0.875rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.li .k {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+
+.li .k b {
+  color: var(--ink);
+  font-weight: 600;
+  display: block;
+}
+
+.li .v {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── settings ───────────────────────────────────────────────────────────── */
+.field {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 1rem;
+}
+
+.field label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* §10.7 — `type="text"` with `inputmode`, NEVER `type="number"`, whose invalid
+   values are silently set to empty string per spec with no way to read the raw
+   input. */
+.field input {
+  min-height: var(--touch);
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  padding: 0.5rem 0.75rem;
+  /* §10.7 — fixed width sized to expected length, so a four-digit typo shows. */
+  max-width: 9rem;
+}
+
+.field.wide input {
+  max-width: none;
+}
+
+.sentence {
+  font-size: 1rem;
+  line-height: 2.25;
+}
+
+.sentence input {
+  display: inline-block;
+  width: 4.5rem;
+  text-align: center;
+  vertical-align: baseline;
+  margin: 0 0.25rem;
+}
+
+/* §1.3 — the basal block is VISUALLY SEPARATED, because a second number
+   labelled "units" is the confusion that section exists to prevent. */
+.basal {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 2px solid var(--line);
+}
+
+.basal h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.error {
+  color: var(--halt);
+  font-size: 0.8125rem;
+  margin: 0.25rem 0 0;
+}
+
+/* ── chrome ─────────────────────────────────────────────────────────────── */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  padding: 0.5rem 0;
+}
+
+.bar .spacer {
+  flex: 1;
+}
+
+/* The clinician's shorthand beside the plain-language question. Deliberately
+   quiet: §10.1 keeps the QUESTION as the label, and this is a reference for
+   repeating the value back at an appointment, not a second heading. */
+/*
+ * §10.7 — the two non-urgent destinations, at the bottom of the screen where a
+ * thumb actually reaches. They were at the TOP, which on a one-handed phone is
+ * the furthest point on the display.
+ *
+ * `space-around` rather than `space-between`: pinned to the two corners they
+ * become the easiest targets to hit while reaching for the keypad above, and
+ * these are the two controls that ABANDON a half-entered reading.
+ */
+.foot-nav {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: var(--gap);
+  /* It is a child of #app, not of .screen, so it inherited NO measure and ran
+     the full width of the window — 1440px against a 480px column, which put
+     Settings and History in opposite corners of the display with the app
+     sitting in the middle. Measured, not guessed. */
+  max-width: var(--column);
+  width: 100%;
+  margin: 0.25rem auto 0;
+  padding: 0 1.25rem max(0.125rem, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  /* Tightened on Momin's note that it held more room than two text links need.
+     The PADDING shrank; the tap targets did not — §10.7's 48px floor is on the
+     links themselves and is not negotiable. */
+  padding: 0 0 max(0.125rem, env(safe-area-inset-bottom));
+  margin-top: 0.25rem;
+}
+
+.foot-nav .link {
+  min-height: var(--touch); /* §10.7 — 48 CSS pixels, unchanged by the move */
+  padding: 0 1.25rem;
+  border-radius: 999px;
+}
+
+.greeting {
+  margin: 0.5rem 0 -0.25rem;
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* The wave, as on MominBinShahid.github.io. `transform-origin` at the wrist is
+   what makes it read as a wave rather than a spin. */
+.wave {
+  display: inline-block;
+  transform-origin: 70% 70%;
+  animation: wave 2.4s ease-in-out 0.4s 3;
+}
+
+@keyframes wave {
+  0%,
+  60%,
+  100% {
+    transform: rotate(0deg);
+  }
+  10%,
+  30%,
+  50% {
+    transform: rotate(14deg);
+  }
+  20%,
+  40% {
+    transform: rotate(-8deg);
+  }
+}
+
+/* §10.9 — three repeats, then it stops, and none at all if motion is a
+   problem. A greeting that waves forever is a thing moving on screen while
+   someone reads a dose decision. */
+@media (prefers-reduced-motion: reduce) {
+  .wave {
+    animation: none;
+  }
+}
+
+/*
+ * §10.7 — the +/- pair, rebuilt.
+ *
+ * It was a flex row with a `flex: 1` spacer between the two keys, and a `.key`
+ * carries no width. Measured result: **28px wide and 68px tall**, pinned to
+ * opposite edges of the column — two thin pills far apart, and 28px is BELOW
+ * §10.7's 48px minimum, so it was an accessibility failure and not only an ugly
+ * one. Two earlier attempts guessed at the cause; this one measured it.
+ *
+ * Now a centred group of two fixed squares. No spacer, no edge pinning, and the
+ * same layout at every width — there is nothing about a wide window that should
+ * move these apart.
+ */
+.stepper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2.5rem;
+  padding: 0.75rem 0 0;
+}
+
+.stepper .key {
+  /* Explicit and equal. `flex: 0 0 auto` so the row cannot squeeze them. */
+  flex: 0 0 auto;
+  width: var(--touch-pad);
+  height: var(--touch-pad);
+  min-height: 0;
+  border-radius: 50%;
+  font-size: 1.75rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Centred under the big number it is about, and given room so the keypad does
+   not shift when it appears. */
+.entry-error {
+  text-align: center;
+  margin: 0.25rem 0 0;
+  min-height: 2.5em;
+}
+
+.field-icon {
+  margin-right: 0.375rem;
+  font-size: 0.9em;
+}
+
+.tag {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  margin-left: 0.5rem;
+  padding: 0.0625rem 0.375rem;
+  border: 1px solid var(--line);
+  border-radius: 0.25rem;
+  color: var(--ink-2);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  vertical-align: 0.1em;
+  white-space: nowrap;
+}
+
+/* §10.5 — a soft-band acknowledgement is NOT an error. It is the app noticing
+   an unusual-but-intended value once, and it must not read as a mistake: his
+   prescribed target of 150 sits outside 90-140 deliberately. */
+.caution {
+  color: var(--warn);
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+}
+
+/*
+ * Press feedback. There is no hover on the device this runs on, so `:active` is
+ * the only state that exists — and without it a tap on a phone gives no
+ * confirmation at all, which on a keypad means re-tapping and entering a digit
+ * twice. That is a WRONG NUMBER, so this is not decoration.
+ *
+ * Scale rather than colour: it reads at a glance under a thumb that is covering
+ * the control.
+ */
+.key,
+.go,
+.link {
+  transition:
+    transform 90ms ease,
+    background-color 120ms ease,
+    opacity 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.key:active:not(:disabled) {
+  /* 0.94 and a surface change together. Scale alone at 0.97 was invisible under
+     the thumb that was covering the key — which is the only moment it has to be
+     visible. */
+  transform: scale(0.94);
+  background: var(--key-press);
+  border-color: var(--mark);
+}
+
+.go:active:not(:disabled) {
+  transform: scale(0.97);
+  filter: brightness(0.94);
+}
+
+.link:active {
+  opacity: 0.6;
+}
+
+/*
+ * Hover, for a pointer. `@media (hover: hover)` is load-bearing: without it a
+ * touch device applies the hover state on tap AND LEAVES IT APPLIED, so the
+ * last thing touched stays lit as though it were still under a finger.
+ *
+ * The pressed states above are what a phone gets; these are additive.
+ */
+@media (hover: hover) and (pointer: fine) {
+  .link:hover {
+    color: var(--ink);
+    background: var(--key-press);
+  }
+
+  .key:hover:not(:disabled) {
+    border-color: var(--ink-3);
+    background: var(--key-press);
+  }
+
+  .go:hover:not(:disabled) {
+    filter: brightness(1.06);
+  }
+
+  .foot-nav .link:hover {
+    border-radius: 999px;
+  }
+}
+
+/* §10.9 — motion is a preference. The feedback becomes a colour shift rather
+   than disappearing: something still has to acknowledge the tap. */
+@media (prefers-reduced-motion: reduce) {
+  .key,
+  .go,
+  .link {
+    transition: background-color 120ms ease;
+  }
+
+  .key:active:not(:disabled) {
+    transform: none;
+    background: var(--key-press);
+    border-color: var(--mark);
+  }
+
+  .go:active:not(:disabled) {
+    transform: none;
+    filter: brightness(0.92);
+  }
+}
+
+.link {
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  min-height: var(--touch);
+  text-align: left;
+}
+
+.link.mark {
+  color: var(--mark);
+  font-weight: 600;
+}
+
+h1 {
+  font-size: 1.375rem;
+  letter-spacing: -0.02em;
+  margin: 0.5rem 0 0;
+  text-wrap: balance;
+}
+
+h2 {
+  font-size: 1.0625rem;
+  letter-spacing: -0.015em;
+  margin: 1.5rem 0 0;
+}
+
+p {
+  margin: 0.5rem 0 0;
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+}
+
+/* §10.8 requires the build version to be visible — "it is the only way to
+   diagnose a report" — and requires nothing about prominence. It was taking a
+   band of the screen for something read once, ever. Findable, not facing you. */
+.foot {
+  max-width: var(--column);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0.375rem 0 max(0.375rem, env(safe-area-inset-bottom));
+  color: var(--ink-3);
+  font-size: 0.5625rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
+}
+
+/* §10.9 — the live region pre-exists, empty, and is polite. Never assertive:
+   that could announce `55` on the way to `550`. */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+
+

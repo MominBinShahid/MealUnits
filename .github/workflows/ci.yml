@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# §13.8: typecheck, unit suite, Stryker on the core and the integration suite
+# are all required to merge. They run as separate jobs so a failure names itself.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Unit and integration tests
+        run: npm test
+
+  mutation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      # §13.4: thresholds.break is 100. A surviving mutant fails the build.
+      - name: Mutation testing on the core
+        run: npm run mutate
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-report
+          path: reports/mutation
+
+  golden-change:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # §13.8: changing a golden file requires GOLDEN-CHANGE: plus a rationale
+      # in the pull request body. §13.7's reason — mutation testing cannot
+      # validate the oracle, so changing one has to be a conspicuous act.
+      - name: A golden-file change needs GOLDEN-CHANGE in the PR body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          if git diff --name-only "$base" "$head" | grep -q '^test/golden/'; then
+            echo "This pull request changes a golden file."
+            if printf '%s' "$PR_BODY" | grep -q 'GOLDEN-CHANGE:'; then
+              echo "GOLDEN-CHANGE: found."
+            else
+              echo "::error::A golden file changed. §13.8 requires 'GOLDEN-CHANGE:' and a rationale in the pull request body."
+              exit 1
+            fi
+          else
+            echo "No golden files changed."
+          fi
