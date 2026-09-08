@@ -254,6 +254,26 @@ describe('§10.6 first run', () => {
 
 });
 
+describe('§15 — the five rounding modes are explained somewhere findable', () => {
+  it('names all five, and warns that rounding up is not a neutral peer', async () => {
+    await setUpAsHisBrother();
+    await tap('Settings');
+    // The pointer, because §10.5's budget does not allow five paragraphs beside
+    // the choice itself.
+    expect(text()).toContain('"How this works" explains all five');
+
+    await tap('How this works');
+    const page = text();
+    for (const mode of ['Whole units', 'Half units', 'Always round up', 'Always round down', 'Show the exact number']) {
+      expect(page).toContain(mode);
+    }
+    // The one that matters: `ceil` is gated for a reason, and the reason has to
+    // be readable, not just enforced.
+    expect(page).toContain('always in the direction of low blood sugar');
+    expect(page).toContain('cannot draw 4.37');
+  });
+});
+
 describe('the name, which changes nothing the app calculates', () => {
   it('greets him on the reading screen and NOWHERE a dose is shown', async () => {
     await boot();

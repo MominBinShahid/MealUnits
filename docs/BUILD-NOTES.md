@@ -1369,3 +1369,62 @@ like every other primary action in the app.
 **Verified at 360px**, a small Android: no sideways scroll, worst overflow past `.screen` is **0px**,
 and both buttons fit. `tools/smoke.mjs` already asserts the page never scrolls sideways, which is the
 general form of this.
+
+## 57. Five rounding modes were selectable and undocumented `[FYI]`
+
+**Momin, reading note 1: "have we explained these meanings in how this works?"** No — nothing in the
+app explained any of the five, and `grep` for "round" in `howItWorks` returned nothing.
+
+**§15 quotes the MHRA finding that only 30% of 46 audited apps documented their formula.** The
+arithmetic WAS documented; the rounding was not, and rounding is where §5.1 says the modes "are not
+neutral peers": `ceil` adds up to a whole unit to every dose, always toward low blood sugar. It is
+gated behind an acknowledgement — but the acknowledgement explained the risk without the app ever
+explaining what the alternatives were.
+
+**"How this works" now carries all five**, each with what it does, what hardware it suits, and the
+consequence. Two lines earn their place:
+
+- for `ceil`, that on a 1-unit correction it **doubles the dose**;
+- for `off`, that **a syringe cannot draw 4.37** — it is for reading, not measuring.
+
+**And the settings screen points at it** rather than repeating it: §10.5's budget does not allow five
+paragraphs beside the choice. A pointer is not documentation, but it is the difference between a
+hidden choice and a findable one.
+
+## 58. Note 1, decided on measurement rather than on the plan's authority `[FYI]`
+
+**Momin: "I am thinking right now what is correct? ... even if we have to change the plan I am good
+with that."** The right question, and it turns the note from an appeal to §5.2 into an experiment.
+
+**There are THREE candidate rules, not two.** The note compared the decimal-text route against
+`Math.round(v * 100) / 100` and stopped there. A third exists and was never written down:
+
+| | `-1.495` | `1.005` | `-1.125` | `2.675` |
+|---|---|---|---|---|
+| **A** `Math.round(v*100)/100` | **-1.49** | 1.00 | **-1.12** | 2.68 |
+| **B** decimal text *(shipped)* | -1.50 | 1.00 | -1.13 | 2.67 |
+| **C** sign-aware scaled | -1.50 | 1.00 | -1.13 | 2.68 |
+
+**A is simply wrong**, and not because of floating point: `Math.round` breaks ties toward +∞, so the
+same magnitude rounds differently by sign. §2.2 requires half-away-from-zero for every mode.
+
+**B and C are both correct, and they disagree only where a decimal LITERAL looks like a tie while the
+double behind it is not** — `2.675` is really 2.67499999..., so B trusts the printed digits and C
+trusts the value.
+
+**The measurement that settles it.** Every value this app can reach — corrections and meal doses
+across five different prescriptions, blood sugars 20-600, carbohydrate 0-300:
+
+```
+values checked : 2,623,215
+disagreements  : 0
+```
+
+**B and C never differ on anything the app can produce.** The 572-value disagreement the note
+records is over synthetic three-decimal values, not reachable doses: with real ratios a correction is
+a multiple of 1/isf and a meal a multiple of 1/icr, and those essentially never land exactly on a
+third-decimal tie.
+
+**So the ruling is cheap either way, and B stays** — it is shipped, it is tested, and it agrees with
+§5.2's table. What changes is the JUSTIFICATION: not "the plan says so" but "A is wrong, B and C are
+indistinguishable in practice, and B is the one already verified."

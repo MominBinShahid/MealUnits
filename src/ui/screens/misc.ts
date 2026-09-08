@@ -584,6 +584,17 @@ export function howItWorksScreen(advisoryStatus: string): HTMLElement {
     h('h2', {}, COPY.firstRun.disagreementTitle),
     h('p', {}, COPY.firstRun.disagreementBody),
 
+    h('h2', {}, COPY.rounding.title),
+    h('p', {}, COPY.rounding.intro),
+    h(
+      'ul',
+      { class: 'list' },
+      ...COPY.rounding.modes.map(([name, what]) =>
+        h('li', { class: 'li' }, h('div', { class: 'k' }, h('b', {}, name), what)),
+      ),
+    ),
+    h('p', { class: 'hint' }, COPY.rounding.closing),
+
     h('h2', {}, 'The meal-size check'),
     h('p', {}, advisoryStatus),
     h('p', { class: 'hint' }, `It needs ${String(ADVISORY_MIN_ELIGIBLE)} logged meals before it can say anything.`),
