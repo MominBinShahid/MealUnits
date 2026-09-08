@@ -436,6 +436,14 @@ export const COPY = {
     basalNote: 'Set by your doctor, not calculated here.',
     modeQuestion: 'What can your syringe measure?',
     /**
+     * §15 — the MHRA finding that only 30% of 46 audited apps documented their
+     * formula applies to the ROUNDING as much as to the arithmetic. Five modes
+     * were offered with no explanation of any of them, and one of them (`ceil`)
+     * is unsafe by default. A pointer is not documentation, but it is the
+     * difference between a hidden choice and a findable one.
+     */
+    modeHint: 'Not sure which? "How this works" explains all five.',
+    /**
      * §6.2's confirmation tier, in his words. The previous wording — "Ask me to
      * re-read my numbers at or above" — read as "check your meter again", which
      * is a different action entirely. What it actually does is hide the dose and
@@ -472,6 +480,26 @@ export const COPY = {
     ceilGate:
       'Rounding up adds as much as a whole unit to every dose, always in the direction of low blood sugar. On a 1-unit correction that doubles it.',
     ceilAccept: 'I understand — always round up',
+  },
+
+  /**
+   * §5.1's five modes, explained. They were selectable and undocumented — and
+   * they are NOT neutral peers: `ceil` adds up to a whole unit to every dose,
+   * always toward low blood sugar, which is why §5.1 gates it.
+   */
+  rounding: {
+    title: 'Rounding, and why there are five choices',
+    intro:
+      'A calculation rarely lands on a number your syringe can measure. These decide what happens to the remainder. Only the total is ever rounded — never the correction or the meal dose on their own.',
+    modes: [
+      ['Whole units', 'To the nearest whole unit, so 4.4 becomes 4 and 4.6 becomes 5. Exactly half rounds away from zero: 4.5 becomes 5. This is right for an ordinary U-100 syringe, which is marked in whole units.'],
+      ['Half units', 'To the nearest half, so 4.37 becomes 4.5. Choose this only if your pen or syringe actually has half-unit markings — a NovoPen Echo or a Humalog Junior KwikPen. On a whole-unit syringe it asks you to measure something you cannot see.'],
+      ['Always round up', 'To the next whole unit, so 4.1 becomes 5. This adds insulin on every single dose, always in the direction of low blood sugar. At a sensitivity of 30 that is up to 30 mg/dL of extra drop you did not intend — on a 1-unit correction it doubles the dose. The app asks you to confirm this one before it will use it.'],
+      ['Always round down', 'To the whole unit below, so 4.9 becomes 4. This gives slightly less insulin every time, which errs toward higher blood sugar. Some clinicians ask for this deliberately.'],
+      ['Show the exact number', 'No rounding — 4.37 stays 4.37. This is for reading the true figure, not for measuring: a syringe cannot draw 4.37. Useful with a pump, or to see what the app really worked out.'],
+    ] as const,
+    closing:
+      'If you are not sure, leave it on whole units. It is what an ordinary syringe measures, and it is the app\u2019s default for that reason.',
   },
 
   // ── §8.2 — staleness ──────────────────────────────────────────────────────
