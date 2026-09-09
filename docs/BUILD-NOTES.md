@@ -104,7 +104,7 @@ the harness converts. The fixture stays readable; the type stays unambiguous.
 
 ---
 
-## 4. Two snapshot fields the plan implies but §11.2's list does not name `[CONFIRM]`
+## 4. Two snapshot fields the plan implies but §11.2's list did not name `[RULED 2026-09-09: keep them, and §11.2 now names them]`
 
 **Where:** `src/core/types.ts`, `Snapshot`.
 
@@ -117,6 +117,17 @@ that list, though both are legislated elsewhere:
 | `largeDoseConfirmed` | §6.2, §6.3 | The confirmation "applies only to the exact values confirmed", which is exactly what a committed snapshot is |
 
 Neither is persisted. Both die with the snapshot, which is what §4.6 and §6.3 require.
+
+**RULED 2026-09-09 — keep them, and §11.2's list now names them.** No code change: the fields were
+already there and already correct. What changed is that the plan stopped describing a snapshot the
+resolver could not work from.
+
+**The alternative was to hold both as shell state outside the snapshot**, and it fails on the
+question §11.2 exists to answer. §4.3's precedence would read from two places instead of one, so the
+"one committed picture" guarantee would acquire an exception — and both flags would need explicit
+invalidation on every input change, a convention someone can forget. Keeping them in the snapshot
+makes a changed input produce a new snapshot, and the stale confirmation cannot survive because there
+is nowhere for it to survive.
 
 ---
 

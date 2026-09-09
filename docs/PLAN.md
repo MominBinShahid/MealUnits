@@ -3025,8 +3025,25 @@ any screen is built.
 { inputs, settings (including settings.revision — §11.3's ROW STAMP),
   logRevision, decisionTime, stackingOverride,
   carbBaseline, eligibleEntryCount, historyProvenance, lastDose,
-  bandEFullCardShownToday, excludedTimeRecords }
+  bandEFullCardShownToday, excludedTimeRecords,
+  blankReadingAcknowledged, largeDoseConfirmed }
 ```
+
+**The last two were added to this list in v27, ruled by Momin 2026-09-09.** They were legislated in
+§4.6 and §6.3 and never named here, so the list described a snapshot the resolver could not actually
+work from. Neither is persisted; both die with the snapshot, which is what those sections require.
+
+| Field | Required by | Why it belongs HERE and not in shell state |
+|---|---|---|
+| `blankReadingAcknowledged` | §4.6 | The acknowledgement is **per-calculation and never persisted**, so it cannot come from storage — and §4.3 **step 6** resolves it inside the precedence order, which reads only the snapshot |
+| `largeDoseConfirmed` | §6.2, §6.3 | §6.3: the confirmation **"applies only to the exact values confirmed"**, and a committed snapshot IS exactly those values |
+
+**`largeDoseConfirmed` is the one that shows why the location is the rule.** Confirm a large dose,
+then change the carbohydrate: if the flag lived outside the snapshot, **a confirmation of the old
+numbers would silently apply to the new ones** — 27 units approved, 41 shown as already-confirmed.
+Held in the snapshot, a changed input produces a new snapshot and the confirmation is simply gone.
+§6.3's rule is enforced by WHERE THE FIELD LIVES rather than by remembering to clear it, which is
+§11.3's "correctness by construction rather than by discipline" applied a third time.
 
 `carbBaseline` and `eligibleEntryCount` are computed from the log at `logRevision` and carried
 **in** the snapshot [R1-B1, R2-F7]. A revision *identifies* history; it does not *supply* a
