@@ -41,15 +41,15 @@ file needs to carry.**
 Recorded because a sequence agreed in conversation is lost at the next session, and because two of
 these steps have a dependency that is not obvious from reading them.
 
-| # | Step | Why here |
-|---|---|---|
-| 1 | **Push and deploy.** Blog first (§20.2), then this repository | §1.4 — the app competes with a fixed 24-25 units injected blind. Nothing outstanding is worth delaying that |
-| 2 | **Test the update path on a real phone.** Momin's method: change something visible and cheap — the greeting's position — deploy, and watch | `T4`. Real HTTPS with real Pages caching is a different environment from `vite preview` on a LAN, and the in-app prompt is unproven |
-| 3 | **`T5` — the audience change.** Empty prescription fields with the strengthened hints, and the confirmation threshold made relative | **This gates step 4.** Ranking an app that prefills a stranger's dosing ratios is the version of this that goes wrong |
-| 4 | **`4a` + `T6` — search and measurement.** Open Graph, canonical, sitemap, Search Console | After `T5`, never before |
-| 5 | **The 11 `[CONFIRM]` build notes** | Ruled post-deploy. Each records a decision already implemented; the question is whether it was right |
-| 6 | **`T3` — Preact** | Kills the whole render-teardown defect class by construction |
-| 7 | **`10a` — Urdu** | **Depends on `T3`**: the current render destroys IME composition state, which is how Urdu is typed |
+| # | Step | State | Why here |
+|---|---|---|---|
+| 1 | **Push and deploy.** Blog first (§20.2), then this repository | **DONE 2026-09-07** | §1.4 — the app competes with a fixed 24-25 units injected blind |
+| 2 | **Confirm updates reach a real phone** | **DONE.** Three deploys have reached Momin's device, each after a full app restart | `T4` is therefore narrowed: delivery works, only the in-app "a newer version is ready" bar is unproven |
+| 3 | **Rule on the `[CONFIRM]` build notes**, one at a time | **IN PROGRESS.** Note 1 ruled 2026-09-09 | Moved AHEAD of `T5` on Momin's instruction. Each records a decision already implemented; the question is whether it was right |
+| 4 | **`T5` — the audience change.** Empty prescription fields with the strengthened hints, and the confirmation threshold made relative | | **This gates step 5.** Ranking an app that prefills a stranger's dosing ratios is the version of this that goes wrong |
+| 5 | **`4a` + `T6` — search and measurement.** Open Graph, canonical, sitemap, Search Console | | After `T5`, never before |
+| 6 | **`T3` — Preact** | | Kills the whole render-teardown defect class by construction |
+| 7 | **`10a` — Urdu** | | **Depends on `T3`**: the current render destroys IME composition state, which is how Urdu is typed |
 
 **The two dependencies worth restating, because getting them wrong is expensive:** search work waits
 on `T5`, and Urdu waits on `T3`.
@@ -445,11 +445,24 @@ the label's parent.
 
 ---
 
-### T4. The in-app update prompt does not render — CORRECTED 2026-09-08, DOES NOT BLOCK LAUNCH
+### T4. The in-app update prompt — CLOSED 2026-09-09, IT WORKS
 
-**This entry previously claimed that a device which had cached a build "stays on it, permanently"
-and that this blocked launch. THAT WAS WRONG.** Momin rejected it and told me to confirm from the
-code. He was right.
+**CLOSED. Momin, 2026-09-09, on a real phone against the deployed app: "in app bar does render and
+ask me to use it now, so that's perfect."** The prompt appears and the update can be taken by tapping
+it. Nothing further is outstanding.
+
+**The entry is kept because it was wrong twice, in opposite directions, and both are instructive.**
+
+First it claimed a device which had cached a build "stays on it, permanently" and that this blocked
+launch. **That was wrong** — Momin rejected it and told me to confirm from the code. Closing and
+reopening delivers the new build, which is the specified service-worker lifecycle working correctly.
+
+Then it claimed the in-app prompt did not render at all, on the strength of `vite preview` over a
+LAN. **That was wrong too.** On real HTTPS with real Pages caching it renders. A local preview is not
+the deployment, and I reported a negative result from the wrong environment as a defect in the app.
+
+**The lesson, which outlives the entry: I twice reported a confident conclusion from an environment
+that could not produce the behaviour under test.** The measurements were real; the setting was not.
 
 **What actually happens, measured across a close-and-reopen:**
 

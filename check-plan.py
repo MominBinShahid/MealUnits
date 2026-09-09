@@ -264,6 +264,20 @@ RETIRED = [
     # v23. v22 retired this user-facing string and added no count, which is the
     # one-edit rule §20.3 states — broken in the revision that added thirty pins
     # [R1]. The two survivors are §7.7.1's own historical quotations of it.
+    # v27, ruled 2026-09-09. §4.5 carried two rules for an out-of-range reading
+    # and only one could run: "above-range to band E wording" against "a typed
+    # 605 gets plain 'check the number'... not band E's ketone wording". The
+    # second won — "check ketones" is a confusing reply to a typo — and the
+    # first is deleted. Pinned here because a contradiction left in a document
+    # is a trap: a later reader finds the losing sentence, sees the code
+    # disagree, and corrects the code. BUILD-NOTES note 2.
+    #
+    # The count is 2, not 0: §4.5 and note 2 each QUOTE the retired phrase to
+    # explain that it was retired. Quoting a dead rule to record its death is
+    # not the rule living on — but it is indistinguishable to a substring
+    # search, so the count is what separates them. A third occurrence is the
+    # phrase coming back as live spec.
+    ("above-range to band E wording", 2),
     ("last backup: N days ago", 2),
     ("the same mechanism `logRevision` already uses", 2),
     ("the log cannot record it", 1),
