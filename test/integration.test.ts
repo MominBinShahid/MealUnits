@@ -637,6 +637,33 @@ describe('§13.6 interface-to-core mapping', () => {
   });
 });
 
+describe('§8.2 — a block goes stale too', () => {
+  it('says the reading is old, without withdrawing the treat-first instruction', async () => {
+    await setUpAsHisBrother();
+    await keys('65');
+    await tap('Next');
+    await keys('50');
+    await tap('Work out the dose');
+    expect(text()).toContain('Treat this first. Do not inject.');
+    expect(text()).not.toContain('Check your blood sugar again before deciding');
+
+    // §8.2's fifteen minutes, and then some. `blocked` was the only step that
+    // ignored `expired`, so the screen kept presenting a reading whose own body
+    // text had said "check again in 15 minutes".
+    clock += 20 * 60_000;
+    // §8.2 fires the tick on visibility change, which is what returning to the
+    // app after treating a low actually looks like.
+    dom.window.document.dispatchEvent(new dom.window.Event('visibilitychange'));
+    await settle();
+
+    expect(text()).toContain('Check your blood sugar again before deciding');
+    // The block does NOT go away. Being low is still the likeliest reading of
+    // an old low, and §3.3's suppression of every insulin number still holds.
+    expect(text()).toContain('Treat this first. Do not inject.');
+    expect(text()).not.toContain('units of Humulin R');
+  });
+});
+
 describe('§13.6 band-to-message pairing', () => {
   it('band C refuses with no insulin number anywhere on screen', async () => {
     await setUpAsHisBrother();

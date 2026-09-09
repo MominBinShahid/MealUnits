@@ -220,6 +220,19 @@ function blocked(state: AppState, bands: readonly Band[], handlers: CalculatorHa
       h('p', {}, words.body),
       veryLow ? h('p', {}, COPY.bandD.escalation) : null,
       h('p', {}, words.gate),
+      // §8.2 — a block goes stale like anything else, and this is the screen it
+      // matters most on. `blocked` was the only step that ignored `expired`:
+      // the state flipped after fifteen minutes and nothing on screen changed,
+      // so the app went on presenting a reading the user had been told to
+      // replace. A stale dose is dangerous; a stale "do not inject" keeps
+      // someone from eating after they have already recovered.
+      state.expired && state.snapshot !== null
+        ? h(
+            'p',
+            { class: 'caution' },
+            COPY.expiredBlock(formatClockTime(state.snapshot.decisionTime, handlers.timeZone)),
+          )
+        : null,
     ),
     // §7.8 — the offer appears AFTER the treat-first instruction, never instead
     // of it, and it is an AFFORDANCE rather than an advisory: §10.5 rank 1 says

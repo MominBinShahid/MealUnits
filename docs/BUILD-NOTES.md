@@ -145,7 +145,7 @@ asking him to re-read his inputs.
 
 ---
 
-## 6. A blocked low carries every input error alongside it `[CONFIRM]`
+## 6. A blocked low carries every input error alongside it `[RULED 2026-09-09: keep it]`
 
 **Where:** `src/core/resolve.ts`, the `blocked_low` outcome.
 
@@ -157,6 +157,36 @@ nothing spurious appears; a reading of 0 or 19 produces one, and that pair **is*
 "combined invalid-reading-and-possible-low response". Settings errors do not travel — a blocked low
 needs no setting to be correct, and routing him to settings while telling him to treat first would
 bury the instruction that matters.
+
+**RULED 2026-09-09 — keep it.** Worked through with the resolver rather than argued:
+
+```
+bs=65  carbs=50   ->  blocked_low, bands ["C"], alsoInvalid []
+bs=65  carbs=999  ->  blocked_low, bands ["C"], alsoInvalid [{carbs, above_range}]
+bs=180 carbs=999  ->  invalid_input, errors [{carbs, above_range}]
+```
+
+The block always wins and no insulin number appears either way; `alsoInvalid` is empty unless there
+genuinely is a second problem.
+
+**Momin's question is what settled it: "won't it reset the values fifteen minutes later?" It does
+not.** §8.2's expiry sets one flag and clears nothing —
+
+```
+right away : step=blocked expired=false
++20 minutes: step=blocked expired=true
+inputs kept: {"bloodSugar":"65","carbs":"999"}
+```
+
+So the unusable `999` survives the entire interruption. Without `alsoInvalid` the sequence is: block
+shown, carbohydrate problem silent, treat the low, wait, come back, type a new reading over the old
+one — and only THEN learn about a value the app has been holding the whole time. The second trip is
+avoidable and the app already knows enough to avoid it.
+
+**Against it**, and it is a real argument: §10.5 budgets hard, and this is the most safety-critical
+screen in the app. The answer is that §3.3 suppresses **insulin quantities** — a line saying a
+carbohydrate figure is unusable carries no dose, is not actionable while treating a low, and sits
+below the block. It does not compete for the decision.
 
 ---
 
@@ -1497,3 +1527,51 @@ supplies no UI at all, it only fires an `onServiceWorkerUpdateReady` hook, and t
 handler copied from Gatsby's docs. **A `confirm()` is a MODAL: it blocks the entire page and takes
 focus until answered.** On a blog that is fine. Here it could land while a dose is on screen, which
 is the exact interruption §11.4 chose a prompt over a silent reload to avoid.
+
+## 60. The block screen was the only step that ignored expiry `[FYI]`
+
+**Found by a question, not by a test.** Ruling on note 6 I argued that a bad carbohydrate value
+survives the interruption of treating a low. Momin asked: *"but fifteen minutes later won't it reset
+the values?"*
+
+It does not — §8.2's expiry sets one flag and clears nothing:
+
+```
+right away : step=blocked expired=false
++20 minutes: step=blocked expired=true
+inputs kept: {"bloodSugar":"65","carbs":"999"}
+```
+
+**But checking that turned up something worse.** Only `resultScreen` read `expired`:
+
+```
+resultScreen         5 references
+blocked()            0
+overrideScreen       0
+amountScreen         0
+loggedScreen         0
+recordReadingScreen  0
+```
+
+So after twenty minutes the state said `expired: true` and **the block screen showed exactly what it
+had shown at minute zero** — the original `65`, and "check again in 15 minutes", indefinitely.
+
+**This is the screen where it matters most.** §8.2 exists to stop a stale reading driving a decision,
+and this screen's own instruction is time-bound: it tells the user to recheck in fifteen minutes and
+then keeps presenting the number they were told to replace. **A stale dose is dangerous; a stale "do
+not inject" keeps someone from eating after they have already recovered.** §8.2 says expiry "applies
+on resume, on visibility change, and on a timer" — it never scoped itself to the result screen.
+
+**The wording is deliberately different from the result screen's.** There, what went stale is an
+ANSWER: "this result is from 7:10 PM". On a block there is no answer — what went stale is the
+READING. So: *"That reading was at 7:10 PM. Check your blood sugar again before deciding anything —
+if you have treated, it will have changed."*
+
+**And the block does not go away.** Being low is still the likeliest reading of an old low, so §3.3's
+suppression of every insulin number still holds. The test asserts both halves: the staleness line
+appears AND "Treat this first. Do not inject." is still there with no dose anywhere.
+
+**The other four screens were left alone**, deliberately. `amount` and `logged` are recording an
+injection that already happened, and `recordReading` is saving a number the user is looking at — none
+of them is a decision resting on a reading being current. Only `overrideScreen` is arguable, and it
+is reached from a result screen that already carries the notice.
