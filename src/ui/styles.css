@@ -178,6 +178,11 @@ body {
   min-height: 100%;
   display: flex;
   flex-direction: column;
+  /* Set by `promptBar` while a prompt is up, cleared when it closes. Without
+     it a fixed bottom bar sits on top of the primary action — "Work out the
+     dose", "Log this injection" — which is the one control it must never
+     cover. Overlaying the PAGE is fine; overlaying that BUTTON is not. */
+  padding-bottom: var(--prompt-h, 0);
   background-image: var(--wash);
   background-attachment: fixed;
   transition: background-image 220ms ease;
@@ -568,8 +573,74 @@ body {
 }
 
 /* §11.4's update prompt, which the shell prepends to the body. */
-.update-prompt {
-  margin: 0.75rem 1.25rem;
+/*
+ * §11.4's prompts — the update offer and the install offer.
+ *
+ * It used to be `.flag` prepended to <body>, which put it in normal flow and
+ * **displaced the whole page downward.** A prompt is an interruption; it should
+ * sit over the page rather than rearrange it.
+ *
+ * Fixed to the FOOT for the same reason Settings and History moved there: the
+ * top of a one-handed phone is the hardest place to reach, and this is a
+ * control the user is being asked to act on.
+ */
+.prompt-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  box-sizing: border-box;
+  max-width: var(--column);
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap);
+  padding: 0.75rem 1rem max(0.75rem, env(safe-area-inset-bottom));
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
+  /* Reads as ON the page rather than part of it. */
+  box-shadow: 0 -8px 28px -12px rgba(0, 0, 0, 0.55);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.prompt-bar b {
+  flex: 1 1 100%;
+}
+
+.prompt-bar .go {
+  flex: 1 1 auto;
+  min-height: var(--touch);
+  padding: 0 1rem;
+  font-size: 0.875rem;
+}
+
+.prompt-bar .link {
+  flex: 0 0 auto;
+  min-height: var(--touch);
+  text-align: center;
+}
+
+/* §10.9 — it slides in, unless motion is a problem, in which case it is simply
+   there. Either way it never moves the page behind it. */
+@keyframes prompt-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+.prompt-bar {
+  animation: prompt-in 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prompt-bar {
+    animation: none;
+  }
 }
 
 .more {

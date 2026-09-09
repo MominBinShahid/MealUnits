@@ -79,6 +79,73 @@ function pickFile(): Promise<string | null> {
  * at startup**: a worker can already be waiting when the page loads, and a page
  * that only listens for `updatefound` never notices.
  */
+
+/**
+ * §11.4's prompts, as ONE component — the update offer and the install offer
+ * were two copies of the same markup with the same two defects.
+ *
+ * **It was prepended to `<body>`, so it displaced the entire page downward.**
+ * Momin reported it as the app being pushed off centre. A prompt is an
+ * interruption; it should sit over the page, not rearrange it.
+ *
+ * **Fixed to the FOOT, not the head.** Same argument that moved Settings and
+ * History: the top of a one-handed phone is the hardest place to reach, and
+ * this is a control the user is being asked to act on.
+ *
+ * **The page keeps its own bottom clear.** A fixed bar at the bottom would sit
+ * on top of the primary action — "Work out the dose", "Log this injection" —
+ * which is the one control it must never cover. So the bar's height is
+ * published as a custom property and `#app` pads by it while a prompt is up.
+ * That is the difference between overlaying the PAGE and overlaying a BUTTON.
+ */
+function promptBar(options: {
+  readonly text: string;
+  readonly actionLabel: string;
+  readonly onAction: () => void;
+  readonly dismissLabel: string;
+}): void {
+  const bar = document.createElement('div');
+  bar.className = 'prompt-bar';
+
+  const text = document.createElement('b');
+  text.textContent = options.text;
+
+  const action = document.createElement('button');
+  action.type = 'button';
+  action.className = 'go';
+  action.textContent = options.actionLabel;
+
+  const dismiss = document.createElement('button');
+  dismiss.type = 'button';
+  dismiss.className = 'link';
+  dismiss.textContent = options.dismissLabel;
+
+  const close = (): void => {
+    bar.remove();
+    document.documentElement.style.removeProperty('--prompt-h');
+  };
+
+  action.addEventListener('click', () => {
+    close();
+    options.onAction();
+  });
+  /**
+   * DISMISSAL IS IN MEMORY AND NOTHING ELSE. It is gone for this session and
+   * returns on the next launch.
+   *
+   * Persisting it would let one tap suppress a version's prompt forever, which
+   * is the "acknowledgement dropped, value kept" state §7.9 refuses elsewhere.
+   * And it costs nothing to omit: the waiting worker activates on the next full
+   * restart regardless, so dismissing defers the tap rather than the update.
+   */
+  dismiss.addEventListener('click', close);
+
+  bar.append(text, action, dismiss);
+  document.body.append(bar);
+  // Measured after insertion, because the text wraps differently by width.
+  document.documentElement.style.setProperty('--prompt-h', `${String(bar.offsetHeight)}px`);
+}
+
 function registerServiceWorker(): void {
   if (!('serviceWorker' in navigator)) return;
 
@@ -88,19 +155,12 @@ function registerServiceWorker(): void {
     // page grows a stack of identical bars.
     if (offered) return;
     offered = true;
-    const bar = document.createElement('div');
-    bar.className = 'flag mint update-prompt';
-    const text = document.createElement('b');
-    text.textContent = 'A newer version is ready.';
-    const action = document.createElement('button');
-    action.type = 'button';
-    action.className = 'go quiet';
-    action.textContent = 'Use it now';
-    action.addEventListener('click', () => {
-      waiting.postMessage({ type: 'SKIP_WAITING' });
+    promptBar({
+      text: 'A newer version is ready.',
+      actionLabel: 'Use it now',
+      onAction: () => { waiting.postMessage({ type: 'SKIP_WAITING' }); },
+      dismissLabel: 'Later',
     });
-    bar.append(text, action);
-    document.body.prepend(bar);
   };
 
   /**
@@ -280,25 +340,12 @@ function offerInstall(): () => void {
     const prompt = pending;
     if (prompt === null || shown) return;
     shown = true;
-    const bar = document.createElement('div');
-    bar.className = 'flag mint update-prompt';
-    const text = document.createElement('b');
-    text.textContent = 'Add this to your home screen?';
-    const action = document.createElement('button');
-    action.type = 'button';
-    action.className = 'go quiet';
-    action.textContent = 'Add it';
-    action.addEventListener('click', () => {
-      bar.remove();
-      void prompt.prompt();
+    promptBar({
+      text: 'Add this to your home screen?',
+      actionLabel: 'Add it',
+      onAction: () => { void prompt.prompt(); },
+      dismissLabel: 'Not now',
     });
-    const dismiss = document.createElement('button');
-    dismiss.type = 'button';
-    dismiss.className = 'link';
-    dismiss.textContent = 'Not now';
-    dismiss.addEventListener('click', () => { bar.remove(); });
-    bar.append(text, action, dismiss);
-    document.body.prepend(bar);
   };
 }
 
