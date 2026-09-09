@@ -28,7 +28,7 @@ the rule is written here rather than remembered.
 
 ---
 
-## 1. Rounding operates on the decimal representation, not on the value scaled by 100 `[CONFIRM]`
+## 1. Rounding operates on the decimal representation, not on the value scaled by 100 `[RULED 2026-09-09: keep it]`
 
 **Where:** `src/core/decimal.ts`, and everything downstream of it.
 
@@ -51,9 +51,15 @@ asserting it.
 **To reverse it:** §5.2's −1.495 → −1.50 row would have to change, and the golden cases at 1.005,
 ±1.125 and ±1.495 with it.
 
+**RULED 2026-09-09 — keep it, and the reasoning changed.** Momin asked what was actually correct
+rather than what the plan said, which turned up a THIRD rule the note never recorded: scale, round the
+MAGNITUDE, reapply the sign. It is as correct as the decimal-text route. See note 58 for the
+measurement and §5.2 for the table — **2,623,215 reachable values, zero disagreements between them.**
+The shipped rule stays because it is already verified, not because the alternative is worse.
+
 ---
 
-## 2. An above-range reading gets "check the number", never band E `[CONFIRM]`
+## 2. An above-range reading gets "check the number", never band E `[RULED 2026-09-09: keep it]`
 
 **Where:** `src/core/resolve.ts`, and the golden case named "§4.5 — 605 gets 'check the number'".
 
@@ -72,6 +78,13 @@ all**. The interface attaches the HI guidance to that reason.
 **Consequence worth seeing:** the error reasons are `above_range` and `below_range` rather than a
 single `out_of_range`, precisely so the interface can tell the HI case from the LO case without
 re-reading the number.
+
+**RULED 2026-09-09 — keep it.** Momin confirmed against the running app: typing `605` shows *"A meter
+does not read above 600. Check the number — if it really is showing HI, enter 600."* and no ketone
+advisory. §4.5's losing sentence is deleted rather than left standing, and the retired phrase is in
+`check-plan.py`'s RETIRED table so it cannot reappear in any document unnoticed — a contradiction
+left in place is a trap: a later reader finds the band-E sentence, sees the code disagree, and
+"fixes" the code.
 
 ---
 

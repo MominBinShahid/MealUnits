@@ -929,7 +929,18 @@ which permitted an insulin sensitivity factor of 0.001 and therefore an arbitrar
 dose — while the derived ceiling rose in step with it and never fired (§6.4).
 
 A reading below 20 or above 600 is **not** merely "invalid": per step 3, below-range routes
-to the low-reading response and above-range to band E wording.
+to the low-reading response, and above-range gets **"check the number"** with the HI guidance.
+
+**RULED 2026-09-09 by Momin. This sentence used to end "and above-range to band E wording", which
+contradicted the paragraph below it** — the one that says a typed `605`, a plausible typo for `60.5`,
+gets plain "check the number" and *not* band E's ketone advisory, because **"check ketones" is a
+confusing reply to a typo.** Both could not be executed; the second is the more specific and carries
+its own reasoning, so it wins and the first is deleted rather than left as a live alternative.
+
+An above-range reading therefore produces `invalid_input` with reason `above_range` and **asserts no
+band at all.** The reasons are `above_range` and `below_range` rather than one `out_of_range`
+precisely so the interface can tell HI from LO without re-reading the number: one says a meter cannot
+read that high, the other says not to enter a number at all and to treat first.
 
 **`LO` and `HI` instructions — WRITTEN IN v3** [R1-M5]. v2 promised this text and never supplied
 it, which is where the §3.1 disagreement actually resolves. The Accu-Chek Instant caps at 600.
@@ -1008,6 +1019,34 @@ must still be pinned by tests so a future refactor cannot reorder clamp and roun
 
 Truncating a negative correction makes it *less* negative and therefore **increases** the
 combined dose relative to flooring it.
+
+**Three rules satisfy this table, not two — RECORDED IN v27, ruled by Momin 2026-09-09.** The build
+compared rounding the decimal representation against `Math.round(value * 100) / 100` and chose the
+first. A third was never written down and is equally correct:
+
+| | `-1.495` | `1.005` | `-1.125` | `2.675` |
+|---|---|---|---|---|
+| **A** `Math.round(v * 100) / 100` | **-1.49** | 1.00 | **-1.12** | 2.68 |
+| **B** round the decimal representation — **SHIPPED** | -1.50 | 1.00 | -1.13 | 2.67 |
+| **C** scale, round the MAGNITUDE, reapply the sign | -1.50 | 1.00 | -1.13 | 2.68 |
+
+**A is excluded, and floating point is not the reason.** `Math.round` breaks ties toward **+∞**, so
+`Math.round(149.5)` is 150 while `Math.round(-149.5)` is -149: the same magnitude is treated
+differently by sign, which §2.2 forbids for every mode. `Math.sign(v) * Math.round(Math.abs(v))`
+removes exactly that fault, and that is rule C.
+
+**B and C disagree only where a decimal LITERAL looks like a tie while the double behind it is not.**
+`2.675` is really 2.67499999…, so B trusts the printed digits and C trusts the value. Both are
+defensible; neither is a floating-point bug.
+
+**Measured across every value this app can reach** — corrections and meal doses, five prescriptions,
+blood sugar 20-600, carbohydrate 0-300, **2,623,215 values: zero disagreements.** With real ratios a
+correction is a multiple of `1/isf` and a meal a multiple of `1/icr`, and those essentially never
+land on a third-decimal tie. §13.3's 572-value figure is over SYNTHETIC three-decimal values, not
+reachable doses.
+
+**B is kept because it is shipped, tested and already agrees with this table — not because C is
+worse.** C is recorded so that a later reader does not rediscover it and assume it was overlooked.
 
 ### 5.3 Formatting is not a second rounding engine [R2]
 

@@ -52,7 +52,7 @@ focus-destroying defect survived 541 tests and a 100% mutation score; a page-lev
 correct result look like a failure needed someone to LOOK at a screenshot; and every layout defect so
 far was found by Momin on a real device. When you change the interface, open it in a browser.
 
-**Known open item: `docs/BACKLOG.md` T4** — the in-app "a newer version is ready" prompt does not
-render, so an update is taken by closing and reopening the app rather than by tapping. It does NOT
-block launch: a waiting worker activates once every client is gone, which is measured and recorded.
-An earlier version of this note claimed a cached build was permanent; that was wrong.
+**Updates reach a phone two ways, both confirmed on the deployed app:** the in-app "a newer version
+is ready" bar renders and can be tapped, and a full close-and-reopen activates a waiting worker
+anyway. `docs/BACKLOG.md` T4 is closed — it is kept because it was wrong twice, in opposite
+directions, both times from measuring in `vite preview` rather than in the deployment.
