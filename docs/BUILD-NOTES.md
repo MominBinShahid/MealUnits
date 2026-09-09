@@ -1441,3 +1441,48 @@ third-decimal tie.
 **So the ruling is cheap either way, and B stays** — it is shipped, it is tested, and it agrees with
 §5.2's table. What changes is the JUSTIFICATION: not "the plan says so" but "A is wrong, B and C are
 indistinguishable in practice, and B is the one already verified."
+
+## 59. The prompts pushed the page down, and were two copies of one component `[FYI]`
+
+**Momin, on the update bar: "it shoves the whole page down instead of overlaying — this is my
+problem."** Correct, and the same defect existed twice: the update offer and the install offer were
+separate copies of the same markup.
+
+**The cause was one line.** `document.body.prepend(bar)` puts the bar in normal flow, so it displaces
+everything below it. A prompt is an interruption; it should sit OVER the page rather than rearrange
+it.
+
+**Now one `promptBar` component, fixed to the FOOT.** Same argument that moved Settings and History
+there: the top of a one-handed phone is the hardest place to reach, and this is a control the user is
+being asked to act on.
+
+**The part that needed thought: a fixed bottom bar covers the primary action.** "Work out the dose"
+and "Log this injection" live at the bottom of their screens, and those are the controls it must
+never hide. So the bar publishes its own height as `--prompt-h` and `#app` pads by it while a prompt
+is up. **Overlaying the PAGE is fine; overlaying that BUTTON is not.** Measured at 412px:
+
+| | screen top | "Next" bottom | prompt top | covered |
+|---|---|---|---|---|
+| no prompt | 0 | 650 | — | — |
+| prompt up | **0** | **650** | 727 | **false** |
+
+The page does not move, and nothing is hidden.
+
+**"Use it now" was styled `go quiet`** — a secondary button for the only action on the bar. It is the
+primary now.
+
+**And the update offer gained a dismiss, which the install offer already had.** Momin asked whether
+to allow one at all. The argument against is that dismissing means knowingly running an older build;
+the argument for is that a bar you cannot clear is a nag, and it can appear mid-calculation.
+
+**Resolved by scope: the dismissal is IN MEMORY and nothing else.** Gone for this session, back on the
+next launch. Persisting it would let one tap suppress a version's prompt forever — the
+"acknowledgement dropped, value kept" state §7.9 refuses elsewhere. And it costs nothing, because the
+waiting worker activates on the next full restart anyway: dismissing defers the tap, not the update.
+
+**Why not `window.confirm`, which is what the blog uses.** Momin noticed `mominbinshahid.github.io`
+shows a native confirm box and asked whether that was the default. It is not — `gatsby-plugin-offline`
+supplies no UI at all, it only fires an `onServiceWorkerUpdateReady` hook, and the box is his own
+handler copied from Gatsby's docs. **A `confirm()` is a MODAL: it blocks the entire page and takes
+focus until answered.** On a blog that is fine. Here it could land while a dose is on screen, which
+is the exact interruption §11.4 chose a prompt over a silent reload to avoid.
