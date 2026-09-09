@@ -504,6 +504,20 @@ export const COPY = {
 
   // ── §8.2 — staleness ──────────────────────────────────────────────────────
   expired: (at: string): string => `This result is from ${at}. Check your blood sugar again.`,
+  /**
+   * §8.2 on a BLOCK, which needs different words from a stale dose.
+   *
+   * The result screen says "this result is from…", because what went stale
+   * there is an answer. On a block there is no answer — what went stale is the
+   * READING, and the screen's own instruction was "check again in 15 minutes".
+   * Past that point it is showing a number the user was told to replace.
+   *
+   * It does not suppress the treat-first guidance: being low is still the most
+   * likely reading of an old low. It says the number is old and asks for a new
+   * one, which is the same thing the body text already asked for.
+   */
+  expiredBlock: (at: string): string =>
+    `That reading was at ${at}. Check your blood sugar again before deciding anything — if you have treated, it will have changed.`,
 
   /** §11.3 — the fail-closed screen. */
   failClosed: {
