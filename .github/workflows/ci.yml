@@ -3,7 +3,15 @@ name: CI
 on:
   push:
     branches: [main]
+  # `edited` is here because `golden-change` reads the PULL REQUEST BODY. Without
+  # it the job cannot be re-triggered by fixing the body: the default types are
+  # opened/synchronize/reopened, and `gh run rerun` replays the old event payload
+  # with the old body, so adding the missing GOLDEN-CHANGE: marker changes
+  # nothing and the only way through is to close and reopen the PR. That is what
+  # PR #7 had to do. Naming any type means naming the three defaults as well —
+  # the list replaces them rather than adding to them.
   pull_request:
+    types: [opened, synchronize, reopened, edited]
 
 # §13.8: typecheck, unit suite, Stryker on the core and the integration suite
 # are all required to merge. They run as separate jobs so a failure names itself.
