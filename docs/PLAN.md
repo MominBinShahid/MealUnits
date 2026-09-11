@@ -661,6 +661,24 @@ never stated one. **All modes break ties half away from zero** — whole unit, h
 hundredths quantization in `off`. One rule, stated once, pinned by golden cases at 1.005,
 ±1.125 and ±1.495.
 
+**What the rule actually operates on — MEASURED, AMENDED 2026-09-11** [ruled: record it, do not
+rewrite the arithmetic]. The rule holds on values floating point still presents as ties. A paper
+tie the double sum has already fallen short of never reaches the tie-breaker: at 150/30/10, blood
+sugar 72 with 41 g is exactly `-2.6 + 4.1 = 1.5` on paper — this section as written demands 2
+units — but the double sum is `1.4999999999999996`, and whichever tie rule is installed answers 1,
+because the value it is shown is not a tie. This is §2.3 rule 4's accepted floating-point-division
+limitation, measured rather than waved at. Over the boundary-sweep prescription grid (252
+prescriptions, integer readings 70–600, integer carbohydrate 0–300, whole- and half-unit ties):
+1,548,426 paper ties occur; the double sum misses 11,564 of them; the 5,985 that land *below* the
+tie round **one increment low, and every deviating result is low** — a double landing above a tie
+still rounds away from zero exactly as the paper rule does, so no case rounds high. Single
+components never cross a boundary this way; only sums do, and the golden ties above (0.5, 1.005,
+±1.125, ±1.495) are exactly representable at the point of rounding, which is why none of them
+catches it. The deviation is bounded at one increment and always in the direction of less insulin;
+at a 1.5-unit tie under `nearest` the shortfall is 0.5 units, which is proportionally large at
+small doses. The 72/41 case is pinned as a golden fixture as the MEASURED EXCEPTION, so the
+incidental behaviour cannot move unnoticed.
+
 ### 2.3 Finiteness and safe range — NEW IN v2 [R2]
 
 `Math.round(1.005 * 100)` is `100`, not `101`, because `1.005 * 100` evaluates to
@@ -913,7 +931,7 @@ Rejecting one field never authorises calculating from the other alone. [R2]
 | Insulin sensitivity factor | 5–200 mg/dL per unit | 20–100 |
 | Insulin-to-carb ratio | 1–100 g per unit | 5–50 |
 | Basal dose (§1.3) | 1–150 units | 5–80 |
-| Injected amount (§7.1) — **ADDED IN v9** | 0.01–100 units | 0.5–60 |
+| Injected amount (§7.1) — **ADDED IN v9** | 0.01–100 units | 0.5–60 — struck 2026-09-11 (§7.1's stepper amendment; the hard cap and the divergence confirmation remain) |
 
 **The target ceiling is 200, lowered from 300 in v17.** 300 was picked as "generously permissive"
 and has no clinical basis — no one sets a preprandial target there. The ADA's Standards of Care put
@@ -1027,26 +1045,44 @@ first. A third was never written down and is equally correct:
 | | `-1.495` | `1.005` | `-1.125` | `2.675` |
 |---|---|---|---|---|
 | **A** `Math.round(v * 100) / 100` | **-1.49** | 1.00 | **-1.12** | 2.68 |
-| **B** round the decimal representation — **SHIPPED** | -1.50 | 1.00 | -1.13 | 2.67 |
+| **B** round the decimal representation — **SHIPPED** | -1.50 | **1.01** | -1.13 | 2.68 |
 | **C** scale, round the MAGNITUDE, reapply the sign | -1.50 | 1.00 | -1.13 | 2.68 |
+
+**CORRECTED 2026-09-11 — the B row was wrong in its own table.** It read `1.005 → 1.00` and
+`2.675 → 2.67`; measured through `roundScaledHalfAwayFromZero`, B gives **1.01** and **2.68**, and
+the tests have pinned 1.005 → 1.01 all along (`test/decimal.test.ts`, `test/round.test.ts`). So the
+table's only exhibited B-versus-C difference (2.675) was not a difference at all, and the actual
+difference in its own columns (1.005) was shown as agreement. **The code and the tests are right;
+the table was wrong** — a reader who "fixed" the code to match the old cells would break §2.2's tie
+rule and two live tests.
 
 **A is excluded, and floating point is not the reason.** `Math.round` breaks ties toward **+∞**, so
 `Math.round(149.5)` is 150 while `Math.round(-149.5)` is -149: the same magnitude is treated
 differently by sign, which §2.2 forbids for every mode. `Math.sign(v) * Math.round(Math.abs(v))`
 removes exactly that fault, and that is rule C.
 
-**B and C disagree only where a decimal LITERAL looks like a tie while the double behind it is not.**
-`2.675` is really 2.67499999…, so B trusts the printed digits and C trusts the value. Both are
-defensible; neither is a floating-point bug.
+**B and C disagree only where a decimal LITERAL looks like a tie while the SCALED double is not.**
+`1.005` prints as a tie while `1.005 * 100` is `100.49999999999999`: B trusts the printed digits
+and rounds up to 1.01; C trusts the value and answers 1.00. At `2.675` they agree at 2.68 — the
+literal is really 2.67499999…, but `2.675 * 100` lands exactly on `267.5`, so both rules see the
+same tie. Both are defensible; neither is a floating-point bug.
 
-**Measured across every value this app can reach** — corrections and meal doses, five prescriptions,
-blood sugar 20-600, carbohydrate 0-300, **2,623,215 values: zero disagreements.** With real ratios a
-correction is a multiple of `1/isf` and a meal a multiple of `1/icr`, and those essentially never
-land on a third-decimal tie. §13.3's 572-value figure is over SYNTHETIC three-decimal values, not
-reachable doses.
+**Measured over an integer-input grid under five prescriptions** — corrections and meal doses,
+integer blood sugars 20-600, integer carbohydrates 0-300, 2,623,215 values: zero disagreements
+*on that grid*. **The original headline "every value this app can reach" was false
+[CORRECTED 2026-09-11]:** over the full admissible ranges (§4.5) B and C disagree thousands of
+times, and ordinary prescriptions do land on third-decimal ties — ISF 40 at target 150 with a
+reading of 173 gives a correction of exactly 0.575 (B: 0.58, C: 0.57), and the shipped ICR of 10
+with a grammar-valid 5.75 g gives the same 0.575 as a meal term. Where the two rules differ,
+**B is the more faithful one**: against exact rational arithmetic over every integer-reading
+correction the hard ranges admit (ISF 5-200 × target 70-200 × blood sugar 20-600, 14,917,756
+values, measured 2026-09-11), B deviates **zero** times and C deviates **8,486**. The ruling was
+stronger than it knew. The 572-value figure is over SYNTHETIC three-decimal values, not reachable
+doses — it lives in build note 1 and `test/decimal.test.ts`, not in §13.3.
 
-**B is kept because it is shipped, tested and already agrees with this table — not because C is
-worse.** C is recorded so that a later reader does not rediscover it and assume it was overlooked.
+**B is kept because it is shipped, tested and the stricter match to the arithmetic on paper — not
+because C is worse in kind.** C is recorded so that a later reader does not rediscover it and
+assume it was overlooked.
 
 ### 5.3 Formatting is not a second rounding engine [R2]
 
@@ -1172,8 +1208,12 @@ in good faith, and the restatement confirms his own mistake back to him. §5.4 s
 error dominates. Claim the narrower thing.
 
 **Confirmation lifetime:** applies only to the exact values confirmed. Any change to any input,
-setting, mode, threshold, **log revision or stacking override** cancels it (§4.3 step 1). Not
-persisted across sessions. Cancelling leaves no result.
+setting, mode, threshold, **log revision or stacking override** cancels it (§4.3 step 1), **and so
+does the result's expiry (§8.2) — ADDED 2026-09-11**, because time was the one dosing input this
+list left out: the decision time is part of what the dose was computed from (§11.2), and a
+confirmation that outlived it could reveal a previously hidden correction under an earlier
+acknowledgement once §7.4's window lapses — the exact thing §7.4.1 forbids. Not persisted across
+sessions. Cancelling leaves no result.
 
 ### 6.4 The bound is a tripwire, not a settings validator [R2]
 
@@ -1514,12 +1554,28 @@ for 25 under-counts insulin on board, the dose-raising direction.
 
 | Property | Rule |
 |---|---|
-| **Grammar** | §4.2's whole-string grammar applies — it was written for blood sugar and carbohydrates only. Rejects `25g`, `2,5`, Unicode digits |
+| **Grammar** | **Superseded by the stepper — RULED 2026-09-11** (amendment below). §4.2's whole-string grammar was written for a typed field, and the amount screen has none: the draft is written only by the stepper, so there is nothing of the user's to parse. The grammar survives as a defensive check on the stepper-written draft, not as a user-facing rule |
 | **Representation** | §2.2's **integer hundredths**. A float here reintroduces the exact defect §2.2 exists to remove, in the export |
 | **Finiteness** | Explicit `Number.isFinite` before any use |
-| **Zero and negative** | **Rejected.** The tap asserts an injection happened; zero contradicts it. §7.2's "a zero-unit result cannot be logged" governs `units`, not this field, and needed saying |
+| **Zero and negative** | **Rejected — rule unchanged, mechanism amended 2026-09-11.** The tap asserts an injection happened; zero contradicts it. The stepper clamps at zero, so a negative amount is unconstructible, and a zero reached at the clamp is still refused with its reason. §7.2's "a zero-unit result cannot be logged" governs `units`, not this field, and needed saying |
 | **Hard cap** | **100 units** — a U-100 syringe holds no more, so above it is a typo by construction |
-| **Soft confirm** | Outside 0.5–60 units (§4.5), or on large divergence from `units` — **predicate defined below**. v9's prose named only the upper end; the range governs [R1] |
+| **Soft confirm** | ~~Outside 0.5–60 units (§4.5), or~~ on large divergence from `units` — **predicate defined below**. ~~v9's prose named only the upper end; the range governs [R1]~~ **The fixed band is struck — RULED 2026-09-11**, in the stepper amendment below; the divergence confirmation is the surviving rule |
+
+**The amount entry is a ±half-unit stepper, and the table above is amended to match — RULED
+2026-09-11 [Momin].** §7.2's amount screen pre-fills the calculated dose and moves in half-unit
+steps; there is no typed field. That retires the typed-entry hazards this table legislated
+against: a 2.5-for-25 typo is impossible to make when there is nothing to type, and reaching 3x
+the calculated dose takes dozens of deliberate taps with the running amount on screen the whole
+way. What ships — wired at the commit tap through one predicate — is the **hard cap** and the
+**divergence confirmation**. The 0.5–60 soft-confirm row is **struck rather than implemented**:
+the divergence confirmation covers the same hazard from a better angle, because it compares the
+entered amount against the CALCULATED dose rather than against a fixed band. Under the struck
+band a calculated 55 stepped to 61 would have soft-confirmed at the fixed boundary; under the
+divergence rule it confirms nowhere, and should not — it is inside the syringe's physical range
+and unremarkable next to its own calculation — while the same 61 against a calculated 12 does
+confirm. One consequence of the strike is recorded rather than left to be found: `RANGE.injected`
+keeps its soft band in `config.ts` and in §11.8's block with no consumer; removing it is a code
+edit, not made from here.
 
 **"Large divergence" defined — ADDED IN v10** [R2, blocking]. v9 named this confirmation and gave
 it no predicate, so an implementer could not tell whether a calculated 11 against an entered 25
@@ -1618,9 +1674,24 @@ consumed only *after* a verified write, and abandoned the dose for stacking if t
 That is backwards: the button means **"I injected this"**, and the injection has already
 happened. A failed disk write does not make it unknown to the running session.
 
-On write failure the app enters a **pending-save** state — *"Couldn't save this yet. Retrying."*
-— with retry. The in-session stacking gate still knows about the dose. Only a restart before a
-successful write loses it, and §7.5's caveat line then applies.
+On write failure the app enters a **pending-save** state, whose copy is:
+
+> Couldn't save this dose. It still counts toward your next calculation while the app is open,
+> but closing the app will lose it — write it down. Within 4 hours that matters: a correction
+> could stack.
+
+The retry is **one immediate silent re-attempt, then escalation to a prompt bar** that follows
+him off the logged screen and names the amount (note 61). The in-session stacking gate still
+knows about the dose. Only a restart before a successful write loses it, and §7.5's caveat line
+then applies.
+
+**CORRECTED 2026-09-11 — this paragraph and the failure bullet below both carried stale copy.**
+They specified *"Couldn't save this yet. Retrying."* and a bare *"with retry"* after the build
+had shipped the wording above and the retry-then-escalate behaviour — the plan contradicting a
+shipped string and a passing test. Note 61 records the two false claims the old copy once made
+and the day they became true. The retired phrase still needs its pin in `check-plan.py`'s
+RETIRED table — Momin's edit, under §20.3's one-edit rule; `design/step-flow.html` still renders
+the old wording and is counted or corrected when that pin lands.
 
 **The timer carries its eligibility, it is not recomputed** [R2-F4]. v3 started the eat-at timer
 unconditionally, so logging an injection in band B displayed "eat around 7:30 PM" directly
@@ -1628,13 +1699,15 @@ contradicting band B's "eat first, then inject." And recovery could not reconstr
 because the row lacked the target and sensitivity that produced it.
 
 The log row therefore stores `timingAdvice` — the decision made at calculation time (`before`,
-`eat_first`, or `suppressed`) — and the timer, the logged-state wording and restart recovery all
-read that stored value. The band is never re-derived from settings that may since have changed.
+`eat_first`, or `suppressed`) — and the timer and the logged-state wording read that stored
+value. A third consumer, restart recovery, was specified here and never built; it is struck below
+(2026-09-11). The band is never re-derived from settings that may since have changed.
 
 **Failure and edge behaviour, all specified:**
 
-- **Write fails** (quota, private mode, storage throws): *"Couldn't save this yet — retrying.
-  This dose is still counted while the app stays open."* **The timer starts regardless** — the
+- **Write fails** (quota, private mode, storage throws): the pending-save copy above, verbatim —
+  one specified wording, not two (**CORRECTED 2026-09-11**: this bullet carried its own stale
+  variant of the old copy; note 61 preserves it). **The timer starts regardless** — the
   injection happened and he still needs the eat-at guidance.
 
   **Corrected in v5** [R1-B3, R2]. v4 rewrote the paragraph above to decouple consumed-state from
@@ -1651,8 +1724,14 @@ read that stored value. The band is never re-derived from settings that may sinc
 - **Tap after §8.2 expiry** is permitted with amended wording (the log records what he did, and
   he may genuinely have injected at minute 16), but the recorded timestamp is the tap time and
   the wording says so.
-- **Restart mid-transaction:** a verified row without a started timer is reconciled on next
-  load by recovering the timer from the row. The storage state is authoritative, not the UI.
+- **Restart mid-transaction:** ~~a verified row without a started timer is reconciled on next
+  load by recovering the timer from the row. The storage state is authoritative, not the UI.~~
+  **STRUCK 2026-09-11, ruled by Momin: strike it, do not build it.** Nothing ever implemented
+  this reconciliation, and it is removed as a promise so it cannot sit here reading as shipped
+  behaviour. What is lost is an eat-at reminder after a restart that lands inside the eat
+  window — low severity: the row itself is safe (the write verified), the stacking gate reads
+  the row, and the history screen shows it. Recorded as a deliberate removal with its date, so
+  it does not return as an unimplemented promise.
 
 ### 7.3 Delete only, with consequence [R1-H3]
 
@@ -1813,7 +1892,8 @@ type and range check while omitting an injection from an hour ago; storage loss 
 settings re-entry does the same.
 
 **"No usable recent record" must never silently assert "no recent insulin."** When the log is
-empty, or its most recent entry predates the app's own install, or history was just imported:
+empty, or its most recent entry predates the app's own install, or history was just imported, or
+the app had to drop a stored row on load (the fifth condition, added 2026-09-11 below):
 
 > No recent dose recorded. If you injected within the last 4 hours, this correction may stack.
 
@@ -1825,12 +1905,22 @@ information instead of becoming furniture.
 | Line | Fires when |
 |---|---|
 | §7.4's *"Last dose: 6 units, 5 hours ago — may still be acting"* | elapsed is 4–12 h |
-| §7.5's *"No recent dose recorded…"* caveat | **no usable record within 12 h** *and* **provenance is suspect** — empty log, log predating install, history just imported, or a row excluded by §7.6 |
+| §7.5's *"No recent dose recorded…"* caveat | **no usable record within 12 h** *and* **provenance is suspect** — empty log, log predating install, history just imported, a row excluded by §7.6, or a stored row dropped by §11.3's load-time re-validation (fifth condition, ADDED 2026-09-11) |
 
 v4 dropped the provenance condition and fired purely on "older than 12 hours, or absent." That
 collided with §7.4's "over 12 hours → No line" for identical data, and made the caveat fire after
 **every overnight gap** — furniture on a daily schedule, the exact failure the rewrite was meant
 to prevent, while the history screen showed last night's dose one tap away.
+
+**The fifth suspect condition — ADDED 2026-09-11, ruled by Momin.** A row **dropped by §11.3's
+load-time re-validation** makes provenance suspect exactly as the four conditions above do. This
+section did not list it before only because until 2026-09-11 the load path did not re-validate at
+all: §11.3 says "re-validate on every load and import", and only the import half was implemented.
+The load half now drops a stored row that fails re-validation rather than repairing it — repairing
+it would invent a dose — and counts what it dropped (`droppedStoredRows` in the core's history
+context), so this section can act on the count. The reasoning is this section's own: a log the app
+had to prune is not one it can vouch for, and silently discarding a row and then saying "No recent
+dose recorded" would be exactly the false safety claim §7.5 exists to refuse.
 
 **Residual, stated rather than papered over** [R1-B2]: if the "I injected" write fails *and* the
 app restarts before a retry succeeds, that injection is lost to the gate. If an older row under
@@ -1981,6 +2071,23 @@ exactly the restore path tombstones exist to protect — and the remap step had 
 §7.3 alone.** The other two are corrected here: §7.1's row list gains the shape, and §11.3's `log`
 line no longer reads "one record per injection". Naming the omissions is not repairing them, and a
 section that names three and repairs one reads as though it repaired three.
+
+**A mis-scaled `injectedUnits` imports clean, and no validation can catch it — ACCEPTED
+2026-09-11, ruled by Momin.** Both insulin figures are re-validated on import and on load as
+integer hundredths inside their ranges (§11.3, §7.1). But the hundredths denomination is invisible
+inside the file: a hand-edited backup carrying `injectedUnits: 25`, written by someone who meant
+25 UNITS, reads as 25 hundredths — 0.25 units — and 0.25 sits inside §7.1's hard floor of 0.01,
+exactly where a legitimate small dose also lives. The schema cannot tell the two apart, because
+the number carries no unit marker and the mis-scaled value space is a subset of the legitimate
+one; raising the floor until it excluded such values would refuse genuine small doses, which §7.1
+already ruled out — refusing to record what happened blinds the gate. The bound, stated in its
+real direction rather than called safe: a mis-scaling of this shape can only ever UNDER-state a
+dose, never inflate one. §7.4's suppression decision itself does not move — it keys on elapsed
+time, and 0.25 units is still an injection — but every line that quotes the amount then
+under-reports the insulin on board: §7.4's informational line names too small a dose and §7.4.1's
+ceiling quotes too few mg/dL, so the gate's human half releases the override more readily than it
+should, and the export understates what he injected. An accepted residual of the restore path,
+recorded so it is not rediscovered as a defect.
 
 **`settingsHistory` deliberately omits `threshold`** [R1]: it never changes a dose value, so no
 consumer needs its historical setting. Stated so it does not read as an oversight.
@@ -2231,8 +2338,9 @@ amount of time fixes it: the data was never captured.
 **§20.6 claims the record is this app's clinical purpose. Without this section that claim is
 false.**
 
-**A reading is its own event.** One field, one button, available from the home screen and offered
-automatically after any band C or band D block:
+**A reading is its own event.** One field, one button, offered automatically after any band C or
+band D block — the home-screen entry this sentence used to promise is **deferred, not shipped**
+(amendment below, 2026-09-11):
 
 | Field | |
 |---|---|
@@ -2265,6 +2373,17 @@ scope wherever `logRevision` is bumped, so the band E derivation cannot race.
 
 **A reading at or above 250 shows band E** (§10.5) — the app says check ketones whenever it sees
 such a number, dose or no dose.
+
+**What ships today, and what is deferred — RECORDED 2026-09-11, ruled by Momin.** Only the
+post-block offer exists. The blocked screen's "Record this reading" is the sole route to the
+recording screen, which pre-fills the blocked number; there is no home-screen affordance and none
+on the history screen. The `note` control was never built either: its question copy has no
+consumer, nothing in the interface ever sets a note, and the fixed list therefore renders only on
+rows that arrived by import. The consequence is stated rather than smoothed over: **the overnight
+and before-bed readings this section names as its own motivation still cannot be captured**,
+because they happen at home with no block screen in sight. Both pieces — the home-screen entry and
+the note control — are deferred, not cut. They belong in `BACKLOG.md`; that entry is left to Momin
+so the deferral is his record, not this amendment's side effect.
 
 **This is the smallest possible version of it.** No charts, no averages, no time-in-range — those
 are `BACKLOG.md`. One number, one timestamp, one optional note.
@@ -2784,6 +2903,35 @@ the sentence, not by adding a paragraph beside it — the defect class §19 name
 24-hour is not. So the marker is never abbreviated to a bare letter, never rendered smaller than the
 digits, and the history screen carries the date alongside, so a row cannot be read twelve hours out.
 
+#### The zone is the device's — RULED 2026-09-11 [Momin]
+
+`BUILD-NOTES.md` notes 11 and 21 held this open: the calendar functions take an explicit zone
+(§13.1), and what the app passes is the device's, captured once at boot. **Ruled: keep the
+device's zone.** Closed here because the question turned out narrower than the notes feared —
+**nothing dose-bearing reads the zone at all.** §7.4's stacking windows, §7.6's skew handling and
+§8.2's result expiry are pure epoch-millisecond arithmetic, so travel and a DST shift cannot
+change a dose or a gate. The zone reaches only rendering (this section's clock times and dates),
+the local-day keys (§10.5's first-firing-today derivation and the export filename), and the
+readable export's text (§7.7.1) — the JSON export carries epoch milliseconds and no rendered time
+(§7.7).
+
+**Measured by execution, 2026-09-11, not asserted:** the day key stays monotonic through both
+2026 transitions in `America/New_York` and in `America/Santiago` — whose transitions fall at
+local midnight, the hardest case in the tzdb: the fall-back replays the old day's last hour and
+the spring-forward deletes the new day's first, and the key steps backwards through neither.
+`Australia/Lord_Howe`'s half-hour offset parses and renders. And `Asia/Karachi` observes no DST
+in 2026, so for the current user the question is moot unless he travels.
+
+**The accepted cost, stated.** The zone is read once at boot, so until the app restarts after a
+real zone change, rendered times are in the stale zone; after a restart, every historical row
+silently re-renders in the new zone — the record keeps absolute time and loses the local time it
+was lived in. **A third option was considered and not taken:** stamping each row with its UTC
+offset at write time, which makes the record travel-proof while the live UI stays device-zone.
+Deferred rather than rejected, because it grows §7.1's stored shape, and that shape does not grow
+for a cost this speculative. What this ruling does *not* settle is where §10.5's calendar-day
+boundary should fall at all; that half stays with §18.8's existing physician question, exactly
+where note 21 routed it.
+
 ### 10.5 Warning budget — NEW IN v2 [R1]
 
 Version 1 could put four separate warnings on one result screen. Each was individually
@@ -3041,9 +3189,16 @@ work from. Neither is persisted; both die with the snapshot, which is what those
 **`largeDoseConfirmed` is the one that shows why the location is the rule.** Confirm a large dose,
 then change the carbohydrate: if the flag lived outside the snapshot, **a confirmation of the old
 numbers would silently apply to the new ones** — 27 units approved, 41 shown as already-confirmed.
-Held in the snapshot, a changed input produces a new snapshot and the confirmation is simply gone.
-§6.3's rule is enforced by WHERE THE FIELD LIVES rather than by remembering to clear it, which is
-§11.3's "correctness by construction rather than by discipline" applied a third time.
+Held in the snapshot, a changed input produces a new snapshot the old confirmation was never part
+of, so the RESOLVER can never read a confirmation that was not among the committed values — that
+half is §11.3's "correctness by construction", and it is real. **What the location does not do is
+clear the app-state copy the NEXT snapshot is built from** [CORRECTED 2026-09-11]: the flags live
+in `AppState` between snapshots and die by the reducer's `invalidate`/`invalidateWithAck`
+convention — the same "convention someone can forget" this passage originally attributed only to
+the rejected alternative, while claiming the confirmation "is simply gone" by construction. `tick`
+had in fact forgotten it: a result could expire with its confirmation intact, corrected the same
+day. The ruling stands — the fields belong in the snapshot — but the guarantee at the reducer is by
+discipline, and saying so is what keeps that discipline auditable.
 
 `carbBaseline` and `eligibleEntryCount` are computed from the log at `logRevision` and carried
 **in** the snapshot [R1-B1, R2-F7]. A revision *identifies* history; it does not *supply* a
@@ -3517,7 +3672,9 @@ worker.
 ### 11.8 Every number lives in one file — NEW IN v8
 
 **Requirement from the user, and a real hole in v1–v7: no numeric literal appears anywhere in the
-codebase except `src/config.ts`.** Enforced by lint rule, not convention.
+codebase except `src/config.ts`.** Enforced by lint rule, not convention. One structural exemption
+exists and is recorded at the end of this section (RULED 2026-09-11): the service worker, which
+cannot import this file at all.
 
 The file separates three kinds of number, because they carry different permission to change:
 
@@ -3621,6 +3778,21 @@ unimplementable as an absolute — loop indices, `max(0, total)`, the ×100 hund
 rule is the standard `no-magic-numbers` shape with an explicit ignore set of `0`, `1`, `-1` and
 `100`, **plus a whole-directory exemption for test fixtures**, which the obligation above
 requires.
+
+**Two rulings recorded 2026-09-11, closing the "decided and not written down" state §20.5
+condemns.** First, **arithmetic identities live in the file too.** The build needed milliseconds
+per hour, minutes per hour, the twelve of a twelve-hour clock, the two of two decimal places, the
+digit at which half-away-from-zero rounds up — numbers that are identities, not decisions. They
+are in `config.ts` anyway, under their own "UNIT CONVERSION AND FORMATTING" heading so nobody
+mistakes them for clinical constants, because this section's rule is exceptionless in its text
+and cannot survive an unwritten "except the obvious ones" clause: the moment one number is
+allowed to live elsewhere, the rule stops being mechanical (note 9 — ruled: keep them there).
+Second, **the one structural exemption: `src/sw.ts`.** The service worker compiles in its own
+TypeScript project against the WebWorker lib and cannot import the app's module graph at all, so
+it cannot reach `config.ts`; the lint rule exempts it, and until now that exemption lived only in
+`eslint.config.js` and in the worker's own comment — an enforcement carve-out recorded nowhere
+the plan could see, in the one section whose premise is that every number has a declared home
+(note 64). Recorded here so the plan and the enforcement agree.
 
 **A config self-consistency test** (§13.3), **corrected in v9**. One file holding every number is
 one file where a bad edit does maximum damage. But v8's version was itself broken, and both
@@ -3737,7 +3909,11 @@ outcome at all.
              "historyProvenance": "trusted | suspect",
              "threshold": 20,
              "bandEFullCardShownToday": false,   // §10.5
-             "excludedTimeRecords": 0 },         // §7.6 — ADDED IN v10
+             "excludedTimeRecords": 0,           // §7.6 — ADDED IN v10
+             "blankReadingAcknowledged": false,  // §4.6 — ADDED 2026-09-11: note 4's
+                                       // v27 amendment fixed §11.2's list and
+                                       // missed this one (§17's standing rule)
+             "largeDoseConfirmed": false },      // §6.2/§6.3 — ADDED 2026-09-11
   "mode": "nearest",
   "expected": {
     "kind": "dose | meal_only_suppressed | blocked_low | no_result | confirm_required | ack_required | bound_failure | invalid_input | invalid_settings",
@@ -3961,7 +4137,30 @@ not, and JSON serialization erases the distinction. [R2]
 
 ### 13.4 Mutation testing
 
-Stryker over the whole core in §13.1, `thresholds: { break: 100 }`.
+Stryker over the whole core in §13.1, **and over `src/state` — AMENDED 2026-09-11**,
+`thresholds: { break: 100 }`.
+
+**Why `src/state` joined it.** The reducer holds the gates: `initialState`'s three safety flags,
+§4.3 step 1's invalidation, and `stepFor`'s routing. Measured on the day it was added, the
+existing suite scored **94.08%** there — the survivors were all three flags mutated to `true`,
+the whole `invalidate` reset, and every arm of the routing. Those are seams where a wrong value
+is a wrong GATE, not a wrong number, and §11.1's withdrawn claim is exactly about them: *"a
+refactor can swap field mappings, parse separators differently, read stale settings, or bypass a
+gate entirely, all with `dose.ts` untouched."*
+
+**Two things the extension taught, recorded so the next scope change does not rediscover them.**
+A fixture computed at DESCRIBE scope makes every mutant it touches *static*, and Stryker's vitest
+runner cannot attribute a static mutant to any test: it reports `testsCompleted: 0` and marks it
+survived however exhaustively the file asserts it. `ignoreStatic: false` does not help. The fix is
+lazy fixtures, and 25 of the survivors were that and nothing else. And `test/integration.test.ts`
+was tried in the mutation suite to reach `stepFor`'s routing: it pushed the run past **ten
+minutes** against roughly forty seconds, so the routing is covered by reducer-level tests instead
+and the integration suite stays out.
+
+**`src/storage` is still outside**, and the `appendReading` defect (note 62) is the proof of what
+that costs: the `ObjectLiteral` mutant that would have caught it was never generated. It is a
+BACKLOG technical item rather than an omission — the Stryker vitest runner crashes stringifying
+`fake-indexeddb`'s `DOMException`, which is an obstacle outside this project.
 
 Justification: during research a property suite passed while a mutant that made the function
 **return 0 for every input** also passed — the property only asserted "result ≥ 0 and not

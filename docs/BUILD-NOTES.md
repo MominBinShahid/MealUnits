@@ -54,8 +54,11 @@ asserting it.
 **RULED 2026-09-09 — keep it, and the reasoning changed.** Momin asked what was actually correct
 rather than what the plan said, which turned up a THIRD rule the note never recorded: scale, round the
 MAGNITUDE, reapply the sign. It is as correct as the decimal-text route. See note 58 for the
-measurement and §5.2 for the table — **2,623,215 reachable values, zero disagreements between them.**
-The shipped rule stays because it is already verified, not because the alternative is worse.
+measurement and §5.2 for the table — 2,623,215 integer-grid values, zero disagreements between them
+there [corrected 2026-09-11: that grid is not "every reachable value" — over the full ranges the
+rules do part, and where they part the shipped rule is the one that matches exact arithmetic; note
+58 carries the corrected measurement]. The shipped rule stays because it is already verified, not
+because the alternative is worse.
 
 ---
 
@@ -73,7 +76,14 @@ The shipped rule stays because it is already verified, not because the alternati
 
 **Decision.** The second one, because it is the more specific and it carries its own reasoning. An
 above-range reading produces `invalid_input` with reason `above_range` and asserts **no band at
-all**. The interface attaches the HI guidance to that reason.
+all**. The interface shows that reason's "check the number" line with a disclosure beside it that
+opens the full HI guidance (`COPY.meterHi`), and the reading screen offers the same control for the
+LO case.
+
+**CORRECTED 2026-09-11.** The last sentence originally read *"the interface attaches the HI guidance
+to that reason"* — written as a claim while nothing rendered `meterHi` at all, which is the missing
+wire note 38 found: a note asserting that something is wired is not a wire. The disclosure exists
+now, so the sentence above describes what is actually built rather than what was intended.
 
 **Consequence worth seeing:** the error reasons are `above_range` and `below_range` rather than a
 single `out_of_range`, precisely so the interface can tell the HI case from the LO case without
@@ -99,8 +109,14 @@ calculated number would have pinned the wrong gate input."
 The field is therefore called **`injectedHundredths`**. The name answers the question the finding was
 about, and §2.2's representation is in it too, so nothing downstream reconstructs units as a float.
 
-The golden fixtures still write `lastDose: { units: 6, atHoursAgo: 2 }`, which is §13.2's schema, and
-the harness converts. The fixture stays readable; the type stays unambiguous.
+The golden fixtures write `lastDose: { units: 6, atHoursAgo: 2 }`, and the harness converts
+(`test/golden.test.ts`: `atMs: NOW_MS - atHoursAgo * MS_PER_HOUR`). That is **not** §13.2's schema —
+§13.2 writes `{"units": 6, "atMs": 0}` plus a per-case `nowMs` — so `atHoursAgo` is the harness's
+own deviation, recorded here because until now it was written down nowhere. The fixture stays
+readable; the type stays unambiguous.
+
+**CORRECTED 2026-09-11.** The paragraph above originally called `atHoursAgo` "§13.2's schema". It
+never was; the sentence now records the deviation instead of denying it.
 
 ---
 
@@ -143,6 +159,18 @@ including the allowance runs after step 10. Both return the same `bound_failure`
 sit ahead of §6.2's confirmation, so "the app is wrong, not the user" is never replaced by a prompt
 asking him to re-read his inputs.
 
+**The margin at the top is exactly zero — ADDED 2026-09-11, ruled: keep both checks.** At the
+maximum reachable dose the two sides are equal, not merely close: blood sugar 600 with 300 g at
+target 70, ISF 5, ICR 1 gives total = bound = 406 units (verified by execution), and the golden
+case *"§6.4 — the maximum reachable dose is NOT a bound failure"* pins the same equality at the
+shipped prescription, 45 = 45. So the unreachability §6.4 claims rests entirely on the comparison
+being strict `>`: a one-character drift to `>=` refuses a legal maximal dose with "the app is
+wrong, not the user". That corner IS pinned — flipping step 9's comparison to `>=` fails that
+golden case (verified by execution, 2026-09-11) — but the protection comes from the golden, not
+from the mutation gate: note 16 disables the Stryker mutants at those lines by name, and a reader
+of note 16 alone would conclude the corner is unprotected. It is not. Both checks stay, consistent
+with §6.4's "both reviewers said keep it".
+
 ---
 
 ## 6. A blocked low carries every input error alongside it `[RULED 2026-09-09: keep it]`
@@ -184,29 +212,67 @@ one — and only THEN learn about a value the app has been holding the whole tim
 avoidable and the app already knows enough to avoid it.
 
 **Against it**, and it is a real argument: §10.5 budgets hard, and this is the most safety-critical
-screen in the app. The answer is that §3.3 suppresses **insulin quantities** — a line saying a
-carbohydrate figure is unusable carries no dose, is not actionable while treating a low, and sits
-below the block. It does not compete for the decision.
+screen in the app. The answer is rank 1 itself: the band C/D block is terminal — *nothing else
+shows* — so the carbohydrate half is deliberately **not rendered on the block at all**. It waits on
+its own entry screen, which §18.14's back path returns to with the unusable value still in the
+field. The blood-sugar half is different: it is about the very number the block is presenting, so
+it renders inside the block's own copy — the block's message, not a second element, which is what
+rank 1 governs.
+
+**CORRECTED 2026-09-11.** This paragraph originally defended a carbohydrate line that "sits below
+the block". Nothing ever rendered it — and nothing should have, because §10.5 rank 1 forbids
+anything beside the block. What ships now is the split above: the blood-sugar half inside the
+block's copy, the carbohydrate half on its own screen after Back. The ruling — all input errors
+travel with the block — stands.
 
 ---
 
-## 7. "History was just imported" needed an operational definition `[CONFIRM]`
+## 7. "History was just imported" needed an operational definition `[RULED 2026-09-11: keep it — §7.8's "Not an input to anything" governs]`
 
 **Where:** `src/core/history.ts`, `HistoryContext`.
+
+**RULED 2026-09-11.** The definition below stands, and the reading beneath it is blessed as the
+governing one: §7.8's "Not an input to anything" is why a READING never clears suspect
+provenance — only a locally observed injection does. Note 62 is the enforcement of the same
+reading; this note carried its rationale. The question this entry held open is closed.
 
 §7.5 lists four conditions that make provenance suspect: an empty log, a log predating the app's own
 install, **history just imported**, and a row excluded by §7.6. The third has no definition — "just"
 is not a duration.
 
-**Decision:** an import counts as recent until this install writes a row of its own.
+**Decision:** an import counts as recent until this install writes an injection row of its own.
 
 ```
 justImported = lastImportAtMs !== null
-               && (lastLocalWriteAtMs === null || lastLocalWriteAtMs < lastImportAtMs)
+               && (lastLocalInjectionAtMs === null || lastLocalInjectionAtMs < lastImportAtMs)
 ```
 
-Imported rows carry the other install's timestamps, so a clock-based window would be wrong in both
-directions. This reads "suspect" for exactly as long as the app has not yet seen him inject.
+(The second operand was `lastLocalWriteAtMs` until 2026-09-11 — note 62 records the rename and the
+wrong write site the old name invited. The persisted key keeps the old name; only the domain field
+moved.) This reads "suspect" for exactly as long as the app has not yet seen him inject.
+
+**CORRECTED 2026-09-11 — the original argument here defeated a proposal nobody made.** It read:
+*"Imported rows carry the other install's timestamps, so a clock-based window would be wrong in
+both directions."* That defeats a window on ROW timestamps and says nothing about the real
+alternative, which is a window on `lastImportAtMs` — stamped with THIS install's clock in
+`importer.ts`, so a clock-based expiry on it is perfectly well defined. The argument that actually
+holds is about truth, not clocks: the only person who sees §7.5's caveat indefinitely under this
+rule is someone who imported recent-ish rows into an older install and then calculates dose after
+dose without ever logging one — and for that person the caveat's sentence is TRUE, the app has
+still never watched him inject, so a clock expiry would silence a true warning. It would also be
+the odd rule out: none of §7.5's other three suspect conditions is cleared by a duration. An empty
+log and a log predating install are cleared by a local write, and a §7.6 exclusion clears only when
+the offending timestamp stops being in the future — each waits on an event, not on time passing.
+
+**The trust asymmetry, never recorded here and worth writing down.** Imported rows are fully
+load-bearing in `mostRecentUsableInjection` — no origin check, because log rows carry no origin
+marker at all — while the same import makes provenance suspect. That is directionally safe: §7.4's
+gate only ever SUPPRESSES a positive correction, so trusting an imported row can lower a dose,
+never raise one, while the suspicion costs only a caveat line. **Trust for suppression, suspicion
+for silence.** And it fails safe under clock trouble: `lastImportAtMs` and
+`lastLocalInjectionAtMs` come from the same local clock, so only a backwards step between the two
+writes can misorder them — and that misordering reads as still-just-imported, which is suspect,
+which over-warns rather than under-warns.
 
 ---
 
@@ -227,7 +293,7 @@ the door.
 
 ---
 
-## 9. `config.ts` gained a section the plan does not list `[CONFIRM]`
+## 9. `config.ts` gained a section the plan did not list `[RULED 2026-09-11: keep it — §11.8 now records it]`
 
 **Where:** `src/config.ts`, "UNIT CONVERSION AND FORMATTING".
 
@@ -239,23 +305,68 @@ They are in the file anyway, because §11.8's rule cannot survive an unwritten "
 ones" clause: the moment one number is allowed to live elsewhere, the rule stops being mechanical.
 They sit under their own heading so nobody mistakes them for clinical constants.
 
+**RULED 2026-09-11: keep it.** §11.8's amendment now records this section AND the `src/sw.ts`
+lint exemption (note 64's flag), so neither decision lives only in code any more.
+
 ---
 
-## 10. The icon's colour is a choice; its geometry is a specification `[CONFIRM]`
+## 10. The icon — the colour is ruled, the geometry is measured; notes 50, 53 and 55 merged here `[RULED 2026-09-11: keep IDF blue]`
 
-**Where:** `tools/icon.svg.mjs`.
+**Where:** `tools/icon.svg.mjs`, `public/icons/`, `public/manifest.webmanifest`.
 
 §20.4 specifies the mark exactly — ring `r32.5` at stroke `17`, disc `r20.5`, H reversed out — and
 gives no hex. The IDF's own style guide puts the blue circle at Pantone 279 C, so the file uses
 **`#418FDE`**, which is that colour converted. One constant, one place, easy to change.
 
-The maskable variant scales the mark to 0.62 so it clears every common launcher mask including the
-squircle, and it is a **separate file** with `"purpose": "maskable"` — §12 forbids `"any maskable"`
-on one file.
+**RULED 2026-09-11 — keep IDF blue `#418FDE`.** The mark IS the diabetes symbol, and on a home
+screen it reads as one before the name does; recolouring would keep the geometry and lose the
+recognition. One caveat, recorded rather than resolved: the blue circle is the IDF's registered
+symbol with published usage guidance, worth a look before any app-store listing.
+
+The maskable variant is a **separate file** with `"purpose": "maskable"` — §12 forbids
+`"any maskable"` on one file. That part of the original note stands.
+
+**CORRECTED 2026-09-11, and notes 50, 53 and 55 are merged in.** This note said the maskable
+variant scales the mark to 0.62, and notes 50 and 53 both defended that figure as "the 80% safe
+circle... a constraint, not a preference" — the claim note 55 dismantled. Three notes contradicting
+one another about a single artefact is worse than one wrong note, so this is now the single icon
+record.
+
+**What actually happened, in order.** The `any` icon went 0.86 → 1.0 (note 50, after Momin said
+the app icon looked smaller than its neighbours; 1.0 was called "the largest this geometry allows
+without clipping", also wrong) → **1.17** (note 53, span 96 of 100). 1.17 is safe BECAUSE
+the mark is a centred circle: a rounded-corner mask — iOS's ~22% radius, Android's squircle —
+removes area at the CORNERS, and a circle's extremes sit at the middle of each edge, where no
+corner rounding reaches. A square mark could not be pushed this far. Then Momin reported the
+INSTALLED icon still small, and note 55 found why both enlargements had changed nothing on his
+phone: **Android's home screen uses the MASKABLE icon**, which was still at 0.62. The maskable
+safe zone is a centred circle of 80% of the canvas diameter; the ring's outer edge sits 41 from
+centre at scale 1, so the safe radius of 40 permits up to 40/41 = 0.9756. At 0.62 the mark spanned
+50.8 of 100 — it could be half again as large and never clip. *"0.62 was not the constraint, it
+was timidity"* is now the comment in `tools/icon.svg.mjs`, which reasons from the safe circle
+rather than from "the squircle": every launcher mask is LARGER than the safe circle, so fitting
+the circle is sufficient for all of them, and the squircle was never the binding limit. A number
+defended by a plausible-sounding comment went unexamined for six revisions.
+
+**What ships, measured rather than asserted.** The generator uses **0.94 maskable / 1.17 any**,
+and the PNGs in `public/icons/` were decoded and bounding-boxed on 2026-09-11:
+
+| File | Mark span | Of canvas |
+|---|---|---|
+| `icon-maskable-512.png` | 396 px of 512 | **0.7734** — inside the 0.80 safe circle (409.6 px) with ~6.8 px of margin, white background baked in |
+| `icon-512.png` | 492 px of 512 | **0.9609**, transparent |
+| `apple-touch-icon.png` | 174 px of 180 | **0.9667**, white background baked in |
+
+Why 0.94 measures as 0.77: the scale multiplies the mark's own 82-unit span (outer radius 41), so
+0.94 × 0.82 ≈ 0.77 of the canvas. The two numbers describe the same geometry — stated because
+"0.94" beside "0.7734" reads like a contradiction and is not.
+
+**To reverse the colour:** change `IDF_BLUE` in `tools/icon.svg.mjs` and regenerate; nothing else
+holds a hex. To reverse the geometry, §20.4 is the authority and would have to change first.
 
 ---
 
-## 11. The calendar functions take an explicit time zone `[CONFIRM]`
+## 11. The calendar functions take an explicit time zone `[RULED 2026-09-11: keep the device zone]`
 
 **Where:** `src/core/calendar.ts`.
 
@@ -267,6 +378,12 @@ nothing here reads the host's zone. That leaves the app itself needing to supply
 record that gets read after a move; a fixed zone is the reverse. §10.5's calendar-day boundary and
 §10.4's rendered times both depend on the answer, and §18.8 already sends the day-boundary question
 to the physician.
+
+**RULED 2026-09-11: the app passes the device's zone.** §10.4's amendment carries the ruling in
+full — nothing dose-bearing reads the zone, the execution-measured day-key behaviour across the
+2026 transitions, the accepted stale-until-restart cost, and the per-row UTC-offset stamp that was
+considered and deferred. Note 21 is the sibling record, ruled the same day. The §18.8 day-boundary
+half stays open with the physician, as before.
 
 ---
 
@@ -359,30 +476,49 @@ produced exactly that.
 
 ---
 
-## 16. The 100% mutation score is real, and eighteen mutants are disabled by name `[CONFIRM]`
+## 16. The 100% mutation score is real, and 19 directives silence 66 mutants by name `[CONFIRM]`
 
-**Where:** `reports/mutation/index.html`, and sixteen `// Stryker disable` comments in `src/`.
+**Where:** `reports/mutation/report.json`, and nineteen `// Stryker disable` comments in `src/core/`.
 
-§13.4 sets `thresholds: { break: 100 }`. The core meets it: **1302 mutants killed, 0 survived, 0
-uncovered**, across 405 tests. Getting there took four passes, and it changed the code more than it
-changed the tests — which is the point of the exercise.
+§13.4 sets `thresholds: { break: 100 }`. The core meets it: **1395 mutants killed and 2 timed out
+(a timeout is a detected mutant), 0 survived, 0 uncovered, 66 ignored by directive**, across the
+470 tests in the mutation run (`vitest.stryker.config.ts` narrows it to the suites that cover the
+mutated files; `npm run check` runs more). Getting there took four passes, and it changed the code
+more than it changed the tests — which is the point of the exercise.
 
-**A score of 100% with sixteen disables is not the same claim as a score of 100% with none**, so
-here is every one, what it is, and why it cannot be shown failing. §6.5's own doctrine is that a
-check which cannot fire is "disabled and declared" rather than left implying coverage.
+**CORRECTED 2026-09-11, on every count it stated.** The heading said "eighteen mutants are
+disabled by name" — that was the number of DIRECTIVES, not mutants, and a `disable all` silences
+every mutant down to its `restore`, so the directives silence far more than their own count. The
+"Where" line said sixteen comments; the body said 1302 killed across 405 tests; and the table
+below listed only 14 of the directives, omitting `ids.ts` ×2, `resolve.ts`'s low-reading ternary
+arm and its carbs-blank null guard — so a reader auditing "every one" against the source would
+have found five comments the table never mentioned. Current figures re-derived from
+`reports/mutation/report.json`; the directive count is a grep. Note 65 records the narrowing that
+moved the ignored count and added the nineteenth directive.
 
-| Where | Kind | Why no test can kill it |
-|---|---|---|
-| `resolve.ts` ×2 (bound failure) | Unreachable | §6.4 states it: given §4.5's hard ranges, `total <= bound` is a **mathematical identity**. `boundUnits` and `exceedsBound` are tested directly, both failing directions included |
-| `resolve.ts` (blocking-band re-check) | Unreachable | Step 3 returns for every reading below 70, so step 7 cannot produce band C or D. Kept because §3.4 makes them terminal and a future edit to step 3 must not route around it |
-| `calendar.ts` (part read) | Unreachable | `Intl.DateTimeFormat` rejects an unknown zone at construction, and every zone it accepts emits all five parts |
-| `parse.ts`, `resolve.ts` (finiteness re-checks) | Unreachable | §2.3 rule 1 requires finiteness "before range checks **and again** after arithmetic". These are the again |
-| `history.ts` ×2, `resolve.ts` (null guards) | **Coercion-equivalent** | `null >= 250` is `0 >= 250`; `null < timestamp` is `0 < timestamp`. The guard and the coercion agree on every input — and §4.1's entire subject is that they must not be allowed to |
-| `baseline.ts` (tombstone filter) | Coercion-equivalent | A tombstone carries no `carbs`, and `undefined > 0` is false. The type system needs the filter regardless |
-| `divergence.ts` (zero branch) | Equivalent | With a calculated dose of zero the ratio clause reduces to `injected >= 0`, already true past the absolute floor. §7.1 declares the branch anyway |
-| `calculate.ts` (`> 0` on suppression) | Equivalent | `>` and `>=` differ only at a correction of exactly zero, and suppressing zero is arithmetically identical to applying it |
-| `decimal.ts` (`exponent < 0`) | Unreachable boundary | `(1e0).toString()` is `"1"`, never `"1e+0"`, so the exponent is never zero in that branch. **Verified by scanning 200,000 magnitudes plus every extreme** |
-| `resolve.ts` (empty advisory array) | Equivalent by design | Seeding it with a bogus entry changes nothing, because `rankAdvisories` is a **whitelist**. That is the property §10.5 wants |
+**A score of 100% with nineteen disables is not the same claim as a score of 100% with none**, so
+here is every one, what it is, how many mutants it silences, and why it is disabled rather than
+killed. §6.5's own doctrine is that a check which cannot fire is "disabled and declared" rather
+than left implying coverage.
+
+| Where | Kind | Mutants | Why it is disabled rather than killed |
+|---|---|---|---|
+| `resolve.ts` ×2 (bound failure, steps 9 and 10) | Unreachable | 15 | §6.4 states it: given §4.5's hard ranges, `total <= bound` is a **mathematical identity**. `boundUnits` and `exceedsBound` are tested directly, both failing directions included — and note 5's golden case pins the exact-equality corner |
+| `resolve.ts` (blocking-band re-check) | Unreachable | 6 | Step 3 returns for every reading below 70, so step 7 cannot produce band C or D. Kept because §3.4 makes them terminal and a future edit to step 3 must not route around it |
+| `calendar.ts` (part read) | Unreachable | 6 | `Intl.DateTimeFormat` rejects an unknown zone at construction, and every zone it accepts emits all five parts |
+| `parse.ts`, `resolve.ts` (finiteness re-checks) | Unreachable | 11 | §2.3 rule 1 requires finiteness "before range checks **and again** after arithmetic". These are the again |
+| `history.ts` ×2, `resolve.ts` (override-candidate) — null guards | **Coercion-equivalent** | 9 | `null >= 250` is `0 >= 250`; `null < timestamp` is `0 < timestamp`; `null >= threshold` is `0 >= threshold` with every threshold at least 10. The guard and the coercion agree on every input — and §4.1's entire subject is that they must not be allowed to |
+| `resolve.ts` (carbs-blank null guard, step 5) | Coercion-equivalent | 5 | Blank-and-blank has already returned above, so `bloodSugarValue` is non-null by the time it runs. Written out rather than inferred, because inferring it breaks silently if the earlier return ever moves |
+| `resolve.ts` (low-reading ternary arm) | Equivalent | 2 | Forcing the arm yields `undefined`, and `classifyLowBand(undefined)` answers null exactly as the `null` arm does. The four §4.1 states are spelled out anyway; the `=== 'zero'` arm beside it is killable and is no longer silenced (note 65) |
+| `history.ts` (tombstone filter) | Coercion-equivalent | 2 | A tombstone carries no `bloodSugar`, and `undefined >= 250` is false, so it cannot qualify either way. Surfaced by note 65's narrowing — it had been riding under a block whose justification was about a different line |
+| `baseline.ts` (tombstone filter) | Coercion-equivalent | 1 | A tombstone carries no `carbs`, and `undefined > 0` is false. The type system needs the filter regardless |
+| `divergence.ts` (zero branch) | Equivalent | 2 | With a calculated dose of zero the ratio clause reduces to `injected >= 0`, already true past the absolute floor. §7.1 declares the branch anyway |
+| `calculate.ts` (`> 0` on suppression) | Equivalent | 2 | `>` and `>=` differ only at a correction of exactly zero, and suppressing zero is arithmetically identical to applying it |
+| `decimal.ts` (`exponent < 0`) | Unreachable boundary | 2 | `(1e0).toString()` is `"1"`, never `"1e+0"`, so the exponent is never zero in that branch. **Verified by scanning 200,000 magnitudes plus every extreme** |
+| `resolve.ts` (empty advisory array) | Equivalent by design | 1 | Seeding it with a bogus entry changes nothing, because `rankAdvisories` is a **whitelist**. That is the property §10.5 wants |
+| `ids.ts` ×2 (version/variant `?? 0`) | Unreachable, shape-invisible | 2 | The array is created three lines above with sixteen elements, so the nullish branch cannot be taken. The mutants (`??` → `&&`) still yield a well-formed v4 UUID — **no SHAPE assertion can see them**. This claim was originally stated as "no test can kill it", which is too strong: each mutant pins random low bits of its byte at a constant zero, so a distributional test over the version/variant bytes would fail both every time (and pass the real code with negligible flake risk). It is not written because the honest cost — a statistical test guarding under two bytes of entropy — buys less than the comment at the line does |
+
+The mutant counts sum to 66 and the rows cover all nineteen directives.
 
 **Every one of those is a comment in the source with its reasoning attached**, so the next reader
 finds the argument at the line rather than in a report.
@@ -497,25 +633,74 @@ The gate fired on its own, on real data, without being asked to.
 
 ---
 
-## 20. Transient interface state lives outside the reducer `[CONFIRM]`
+## 20. Transient interface state lives outside the reducer `[RULED 2026-09-11: the reducer's charge is the dose — kept outside]`
 
-**Where:** `src/ui/app.ts`, `ViewState`.
+**Where:** `src/ui/app.ts` (`ViewState` and the shell closure), `src/main.ts`.
 
-§11.2 asks for "one explicit application state, a pure transition function, and a result derived from
-a committed snapshot". Nine fields do not go through it: which confirmation is open, whether a
-disclosure is expanded, the settings draft as typed, the disclaimer checkbox, and §6.7's answer
-before it is saved.
+§11.2 asks for "one explicit application state, a pure transition function, and a result derived
+from a committed snapshot". Not everything goes through it, and the argument for that — none of it
+can change a dose, a band or a gate — is only checkable against a complete list. So here is all of
+it.
+
+**RULED 2026-09-11.** The purposive reading below is blessed as the governing one: the state
+§11.2 protects is the DOSE, which is why transient interface state may live outside the reducer.
+That was an interpretation, not a restatement — §11.2's own opening sentence names "settings
+drafts, confirmations" among its motivations — so it is recorded as ruled rather than left
+implicit. Two loose ends keep their own status: `readingNote`'s inertness is now recorded in
+§7.8's amendment as a deferred control, and `screenBefore` (nothing reads it) stays flagged for
+Momin below — this ruling does not touch it.
+
+**CORRECTED 2026-09-11.** This note said "nine fields". `ViewState` has FOURTEEN, and `ViewState`
+was never the whole story: the shell closure and `main.ts` hold state of exactly the same kind
+that the note simply did not count. A "none of these can..." claim over an incomplete enumeration
+is unauditable — the same defect §20.5's file listing had twice.
+
+**`ViewState`, fourteen fields:** `draft` (the settings screen as typed — nothing stored until the
+explicit save, note 31), `disclaimerChecked`, `moreExpanded`, `meterGuidanceShown`,
+`amountProblem` and `amountDiverging` (which §7.1 amount-gate answer is on screen — safe out here
+because `commitLog` re-runs the gate on every commit tap, so these decide what renders and can
+never bypass the check), `pendingDelete`, `clearConfirming`, `failClosedConfirming`,
+`failClosedBlocked`, `readingNote`, `dosingDraft` (§6.7's answer before it is saved),
+`decliningDosing`, `screenBefore`.
+
+**The shell closure beside it:** `db`, `stored`, `recovery`, `lastViewKey` (note 49 — the previous
+view key has to outlive a render), `showClear`, `showAsText`, `settled`.
+
+**And `main.ts`:** `offered` (the update bar offers once), `pending` and `shown` (the deferred
+`beforeinstallprompt`), `sentinel` and `handler` (the hardware-back entry, note 47) — plus the
+service-worker wiring's own `hadController`, `lastUpdateCheck`, `looks` and `reloading`, which
+bound the update checks and the one §11.4 reload.
+
+**One field crosses into the record, so "none of it can touch the record" would be false.**
+`readingNote` rides into the `appendReading` payload as the row's optional §7.8 note. It still
+cannot change a dose, a band or a gate — §7.8: a reading is "not an input to anything" — but it is
+the one `ViewState` field that becomes PERSISTED data, so the claim this note makes is "cannot
+change a dose", deliberately not the stronger one.
+
+**Two of the fourteen are currently inert — flagged for Momin, not tidied.** Nothing ever writes
+`readingNote`: the reading screen has no control for §7.8's fixed note list, so the field the row
+schema carries is never populated. And nothing reads `screenBefore`. One may be an unbuilt §7.8
+affordance and the other a leftover, but those are indistinguishable from the code (§20.1.1), so
+neither is settled here.
+
+**And one seam in this arrangement WAS wrong — fixed 2026-09-11.** `stacking_override_taken` used
+`invalidate` rather than `invalidateWithAck`, so §4.6's blank-reading acknowledgement survived an
+override. Unreachable today by a three-link coincidence — a blank reading yields a correction of
+zero, suppression needs a POSITIVE correction, and the override renders only when suppression
+happened — and every link is free to move independently, which is exactly the kind of coincidence
+§4.1 refuses to lean on. Now `invalidateWithAck`, behaviour-identical today, with the three links
+written at the call site.
 
 **The thing §11.2 protects is the dose** — "one event updating the dose while another leaves the
-breakdown, the warning or a saved setting stale". None of these can change a dose, a band or a gate.
-Putting them through the tested reducer would mean every dose test carried a dialog flag.
+breakdown, the warning or a saved setting stale". None of the state above can change a dose, a band
+or a gate. Putting it through the tested reducer would mean every dose test carried a dialog flag.
 
 **To reverse it:** move them into `AppState` and extend `reduce`. The tests would need a `view`
 sub-object threaded through them, which is the cost being weighed here.
 
 ---
 
-## 21. The time zone is the device's, and that is open `[CONFIRM]`
+## 21. The time zone is the device's `[RULED 2026-09-11: keep the device zone]`
 
 **Where:** `src/main.ts` — `Intl.DateTimeFormat().resolvedOptions().timeZone`.
 
@@ -530,36 +715,25 @@ is the reverse: right for the record, wrong if he moves.
 **Not decidable from the plan**, and §18.8 already sends the neighbouring question — where the
 band E day boundary falls — to the physician. Worth deciding at the same time.
 
+**RULED 2026-09-11: keep the device's zone** (this heading used to end "and that is open"; it is
+now closed). §10.4's amendment is the full record: what execution measured (day keys monotonic
+through both 2026 transitions in `America/New_York` and `America/Santiago`, whose transitions
+fall at local midnight; `Australia/Lord_Howe`'s half-hour offset parses; `Asia/Karachi` has no
+DST in 2026), the accepted cost (a stale zone until restart, then a silent re-render of history),
+and the third option deferred rather than taken (a per-row UTC-offset stamp, which grows §7.1's
+stored shape). The day-boundary half was never this note's to settle: it stays with §18.8's
+physician question. Cross-reference: note 11, ruled the same day.
+
 ---
 
-## 22. What is built, against §17's list
+## 22. What is built, against §17's list — DELETED 2026-09-11, on Momin's ruling `[FYI]`
 
-**Toolchain, after Momin's ruling of 7 Sep 2026** (see note 24): Node 24.20.0, and every package on its
-latest release except Vitest and TypeScript, each held back for a stated reason.
-
-| Step | State |
-|---|---|
-| 0. Blog service-worker fix | **Applied in the working tree, verified against the built `sw.js`. Not committed, not pushed** — your ruling. |
-| 1. Scaffold, CI, deploy pipeline | Done. Both workflows written; neither has run, because nothing is pushed. |
-| 2. The whole tested core | Done. 100% mutation score at the `break: 100` threshold §13.4 sets. |
-| 3. State machine and reducer | Done, including §18.14's wizard. |
-| 3b. Storage | Done: allocation rule, row stamp, fail-closed, recovery read, all four cross-tab layers. |
-| 4. Settings screen | Done, including §10.1.6's delta and §5.1's ceil gate. |
-| 5. Calculator | Done, all of `step-flow.html`'s gates. |
-| 6. Log, both exports, stacking, override, advisory | Done. |
-| 7. Service worker, manifest, install and backup prompts | Done. Every item on §11.4's list is implemented and commented with which item it is. |
-| 8. First run, disclosures, clearing controls, fail-closed escape | Done. |
-| 9. `CLINICAL.md`, `README.md`, icons | Done. **On-device testing on his actual Android phone is yours** — it needs the phone. |
-
-**What has NOT happened, and cannot happen from here:**
-
-- **§17 step 9's on-device test.** The app has been driven end to end in headless Chrome and in a
-  jsdom harness, and neither is an Android phone in his hand. §18.9's human-factors walkthrough — band
-  C, a ceiling confirmation, the fail-closed screen, the blank-reading path, walked with the actual
-  user — is also outstanding and is the kind of thing this project has repeatedly found only by doing.
-- **Nothing is committed or pushed**, in either repository.
-- **CI has never run.** The workflows are written against the documented action versions; the first
-  push is the first execution.
+This was a point-in-time status table — §17's build steps against "Done" rows. A status snapshot
+in a permanent document decays into a lie: it went stale the day work continued, carried no tag
+inviting a re-check, and its "Done" rows concealed four unwired features — the HI/LO guidance
+(notes 2, 38), the blank-inputs rendering (note 51), the block screen's expiry (note 60), and
+§7.2's retry and in-session gate (note 61). What is built is what the code and tests say; the
+notes that found each gap are the durable record.
 
 ---
 
@@ -750,17 +924,11 @@ source maps, which are for a developer at a desk and not a phone on mobile data.
 
 ## 28. Settings and History moved to the foot of the screen `[FYI]`
 
-**Momin's call, and the reasoning is thumb reach**: they sat at the TOP of a one-handed phone
-screen, which is the furthest point on the display, and neither is urgent enough to earn that
-position. `Back` stays at the top, where a back affordance belongs.
-
-Two details that are not arbitrary:
-
-- **They render on the first step only.** Mid-calculation there is a half-entered reading on screen,
-  and an exit sitting next to the keypad invites losing it.
-- **`space-around`, not `space-between`.** Pinned to the two bottom corners they become the easiest
-  things to hit while reaching for the keypad above — and these are the two controls that ABANDON a
-  half-entered reading.
+**MERGED 2026-09-11 into note 35.** This recorded the first half of the move — two controls, while
+this note's own text still said "`Back` stays at the top, where a back affordance belongs", which
+note 35 reversed a day later. Note 35 records the whole move and now carries this note's two
+surviving details (first-step-only rendering, `space-around`). Kept as a numbered stub so
+references to "note 28" stay resolvable.
 
 ## 29. "Make it" was the same button name twice `[FYI]`
 
@@ -822,6 +990,18 @@ types the three ratios — it **asserts** them, because a helper that silently a
 in the fields would let a wrong default flow into every downstream test as if it were the
 prescription.
 
+**Note 34 is merged here (2026-09-11), because it is this ruling's fourth leg.** Momin's own first
+reaction to the prefill was the failure mode: the three values looked settled, so *"I was thinking
+it default then why button is not showing up"* — the save was correctly blocked on the empty basal
+block (§1.3), and nothing on screen said so. **A prefill that does not announce itself is the
+silent default §1.2 refused**, so the first-run screen now opens with a flag — *"Check these three
+before you start"* — naming target, ISF and ICR and saying what remains to be filled in. It
+carries safety weight, not just clarity: `docs/CLINICAL.md` records the residual risk of
+prefilling as someone tapping through without reading, and the flag beside §10.5's acknowledgement
+on the target (the value most likely to have moved) is what makes tapping through a **choice**
+rather than an accident. Momin identified this himself: making the prefill visible is what closes
+the gap the clinical note had to leave open.
+
 ## 32. The red wash survived the back navigation, and said "do not inject" about a meal `[FYI]`
 
 **Momin's screenshot, 7 Sep 2026:** back out of a low-blood-sugar block and the CARBOHYDRATE screen
@@ -844,7 +1024,7 @@ Momin's review of the built app, all applied on 7 Sep 2026:
 
 | | |
 |---|---|
-| Back carried no affordance | `←` + hair space, prepended to the WORD. One character in a face already loaded — no icon font, no SVG, scales with the type, inherits colour. The word stays: an arrow alone is a guess about what the reader knows |
+| Back carried no affordance | `←` + hair space, prepended to the WORD. One character in a face already loaded — no icon font, no SVG, scales with the type, inherits colour. The word stays: an arrow alone is a guess about what the reader knows. [superseded 2026-09-11: the arrow is GONE — note 35; Momin's on-phone verdict was that U+2190's centring cannot be corrected reliably, and the word alone shipped] |
 | No press feedback | `:active` scale on keys and actions. There is no hover on a phone, and without it a tap gives no confirmation — which on a keypad means re-tapping and **entering a digit twice** |
 | Buttons shorter than the mockup | `--touch-key: 3.5rem` (56px) for keys and primary actions. §10.7's 48px floor is untouched and remains the floor |
 | The dose was left-aligned | Centred, and `docs/design/step-flow.html` centred with it. The mockup left-aligns it, so this is a CHANGE and not a fidelity fix — both entry screens centre their number, and the eye should not jump left at the screen that matters most |
@@ -862,19 +1042,10 @@ because nobody re-reads copy after a behaviour change.
 
 ## 34. The prefill did not announce itself, and the blocked save read as a bug `[FYI]`
 
-**Momin's own first reaction to the prefill was the failure mode:** the three values looked settled,
-so *"I was thinking it default then why button is not showing up"*. The save was correctly blocked —
-the basal block (§1.3) is his and stays empty — but nothing on screen said so.
-
-**A prefill that does not announce itself is the silent default §1.2 refused.** The first-run screen
-now opens with a flag: *"Check these three before you start"*, naming target, ISF and ICR, and saying
-what remains to be filled in.
-
-**It carries safety weight, not just clarity.** `docs/CLINICAL.md` records the residual risk of
-prefilling — that someone taps through without reading. A line asking him to check the three, next to
-§10.5's acknowledgement on the target (the value most likely to have moved), is what makes tapping
-through a **choice** rather than an accident. Momin identified this himself: making the prefill
-visible is what closes the gap the clinical note had to leave open.
+**MERGED 2026-09-11 into note 31.** The announcement is the fourth leg of note 31's ruling — the
+thing that keeps the prefill from being §1.2's silent default — and splitting it across two notes
+hid that. Note 31 carries the content. Kept as a numbered stub so references to "note 34" stay
+resolvable.
 
 ## 35. All navigation moved to the foot, and the shell took it over from fourteen screens `[FYI]`
 
@@ -901,26 +1072,22 @@ misaligned. U+2190's vertical centring is a property of the face, not something 
 reliably, and a nudge tuned on a Mac is a guess about Android. The word alone, at the foot of the
 screen, which is the affordance the arrow was standing in for.
 
+**Note 28 is merged here (2026-09-11)** — it recorded the first half of this move, Settings and
+History alone, and still asserted that `Back` belongs at the top, which this note reversed. Its
+two surviving details, both Momin's thumb-reach reasoning: the two links render **on the first
+step only**, because mid-calculation there is a half-entered reading on screen and an exit beside
+the keypad invites losing it; and the row is **`space-around`, not `space-between`**, because
+pinned to the two bottom corners these — the two controls that ABANDON a half-entered reading —
+become the easiest things to hit while reaching for the keypad above.
+
 ## 36. The Android back gesture closed the app `[FYI]`
 
-**Momin: "why the android back button do not do back on my app?"** In an installed PWA the system
-back button and the edge swipe leave the app, and people use that gesture reflexively — so it
-discarded a half-entered reading.
-
-**One sentinel history entry, held exactly while the app has somewhere to go back to.** Pushed when
-back-ability turns on; the gesture consumes it and runs `backAction()`; and when back-ability turns
-off it is spent with a SUPPRESSED `history.back()` so the stack cannot accumulate dead entries that
-would swallow a later gesture and make the button feel broken.
-
-**§11.5's "Routing: None" is not violated.** `pushState` is called with the current URL. Nothing is
-written to the URL, there are no deep links and `start_url` is untouched — what §11.5 rules out is
-URL STATE, and this is a stack entry with no state in it.
-
-**§10.6 and §11.3 stay inescapable**: the first run and the fail-closed screen return `null` from
-`backAction`, so neither the control nor the gesture offers a way out of them.
-
-It sits on the `Host` for the same reason `now` does — a module that reaches for `window.history` on
-its own cannot be steered by the jsdom harness, and the contract is tested there.
+**MERGED 2026-09-11 into note 47.** This note described the tidy-the-stack `history.back()` branch
+as part of the working design; note 47 records that branch as the defect that navigated the app to
+`about:blank` while logging a dose, and deleted it. A note presenting a deleted defect as a live
+mechanism misleads exactly the reader these notes exist for, so the surviving design lives in note
+47 with the deletion beside it. Kept as a numbered stub so references to "note 36" stay
+resolvable.
 
 ## 37. The keypad, the press feedback, and the placeholder that looked broken `[FYI]`
 
@@ -968,6 +1135,14 @@ deliberately one digit looser than the range: *"the lexical grammar allows at mo
 beyond the field's maximum, so '6000' is rejected on length before it is rejected on range."* The
 slack exists so an out-of-range value is EXPLAINED rather than silently refused, because a keypad
 key that stops responding reads as broken. The design was right; the explanation was missing.
+
+[corrected 2026-09-11: the quoted comment no longer exists — note 42 deleted `MAX_ENTRY_DIGITS`
+outright, after finding the flat cap this paragraph defends WAS a defect in a way this bug never
+exposed: it counted integer and fractional digits together, making the interface narrower than
+§4.2's grammar. The one-digit slack — the part that really was right — now lives as
+`GRAMMAR_INTEGER_DIGIT_SLACK` and `maxIntegerDigits` in `core/parse.ts`, derived per field. "Was
+not changed" was true on this day and reversed four notes later; a reader who stops here would
+defend a constant that is gone.]
 
 ## 39. Testing the experience, which is the question this bug actually raised `[FYI]`
 
@@ -1146,8 +1321,12 @@ None of notes 41, 42 or 44 was visible to 559 unit tests or to the 100% mutation
 lay pages out, load fonts, enforce a content security policy, or run a service worker. Every one was
 found by Momin on a real device.
 
-`npm run smoke` drives a served build over the DevTools Protocol and asserts **twelve** things that
-only exist in a real browser:
+`npm run smoke` drives a served build over the DevTools Protocol and asserts **twenty** things
+that only exist in a real browser [corrected 2026-09-11: this said twelve, which was right when
+written — counting each width's run separately, as this list does. The back-gesture block (four
+checks, note 47's regression) and the insecure-origin run (four checks, note 48) were added
+afterwards and the count was not. A run without `SMOKE_LAN_URL` records the skipped
+insecure-origin pass as a FAILURE rather than quietly passing on the one origin the phone uses]:
 
 - a first visit loads the document **once** (note 44)
 - the worker takes control, and a webfont is actually in use
@@ -1156,6 +1335,11 @@ only exist in a real browser:
 - the `+`/`−` keys are 68x68 at both widths — **above §10.7's 48px floor**, which is what the 28px
   regression violated
 - 120 mg/dL with 25 g gives 2 units, logging it says so, and the screen is not blank (note 44)
+- the app is the FIRST history entry as on a phone, reaching the carbohydrate screen pushes exactly
+  one entry, and the back gesture returns to the reading screen with the app still loaded (note 47)
+- over the insecure origin: `isSecureContext` is genuinely false, `crypto.randomUUID` is genuinely
+  absent, the dose still computes — and it still LOGS, which is the defect the run exists for
+  (note 48)
 
 **It is not a replacement for looking.** It cannot tell that a correct result looks like a failure —
 note 26's amber wash needed eyes. It closes the gap between "the arithmetic is right" and "the app
@@ -1180,8 +1364,9 @@ design.
 way to it.** Symptom: tap "Log this injection", the screen goes blank, no history row visible, and
 on the phone the app appears stuck. **About one run in three**, which is why it read as flaky.
 
-**It was my own code, from the hardware-back work in note 36.** That design held one sentinel history
-entry while the app had somewhere to go back to, and tidied the entry when back-ability turned off:
+**It was my own code, from the hardware-back work (note 36, merged below).** That design held one
+sentinel history entry while the app had somewhere to go back to, and tidied the entry when
+back-ability turned off:
 
 ```
 if (!can && sentinel) { suppress = true; history.back(); }
@@ -1204,6 +1389,21 @@ recording an injection is a defect.**
 **The principle, which is §11.3's again in a third layer:** never navigate on your own bookkeeping.
 The sentinel count was a convention maintained by hand, and the one path that got it wrong did not
 fail loudly — it took the whole app off the screen.
+
+**Note 36 is merged here (2026-09-11), because its mechanism section described the deleted branch
+as a feature.** What survives of it: Momin asked *"why the android back button do not do back on
+my app?"* — in an installed PWA the system back button and the edge swipe leave the app, and
+people use the gesture reflexively, so it discarded a half-entered reading. The design is ONE
+sentinel history entry, pushed when back-ability turns on; the gesture consumes it and runs
+`backAction()`. **§11.5's "Routing: None" is not violated** — `pushState` is called with the
+current URL, nothing is written to the URL, there are no deep links and `start_url` is untouched;
+what §11.5 rules out is URL STATE, and this is a stack entry with none in it. **§10.6 and §11.3
+stay inescapable**: the first run and the fail-closed screen return `null` from `backAction`, so
+neither the control nor the gesture offers a way out of them. It sits on the `Host` for the same
+reason `now` does — a module that reaches for `window.history` on its own cannot be steered by the
+jsdom harness. What note 36 ALSO said — that a spent entry is tidied with a suppressed
+`history.back()` so the stack "cannot accumulate dead entries" — is the branch deleted above. The
+tidiness it bought was the app leaving the screen while recording an injection.
 
 **Two process notes worth more than the fix.**
 
@@ -1251,7 +1451,9 @@ dose still logs. Testing only the secure origin is testing the one the user is n
 **Two mutants in `core/ids.ts` are disabled by name.** `bytes[6] ?? 0` is unreachable — the array is
 created three lines above with sixteen elements — and the guard exists only because
 `noUncheckedIndexedAccess` types the read as possibly undefined. Mutating `??` to `&&` still yields
-a well-formed v4 UUID, so no assertion about shape can see it. The tally in note 16 is eighteen.
+a well-formed v4 UUID, so no assertion about shape can see it. The tally in note 16 was eighteen
+when this was written [corrected 2026-09-11: nineteen directives silencing 66 mutants — note 16
+carries the full table, and softens the "no assertion" claim to what is actually true].
 
 ## 49. `sameView` was always true, and a comment explained why that was fine `[FYI]`
 
@@ -1278,7 +1480,7 @@ correct**; neither is evidence.
 
 | | |
 |---|---|
-| The app icon looked smaller than its neighbours | The `any`-purpose icon scaled the mark to **0.86**, so it spanned ~70 of the 100 canvas — about 30% empty. Now 1.0, spanning 82, which is the largest this geometry allows without clipping. The **maskable** icon stays at 0.62: that is the 80% safe circle and is a constraint, not a preference |
+| The app icon looked smaller than its neighbours | [merged 2026-09-11 into note 10, the single icon record. This row's two closing claims — 1.0 as "the largest this geometry allows" and 0.62 as "a constraint, not a preference" — were both wrong, and note 55 dismantled the second; note 10 carries the measured truth] |
 | The headline wrapped wherever it fitted | An explicit `<br>`: "What's your blood sugar / right now?". Not left to `text-wrap: balance`, which rebalances with the viewport and would split "blood / sugar" on a narrower phone. **The trailing space before the `<br>` is load-bearing** — `textContent` concatenates across a break with no whitespace, so without it the question reads "blood sugarright now?" to a screen reader |
 | No hover on desktop | Added, gated on `@media (hover: hover) and (pointer: fine)`. The gate is the point: without it a touch device applies hover on tap **and leaves it applied**, so the last thing touched stays lit as though a finger were still on it |
 
@@ -1311,7 +1513,11 @@ was not just `8`.
 exist, and KEEPS the zero before a decimal point because `0.5` needs it. Pure, in `core/parse.ts`,
 so the mutation gate covers it.
 
-## 52. Vibration instead of a sound, and where feature detection earns its keep `[FYI]`
+## 52. Vibration instead of a sound, and where feature detection earns its keep `[CONFIRM]`
+
+**Question for Momin (retagged from `[FYI]` 2026-09-11 — this note records a substitution decided
+in code, not a mere fact):** you asked about a sound and the build shipped a vibration instead —
+does the substitution stand, or do you want the sound?
 
 **Momin asked about a sound; the answer is a buzz.** Same intent, and it works with the phone on
 silent, needs no user gesture to be permitted, and cannot be missed in a noisy room. A sound would be
@@ -1333,16 +1539,10 @@ when it splits the tested path from the shipped one.**
 
 ## 53. The icon, twice `[FYI]`
 
-0.86 → 1.0 → **1.17**, and Momin was right both times that it was still too small.
-
-The mark now spans **96 of the 100 canvas**, a 2% margin. That is safe **because the mark is a
-centred circle**: a rounded-corner mask — iOS's ~22% radius, Android's squircle — removes area at the
-CORNERS, and a circle's extremes sit at the middle of each edge, where no corner rounding reaches. A
-square mark could not be pushed this far, and the reasoning is written at the line so nobody
-"tidies" it later.
-
-**The maskable icon stays at 0.62.** That is the 80%-diameter safe circle from §12 and it is a
-constraint, not a preference.
+**MERGED 2026-09-11 into note 10.** This note fixed the `any` icon (0.86 → 1.0 → 1.17, with the
+circle-versus-corner reasoning note 10 now carries) while re-asserting that the maskable 0.62 "is
+a constraint, not a preference" — the claim note 55 dismantled two notes later. Note 10 is the
+single icon record. Kept as a numbered stub so references to "note 53" stay resolvable.
 
 ## 54. I called a launch blocker on a mechanism I had not finished understanding `[FYI]`
 
@@ -1379,20 +1579,10 @@ terms ("permanently", "never"). All three records are corrected.
 
 ## 55. The installed icon was small because Android uses the MASKABLE one `[FYI]`
 
-**Momin, after installing it on his phone: the icon looks small.** He was right, and note 53's fix
-never reached it — Android's home screen uses the **maskable** icon, and only the `any` icon had been
-enlarged.
-
-**0.62 was not a constraint, it was timidity.** The maskable safe zone is a centred circle of 80% of
-the canvas diameter. The ring's outer edge sits 41 from centre at scale 1, so the safe radius of 40
-permits up to **40/41 = 0.9756**. At 0.62 the mark spanned **50.8 of 100** — it could be half again
-as large and never clip. Now **0.94**: spans 77.1, outer radius 38.5, inside 40 with room for
-rasterisation rounding.
-
-**The earlier comment reasoned from the wrong shape.** It worried about "the squircle", but every
-launcher mask is LARGER than the safe circle — fitting the circle is sufficient for all of them, so
-the squircle was never the binding limit. A number defended by a plausible-sounding comment went
-unexamined for six revisions.
+**MERGED 2026-09-11 into note 10.** This is the note that found the truth — Android's home screen
+uses the maskable icon, so notes 50 and 53 had been enlarging the wrong file, and "0.62 was not a
+constraint, it was timidity". Note 10 now carries that finding, the arithmetic, and the measured
+spans of the shipped PNGs. Kept as a numbered stub so references to "note 55" stay resolvable.
 
 ## 56. `.sheet` inside a card, and buttons pushed off the edge `[FYI]`
 
@@ -1421,8 +1611,15 @@ action, every other `.li` pairs a label with a number. They stack, giving a full
 like every other primary action in the app.
 
 **Verified at 360px**, a small Android: no sideways scroll, worst overflow past `.screen` is **0px**,
-and both buttons fit. `tools/smoke.mjs` already asserts the page never scrolls sideways, which is the
-general form of this.
+and both buttons fit.
+
+**CORRECTED 2026-09-11.** This note ended by claiming `tools/smoke.mjs` "already asserts the page
+never scrolls sideways". It does not — there is no `scrollWidth` or overflow assertion anywhere in
+it. What it actually asserts is narrower: that `.foot-nav` and `.foot` sit inside `.screen`'s box,
+at 412px and 1440px — a containment check on two NAMED elements, not the general property, and
+neither element is the one that overflowed here. The general check — the document's `scrollWidth`
+against the viewport at the smallest supported width — does not exist anywhere in the suite. It is
+on Momin's list and is deliberately not added here.
 
 ## 57. Five rounding modes were selectable and undocumented `[FYI]`
 
@@ -1456,34 +1653,50 @@ with that."** The right question, and it turns the note from an appeal to §5.2 
 | | `-1.495` | `1.005` | `-1.125` | `2.675` |
 |---|---|---|---|---|
 | **A** `Math.round(v*100)/100` | **-1.49** | 1.00 | **-1.12** | 2.68 |
-| **B** decimal text *(shipped)* | -1.50 | 1.00 | -1.13 | 2.67 |
+| **B** decimal text *(shipped)* | -1.50 | **1.01** | -1.13 | 2.68 |
 | **C** sign-aware scaled | -1.50 | 1.00 | -1.13 | 2.68 |
+
+**CORRECTED 2026-09-11 — the B row above was wrong**, here and in §5.2's copy of the table: it read
+`1.005 → 1.00` and `2.675 → 2.67`, while `roundScaledHalfAwayFromZero` gives **1.01** and **2.68**
+and the tests have always pinned 1.005 → 1.01. The code and the tests are right; the table was
+wrong.
 
 **A is simply wrong**, and not because of floating point: `Math.round` breaks ties toward +∞, so the
 same magnitude rounds differently by sign. §2.2 requires half-away-from-zero for every mode.
 
-**B and C are both correct, and they disagree only where a decimal LITERAL looks like a tie while the
-double behind it is not** — `2.675` is really 2.67499999..., so B trusts the printed digits and C
-trusts the value.
+**B and C are both correct, and they disagree only where a decimal LITERAL looks like a tie while
+the SCALED double is not** — `1.005` prints as a tie while `1.005 * 100` is `100.49999999999999`,
+so B trusts the printed digits (1.01) and C trusts the value (1.00). At `2.675` they agree: the
+literal is really 2.67499999..., but `2.675 * 100` lands exactly on `267.5`, and both rules see the
+same tie.
 
-**The measurement that settles it.** Every value this app can reach — corrections and meal doses
-across five different prescriptions, blood sugars 20-600, carbohydrate 0-300:
+**The measurement that settles it** — corrections and meal doses across five different
+prescriptions, INTEGER blood sugars 20-600 and INTEGER carbohydrates 0-300:
 
 ```
 values checked : 2,623,215
 disagreements  : 0
 ```
 
-**B and C never differ on anything the app can produce.** The 572-value disagreement the note
-records is over synthetic three-decimal values, not reachable doses: with real ratios a correction is
-a multiple of 1/isf and a meal a multiple of 1/icr, and those essentially never land exactly on a
-third-decimal tie.
+**On that integer grid B and C never differ.** [CORRECTED 2026-09-11: this block originally
+headlined "every value this app can reach", which is false — over the full admissible ranges the
+two rules disagree thousands of times, and ordinary prescriptions do land on third-decimal ties
+(ISF 40, target 150, reading 173 → correction exactly 0.575: B 0.58, C 0.57). Where they differ B
+is the closer match to exact rational arithmetic: 0 deviations against C's 8,486 across the
+14,917,756 integer-reading corrections the hard ranges admit. See §5.2 for the full corrected
+measurement.] The 572-value disagreement the note records is over synthetic three-decimal values:
+see note 1 and `test/decimal.test.ts`.
 
-**So the ruling is cheap either way, and B stays** — it is shipped, it is tested, and it agrees with
-§5.2's table. What changes is the JUSTIFICATION: not "the plan says so" but "A is wrong, B and C are
-indistinguishable in practice, and B is the one already verified."
+**So the ruling holds, and B stays** — it is shipped, it is tested, it agrees with §5.2's corrected
+table, and where the rules part it is the one that matches the arithmetic on paper. What changes is
+the JUSTIFICATION: not "the plan says so" but "A is wrong, and B is the one already verified and
+the stricter match to exact arithmetic."
 
-## 59. The prompts pushed the page down, and were two copies of one component `[FYI]`
+## 59. The prompts pushed the page down, and were two copies of one component `[CONFIRM]`
+
+**Question for Momin (retagged from `[FYI]` 2026-09-11 — the dismissal-scope paragraph below
+reads like a live conversation, not a settled fact):** is the update-bar dismissal's scope — in
+memory only, gone for this session, back on the next launch — the scope you want?
 
 **Momin, on the update bar: "it shoves the whole page down instead of overlaying — this is my
 problem."** Correct, and the same defect existed twice: the update offer and the install offer were
@@ -1528,7 +1741,12 @@ handler copied from Gatsby's docs. **A `confirm()` is a MODAL: it blocks the ent
 focus until answered.** On a blog that is fine. Here it could land while a dose is on screen, which
 is the exact interruption §11.4 chose a prompt over a silent reload to avoid.
 
-## 60. The block screen was the only step that ignored expiry `[FYI]`
+## 60. The block screen was the only step that ignored expiry `[CONFIRM]`
+
+**Question for Momin (retagged from `[FYI]` 2026-09-11 — the tail below leaves a live
+alternative, explicitly labelled arguable, under a tag that means "no question"):** should
+`overrideScreen` also honour §8.2's expiry, or is the notice on the result screen it is reached
+from enough?
 
 **Found by a question, not by a test.** Ruling on note 6 I argued that a bad carbohydrate value
 survives the interruption of treating a low. Momin asked: *"but fifteen minutes later won't it reset
@@ -1575,3 +1793,228 @@ appears AND "Treat this first. Do not inject." is still there with no dose anywh
 injection that already happened, and `recordReading` is saving a number the user is looking at — none
 of them is a decision resting on a reading being current. Only `overrideScreen` is arguable, and it
 is reached from a result screen that already carries the notice.
+
+## 61. §7.2's pending-save promise was two lies and a dead function `[FYI]`
+
+**Where:** `src/state/machine.ts`, `src/ui/app.ts`, `src/ui/copy.ts`, `src/main.ts`.
+
+`COPY.log.pending` read *"Couldn't save this yet — retrying. This dose is still counted while the
+app stays open."* — §7.2's own specified wording, and both halves were false in the build.
+
+**Nothing retried.** `log_save_failed` was dispatched once from the commit path and no code ever
+re-attempted the write, so `save.attempts` — a counter the reducer dutifully maintained — could
+never exceed 1. §7.2 says the pending-save state comes *"with retry"*; the state existed, the
+retry did not.
+
+**And the dose was not counted.** `buildSnapshot` took `lastDose` from `state.record`, which the
+shell derives from stored rows alone (`contextFrom` in `src/ui/app.ts`) — so a failed write was
+invisible to §7.4's gate, and the next calculation inside the suppress window re-applied the full
+correction on top of insulin already acting. That is the stacking event §7.4 exists to prevent,
+reached through a reassurance. `inSessionLastDose` (`src/state/machine.ts`) was written for
+exactly this and had ZERO call sites; the test beside it proved the function computed, which is
+not the same as proving the gate read it.
+
+**Three fixes shipped, and the middle one is the interesting one.**
+
+1. **`gateLastDose`** now feeds `buildSnapshot`. It is guarded on `save.kind === 'pending'` —
+   because `committing` deliberately survives a successful save (§7.2 freezes the payload so a
+   retry persists THAT, never a re-read draft), its mere presence cannot be the signal: once
+   saved, the record carries the row and reading both would double-count. And it takes the NEWER
+   of the pending and recorded dose, because an imported row can post-date a failed local write
+   and the gate's question is "what is the most recent insulin", not "what did this session do".
+
+2. **`invalidate` was clearing `committing` and `save`**, so `new_calculation` wiped the pending
+   dose at precisely the moment the gate needed it — the wiring in fix 1 alone did nothing until
+   this was found. The clearing was justified by its comment as *"the logging draft belongs to a
+   result that no longer exists"*, which is true of `injectedDraft` and false of `committing`:
+   that is a frozen record of insulin that is in him. Same shape as the `tick` defect in the
+   sibling batch (§11.2's corrected passage): an invalidation clearing something that must outlive
+   the result.
+
+3. **Retry, escalating.** Attempt 1 fails and the flag appears on the logged screen, where he is
+   standing — from the FIRST failure, so closing the app inside the retry window never hides a
+   dose that is not in his record. Attempt 2 runs immediately and silently, because most write
+   failures here are transient — lock contention, quota pressure, a backgrounded tab — and a
+   recovery he never had to notice is the best outcome. Only if that also fails does a prompt bar
+   appear, via the new `Host.onSaveStuck`, naming the amount rather than "this dose": because
+   `committing` now outlives the logged step, the bar follows him across screens, and by the time
+   he sees it he may be two screens from the dose it names. `save.attempts` finally counts
+   something.
+
+**The copy was corrected twice in one day, deliberately.** First to stop claiming anything —
+"retrying" with no retry, and "counted" with no gate input, are not wordings but false safety
+claims on the screen where he decides whether to inject again. Then, once `gateLastDose` genuinely
+read the dose, "it counts" became true and is said again, bounded to the session:
+
+> Couldn't save this dose. It still counts toward your next calculation while the app is open, but
+> closing the app will lose it — write it down. Within 4 hours that matters: a correction could
+> stack.
+
+The test (`test/machine.test.ts`) asserts the ABSENCE of "retry"/"retrying" rather than the
+presence of a sentence — so the wording stays free while the claim the app cannot make stays out.
+
+**One flag for Momin, not settled here:** §7.2's own text still specifies the old wording, twice
+(*"Couldn't save this yet. Retrying."*, and the failure bullet quoted above). The shipped copy now
+deliberately deviates from live plan text, and §20.3's one-edit rule wants the plan sentence
+changed and the retired phrase pinned in `check-plan.py` in the same edit. That is a PLAN.md
+change and is not made from here.
+
+**RESOLVED 2026-09-11, in part:** §7.2 is corrected in both places — it now quotes the shipped
+copy and states the real behaviour (one silent automatic retry, then the prompt bar). The
+`check-plan.py` RETIRED pin was deliberately not added in the same pass (that file was out of the
+pass's scope), so the pin — and `design/step-flow.html`'s surviving "Couldn't save this yet" —
+stay on Momin's list.
+
+**Tests, each watched failing against the unfixed code before it was trusted (note 25's rule):**
+`test/machine.test.ts` — the gate reads the pending dose (a 330 reading two hours after an unsaved
+11-unit dose resolves `meal_only_suppressed`, not a full correction), a SAVED write leaves the
+record to speak so nothing double-counts, and the copy assertions above. `test/integration.test.ts`
+— three cases through a wrapped `IDBFactory` whose first n `readwrite` transactions touching the
+log store throw: a transient failure recovers on the automatic retry with nothing asked of him; a
+persistent one escalates to a bar naming "11 units"; and the bar's retry writes the FROZEN payload
+once the disk comes back.
+
+**To reverse it:** §7.2 would have to stop saying "with retry" and stop decoupling consumed state
+from persistence — both of which it argues for at length — and §7.4's gate would have to accept
+going blind on a dose the app itself just told him still counts.
+
+## 62. A reading was clearing suspect provenance, which §7.8 forbids `[RULED 2026-09-11: fixed, residual accepted — no confirm needed]`
+
+**Where:** `src/storage/repo.ts`, `src/storage/schema.ts`, `src/core/history.ts`, `src/ui/app.ts`.
+
+`appendReading` stamped `lastLocalWriteAtMs` — the second conjunct of note 7's `justImported`,
+which feeds `historyProvenance`, a §11.2 snapshot field whose only consumer is §7.5's *"No recent
+dose recorded"* caveat. So wherever `justImported` was the only thing keeping provenance suspect,
+recording a blood sugar flipped it to trusted — on an install that had never once watched him
+inject — and the caveat went quiet. §7.8 forbids exactly this, in as many words:
+
+> **Not an input to anything.** Readings are absent from §11.2's dosing snapshot, from §6.5's
+> carbohydrate baseline, and from §7.4's stacking gate — a reading is not an injection.
+
+A reading clearing `justImported` made it an input to a snapshot field. And the commonest reading
+is the one §7.8 has the app OFFER after a band C/D block — a session in which dosing is
+structurally impossible — so the rows buying the trust were precisely the ones least entitled to.
+
+**How the stamp got there.** §4.3 step 1 and §11.2 rule that a readings write bumps the SAME
+`logRevision` rather than a second counter, so `appendReading` shares `bumpLogRevision` with
+`appendInjection` — and the stamp rode along in the shared call's patch. The bump stays; only the
+stamp goes. `appendReading` also lost its now-unused `nowMs` parameter — the row carries its own
+timestamp, and a parameter whose only job was feeding a stamp that must not happen is an
+invitation to put the stamp back.
+
+**The rename, and why the name mattered.** The domain field is now **`lastLocalInjectionAtMs`**
+(`HistoryContext`, `StoredState`, the `app.ts` mapping), while the PERSISTED key stays
+`lastLocalWriteAtMs` in `LogRevisionRow`, translated at `readAll` — no migration for a cosmetic
+gain. The old name described a MECHANISM (any local write) while its one consumer needed a MEANING
+(this install has watched an injection), and that mismatch is what invited the wrong write site:
+to someone reading `appendReading`, stamping "last local write" there looked correct. Note 3's
+`lastDose.units` → `injectedHundredths` rename is the in-repo precedent for the same failure
+class — a name answering the wrong question recruits correct-looking code.
+
+**The residual is real, and it is left, deliberately.** A deployed install that both imported and
+then recorded a reading holds a stamp that will go on reading as trusted, and it CANNOT be
+re-derived — log rows carry no origin marker, so an imported row and a local one are
+indistinguishable after the fact. Nulling the stamp on upgrade was rejected: it would also wipe
+legitimate injection stamps, flipping every install that ever imported back to suspect until its
+next injection — a larger population over-warned to cure a smaller one under-warned, both
+self-healing on the same event, at the cost of the app's first data migration. The affected
+population today is plausibly zero. **To reverse:** a one-time migration nulling
+`lastLocalWriteAtMs` wherever `lastImportAtMs` is set, accepting the over-warning.
+
+**The missing pin that let it ship:** both tests that pinned the stamp used `appendInjection`, so
+they passed either way. The new one (`test/export.test.ts`, *"§7.8 — a READING bumps the revision
+but never clears suspect provenance"*) asserts both halves, and was verified failing against the
+old behaviour.
+
+## 63. §11.8's lint rules had two holes, found by probing rather than reading `[FYI]`
+
+**Where:** `eslint.config.js`.
+
+**`const B = .5` escaped BOTH rules.** The second rule's selector was `Literal[raw=/^[0-9]/]`,
+which misses a raw literal beginning with a dot — `.5` is a legal numeric literal — while
+`no-magic-numbers` permits any literal in a const initialiser, which is the first rule's known gap
+the second rule exists to close (note 8). A number could therefore leave `config.ts` so long as it
+was written with a bare leading dot. Fixed: `raw=/^[0-9.]/`.
+
+**And `-100` escaped.** The exemptions sit on the `Literal` node, and a unary minus is a separate
+node above it — so the literal inside `-100` read as the exempt `100` and passed. §11.8 lists `-1`
+SEPARATELY from `1` in its exemption set ("0, 1, -1 and 100"), which is the plan treating signs as
+distinct values: `-100` was never exempt, and the selector was reading it as though it were. Fixed
+with a second selector: `UnaryExpression[operator="-"] > Literal[value=100]`.
+
+Both holes were shown open by probe before the fix and shown closed after it; `-1`, `100` and `0`
+remain correctly exempt, and the tree still lints clean. The general point, which is note 8's one
+level up: **a lint rule's holes are invisible to reading it** — the original selector read as
+airtight — **and show up only when adversarial input is run through it.** That is how note 8 found
+the first rule's laundering gap, and it is the only way either of these would have been found.
+
+## 64. Dead code the audits surfaced, and what each one's deadness meant `[FYI]`
+
+Deleted, each verified as having no consumer beyond its own declaration:
+
+| What | Where | What its deadness meant |
+|---|---|---|
+| `clearNeedsStackingLine` | `src/ui/app.ts` | A dead DUPLICATE: §7.9's stacking line is implemented INLINE in `clearScreen`, so this was one comment away from being mistaken for the wire — note 38's class ("a note asserting that something is wired is not a wire"), one step earlier in the pipeline |
+| `bar()` | `src/ui/components.ts` | Orphaned by note 41's stepper rebuild |
+| `STORES_IN_THIS_BUILD` | `src/storage/open.ts` | An exported store enumeration nothing imported. The live enumeration is `schema.ts`'s `ALL_STORES`, DERIVED from the `STORE` table — and §7.9's own delete-path comment condemns exactly this shape: "a hand-enumerated store list rots on the edit that changes it, silently and in the unsafe direction" |
+| `COPY.range.bloodSugarAbove`, `COPY.range.carbsAbove` | `src/ui/copy.ts` | Superseded by `entryRange` |
+| `looksLikeAPossibleLow` + its test block | `src/core/bands.ts`, `test/bands.test.ts` | Production never called it; `classifyLowBand(value) !== null` answers the same question from the path that actually runs. Its tests were green and proved nothing about the live path — tests agreeing with a dead wire |
+
+Also removed: a second `NETWORK_TIMEOUT_MS` in `src/config.ts` that nothing imported, duplicating
+the live one in `src/sw.ts` — a dead second definition in the one file whose whole premise is
+being the single source, free to drift from the value actually running. `config.ts` keeps a
+pointer comment so the absence does not read as removal, and `sw.ts` now documents why its literal
+is allowed to live there: the worker compiles in its own TypeScript project against the WebWorker
+lib and cannot import the app's module graph — the structural reason `eslint.config.js` exempts it
+from §11.8's literal rule.
+
+**Flag for Momin, not acted on:** that `sw.ts` exemption is now recorded in `eslint.config.js` and
+in `sw.ts` itself — and NOT in §11.8, which presents its rule as exceptionless. An enforcement
+carve-out that lives only in the enforcement's own config is the "decided and not written down"
+state §20.5 condemns, in the one section whose premise is that every number has a declared home.
+Whether §11.8 gains the exemption or the worker loses it is a plan edit, not made from here.
+
+**RESOLVED 2026-09-11:** §11.8 gained the exemption, with its structural reason, alongside note
+9's arithmetic-identities ruling — Momin ruled both; the plan edit is made.
+
+## 65. The Stryker disables were narrowed, and it bought real coverage `[FYI]`
+
+**Where:** `src/core/history.ts`, `src/core/resolve.ts`; counts from
+`reports/mutation/report.json`.
+
+Block `disable all` regions were silencing whole expressions under justifications that covered one
+clause each. The four whose reason was narrower than their scope were rewritten as
+`disable next-line <specific mutators>` — two in `history.ts` (the band-E qualifying expression,
+which one block silenced 31 mutants of, and `justImported`) and two in `resolve.ts` (the
+low-reading ternary arm and the override-candidate null guard). The run moved:
+
+```
+Ignored   100 -> 66      Killed  1,366 -> 1,395      Survived  0 throughout
+```
+
+The right side is the run recorded in `reports/mutation/report.json` (which also has 2 timeouts —
+a timeout is a detected mutant); the left is the pre-narrowing run. The same batch's dead-code
+deletion (note 64's `looksLikeAPossibleLow`) moved the total mutant count slightly as well, so the
+killed delta is not pure reclassification — but the ignored column is: 34 mutants that were
+silenced on someone else's justification are now mutants the suite demonstrably detects, among
+them the `row.id !== excludeId` mutant that §13.3's "the breakfast 280 renders compact for itself"
+case exists to kill.
+
+**Two findings worth the note.**
+
+**First, narrowing `history.ts`'s band-E block exposed a genuinely unexamined mutant** —
+`rows.filter(isInjection)` → `rows` — riding under a block whose stated reason was the null check
+three lines down. It turned out equivalent for an ENTIRELY DIFFERENT reason than the block
+claimed: a tombstone carries no `bloodSugar`, and `undefined >= 250` is false, so a tombstone
+cannot qualify with or without the filter — the same equivalence as `baseline.ts`'s tombstone
+filter. It now carries its own disable, with its own reason, at its own line (note 16's
+nineteenth directive). That is the argument against block disables in one example: one
+justification was covering several unrelated mutants, and a real gap would hide the same way —
+this one was merely lucky. Re-enabling each narrowed region proved every neighbouring mutant dies,
+so nothing else was hiding.
+
+**Second, not every block disable was wrong.** `resolve.ts`'s three unreachable-statement blocks —
+the step-7 blocking-band re-check and the two §6.4 bound checks — wrap statements no input can
+execute, so a block-wide disable with a block-wide reason is exactly right there, and they were
+left alone (as was `calendar.ts`'s part-read block, the same class). The distinction worth
+keeping: **a disable's scope must match its reason's scope.**
