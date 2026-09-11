@@ -17,7 +17,6 @@
  */
 
 import {
-  ALL_STORES,
   DATABASE_NAME,
   DATABASE_VERSION,
   META_KEY,
@@ -252,4 +251,3 @@ export function deleteDatabase(options: {
 }
 
 /** Every store this build knows about, for callers that need to name them. */
-export const STORES_IN_THIS_BUILD = ALL_STORES;

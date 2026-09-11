@@ -5,7 +5,7 @@
  * against the compositions §13.3 names.
  */
 
-import { RANGE, SCHEMA_VERSION, MAX_NAME_LENGTH } from '../config.js';
+import { HUNDREDTHS_SCALE, RANGE, SCHEMA_VERSION, MAX_NAME_LENGTH } from '../config.js';
 import { isTombstone } from '../core/types.js';
 import type { Injection, LogRow, Reading, RoundingMode, Settings, Tombstone } from '../core/types.js';
 import type { SettingsPeriod } from '../core/periods.js';
@@ -127,6 +127,35 @@ function inHardRange(value: unknown, field: keyof typeof RANGE): value is number
 
 const MODES: readonly RoundingMode[] = ['nearest', 'half', 'ceil', 'floor', 'off'];
 
+/**
+ * §2.2 — the stored insulin fields hold integer HUNDREDTHS, while `RANGE` is
+ * denominated in UNITS. That mismatch is note 3's naming trap (`injectedUnits`
+ * HOLDS hundredths), and it is why this helper exists instead of a bare
+ * `inHardRange` at the call site: a check that forgot the conversion would
+ * read a mis-scaled 25 units as 25 hundredths — and reject every legitimate
+ * row as 1100 "units". The integer check is §11.3's "precision": a fractional
+ * hundredth throws in `formatHundredths` and takes the history screen and the
+ * readable export down with it.
+ */
+function injectedHundredthsInRange(value: unknown): value is number {
+  if (!finiteNumber(value) || !Number.isInteger(value)) return false;
+  return inHardRange(value / HUNDREDTHS_SCALE, 'injected');
+}
+
+// §6.4's ceiling with every setting at its hard extreme — the largest dose any
+// in-range prescription can produce: (600 − 70) / 5 + 300 / 1 = 406 units.
+// The bound for a CALCULATED figure has to be absolute rather than
+// per-prescription, because by import time the settings that produced the row
+// may not be in the file at all (§7.7 remaps history; §1.2 re-enters).
+const [, ABS_MAX_BLOOD_SUGAR] = RANGE.bloodSugar.hard;
+const [ABS_MIN_TARGET] = RANGE.target.hard;
+const [ABS_MIN_ISF] = RANGE.isf.hard;
+const [ABS_MIN_ICR] = RANGE.icr.hard;
+const [, ABS_MAX_CARBS] = RANGE.carbs.hard;
+const MAX_CALCULATED_HUNDREDTHS =
+  ((ABS_MAX_BLOOD_SUGAR - ABS_MIN_TARGET) / ABS_MIN_ISF + ABS_MAX_CARBS / ABS_MIN_ICR) *
+  HUNDREDTHS_SCALE;
+
 function readInjection(value: Record<string, unknown>): Injection | null {
   // §11.3 — RE-VALIDATE ON EVERY LOAD AND IMPORT: type, presence, finiteness,
   // precision, range. A row that fails is dropped rather than repaired, because
@@ -136,8 +165,13 @@ function readInjection(value: Record<string, unknown>): Injection | null {
   if (!finiteNumber(timestamp)) return null;
   if (bloodSugar !== null && !inHardRange(bloodSugar, 'bloodSugar')) return null;
   if (!inHardRange(carbs, 'carbs')) return null;
-  if (!finiteNumber(units) || units < 0) return null;
-  if (!finiteNumber(injectedUnits) || injectedUnits <= 0) return null;
+  // Both insulin figures are integer hundredths (§2.2). `units` keeps its
+  // floor at zero — a zero-unit calculation beside a real injection is a
+  // legitimate row — but is capped at §6.4's absolute ceiling; the injected
+  // figure gets §7.1's own range, converted (see the helper above).
+  if (!finiteNumber(units) || !Number.isInteger(units)) return null;
+  if (units < 0 || units > MAX_CALCULATED_HUNDREDTHS) return null;
+  if (!injectedHundredthsInRange(injectedUnits)) return null;
   if (!finiteNumber(settingsRevision)) return null;
   const timingAdvice = value.timingAdvice;
   if (timingAdvice !== 'before' && timingAdvice !== 'eat_first' && timingAdvice !== 'suppressed') {
@@ -155,6 +189,24 @@ function readInjection(value: Record<string, unknown>): Injection | null {
     timingAdvice,
     advisoryFlagged: value.advisoryFlagged === true,
   };
+}
+
+/**
+ * §11.3 — *"Re-validate on every LOAD and import — type, presence, finiteness,
+ * precision, range."* Exported because until 2026-09-11 only the IMPORT half of
+ * that sentence had an implementation: `readAll` returned whatever the store
+ * held, so a row written by an older build, or corrupted in place, reached
+ * §7.4's gate and the history screen unchecked — and a fractional
+ * `injectedUnits` threw in `formatHundredths`, taking down the history screen
+ * and the readable export from one bad row, on exactly the restore path §11.3
+ * promises validate-before-commit protection for.
+ *
+ * One function for both paths deliberately: two validators that are supposed to
+ * agree are two validators that will eventually disagree.
+ */
+export function readLogRow(value: unknown): LogRow | null {
+  if (!isRecord(value)) return null;
+  return value.deleted === true ? readTombstone(value) : readInjection(value);
 }
 
 function readTombstone(value: Record<string, unknown>): Tombstone | null {
@@ -263,8 +315,7 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
 
   const log: LogRow[] = [];
   for (const entry of Array.isArray(raw.log) ? raw.log : []) {
-    if (!isRecord(entry)) continue;
-    const row = entry.deleted === true ? readTombstone(entry) : readInjection(entry);
+    const row = readLogRow(entry);
     if (row !== null) log.push(row);
   }
 

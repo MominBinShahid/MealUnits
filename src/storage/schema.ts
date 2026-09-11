@@ -139,6 +139,14 @@ export interface LogRevisionRow {
   readonly k: typeof META_KEY.logRevision;
   readonly n: number;
   readonly lastImportAtMs: number | null;
+  /**
+   * THE PERSISTED KEY, deliberately not renamed. The domain calls this
+   * `lastLocalInjectionAtMs` (`StoredState`, `HistoryContext`) because after
+   * note 7's fix only an injection append stamps it — `appendReading` used to
+   * and must not, per §7.8. Renaming the stored key would mean the app's
+   * first data migration for a cosmetic gain, so the translation lives at
+   * `readAll` instead and is commented there.
+   */
   readonly lastLocalWriteAtMs: number | null;
 }
 

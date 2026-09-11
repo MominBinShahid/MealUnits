@@ -16,6 +16,8 @@ import { importEnvelope } from '../src/storage/importer.js';
 import { buildReadableExport, escapeHtml } from '../src/storage/readable.js';
 import { openDatabase } from '../src/storage/open.js';
 import { appendInjection, appendReading, commitSettings, readAll } from '../src/storage/repo.js';
+import { STORE } from '../src/storage/schema.js';
+import { put, runTransaction } from '../src/storage/tx.js';
 import type { Injection, LogRow, Reading, Settings, Tombstone } from '../src/core/types.js';
 import type { SettingsPeriod } from '../src/core/periods.js';
 
@@ -206,6 +208,77 @@ describe('§11.3 import validates before it commits', () => {
     expect(parsed.envelope.log[0]?.id).toBe('good');
   });
 
+  it('§7.1 — drops an insulin figure no syringe or prescription can produce, in either stored field', () => {
+    const parsed = parseEnvelope({
+      schemaVersion: 1,
+      settings: {},
+      settingsHistory: [],
+      readings: [],
+      log: [
+        { ...injection(), injectedUnits: 999999 }, // 9,999.99 units
+        { ...injection(), units: 999999 }, // past §6.4's absolute ceiling of 406
+        { ...injection({ id: 'good' }) },
+      ],
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.envelope.log).toHaveLength(1);
+    expect(parsed.envelope.log[0]?.id).toBe('good');
+  });
+
+  it('§2.2 — drops a fractional hundredth rather than letting it throw in the screens that format it', () => {
+    // 25.5 in a hundredths field reaches `formatHundredths`, which throws on a
+    // non-integer — taking down the history screen and the readable export on
+    // exactly the restore path §11.3 promises validate-before-commit for.
+    const parsed = parseEnvelope({
+      schemaVersion: 1,
+      settings: {},
+      settingsHistory: [],
+      readings: [],
+      log: [
+        { ...injection(), injectedUnits: 25.5 },
+        { ...injection(), units: 25.5 },
+        { ...injection({ id: 'good' }) },
+      ],
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.envelope.log).toHaveLength(1);
+    expect(parsed.envelope.log[0]?.id).toBe('good');
+  });
+
+  it('note 3 — the range check reads the STORED denomination, hundredths', () => {
+    // A check that forgot the conversion would reject every legitimate row —
+    // 1100 hundredths read as 1100 "units" — which is note 3's naming trap
+    // pointed the other way. And 25 imports: it is 0.25 units, inside §7.1's
+    // hard range, so the schema cannot tell a mis-scaled "25 units" from a
+    // real quarter unit; §7.1's floor is what admits it.
+    const parsed = parseEnvelope({
+      schemaVersion: 1,
+      settings: {},
+      settingsHistory: [],
+      readings: [],
+      log: [
+        { ...injection({ id: 'eleven' }) }, // 1100 hundredths = 11 units
+        { ...injection({ id: 'quarter' }), injectedUnits: 25 }, // 0.25 units
+        { ...injection({ id: 'floor' }), injectedUnits: 1 }, // 0.01 units, the floor
+        { ...injection({ id: 'cap' }), injectedUnits: 10000 }, // 100 units, the cap
+        { ...injection({ id: 'zero-calculated' }), units: 0 }, // legal: §7.2 governs `units` at commit, not here
+        { ...injection({ id: 'past-cap' }), injectedUnits: 10001 },
+        { ...injection({ id: 'zero-injected' }), injectedUnits: 0 },
+      ],
+    });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.envelope.log.map((row) => row.id)).toEqual([
+      'eleven',
+      'quarter',
+      'floor',
+      'cap',
+      'zero-calculated',
+    ]);
+  });
+
   it('§7.7 v24 — a TOMBSTONE is not validated against the prescription', () => {
     // "It asserts an absence; there is nothing to range-check." v23's envelope
     // required `settingsRevision` on every log row, so a valid exported
@@ -386,11 +459,72 @@ describe('§13.3 the composed case v12 lacked', () => {
     );
     const afterImport = await readAll(db, NOW);
     expect(afterImport.lastImportAtMs).toBe(NOW);
-    expect(afterImport.lastLocalWriteAtMs).toBeNull();
+    expect(afterImport.lastLocalInjectionAtMs).toBeNull();
 
     await appendInjection(db, injection(), NOW + HOUR);
     const afterWrite = await readAll(db, NOW);
-    expect(afterWrite.lastLocalWriteAtMs).toBe(NOW + HOUR);
+    expect(afterWrite.lastLocalInjectionAtMs).toBe(NOW + HOUR);
+    db.close();
+  });
+
+  /**
+   * §7.8 — *"Not an input to anything. Readings are absent from §11.2's dosing
+   * snapshot, from §6.5's carbohydrate baseline, and from §7.4's stacking gate
+   * — a reading is not an injection."* `historyProvenance` IS a §11.2 snapshot
+   * field, so a reading clearing suspect provenance made it an input to one.
+   *
+   * THE MISSING PIN. Both tests above use `appendInjection`, so they passed
+   * whether or not `appendReading` also stamped — and it did, which suppressed
+   * §7.5's "No recent dose recorded" caveat on an install that had never once
+   * watched him inject. The revision bump stays, because §11.2 requires it;
+   * only the stamp is gone.
+   */
+  /**
+   * §11.3 — *"Re-validate on every LOAD and import."* The import half shipped;
+   * the load half did not, so `readAll` returned whatever the store held. A row
+   * written by an older build, or corrupted in place, reached §7.4's gate and
+   * the history screen unchecked — and a FRACTIONAL `injectedUnits` threw in
+   * `formatHundredths`, taking down the history screen and the readable export
+   * from one bad row, on the restore path §11.3 promises to protect.
+   *
+   * Dropped rather than repaired, because repairing would invent a dose. And
+   * COUNTED, because §7.5's whole doctrine is that a log the app had to prune
+   * must never silently read as "no recent insulin".
+   */
+  it('§11.3 — the LOAD path drops unvalidatable rows and says the log is suspect', async () => {
+    const db = await open();
+    await commitSettings(db, PRESCRIPTION);
+    await appendInjection(db, injection(), NOW);
+
+    // Written straight past the app, as an older build or corruption would.
+    await runTransaction(db, [STORE.log], 'readwrite', async (tx) => {
+      await put(tx, STORE.log, { ...injection(), id: 'huge', injectedUnits: 999999 });
+      await put(tx, STORE.log, { ...injection(), id: 'fractional', injectedUnits: 25.5 });
+      await put(tx, STORE.log, { ...injection(), id: 'nan', carbs: Number.NaN });
+    });
+
+    const state = await readAll(db, NOW);
+    expect(state.droppedStoredRows).toBe(3);
+    expect(state.log).toHaveLength(1);
+    expect(state.log[0]?.id).toMatch(/^dose-/);
+    db.close();
+  });
+
+  it('§7.8 — a READING bumps the revision but never clears suspect provenance', async () => {
+    const db = await open();
+    await commitSettings(db, PRESCRIPTION);
+    await importEnvelope(
+      db,
+      { schemaVersion: 1, settings: {}, settingsHistory: [], readings: [], log: [] },
+      NOW,
+    );
+    const beforeReading = await readAll(db, NOW);
+
+    await appendReading(db, { id: 'r1', timestamp: NOW + HOUR, bloodSugar: 62 });
+    const afterReading = await readAll(db, NOW);
+
+    expect(afterReading.lastLocalInjectionAtMs).toBeNull();
+    expect(afterReading.logRevision).toBe(beforeReading.logRevision + 1);
     db.close();
   });
 
@@ -421,7 +555,7 @@ describe('§13.3 the composed case v12 lacked', () => {
   it('merges readings by id without duplicating them', async () => {
     const db = await open();
     const reading: Reading = { id: 'r1', timestamp: NOW - DAY, bloodSugar: 65 };
-    await appendReading(db, reading, NOW);
+    await appendReading(db, reading);
     await importEnvelope(
       db,
       { schemaVersion: 1, settings: {}, settingsHistory: [], readings: [reading], log: [] },

@@ -31,6 +31,7 @@ import type {
   SettingsHistoryRow,
   SettingsRow,
 } from './schema.js';
+import { readLogRow } from './envelope.js';
 import { add, clear, get, getAll, maxKey, put, remove, runTransaction } from './tx.js';
 
 const NO_REVISION = 0;
@@ -72,7 +73,13 @@ export interface StoredState {
   readonly logRevision: number;
   readonly installedAtMs: number;
   readonly lastImportAtMs: number | null;
-  readonly lastLocalWriteAtMs: number | null;
+  readonly lastLocalInjectionAtMs: number | null;
+  /**
+   * §11.3 — stored rows that failed re-validation ON LOAD and were dropped.
+   * Counted rather than merely discarded, because §7.5's doctrine is that a log
+   * the app had to prune must never silently read as "no recent insulin".
+   */
+  readonly droppedStoredRows: number;
   readonly acks: ReadonlySet<string>;
   readonly dosingHistory: DosingHistoryRow;
   readonly lastJsonExportAtMs: number | null;
@@ -117,15 +124,31 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
               personName: settingsRow.personName ?? '',
             };
 
+      // §11.3 — "Re-validate on every LOAD and import." The import half was
+      // implemented; this is the load half. A row that fails is DROPPED rather
+      // than repaired, because repairing it would invent a dose — and counted,
+      // so §7.5 can refuse to call the remaining log trustworthy.
+      const validated: LogRow[] = [];
+      for (const row of log) {
+        const checked = readLogRow(row);
+        if (checked !== null) validated.push(checked);
+      }
+
       return {
         settings,
         settingsHistory: history,
-        log,
+        log: validated,
+        droppedStoredRows: log.length - validated.length,
         readings,
         logRevision: revision.n,
         installedAtMs: install?.installedAtMs ?? nowMs,
         lastImportAtMs: revision.lastImportAtMs,
-        lastLocalWriteAtMs: revision.lastLocalWriteAtMs,
+        // THE BOUNDARY. The stored key is `lastLocalWriteAtMs` and stays that
+        // way — renaming it would need a schema migration for a cosmetic gain.
+        // The DOMAIN name says what the value means after note 7's fix: only
+        // an injection append stamps it, so "write" was false the moment
+        // `appendReading` stopped.
+        lastLocalInjectionAtMs: revision.lastLocalWriteAtMs,
         acks: new Set(acks.map((row) => row.k)),
         // §6.7 v19 — A MISSING ROW READS AS `unanswered`. The row is not seeded
         // at database creation: an install predating the feature, or a partial
@@ -289,12 +312,32 @@ export async function appendInjection(
   });
 }
 
-/** §7.8 — a reading is its own event, and it bumps the SAME counter. */
-export function appendReading(db: IDBDatabase, reading: Reading, nowMs: number): Promise<number> {
+/**
+ * §7.8 — a reading is its own event, and it bumps the SAME counter.
+ *
+ * **It does NOT stamp `lastLocalInjectionAtMs`, and the omission is the point.**
+ * It used to, which made a reading an input to §7.5's provenance and therefore
+ * to a §11.2 snapshot field — forbidden by §7.8 in as many words: *"Not an
+ * input to anything. Readings are absent from §11.2's dosing snapshot, from
+ * §6.5's carbohydrate baseline, and from §7.4's stacking gate — a reading is
+ * not an injection. The one exception is §10.5's band E derivation."*
+ *
+ * The effect was that recording a blood sugar after an import flipped
+ * provenance from suspect to trusted, suppressing §7.5's *"No recent dose
+ * recorded"* caveat on an install that had never once watched him inject. The
+ * commonest reading is the one offered after a band C/D block — a session in
+ * which dosing is structurally impossible — so the rows that bought the trust
+ * were the least entitled to.
+ *
+ * The stamp rode along because §7.8 says a reading bumps the same counter, and
+ * the shared `bumpLogRevision` call carried the patch with it. The bump stays;
+ * §11.2 requires it. Only the stamp goes.
+ */
+export function appendReading(db: IDBDatabase, reading: Reading): Promise<number> {
   return runTransaction(db, HISTORY_SCOPE, 'readwrite', async (tx) => {
     const existing = await get<Reading>(tx, STORE.readings, reading.id);
     if (existing === undefined) await add(tx, STORE.readings, reading);
-    return bumpLogRevision(tx, { lastLocalWriteAtMs: nowMs });
+    return bumpLogRevision(tx);
   });
 }
 

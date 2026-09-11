@@ -52,7 +52,8 @@ const CONTEXT: HistoryContext = {
   nowMs: NOW,
   installedAtMs: NOW - 30 * 24 * HOUR,
   lastImportAtMs: null,
-  lastLocalWriteAtMs: NOW - HOUR,
+  lastLocalInjectionAtMs: NOW - HOUR,
+  droppedStoredRows: 0,
 };
 
 describe('§7.6 the future-dated predicate', () => {
@@ -109,7 +110,7 @@ describe('§11.2 lastDose reads the INJECTED amount', () => {
   });
 });
 
-describe('§7.5 the four conditions that make provenance suspect', () => {
+describe('§7.5 the conditions that make provenance suspect', () => {
   it('an empty log', () => {
     expect(deriveHistory([], CONTEXT).historyProvenance).toBe('suspect');
   });
@@ -124,6 +125,20 @@ describe('§7.5 the four conditions that make provenance suspect', () => {
     expect(derived.historyProvenance).toBe('suspect');
   });
 
+  /**
+   * §11.3's load-time re-validation, joining §7.5's four named conditions as a
+   * fifth. A row the app had to DROP is one it cannot vouch for, and the whole
+   * point of §7.5 is that "no usable recent record" must never silently become
+   * "no recent insulin" — which is exactly what dropping a row and saying
+   * nothing would be.
+   */
+  it('a log the LOAD path had to prune, even though what survived looks fine', () => {
+    const context: HistoryContext = { ...CONTEXT, droppedStoredRows: 1 };
+    // The surviving row is ordinary and recent: nothing else here is suspect.
+    expect(deriveHistory([injection()], CONTEXT).historyProvenance).toBe('trusted');
+    expect(deriveHistory([injection()], context).historyProvenance).toBe('suspect');
+  });
+
   it('a log whose newest row predates this install', () => {
     const ancient = injection({ timestamp: CONTEXT.installedAtMs - HOUR });
     expect(deriveHistory([ancient], CONTEXT).historyProvenance).toBe('suspect');
@@ -133,7 +148,8 @@ describe('§7.5 the four conditions that make provenance suspect', () => {
     const context: HistoryContext = {
       ...CONTEXT,
       lastImportAtMs: NOW - 2 * HOUR,
-      lastLocalWriteAtMs: null,
+      lastLocalInjectionAtMs: null,
+      droppedStoredRows: 0,
     };
     expect(deriveHistory([injection()], context).historyProvenance).toBe('suspect');
   });
@@ -142,7 +158,8 @@ describe('§7.5 the four conditions that make provenance suspect', () => {
     const context: HistoryContext = {
       ...CONTEXT,
       lastImportAtMs: NOW - 2 * HOUR,
-      lastLocalWriteAtMs: NOW - HOUR,
+      lastLocalInjectionAtMs: NOW - HOUR,
+      droppedStoredRows: 0,
     };
     expect(deriveHistory([injection()], context).historyProvenance).toBe('trusted');
   });
@@ -167,13 +184,15 @@ describe('§7.5 the four conditions that make provenance suspect', () => {
     const atImport: HistoryContext = {
       ...CONTEXT,
       lastImportAtMs: NOW - 2 * HOUR,
-      lastLocalWriteAtMs: NOW - 2 * HOUR,
+      lastLocalInjectionAtMs: NOW - 2 * HOUR,
+      droppedStoredRows: 0,
     };
     expect(deriveHistory([injection()], atImport).historyProvenance).toBe('trusted');
     const justBefore: HistoryContext = {
       ...CONTEXT,
       lastImportAtMs: NOW - 2 * HOUR,
-      lastLocalWriteAtMs: NOW - 2 * HOUR - 1,
+      lastLocalInjectionAtMs: NOW - 2 * HOUR - 1,
+      droppedStoredRows: 0,
     };
     expect(deriveHistory([injection()], justBefore).historyProvenance).toBe('suspect');
   });
@@ -182,7 +201,8 @@ describe('§7.5 the four conditions that make provenance suspect', () => {
     const neverImported: HistoryContext = {
       ...CONTEXT,
       lastImportAtMs: null,
-      lastLocalWriteAtMs: null,
+      lastLocalInjectionAtMs: null,
+      droppedStoredRows: 0,
     };
     expect(deriveHistory([injection()], neverImported).historyProvenance).toBe('trusted');
   });

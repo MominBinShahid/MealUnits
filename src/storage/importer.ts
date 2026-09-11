@@ -82,8 +82,13 @@ export function importEnvelope(
       } satisfies DosingHistoryRow);
     }
 
-    // §7.5 — the import makes provenance suspect until this install writes a row
-    // of its own. `lastLocalWriteAtMs` is deliberately left alone.
+    // §7.5 — the import makes provenance suspect until this install logs an
+    // INJECTION of its own. Corrected from "writes a row" with note 7's fix:
+    // §7.8 forbids a reading being an input to anything in §11.2's snapshot, and
+    // provenance is one, so `appendReading` no longer stamps. The stored key is
+    // still `lastLocalWriteAtMs` (see `schema.ts`); it is deliberately left
+    // alone here, which is what keeps a prior injection's stamp from being
+    // erased by a restore.
     const revision = await get<{ n: number; lastLocalWriteAtMs: number | null }>(
       tx,
       STORE.meta,
