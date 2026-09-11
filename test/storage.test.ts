@@ -445,7 +445,7 @@ describe('§7.2 the injection write', () => {
     const db = await open();
     const before = (await readAll(db, NOW)).logRevision;
     const reading: Reading = { id: 'r1', timestamp: NOW, bloodSugar: 65, note: 'felt_low' };
-    await appendReading(db, reading, NOW);
+    await appendReading(db, reading);
     expect((await readAll(db, NOW)).logRevision).toBe(before + 1);
     expect((await readAll(db, NOW)).readings).toHaveLength(1);
     db.close();
@@ -453,9 +453,9 @@ describe('§7.2 the injection write', () => {
 
   it('records that this install wrote a row, which is what clears suspect provenance', async () => {
     const db = await open();
-    expect((await readAll(db, NOW)).lastLocalWriteAtMs).toBeNull();
+    expect((await readAll(db, NOW)).lastLocalInjectionAtMs).toBeNull();
     await appendInjection(db, injection(), NOW);
-    expect((await readAll(db, NOW)).lastLocalWriteAtMs).toBe(NOW);
+    expect((await readAll(db, NOW)).lastLocalInjectionAtMs).toBe(NOW);
     db.close();
   });
 });
@@ -523,7 +523,7 @@ describe('§7.9 clearing the record', () => {
       acknowledged: ['disclaimer', 'mode:ceil', 'setting:target:150'],
     });
     await appendInjection(db, injection(), NOW);
-    await appendReading(db, { id: 'r1', timestamp: NOW, bloodSugar: 65 }, NOW);
+    await appendReading(db, { id: 'r1', timestamp: NOW, bloodSugar: 65 });
     await recordJsonExport(db, NOW);
 
     await clearTheRecord(db);

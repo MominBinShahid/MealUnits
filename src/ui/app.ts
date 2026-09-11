@@ -174,7 +174,8 @@ export async function start(host: Host): Promise<void> {
       nowMs: host.now(),
       installedAtMs: source.installedAtMs,
       lastImportAtMs: source.lastImportAtMs,
-      lastLocalWriteAtMs: source.lastLocalWriteAtMs,
+      lastLocalInjectionAtMs: source.lastLocalInjectionAtMs,
+      droppedStoredRows: source.droppedStoredRows,
     });
     return {
       logRevision: source.logRevision,
@@ -319,7 +320,7 @@ export async function start(host: Host): Promise<void> {
             bloodSugar: parsed.value,
             note: view.readingNote,
           };
-    await appendReading(db, reading, host.now());
+    await appendReading(db, reading);
     watch.announce();
     await refresh();
     dispatch({ type: 'go', screen: 'history' });

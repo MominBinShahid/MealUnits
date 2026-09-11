@@ -48,18 +48,37 @@ export function deriveBandEFullCardShownToday(
 ): boolean {
   const today = localDayKey(nowMs, timeZone);
 
-  // Stryker disable all: the null check below changes no RESULT, because
-  // `null >= 250` coerces to `0 >= 250`. It stays because that coercion is the
-  // one §4.1 exists to refuse — a rule that holds only where it happens to be
-  // observable is not a rule.
+  // Stryker disable next-line MethodExpression: removing `.filter(isInjection)`
+  // changes no result. `LogRow` is `Injection | Tombstone`, a tombstone carries
+  // no `bloodSugar`, and `undefined >= 250` is false — so a tombstone cannot
+  // qualify with or without the filter. The type system needs it regardless.
+  // Same equivalence, and the same reasoning, as `baseline.ts`'s tombstone
+  // filter.
+  //
+  // SURFACED by narrowing the block disable that used to wrap this expression:
+  // that block silenced 31 mutants under a justification about the null check
+  // three lines down, and this one — equivalent for an entirely different
+  // reason — was riding along unexamined. Which is the argument against block
+  // disables in one example.
   const qualifyingInLog = rows.filter(isInjection).some(
     (row) =>
       row.id !== excludeId &&
+      // Stryker disable next-line EqualityOperator,ConditionalExpression: this
+      // null check changes no RESULT, because `null >= 250` coerces to
+      // `0 >= 250`. It stays because that coercion is the one §4.1 exists to
+      // refuse — a rule that holds only where it happens to be observable is
+      // not a rule.
+      //
+      // NARROWED 2026-09-11. A `disable all` block wrapped this whole
+      // expression and silenced 31 mutants on one line's worth of reasoning,
+      // including the `row.id !== excludeId` mutant that §13.3's "the breakfast
+      // 280 renders compact for itself" case exists to kill. Nothing was hiding
+      // under it — re-enabling proved every neighbour dies — but a block-wide
+      // disable wearing a one-mutant justification is how a real gap would hide.
       row.bloodSugar !== null &&
       row.bloodSugar >= KETONE_ADVISORY &&
       localDayKey(row.timestamp, timeZone) === today,
   );
-  // Stryker restore all
   if (qualifyingInLog) return true;
 
   // §10.5's second ruling, forced by "both stores": recording a reading at or
@@ -89,7 +108,15 @@ export interface HistoryContext {
   /** When history was last imported, or null if it never was. */
   readonly lastImportAtMs: number | null;
   /** When this install last wrote a row itself, or null. */
-  readonly lastLocalWriteAtMs: number | null;
+  readonly lastLocalInjectionAtMs: number | null;
+  /**
+   * §11.3 — how many stored rows failed re-validation on load and were dropped.
+   * A log the app had to prune is a log it cannot vouch for, so this joins
+   * §7.5's suspect conditions: dropping a row must never silently become the
+   * assertion that there was no recent insulin, which is the exact class §7.5
+   * exists to refuse.
+   */
+  readonly droppedStoredRows: number;
 }
 
 function mostRecentUsableInjection(
@@ -110,8 +137,12 @@ function mostRecentUsableInjection(
  * insulin". A backup from yesterday passes every schema, type and range check
  * while omitting an injection from an hour ago.
  *
- * The four suspect conditions §7.5 names: an empty log, a log predating the
- * app's own install, history just imported, or a row excluded by §7.6.
+ * The five suspect conditions §7.5 names: an empty log, a log predating the
+ * app's own install, history just imported, a row excluded by §7.6, or a row
+ * DROPPED by §11.3's load-time re-validation. The fifth was added on
+ * 2026-09-11, when the load path started re-validating at all — it is the same
+ * claim as the others, that a log the app had to prune is not one it can
+ * vouch for. §7.5 names it as the fifth condition, amended 2026-09-11.
  */
 export function deriveHistory(
   rows: readonly LogRow[],
@@ -128,17 +159,27 @@ export function deriveHistory(
 
   const logIsEmpty = injections.length === 0;
   const predatesInstall = newest !== null && newest.timestamp < context.installedAtMs;
-  // Stryker disable all: the `=== null` half is not separately observable —
-  // `null < someTimestamp` coerces to `0 < timestamp`, true for every real clock
-  // value, so the comparison alone gives the same answer. Written out because
-  // §4.1 forbids relying on that coercion.
   const justImported =
     context.lastImportAtMs !== null &&
-    (context.lastLocalWriteAtMs === null || context.lastLocalWriteAtMs < context.lastImportAtMs);
-  // Stryker restore all
+    // Stryker disable next-line ConditionalExpression,EqualityOperator: the
+    // `=== null` half is not separately observable — `null < someTimestamp`
+    // coerces to `0 < timestamp`, true for every real clock value, so the
+    // comparison alone gives the same answer. Written out because §4.1 forbids
+    // relying on that coercion.
+    //
+    // NARROWED 2026-09-11 with the sibling block above. The whole expression was
+    // silenced under this one clause's reasoning, which hid that every OTHER
+    // mutant here is killable: `lastImportAtMs !== null`, the `&&`, the `||` and
+    // the `<` are all pinned by `test/history.test.ts`.
+    (context.lastLocalInjectionAtMs === null ||
+      context.lastLocalInjectionAtMs < context.lastImportAtMs);
 
   const historyProvenance: HistoryProvenance =
-    logIsEmpty || predatesInstall || justImported || excludedTimeRecords > 0
+    logIsEmpty ||
+    predatesInstall ||
+    justImported ||
+    excludedTimeRecords > 0 ||
+    context.droppedStoredRows > 0
       ? 'suspect'
       : 'trusted';
 
