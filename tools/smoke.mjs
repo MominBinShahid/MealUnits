@@ -47,16 +47,36 @@ const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
  *
  * So the everyday path is driven over both. Testing only the secure origin is
  * testing the one the user is not on.
+ *
+ * `SMOKE_LAN_URL=none` says THERE IS NO SECOND ORIGIN — see the run itself, at
+ * the foot of this file, for when that is true and why it is spelled this way.
  */
+const NO_LAN = 'none';
 const SECURE_URL = process.env.SMOKE_URL ?? 'http://localhost:4173/MealUnits/';
-const LAN_URL = process.env.SMOKE_LAN_URL ?? null;
+// Empty counts as unset. `SMOKE_LAN_URL= node tools/smoke.mjs` used to reach the
+// else branch and point Chrome at the empty string, which fails four checks and
+// takes a minute to say so, instead of failing immediately with the reason.
+const LAN_URL = process.env.SMOKE_LAN_URL?.trim() || null;
 const URL_UNDER_TEST = SECURE_URL;
 const failures = [];
+const skipped = [];
 
 function check(name, actual, expected) {
   const ok = JSON.stringify(actual) === JSON.stringify(expected);
   console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : `\n          expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`}`);
   if (!ok) failures.push(name);
+}
+
+/**
+ * A block that did not run, recorded as neither a pass nor a failure.
+ *
+ * It accumulates the way `check` does, and for the same reason: the summary at
+ * the end is the only line most runs are read by, so anything it does not carry
+ * is invisible.
+ */
+function skip(name, why) {
+  console.log(`  SKIP  ${name} — ${why}`);
+  skipped.push(`${name} SKIPPED — ${why}`);
 }
 
 async function session(profile, port, width, body) {
@@ -239,9 +259,30 @@ await session('/tmp/mealunits-smoke-back', 9306, 412, async ({ send, ev, open })
 });
 
 // 4. The same path over an INSECURE origin, which is what a phone uses.
+//
+// THREE outcomes, not two, and the default is still the strict one. Losing this
+// run loses real coverage — note 48's defect existed on this origin and nowhere
+// else — so a forgotten `SMOKE_LAN_URL` remains a FAILURE and the run still
+// exits 1. That is the local case, and it does not get weaker.
+//
+// But some origins have no LAN counterpart at all. Verifying the DEPLOYED site
+// is one: every substantive check passes against
+// `https://mominbinshahid.github.io/MealUnits/` and the run exited 1 anyway,
+// because the one thing it could not do was reach a phone on this laptop's
+// network. A verification step that cannot report success is a verification
+// step people stop reading.
+//
+// So `SMOKE_LAN_URL=none` — the same variable that names the second origin says
+// there is not one. One knob rather than two: a separate `SMOKE_NO_LAN` would
+// have to define precedence against a `SMOKE_LAN_URL` that is also set, and
+// `npm run smoke` already defaults the variable, so the second knob would be
+// silently overridden by the first on the npm path. `none` travels through that
+// default (`${SMOKE_LAN_URL:-…}`) untouched.
 if (LAN_URL === null) {
-  console.log('  SKIP  insecure-origin run (set SMOKE_LAN_URL to enable)');
+  console.log(`  FAIL  insecure-origin run (set SMOKE_LAN_URL, or SMOKE_LAN_URL=${NO_LAN} if this origin has no LAN counterpart)`);
   failures.push('insecure-origin run was skipped');
+} else if (LAN_URL.toLowerCase() === NO_LAN) {
+  skip('insecure-origin block', 'not applicable to a remote origin');
 } else {
   rmSync('/tmp/mealunits-smoke-lan', { recursive: true, force: true });
   await session('/tmp/mealunits-smoke-lan', 9305, 412, async ({ send, ev, open }) => {
@@ -266,5 +307,11 @@ if (LAN_URL === null) {
   });
 }
 
-console.log(failures.length === 0 ? '\nsmoke: clean.' : `\nsmoke: ${failures.length} FAILURE(S): ${failures.join(', ')}`);
+// A run that skipped a block must NEVER look like a full one. The word "clean"
+// on its own is the whole report for most runs, so the reduced coverage is
+// carried on the same line rather than left further up the scrollback.
+const gap = skipped.length === 0 ? '' : ` (${skipped.join('; ')})`;
+console.log(failures.length === 0
+  ? `\nsmoke: clean${gap || '.'}`
+  : `\nsmoke: ${failures.length} FAILURE(S): ${failures.join(', ')}${gap}`);
 process.exit(failures.length === 0 ? 0 : 1);
