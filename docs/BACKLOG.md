@@ -788,8 +788,8 @@ built by teams. This app is a calculator.
 
 ## Name research — do not repeat this
 
-About **32 candidates checked** across five sessions against Google (exact string), npm, GitHub,
-both app stores, and trademark-adjacent diabetes products. **Two survive.** Recorded so the dead
+**34 candidates checked** across five sessions against Google (exact string), npm, GitHub, both app
+stores, USPTO trademark search and domain A-records. **Two survive.** Recorded so the dead
 ones are not re-proposed.
 
 ### Survivors
@@ -827,8 +827,16 @@ ones are not re-proposed.
 | `Unitful` | Unitful.jl, 674 stars — discoverability, not legal |
 | `SugarLoop` | "Loop" is *the* DIY closed-loop project. Implies automation this app does not do |
 | `Cadence`, `Tally`, `Abaco`, `Beeline`, `Numo` | Large trademark holders, some in the diabetes supply chain |
+| `Glymor` | The exact string is a **live agrochemical product** ([cedagro.com/products/glymor](https://cedagro.com/products/glymor)). GitHub has the near-miss `glymorn-dev/glymorn`. npm free and no live US mark — but `Gly-` is a contested morpheme and `-mor` reads as a generic drug (*Glumetza*, *Glyxambi* are real diabetes drugs) |
+| `carbcanary` | **Nothing found anywhere** — zero GitHub repos, npm free, no app, no indexed mark. Rejected on meaning: a canary *warns you*, and warning/monitoring is itself a medical-purpose signal (§14). As two words, "carb canary" also collides with CARB (California Air Resources Board) and Canary Media |
+| `Diavexa` | **The cleanest string checked** — 0 GitHub repos, npm free, neither app store, no exact web match, 0 live USPTO marks. Rejected on meaning: `dia-` was the most contested prefix in the whole search, and `-vexa` reads unmistakably as a prescription drug, which fights a first screen saying this is not a medical device |
 
 **Structural finding:** every name built from `dia-`, `glu-`, `insu-`, `bolus` or `carb` is
 taken, because those morphemes are the contested resource. Anything descriptive enough to signal
 "diabetes app" was claimed years ago. Only coined words nobody had a reason to register survive —
 which is why the two survivors are both compounds of ordinary English words.
+
+**And the last three rows say the opposite thing, which is worth keeping:** a free string is not
+the same as a usable name. `carbcanary` and `Diavexa` cleared every source and were still refused,
+because what a name *implies* — alerting, or a prescription drug — argues with §14's "not a medical
+device". Availability was never the binding constraint.
