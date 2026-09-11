@@ -569,10 +569,16 @@ function resultScreen(state: AppState, outcome: Outcome, handlers: CalculatorHan
       outcome.overrideAvailable
         ? button('Why is this smaller?', handlers.onOpenOverride, { class: 'go quiet' })
         : null,
-      // §8.2 replaces an expired result with its staleness banner and asks him
-      // to re-check — so "Check again" leads. It does NOT remove the log
-      // control, which is what this branch used to do under a comment citing
-      // §8.2 for a rule that section does not contain.
+      // §8.2 dims the expired dose and adds its staleness banner — it does not
+      // remove either the figure or the log control, which is what this branch
+      // used to do. "Check again" leads because re-reading is the right next
+      // move, not because the result is gone.
+      //
+      // The section said "replaced by" until 2026-09-12 and the code never did
+      // that; §8.2 was amended to match, on its own reasoning — a dimmed figure
+      // stamped with its time answers "did I already inject?", and deleting it
+      // leaves §7.2's "how many units did you actually inject?" with nothing on
+      // screen to answer from.
       state.expired ? button('Check again', handlers.onNewCalculation, { class: 'go' }) : null,
       // §7.2 — "Tap after §8.2 expiry is permitted with amended wording … but
       // the recorded timestamp is the tap time and the wording says so."
