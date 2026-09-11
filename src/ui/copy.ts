@@ -501,6 +501,20 @@ export const COPY = {
     delta: (was: string, now: string): string => `was: ${was}\nnow: ${now}`,
     softConfirm: 'That is outside the usual range. Is it right?',
     /** §1.3 — visually separated, and labelled so it cannot read as a dose. */
+    /**
+     * §8.5 — "setup states the assumption". It never did: until 2026-09-12 the
+     * string `U-100` appeared nowhere in `src/` except a passing mention in the
+     * rounding copy, so the one place a concentration mismatch is catchable said
+     * nothing. §8.5's OTHER half — `6 units (U-100)` on the output — was dropped
+     * in the same amendment: §10.5 budgets what shares space with a dose, and
+     * naming the insulin is something a person can check against the vial in
+     * their hand where a concentration is not.
+     *
+     * It sits after the ratios and before rounding because that is where the
+     * numbers stop and the word "unit" starts doing the work.
+     */
+    unitAssumption:
+      'These are units of U-100 insulin — the standard strength, and what Humulin R is. There is no setting for any other strength, deliberately: one that could be set wrong would cause the exact 2.5x error it was meant to prevent. If your insulin is not U-100, these numbers are not right for it.',
     basalTitle: 'Your Lantus dose',
     basalNote: 'Set by your doctor, not calculated here.',
     modeQuestion: 'What can your syringe measure?',

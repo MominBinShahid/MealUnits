@@ -294,6 +294,27 @@ describe('§10.6 first run', () => {
     expect(note?.className).toBe('caution');
   });
 
+  it('§8.5 — states the U-100 assumption, which it was specified to do and never did', async () => {
+    await boot();
+    await tap('\u2610  I have read this');
+    await tap('I understand — use at my own risk');
+
+    // The half of §8.5 that went eight months unbuilt. Setup is the one place a
+    // concentration mismatch is catchable ONCE; on the result it would be noise
+    // beside a number about to be injected, which is what §10.5 budgets against.
+    const setup = text();
+    expect(setup).toContain('units of U-100 insulin');
+    // The REASON travels with it. §8.5 refuses a U-40 setting because a setting
+    // that can be set wrong causes the very error it exists to prevent, and a
+    // bare assumption with no reason reads as trivia and gets skipped.
+    expect(setup).toContain('2.5x error it was meant to prevent');
+
+    // And §8.5's other half stays REFUSED: the dose names the insulin, which a
+    // person can check against the vial in their hand, not a concentration they
+    // cannot.
+    expect(setup).not.toContain('6 units (U-100)');
+  });
+
   it('but still stores nothing until the explicit save, so §4.4 stays live', async () => {
     await boot();
     await tap('☐  I have read this');
