@@ -1321,12 +1321,14 @@ None of notes 41, 42 or 44 was visible to 559 unit tests or to the 100% mutation
 lay pages out, load fonts, enforce a content security policy, or run a service worker. Every one was
 found by Momin on a real device.
 
-`npm run smoke` drives a served build over the DevTools Protocol and asserts **twenty** things
-that only exist in a real browser [corrected 2026-09-11: this said twelve, which was right when
-written — counting each width's run separately, as this list does. The back-gesture block (four
+`npm run smoke` drives a served build over the DevTools Protocol and asserts **thirty** things
+that only exist in a real browser [corrected twice. 2026-09-11: this said twelve, which was right
+when written — counting each width's run separately, as this list does. The back-gesture block (four
 checks, note 47's regression) and the insecure-origin run (four checks, note 48) were added
-afterwards and the count was not. A run without `SMOKE_LAN_URL` records the skipped
-insecure-origin pass as a FAILURE rather than quietly passing on the one origin the phone uses]:
+afterwards and the count was not. 2026-09-12: twenty was already stale when written — the two
+screens of note 49's batch had just added four more. **The count drifts every time the suite grows,
+which is the third time it has been wrong; it is written here because a number in prose has no test
+holding it.** A full local run prints 30 PASS, a remote one 26]:
 
 - a first visit loads the document **once** (note 44)
 - the worker takes control, and a webfont is actually in use
@@ -1344,6 +1346,19 @@ insecure-origin pass as a FAILURE rather than quietly passing on the one origin 
 **It is not a replacement for looking.** It cannot tell that a correct result looks like a failure —
 note 26's amber wash needed eyes. It closes the gap between "the arithmetic is right" and "the app
 works on the device", which is where the last several defects lived.
+
+**And there is a third outcome, added 2026-09-12: `SMOKE_LAN_URL=none`.** Pointing the suite at the
+DEPLOYED site — `SMOKE_URL=https://mominbinshahid.github.io/MealUnits/` — passes every substantive
+check and still exited 1, because the one thing it could not do was reach a phone on this laptop's
+network. **A verification step that cannot report success is one people stop reading**, so the run
+now has three outcomes rather than two: a forgotten `SMOKE_LAN_URL` is still a FAILURE and still
+exits 1, `none` records the block as SKIPPED and exits 0, and the summary line carries the gap so a
+partial run can never print the bare `smoke: clean.` a full one does. The acknowledgement reuses
+`SMOKE_LAN_URL` rather than adding a second variable because `package.json` already defaults it
+through `${SMOKE_LAN_URL:-...}`, which would silently override any second knob on the npm path.
+
+*Found on the way:* `SMOKE_LAN_URL=` set an empty string, which is not `null`, so the old code
+pointed Chrome at `''` — four bogus failures and a minute of waiting instead of the real reason.
 
 ## 46. Two finishes, and the keypad stopped being opaque `[FYI]`
 
