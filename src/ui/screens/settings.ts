@@ -346,6 +346,11 @@ export function settingsScreen(
       ? null
       : h('p', { class: 'hint' }, COPY.settings.icrSentence(draft.icr)),
 
+    // §8.5 — the assumption setup was always supposed to state. Placed here so
+    // it closes the ratios rather than opening the rounding question: the modes
+    // decide how many units, this decides what a unit IS.
+    h('p', { class: 'hint' }, COPY.settings.unitAssumption),
+
     h('h2', {}, 'Rounding'),
     h('div', { class: 'ask' }, COPY.settings.modeQuestion),
     // §15 — five modes were selectable with nothing explaining any of them, and
