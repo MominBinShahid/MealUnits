@@ -73,10 +73,18 @@ export type SaveState =
   | { readonly kind: 'saving' }
   | { readonly kind: 'saved' }
   /**
-   * "Couldn't save this yet — retrying. This dose is still counted while the app
-   * stays open." §7.2 v4: consumed state is DECOUPLED from persistence, because
-   * the button means "I injected this" and the injection has already happened.
-   * A failed disk write does not make it unknown to the running session.
+   * §7.2 v4 — consumed state is DECOUPLED from persistence, because the button
+   * means "I injected this" and the injection has already happened. A failed
+   * disk write does not make it unknown to the running session.
+   *
+   * `attempts` counts them: 1 is the failure the user is shown, 2 is the silent
+   * automatic retry, and past that the prompt bar takes over (note 61). It could
+   * not exceed 1 until 2026-09-11, because nothing retried.
+   *
+   * The wording this state renders lives in `COPY.log.pending` and is not quoted
+   * here: the version that was, claimed a retry that did not happen and a dose
+   * that was not counted, and a docstring repeating a retired string is how the
+   * string comes back.
    */
   | { readonly kind: 'pending'; readonly attempts: number };
 
@@ -180,7 +188,15 @@ export type Action =
   | { readonly type: 'stacking_override_taken' }
   | { readonly type: 'blank_reading_acknowledged' }
   | { readonly type: 'large_dose_confirmed' }
-  | { readonly type: 'calculate'; readonly nowMs: number }
+  /**
+   * `record` re-derives the SAME stored rows against the current clock, and is
+   * deliberately not a `record_changed`: that action means the rows themselves
+   * moved (another tab wrote) and therefore invalidates, while this is the
+   * correct reading of unchanged rows at the moment of decision. Without it a
+   * calculation can use a record context derived hours earlier — see
+   * `bandEFullCardShownToday` and §13.3's day-rollover case.
+   */
+  | { readonly type: 'calculate'; readonly nowMs: number; readonly record?: RecordContext }
   | { readonly type: 'wizard_next' }
   | { readonly type: 'wizard_back' }
   | { readonly type: 'tick'; readonly nowMs: number }
@@ -223,8 +239,16 @@ function invalidate(state: AppState): AppState {
     expired: false,
     // The logging draft belongs to a result that no longer exists.
     injectedDraft: '',
-    committing: null,
-    save: { kind: 'none' },
+    // But a PENDING save does not. §7.2: "the button means 'I INJECTED THIS',
+    // and the injection has already happened. A failed disk write does not make
+    // it unknown to the running session." `committing` is not a draft — it is a
+    // frozen record of insulin that is in him — so discarding a result must not
+    // discard it, or §7.2's in-session gate loses its only input at precisely
+    // the moment it is needed: the next calculation. Anything not pending is a
+    // finished or never-started write and clears with the result as before.
+    ...(state.save.kind === 'pending'
+      ? {}
+      : { committing: null, save: { kind: 'none' } as const }),
     // §18.14 — going back to a bare wizard position, never past the inputs.
     step: state.step === 'logged' || state.step === 'blocked' ? 'reading' : state.step,
   };
@@ -251,7 +275,7 @@ function buildSnapshot(state: AppState, nowMs: number): Snapshot | null {
     carbBaseline: state.record.carbBaseline,
     eligibleEntryCount: state.record.eligibleEntryCount,
     historyProvenance: state.record.historyProvenance,
-    lastDose: state.record.lastDose,
+    lastDose: gateLastDose(state),
     bandEFullCardShownToday: state.record.bandEFullCardShownToday,
     excludedTimeRecords: state.record.excludedTimeRecords,
     blankReadingAcknowledged: state.blankReadingAcknowledged,
@@ -268,9 +292,19 @@ function stepFor(outcome: Outcome): WizardStep {
       return 'blank_reading_ack';
     case 'confirm_required':
       return 'confirm_inputs';
+    // Stryker disable next-line StringLiteral,ConditionalExpression: §6.4 makes
+    // `bound_failure` unreachable through the resolver — "given §4.5's hard
+    // ranges, `total <= bound` is a MATHEMATICAL IDENTITY" — so no input can
+    // reach this label and no test can show it routing. It stays for the same
+    // reason the two checks that produce it stay (note 5): §6.2 gives the
+    // outcome a REFUSAL SCREEN, and a future edit that made it reachable must
+    // land somewhere that can render one.
+    //
+    // Listed FIRST of the three, not last: a comment between case labels reads
+    // as a statement to `no-fallthrough`, and the disable has to sit adjacent.
+    case 'bound_failure':
     case 'dose':
     case 'meal_only_suppressed':
-    case 'bound_failure':
       return 'result';
     case 'invalid_input':
       // Route to the field that is WRONG, not to the last screen visited. This
@@ -329,7 +363,19 @@ export function reduce(state: AppState, action: Action): AppState {
       // §7.4.1 — using it recomputes the total and RE-RUNS §6.2's confirmation,
       // so it "cannot reveal a previously hidden correction under an earlier
       // acknowledgement". Invalidating first is what makes that true.
-      return { ...invalidate(state), stackingOverride: true };
+      //
+      // `invalidateWithAck`, not `invalidate`: §4.3 step 1 lists the stacking
+      // override among the triggers that cancel a pending confirmation, and
+      // `invalidateWithAck`'s own comment says §4.6's acknowledgement "clears
+      // with the result like everything else". Using the narrower one let the
+      // blank-reading ack survive an override.
+      //
+      // Unreachable today, by a three-link coincidence: a blank reading yields
+      // correction 0, suppression needs a POSITIVE correction, and the override
+      // renders only when suppression happened. §4.1's doctrine is that this
+      // project does not lean on coincidences it has not written down — and
+      // every one of those three links is free to move independently.
+      return { ...invalidateWithAck(state), stackingOverride: true };
 
     case 'blank_reading_acknowledged':
       return { ...state, blankReadingAcknowledged: true };
@@ -338,10 +384,22 @@ export function reduce(state: AppState, action: Action): AppState {
       return { ...state, largeDoseConfirmed: true };
 
     case 'calculate': {
-      const snapshot = buildSnapshot(state, action.nowMs);
+      // §13.3 — "a qualifying result at 11:59 PM then another at 12:01 AM —
+      // both full." `bandEFullCardShownToday` is derived against a DAY KEY, and
+      // the shell derived it when the record last changed, so a session left
+      // open across midnight computed the new day's first result against
+      // yesterday's "today" and rendered COMPACT where the case requires FULL.
+      // The core always passed that case; the shell wiring did not.
+      //
+      // `excludedTimeRecords` and `historyProvenance` are derived against `now`
+      // too, so this fixes a family rather than one field. It cannot mask
+      // another tab's write: the rows come from the shell's existing snapshot
+      // of storage, and a genuine change still arrives as `record_changed`.
+      const current = action.record === undefined ? state : { ...state, record: action.record };
+      const snapshot = buildSnapshot(current, action.nowMs);
       if (snapshot === null) return { ...state, screen: 'first_run_settings' };
       const outcome = resolve(snapshot);
-      return { ...state, snapshot, outcome, expired: false, step: stepFor(outcome) };
+      return { ...current, snapshot, outcome, expired: false, step: stepFor(outcome) };
     }
 
     case 'wizard_next': {
@@ -379,7 +437,21 @@ export function reduce(state: AppState, action: Action): AppState {
       // hours old.
       if (state.snapshot === null || state.expired) return state;
       if (!isResultExpired(state.snapshot.decisionTime, action.nowMs)) return state;
-      return { ...state, expired: true };
+      // The decision time is part of what the dose was computed from (§11.2),
+      // so its passing invalidates the acknowledgements the way §4.3 step 1
+      // does. Leaving them set let a confirmation outlive its result: confirm
+      // at 7:00, expire, go back, recalculate hours later — §7.4's suppress
+      // window has lapsed, the hidden correction is revealed, and the larger
+      // total arrives pre-confirmed. §7.4.1 [R2] forbids exactly that: a
+      // recalculation "cannot reveal a previously hidden correction under an
+      // earlier acknowledgement". The snapshot on display keeps its own
+      // copies, so nothing on the expired screen changes here.
+      return {
+        ...state,
+        expired: true,
+        largeDoseConfirmed: false,
+        blankReadingAcknowledged: false,
+      };
     }
 
     case 'begin_logging': {
@@ -439,6 +511,35 @@ export function reduce(state: AppState, action: Action): AppState {
     case 'reset':
       return initialState();
   }
+}
+
+/**
+ * §7.2 — *"the in-session stacking gate still knows about the dose."* It did
+ * not. A failed write never reaches the database, so `record.lastDose` — which
+ * the shell derives from stored rows alone — cannot see it, and the next
+ * calculation inside §7.4's suppress window re-applied the full correction on
+ * top of insulin already acting. That is the stacking event §7.4 exists to
+ * prevent, and the app was reassuring him while it happened.
+ *
+ * `inSessionLastDose` was written for exactly this and had no call site until
+ * 2026-09-11; the test beside it proved the function computed, which is not the
+ * same as proving the gate reads it.
+ *
+ * **Only while the save is PENDING.** `committing` is deliberately left
+ * standing after a successful save (§7.2 freezes the payload so a retry
+ * persists THAT and not a re-read draft), so its presence cannot be the signal
+ * — once saved, `record` carries the row and using both would double-count.
+ *
+ * **The NEWER of the two wins**, rather than the pending one unconditionally:
+ * an imported row can post-date a failed local write, and the gate's question
+ * is "what is the most recent insulin", not "what did this session do".
+ */
+function gateLastDose(state: AppState): LastDose | null {
+  if (state.save.kind !== 'pending') return state.record.lastDose;
+  const pending = inSessionLastDose(state);
+  if (pending === null) return state.record.lastDose;
+  const recorded = state.record.lastDose;
+  return recorded !== null && recorded.atMs > pending.atMs ? recorded : pending;
 }
 
 /** §11.3 — the in-session dose the gate still knows about after a failed write. */

@@ -50,7 +50,15 @@ declare const __SCOPE_PATH__: string;
 const CACHE_PREFIX = 'mealunits-';
 const CACHE = `${CACHE_PREFIX}${__BUILD_ID__}`;
 const SHELL = `${__SCOPE_PATH__}index.html`;
-/** §11.4 — "a policy for hanging requests". A promise that never settles is a spinner forever. */
+/**
+ * §11.4 — "a policy for hanging requests". A promise that never settles is a
+ * spinner forever, on a phone that may be on a train.
+ *
+ * THE ONLY DEFINITION. §11.8 sends every number to `config.ts`, and this file
+ * is exempt in `eslint.config.js` for a structural reason rather than a
+ * convenient one: the worker compiles in its own TypeScript project against
+ * the WebWorker lib and cannot import from the app's module graph at all.
+ */
 const NETWORK_TIMEOUT_MS = 8000;
 
 sw.addEventListener('install', (event) => {

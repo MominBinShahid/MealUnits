@@ -22,13 +22,13 @@ import {
   KETONE_ADVISORY,
   RANGE,
   RECHECK_MINUTES,
+  STACK_SUPPRESS_HOURS,
 } from '../config.js';
 import { formatHundredths } from '../core/decimal.js';
 import type { LexicalReason } from '../core/types.js';
 
 const [EAT_MIN, EAT_MAX] = EAT_DELAY_MINUTES;
-const [, MAX_BLOOD_SUGAR] = RANGE.bloodSugar.hard;
-const [, MAX_CARBS] = RANGE.carbs.hard;
+const [MIN_BLOOD_SUGAR, MAX_BLOOD_SUGAR] = RANGE.bloodSugar.hard;
 const [, MAX_INJECTED] = RANGE.injected.hard;
 
 /** §10.4 — "units", spelled out, always. `4U` has been misread as 40. */
@@ -112,12 +112,20 @@ export const COPY = {
   },
 
   range: {
-    bloodSugarAbove: 'Check the number — a meter cannot read that high.',
-    bloodSugarBelow: 'Check the number — a meter cannot read that low.',
-    carbsAbove: `That is more than ${String(MAX_CARBS)} grams. Check the number.`,
     injectedAbove: `A syringe does not hold more than ${String(MAX_INJECTED)} units.`,
     injectedZero: 'Tapping this says you injected. Enter how much.',
   },
+
+  /**
+   * §4.3 step 3 — below 20 or exactly zero is a COMBINED
+   * invalid-reading-and-possible-low response, never one half silently chosen.
+   * It renders INSIDE the block, because §10.5 rank 1 leaves nowhere else: a
+   * band C/D block shows nothing beside it. Both readings of the impossible
+   * number are stated — a mistyped entry by someone who may in fact be high,
+   * and a meter past the bottom of its range — and neither is endorsed over
+   * the other, the same refusal §10.6 item 7 makes about the dose.
+   */
+  blockedInvalidReading: `A meter cannot read below ${String(MIN_BLOOD_SUGAR)}, so that is not a real reading. If it showed LO, treat now. If you mistyped it, check again before anything else.`,
 
   /**
    * §4.5, written in v3 after v2 promised the text and never supplied it. This
@@ -167,6 +175,13 @@ export const COPY = {
     title: 'Meter showing LO?',
     body: `Do not enter a number. Treat now — ${String(FAST_CARB_GRAMS)} grams of fast-acting carbohydrate, and check again in ${String(RECHECK_MINUTES)} minutes.`,
   },
+
+  /**
+   * §4.5 — the control that opens `meterHi` and `meterLo` on the reading
+   * screen. A question rather than a bare "More", because on this screen it
+   * stands beside a hint, not a list it is visibly truncating.
+   */
+  meterGuidance: 'Meter showing HI or LO?',
 
   // ── §4.6's blank reading ──────────────────────────────────────────────────
   blankReading: {
@@ -256,6 +271,23 @@ export const COPY = {
   // ── §7.1, §7.2, §7.3 — logging ────────────────────────────────────────────
   log: {
     injected: 'I injected this',
+    /**
+     * §7.2 — *"**Tap after §8.2 expiry** is permitted with amended wording (the
+     * log records what he did, and he may genuinely have injected at minute
+     * 16), but the recorded timestamp is the tap time and the wording says so."*
+     *
+     * This IS the amended wording, and the clause it answers is the last one:
+     * the label states the timestamp, because that is the fact a person cannot
+     * otherwise see and the one the record depends on.
+     *
+     * Until 2026-09-11 the expired result replaced the log control with "Check
+     * again" under a comment citing §8.2 — a rule §8.2 does not contain; it
+     * specifies a staleness banner and says nothing about removing controls. So
+     * someone who calculated, was interrupted, injected at minute 16 and came
+     * back could not record the injection at all, and §7.4's gate went blind on
+     * a real dose. Losing a row is worse than logging a late one.
+     */
+    injectedAfterExpiry: 'I already injected — log it at the current time',
     amountQuestion: 'How many units did you actually inject?',
     amountHint:
       'Starts at what the app worked out. Change it if you injected something different — the record should say what happened.',
@@ -267,12 +299,49 @@ export const COPY = {
     /** §7.1 — the divergence confirmation, which v9 named and never defined. */
     divergent: (calculated: string, injected: string): string =>
       `The app worked out ${calculated} and you have entered ${injected}. That is a large difference — check it before recording.`,
+    /**
+     * §7.1 — the tap that stands by the divergent amount. It asserts the fact
+     * being recorded, like "I understand — carbohydrates only" does, because
+     * the record should say what happened (§7.1) and a bare "yes" invites a
+     * tap-through.
+     */
+    divergentAction: 'It is what I injected — log it',
     saved: (amount: string, at: string): string => `Logged ${amount} at ${at}`,
     /**
      * §7.2 — "the injection has already happened. A failed disk write does not
      * make it unknown to the running session." And the timer starts regardless.
      */
-    pending: "Couldn't save this yet — retrying. This dose is still counted while the app stays open.",
+    /**
+     * §7.2 — CORRECTED 2026-09-11. Both halves of the previous wording were
+     * false, and this is the screen a person reads while deciding whether to
+     * inject again.
+     *
+     * "retrying": nothing retries. `log_save_failed` is dispatched once from
+     * the commit path and no code re-attempts the write, so `save.attempts`
+     * cannot exceed 1.
+     *
+     * "still counted": §11.2's snapshot takes `lastDose` from the DATABASE via
+     * `contextFrom`, and a failed write never reached it. `inSessionLastDose`
+     * was written to close exactly this gap and has no call site, so the next
+     * calculation inside the suppress window re-applies the full correction on
+     * top of insulin already acting — the stacking event §7.4 exists to prevent,
+     * reached through a reassurance.
+     *
+     * REVISED the same day, once `gateLastDose` landed: the gate now does read
+     * the pending dose, so "it counts" became true and is said again — but only
+     * for as long as the app is open, because nothing persists it. "Retrying"
+     * stays out until something actually retries. The words track what the code
+     * does, which is the whole point of the correction above.
+     */
+    pending: `Couldn't save this dose. It still counts toward your next calculation while the app is open, but closing the app will lose it — write it down. Within ${String(STACK_SUPPRESS_HOURS)} hours that matters: a correction could stack.`,
+    /**
+     * §7.2 — the escalation, after a write and its automatic retry have both
+     * failed. It follows him off the logged screen, so it says WHICH dose
+     * rather than "this one": by the time he sees it he may be two screens away.
+     */
+    stuck: (amount: string): string => `${amount} is still not saved.`,
+    stuckAction: 'Try again',
+    stuckDismiss: 'Not now',
     /** §7.3 — the confirmation quotes the INJECTED figure, the one §7.4 uses. */
     deleteTitle: (amount: string, at: string): string => `Delete the ${amount} from ${at}?`,
     deleteConsequence:

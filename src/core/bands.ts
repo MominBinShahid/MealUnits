@@ -65,13 +65,3 @@ export function classifyBands(
 export function isBlockingBand(bands: readonly Band[]): boolean {
   return bands.includes('C') || bands.includes('D');
 }
-
-/**
- * §4.5 — a reading below the hard minimum is not merely "invalid". §4.3 step 3
- * routes below-range to the low-reading response and above-range to band E
- * wording, and below 20 or exactly zero shows a COMBINED
- * invalid-reading-and-possible-low response rather than silently choosing one.
- */
-export function looksLikeAPossibleLow(value: number): boolean {
-  return value < HYPO_LEVEL_1;
-}
