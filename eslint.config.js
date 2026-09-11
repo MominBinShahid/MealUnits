@@ -73,9 +73,21 @@ export default tseslint.config(
     // the file with the section that decided them.
     ignores: ['src/config.ts', 'src/sw.ts'],
     rules: {
+      // `^[0-9.]` rather than `^[0-9]`: a raw beginning with a dot is a legal
+      // numeric literal (`const HALF = .5`) and escaped the original selector
+      // entirely, while `no-magic-numbers` permits it in a const initialiser —
+      // so BOTH rules missed it. Found by probing the pair rather than reading
+      // them, which is the only way a hole in a lint rule ever shows up.
       'no-restricted-syntax': ['error', {
-        selector: 'Literal[raw=/^[0-9]/]:not([value=0]):not([value=1]):not([value=100])',
+        selector: 'Literal[raw=/^[0-9.]/]:not([value=0]):not([value=1]):not([value=100])',
         message: '§11.8: every number lives in src/config.ts. Import it from there.',
+      }, {
+        // The exemptions live on the Literal, so a unary minus carried them:
+        // `-100` read as the exempt 100 and escaped. §11.8 lists `-1` SEPARATELY
+        // from `1`, which is the plan treating signs as distinct — so -100 was
+        // never on the list, and the selector above was reading it as if it were.
+        selector: 'UnaryExpression[operator="-"] > Literal[value=100]',
+        message: '§11.8 exempts 100, not -100. Put it in src/config.ts.',
       }],
     },
   },
