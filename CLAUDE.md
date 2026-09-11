@@ -37,8 +37,9 @@ hypoglycaemic event, not a bug report.** Read that sentence before changing anyt
 
 ## Before you claim something works
 
-`npm run check` is typecheck, lint and 572 tests. `npm run mutate` is the 100%-or-fail mutation gate
-on `src/core`. Neither proves the specification is right — this project has shipped a wrong expected
+`npm run check` is typecheck, lint and 622 tests. `npm run mutate` is the 100%-or-fail mutation gate
+on `src/core` **and `src/state`** (§13.4, extended 2026-09-11 — the reducer holds the gates, and it
+scored 94% the day it was measured). Neither proves the specification is right — this project has shipped a wrong expected
 value more than once, and the honest claim is always the validation actually performed.
 
 **`npm run smoke` is the layer the others cannot reach.** jsdom does not lay pages out, load fonts,

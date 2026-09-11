@@ -46,6 +46,7 @@ these steps have a dependency that is not obvious from reading them.
 | 1 | **Push and deploy.** Blog first (§20.2), then this repository | **DONE 2026-09-07** | §1.4 — the app competes with a fixed 24-25 units injected blind |
 | 2 | **Confirm updates reach a real phone** | **DONE.** Three deploys have reached Momin's device, each after a full app restart | `T4` is therefore narrowed: delivery works, only the in-app "a newer version is ready" bar is unproven |
 | 3 | **Rule on the `[CONFIRM]` build notes**, one at a time | **IN PROGRESS.** Note 1 ruled 2026-09-09 | Moved AHEAD of `T5` on Momin's instruction. Each records a decision already implemented; the question is whether it was right |
+| 3a | **Prune every Markdown document**, on Momin's instruction 2026-09-11: `PLAN.md`, `BUILD-NOTES.md`, `BACKLOG.md`, `CLINICAL.md`, `BLOG-FIX.md`, `README.md`, `CLAUDE.md` | | **After step 3**, because the `[CONFIRM]` rulings decide what the notes still have to carry. *"We can't keep everything for ever, so we will only keep things that earn their place."* A finished `[FYI]` record of a bug fixed in week one is not earning 1,577 lines of attention, and 4,545 lines of `PLAN.md` is now read by people who need the live rules, not the round-by-round history of how they were reached. What comes out and what stays is a judgement per entry, so it is its own pass |
 | 4 | **`T5` — the audience change.** Empty prescription fields with the strengthened hints, and the confirmation threshold made relative | | **This gates step 5.** Ranking an app that prefills a stranger's dosing ratios is the version of this that goes wrong |
 | 5 | **`4a` + `T6` — search and measurement.** Open Graph, canonical, sitemap, Search Console | | After `T5`, never before |
 | 6 | **`T3` — Preact** | | Kills the whole render-teardown defect class by construction |
@@ -594,6 +595,130 @@ Analytics-style server-side measurement that needs no script. **And what may be 
 by the same reasoning as the export:** this app holds blood sugar readings and insulin doses. Counting
 page views is fine; anything that could carry a reading or a dose off the device is not, and nothing
 in this app has ever sent data anywhere.
+
+---
+
+### T8. Mutation testing for `src/storage`, behind a runner bug
+
+**Trigger: when Stryker's vitest runner can survive `fake-indexeddb`.** Added 2026-09-11 with
+§13.4's extension to `src/state`.
+
+**The evidence that this matters, rather than a completeness urge.** `appendReading` stamped the
+field that decides §7.5's provenance, which made a blood-sugar reading an input to a §11.2 snapshot
+field — forbidden by §7.8 in as many words. It shipped, and the mutation gate could not have caught
+it: `stryker.config.json` mutated `src/core` only, so the `ObjectLiteral` mutant that turns
+`{ lastLocalWriteAtMs: nowMs }` into `{}` **was never generated**. Neither of the two tests pinning
+that field used `appendReading`, so nothing else caught it either. See note 62.
+
+**The obstacle is outside this project.** `vitest.stryker.config.ts` records it: the runner crashes
+stringifying `fake-indexeddb`'s `DOMException`. Until that is fixed upstream — or the storage tests
+can run against something else — the scope cannot be extended without the run failing for a reason
+that has nothing to do with the code.
+
+**What to do meanwhile:** treat every `src/storage` write site as unguarded by the gate, and pin its
+effects with an explicit test rather than trusting the badge. The badge is honest about what it
+covers; it just does not cover this.
+
+---
+
+### T9. §7.8's home-screen reading entry, and the note control
+
+**Trigger: whenever readings matter more than they do today.** Deferred 2026-09-11 with §7.8's
+amendment; recorded here because §7.8 stopped promising it and something has to carry it.
+
+§7.8 specified a reading as *"One field, one button, available from the home screen and offered
+automatically after any band C or band D block"*, with an optional `note` from a fixed list —
+*before bed*, *overnight*, *felt low*, *after exercise*. **Only the post-block offer shipped.**
+There is no home-screen or History affordance, `COPY.reading.noteQuestion` has no consumer, and
+`ViewState.readingNote` is never set by any control, so the fixed list renders only for rows that
+arrived by import.
+
+**The consequence, stated because it is the section's own motivation:** §7.8 exists because *"every
+low reading is systematically absent from the record"* and names overnight readings as an example
+— *"Overnight readings are missing for the same reason."* Those are precisely the readings that
+still cannot be captured, because they happen when nobody is calculating a dose.
+
+**What it costs to build:** one control on the calculator's home step and one on History, plus a
+writer for the note list. Nothing in the core changes; §7.8's storage, validation and export
+already handle reading rows, and §10.5's band E derivation already reads them.
+
+---
+
+### T10. A sanity suite, separate from smoke — decide whether two files are worth it
+
+**Trigger: when `smoke.mjs` next feels too big, or when a change needs deep verification of one
+area rather than a broad check that the build works.** Raised and deliberately deferred
+2026-09-11.
+
+**The distinction, since the terms get used interchangeably.** Smoke is wide and shallow — *does
+the build come up, and can a person dose with it.* It runs after every build; the name is from
+hardware, where you power the thing on and see whether smoke comes out. Sanity is narrow and deep
+— *does this one area still work after I changed it.* It runs after a targeted fix.
+
+**`tools/smoke.mjs` does the first correctly** and has had a few of the second folded into it.
+
+**Not split, and the reason matters more than the decision.** Two suites means two things to
+maintain and a judgement call on every new check about which file it belongs in — and that
+judgement is the part that erodes, quietly, until both files hold everything. The real concern was
+unbounded growth, and a second file does not fix that; it gives growth two places to happen.
+
+**An admission rule went into `smoke.mjs` instead:** a check earns its place only if **(1)** jsdom
+cannot see it — it needs real layout, a real content security policy, real fonts or a real service
+worker — and **(2)** its failure makes the app UNUSABLE rather than merely imperfect. Applied on
+the day it was written, four new pieces of interface produced two qualifying checks and two
+rejections, which is the rule doing its job.
+
+**Reconsider when the rule stops holding the line.** If `smoke.mjs` passes roughly thirty checks
+or takes more than about two minutes, the argument for splitting becomes real: a sanity suite
+would take the per-area depth and smoke would keep the one end-to-end path. Until then, a second
+file costs maintenance and buys a category boundary nobody is struggling with.
+
+---
+
+### T7. Release process — versions, tags, and what a tag should mean
+
+**Trigger: when the current fix batch is merged. Parked 2026-09-11 mid-discussion, deliberately —
+the safety fixes queued behind it matter more than the ceremony around them.**
+
+**The version bump itself is settled: `0.1.0` → `0.2.0`, not `0.1.1`.** In `0.x` a patch means "bugs
+fixed, nothing new to encounter", and this batch gives the user four things they will meet — a
+confirmation step at commit (§7.1), a meter-guidance disclosure (§4.5), a new paragraph on the block
+screen (§4.3 step 3), and expiry now clearing confirmations (§6.3). Fix E decides it on its own:
+backups that imported cleanly before will now have rows dropped, which is a behaviour change at a
+data boundary. A patch number would lie about what changed.
+
+**Momin's proposed shape, which is the `release-please` pattern arrived at independently:** small
+commits and small PRs for the work; then ONE commit and PR that does nothing but bump the version;
+tag that merge commit. Good, and the reason is this batch — 817 insertions across 14 files is past
+what anyone reviews well.
+
+**The fact that complicates it, and the reason this is parked rather than decided.** `deploy.yml`
+fires on `push: branches: [main]`, so **every merged PR already ships to a real phone.** A tag under
+the proposal would therefore be retrospective — "this commit was 0.2.0" — while delivery happened at
+each merge. The release would gate nothing. Three ways out:
+
+1. **Deploy on tag instead.** The version shown in the app is then always accurate, and releases are
+   deliberate. Cost: a safety fix waits for a release, and in this app a bug is a hypo.
+2. **Keep deploy-on-main, tag as a marker.** Fixes travel in minutes; the tag means little.
+3. **Keep deploy-on-main, and make the version-bump PR the ON-DEVICE checkpoint** — the tag then
+   means *"verified on a real phone"* rather than *"deployed"*. This is the one worth thinking about:
+   §13's suite has no interaction-continuity requirement, jsdom has missed every layout defect so
+   far, `smoke.mjs` cannot exercise the insecure origin without a real LAN URL, and note 54 was an
+   overstated launch blocker born of build confusion. An on-device pass is the check nothing
+   automated covers, and tying the tag to it gives it a place in the process instead of depending on
+   someone remembering.
+
+**Two consequences to settle with it.** Under options 2 and 3 the app shows the last *released*
+version between releases, with a fresh `buildId` — which is fine, because `buildId` is the real
+diagnostic key, but it makes §10.8's *"show the running build version … it is the only way to
+diagnose a report"* wrong in its emphasis; that line should name the build id. And **no git tags
+exist yet**, so whatever is chosen starts clean.
+
+**Separate provenance gap, found in the same discussion:** log rows carry `settingsRevision` but no
+app version (§7.1's row shape). If a rounding rule or a band threshold ever changes, an old row's
+dose cannot be reconstructed — you would know which settings produced it, not which arithmetic. For
+a record §20.6 calls this app's clinical purpose, that is a real hole. It is a schema change, so it
+is its own decision, not part of any version bump.
 
 ---
 
