@@ -2726,9 +2726,24 @@ Version 1 cleared the dose when *inputs* changed but never when *time* passed. A
 could show "7 units — inject now" computed from a reading three hours old, which is both a
 bad dosing basis and ambiguous evidence in a "did I already inject?" moment.
 
-**Every result carries a timestamp and expires after 15 minutes**, replaced by "This result is
-from 7:10 PM. Re-check your blood sugar." Applies on resume, on visibility change, and on a
-timer.
+**Every result carries a timestamp and expires after 15 minutes.** Applies on resume, on
+visibility change, and on a timer.
+
+**What expiry does to the screen, corrected 2026-09-12 [R26].** Earlier revisions said the result is
+*replaced by* the staleness banner, and the code has never done that: the dose stays on screen,
+dimmed, with "This result is from 7:10 PM. Check your blood sugar again." added beneath it. The code
+is right and this section was wrong, for a reason this section itself supplies — the stated hazard is
+*"ambiguous evidence in a 'did I already inject?' moment"*, and a number that is dimmed **and**
+stamped with its own time is the opposite of ambiguous. Deleting it makes that question harder to
+answer, not easier.
+
+It also has to survive contact with §7.2's after-expiry logging: someone who calculated, was
+interrupted and injected at minute 16 is asked *"How many units did you actually inject?"*, and
+removing the figure leaves nothing on screen to answer from. **Losing a dose row is worse than
+logging a late one** — an unlogged injection blinds §7.4's gate to insulin that is really acting.
+
+**The dimming carries the whole signal, so it must not be carried by colour alone.** Note 26's amber
+wash made a correct result read as a failure and only a person looking at it caught that.
 
 ### 8.3 Re-dose interval
 
@@ -2743,7 +2758,18 @@ rising limb of the meal dose. Analog-derived advice ("correct at two hours") is 
 
 ### 8.5 U-100 assumed, stated, not configurable
 
-Confirmed U-100 by the user. Output reads `6 units (U-100)`; setup states the assumption.
+Confirmed U-100 by the user. **Setup states the assumption.**
+
+**Corrected 2026-09-12 [R26]: the output does NOT read `6 units (U-100)`, and should not.** It reads
+"units of Humulin R", and that is the better of the two for this section's own purpose. §10.5 runs a
+strict budget on what shares space with a number about to be injected, and `(U-100)` is a
+concentration most users cannot check. Naming the actual insulin is something they can: a person
+holding a different vial sees the mismatch, where `(U-100)` would tell them nothing.
+
+**The half that was never built is the half that matters, and it is built now.** This section
+required the assumption at setup as well, and for eight months neither existed — `U-100` appeared
+nowhere in `src/` except a passing mention in the rounding copy. Setup is where a concentration
+mismatch is catchable once, rather than as decoration on every dose.
 
 **No U-40 mode is built.** It would be a setting that could itself be set wrong, causing the
 exact 2.5× error it exists to prevent.
