@@ -70,7 +70,12 @@ export const RANGE = {
   icr: { hard: [1, 100], soft: [5, 50] },
   threshold: { hard: [10, 45], soft: [15, 35] },
   basalUnits: { hard: [1, 150], soft: [5, 80] }, // §1.3
-  injected: { hard: [0.01, 100], soft: [0.5, 60] }, // §7.1 — ADDED IN v9
+  // §7.1 — added in v9 WITH a soft band of 0.5-60, struck 2026-09-11. The
+  // amount screen is a half-unit stepper, not a typed field, so a fixed band
+  // confirms the wrong thing: a calculated 55 stepped to 61 is ordinary and
+  // a 61 against a calculated 12 is not, and only the divergence check can
+  // tell those apart. `bloodSugar` and `carbs` carry no soft band either.
+  injected: { hard: [0.01, 100] },
 } as const;
 
 // ─── STACKING (§7.4) ───────────────────────────────────────
@@ -175,9 +180,14 @@ export const UPDATE_CHECK_INTERVAL_MS = 15 * 60 * 1000;
 // stops as soon as an offer is made, or after these attempts.
 export const UPDATE_LOOK_ATTEMPTS = 10;
 export const UPDATE_LOOK_INTERVAL_MS = 1000;
-// §11.4 — "a policy for hanging requests". A fetch that never settles is a
-// spinner forever, on a phone that may be on a train.
-export const NETWORK_TIMEOUT_MS = 8000;
+// §11.4's "policy for hanging requests" lives in `src/sw.ts`, NOT here, and
+// this comment is the pointer so its absence does not read as its removal. The
+// worker compiles in its own TypeScript project against the WebWorker lib with
+// no access to the app's module graph, so it cannot import from this file —
+// which is why `eslint.config.js` exempts it from §11.8's literal rule. An
+// exported copy stood here until 2026-09-11, imported by nobody, duplicating a
+// live value that could drift: the one file whose whole premise is being the
+// single source cannot also hold a second, dead definition.
 
 // ─── SCHEMA (§11.3) ────────────────────────────────────────
 export const SCHEMA_VERSION = 1;

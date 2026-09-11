@@ -55,12 +55,21 @@ export interface CalculatorHandlers {
   readonly onOfferReading: () => void;
   readonly onSaveReading: () => void;
   readonly onToggleMore: () => void;
+  /** §4.5 — opens the HI/LO meter guidance on the reading screen. */
+  readonly onShowMeterGuidance: () => void;
   readonly onOpenHistory: () => void;
   readonly onOpenSettings: () => void;
   readonly onStartOver: () => void;
+  /** §7.1 — the divergence confirmation's second, deliberate tap. */
+  readonly onConfirmDivergent: () => void;
   readonly nowMs: number;
   readonly timeZone: string;
   readonly moreExpanded: boolean;
+  readonly meterGuidanceShown: boolean;
+  /** §7.1 — why the last commit tap was refused, or null. */
+  readonly amountProblem: 'zero' | 'over_cap' | null;
+  /** §7.1 — the divergence confirmation is open. */
+  readonly amountDiverging: boolean;
 }
 
 const TOTAL_STEPS = WIZARD_STEPS;
@@ -209,6 +218,17 @@ function working(state: AppState, breakdown: Breakdown, doseHundredths: number):
 function blocked(state: AppState, bands: readonly Band[], handlers: CalculatorHandlers): HTMLElement {
   const veryLow = bands.includes('D');
   const words = veryLow ? COPY.bandD : COPY.bandC;
+  // §4.3 step 3 — a typed zero or a reading below the meter's floor gets the
+  // COMBINED invalid-reading-and-possible-low response, and §10.5 rank 1
+  // ("nothing else shows") leaves only one place for the invalid half: the
+  // block's own copy. The carbohydrate half of `alsoInvalid` deliberately does
+  // NOT render here for the same rank-1 reason — its own entry screen shows it
+  // on the way back (see `entryScreen`).
+  const impossibleReading =
+    state.outcome?.kind === 'blocked_low' &&
+    state.outcome.alsoInvalid.some(
+      (error) => error.field === 'bloodSugar' && error.reason === 'below_range',
+    );
   return h(
     'div',
     { class: 'screen' },
@@ -220,6 +240,7 @@ function blocked(state: AppState, bands: readonly Band[], handlers: CalculatorHa
       h('p', {}, words.body),
       veryLow ? h('p', {}, COPY.bandD.escalation) : null,
       h('p', {}, words.gate),
+      impossibleReading ? h('p', {}, COPY.blockedInvalidReading) : null,
       // §8.2 — a block goes stale like anything else, and this is the screen it
       // matters most on. `blocked` was the only step that ignored `expired`:
       // the state flipped after fifteen minutes and nothing on screen changed,
@@ -275,8 +296,26 @@ function entryScreen(
         ? COPY.noResult.nothingEntered
         : COPY.noResult.nothingToDose(state.snapshot?.settings.target ?? 0);
     }
-    if (outcome === null || outcome.kind !== 'invalid_input') return null;
-    const error = outcome.errors.find((candidate) => candidate.field === field);
+    // §4.3 step 4 — the errors collected alongside a block travel with it,
+    // and this slot is where they land: §10.5 rank 1 keeps them off the block
+    // screen, and §18.14's back path returns here with the unusable value
+    // still in the field (§8.2's expiry clears nothing, so it survives the
+    // whole interruption — note 6's "second trip" case). Scoped to range and
+    // grammar reasons only, because this renders a message derived from a
+    // PREVIOUS calculation on a live input screen: those reasons stay true of
+    // the text still on display, while `missing`/`not_finite` describe an
+    // absence, and any edit invalidates the outcome (§4.3 step 1) before the
+    // message could go stale.
+    const errors =
+      outcome === null
+        ? null
+        : outcome.kind === 'invalid_input'
+          ? outcome.errors
+          : outcome.kind === 'blocked_low'
+            ? outcome.alsoInvalid
+            : null;
+    if (errors === null) return null;
+    const error = errors.find((candidate) => candidate.field === field);
     if (error === undefined) return null;
     if (error.reason === 'above_range') {
       return isReading
@@ -347,6 +386,7 @@ function entryScreen(
     problem === null
       ? null
       : h('p', { class: 'error entry-error', 'aria-live': 'polite' }, problem),
+    isReading ? meterGuidance(handlers) : null,
     keypad({
       // §10.1 — no decimal key for the reading, because mg/dL meter readings are
       // whole numbers and omitting it makes no clinical value unenterable.
@@ -360,6 +400,29 @@ function entryScreen(
         enabled: true,
       },
     }),
+  );
+}
+
+/**
+ * §4.5 — an above-range reading gets "check the number" PLUS the HI guidance,
+ * and note 38's lesson is that the guidance needs a rendered slot, not a note
+ * claiming one. The LO half sits behind the same control because a meter
+ * showing LO produces no typed value, so no error slot can ever reach that
+ * user — the standing hint above the keypad is the only thing pointing at
+ * either case. The mechanic matches §10.5's "more" affordance: a quiet
+ * button, expansion in place, nothing modal.
+ */
+function meterGuidance(handlers: CalculatorHandlers): HTMLElement {
+  if (!handlers.meterGuidanceShown) {
+    return h('div', {}, button(COPY.meterGuidance, handlers.onShowMeterGuidance, { class: 'more' }));
+  }
+  return h(
+    'div',
+    // §10.9 — announced when it appears, like the error slot above: the cards
+    // arrive in response to a tap with no screen change.
+    { 'aria-live': 'polite' },
+    h('div', { class: 'flag' }, h('b', {}, COPY.meterHi.title), COPY.meterHi.body),
+    h('div', { class: 'flag' }, h('b', {}, COPY.meterLo.title), COPY.meterLo.body),
   );
 }
 
@@ -506,9 +569,19 @@ function resultScreen(state: AppState, outcome: Outcome, handlers: CalculatorHan
       outcome.overrideAvailable
         ? button('Why is this smaller?', handlers.onOpenOverride, { class: 'go quiet' })
         : null,
-      // §8.2 — an expired result cannot be acted on.
+      // §8.2 replaces an expired result with its staleness banner and asks him
+      // to re-check — so "Check again" leads. It does NOT remove the log
+      // control, which is what this branch used to do under a comment citing
+      // §8.2 for a rule that section does not contain.
+      state.expired ? button('Check again', handlers.onNewCalculation, { class: 'go' }) : null,
+      // §7.2 — "Tap after §8.2 expiry is permitted with amended wording … but
+      // the recorded timestamp is the tap time and the wording says so."
+      // Quiet, because re-checking is the better move for almost everyone; but
+      // present, because the one person this is for has ALREADY injected, and
+      // refusing the row loses a real dose from §7.4's gate. `commitLog` stamps
+      // `host.now()`, so the tap time is what lands — the label says that.
       state.expired
-        ? button('Check again', handlers.onNewCalculation, { class: 'go' })
+        ? button(COPY.log.injectedAfterExpiry, handlers.onBeginLogging, { class: 'go quiet' })
         : button(COPY.log.injected, handlers.onBeginLogging, { class: 'go' }),
     ),
   );
@@ -605,9 +678,34 @@ function amountScreen(state: AppState, outcome: Outcome, handlers: CalculatorHan
       button('−', () => { handlers.onAdjustAmount(-AMOUNT_STEP_HUNDREDTHS); }, { class: 'key', 'aria-label': 'half a unit less' }),
       button('+', () => { handlers.onAdjustAmount(AMOUNT_STEP_HUNDREDTHS); }, { class: 'key', 'aria-label': 'half a unit more' }),
     ),
+    // §7.1 — the commit gate's answers, beside the stepper that fixes them.
+    // The hard cap and the zero are refusals with no way through (§4.5: hard
+    // ranges reject; only soft ones confirm), worded and aria-treated like the
+    // entry screens' error slot. The divergence is a CONFIRMATION, so the
+    // sheet below swaps its commit for the deliberate second tap instead.
+    handlers.amountProblem === null
+      ? null
+      : h(
+          'p',
+          { class: 'error entry-error', 'aria-live': 'polite' },
+          handlers.amountProblem === 'over_cap' ? COPY.range.injectedAbove : COPY.range.injectedZero,
+        ),
+    handlers.amountDiverging && Number.isInteger(draft)
+      ? h(
+          'div',
+          { class: 'flag', 'aria-live': 'polite' },
+          COPY.log.divergent(units(outcome.hundredths), units(draft)),
+        )
+      : null,
     h('div', { class: 'flag' }, COPY.log.amountOnlyChance),
     h('div', { class: 'flag mint' }, h('b', {}, COPY.log.commitIsHere)),
-    h('div', { class: 'sheet' }, button(COPY.log.commit, handlers.onCommitLog, { class: 'go' })),
+    h(
+      'div',
+      { class: 'sheet' },
+      handlers.amountDiverging
+        ? button(COPY.log.divergentAction, handlers.onConfirmDivergent, { class: 'go' })
+        : button(COPY.log.commit, handlers.onCommitLog, { class: 'go' }),
+    ),
   );
 }
 

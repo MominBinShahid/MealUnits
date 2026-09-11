@@ -3,7 +3,6 @@ import {
   classifyBands,
   classifyLowBand,
   isBlockingBand,
-  looksLikeAPossibleLow,
 } from '../src/core/bands.js';
 
 describe('§3 the band table, at every boundary', () => {
@@ -63,11 +62,10 @@ describe('§3 the band table, at every boundary', () => {
   });
 });
 
-describe('§4.3 step 3 — the possible-low predicate is settings-free', () => {
-  it('is exactly "below the consensus level", with no ratio involved', () => {
-    expect(looksLikeAPossibleLow(69.99)).toBe(true);
-    expect(looksLikeAPossibleLow(70)).toBe(false);
-    expect(looksLikeAPossibleLow(0)).toBe(true);
-    expect(looksLikeAPossibleLow(19)).toBe(true);
-  });
-});
+/**
+ * §4.3 step 3's possible-low predicate had its own describe block here until
+ * 2026-09-11. `looksLikeAPossibleLow` was deleted with it: production never
+ * called it, and `classifyLowBand(value) !== null` answers the same question
+ * from the code path that actually runs. A tested function nothing calls is a
+ * test agreeing with a dead wire — the pattern this sweep kept finding.
+ */

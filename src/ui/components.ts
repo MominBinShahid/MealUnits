@@ -128,7 +128,3 @@ export function readout(value: string, unit: string, stale: boolean): HTMLElemen
     h('div', { class: 'u' }, unit),
   );
 }
-
-export function bar(...children: (Node | null)[]): HTMLElement {
-  return h('div', { class: 'bar' }, ...children.filter((child) => child !== null));
-}

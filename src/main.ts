@@ -420,8 +420,11 @@ if (root) {
   void start({
     root,
     now: () => Date.now(),
-    // The device's zone. See BUILD-NOTES.md — whether this or a fixed
-    // Asia/Karachi is right is open until the record outlives the phone.
+    // §10.4 — the DEVICE's zone, ruled 2026-09-11 and no longer open. Nothing
+    // dose-bearing reads it: §7.4's windows, §7.6's skew and §8.2's expiry are
+    // pure epoch arithmetic, so travel and DST cannot move a dose or a gate.
+    // Read ONCE, which is the accepted cost: until the app restarts, a real
+    // zone change leaves rendered times in the old zone. Notes 11 and 21.
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     appVersion: __APP_VERSION__,
     buildId: __BUILD_ID__,
@@ -448,6 +451,18 @@ if (root) {
     scrollTo: (y) => { window.scrollTo(0, y); },
     ...hardwareBack(),
     onSettled: showInstallOffer,
+    // §7.2 — the write and its automatic retry have both failed, so the dose is
+    // not in the record and he is the only one who can carry it. A bar rather
+    // than a line on the logged screen because `committing` outlives that
+    // screen now: by the time this fires he may be two screens away.
+    onSaveStuck: (amount, retry) => {
+      promptBar({
+        text: COPY.log.stuck(amount),
+        actionLabel: COPY.log.stuckAction,
+        onAction: retry,
+        dismissLabel: COPY.log.stuckDismiss,
+      });
+    },
   }).catch((cause: unknown) => {
     root.textContent = `${COPY.appName} could not start: ${String(cause)}`;
   });

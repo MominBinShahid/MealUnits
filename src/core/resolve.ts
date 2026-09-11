@@ -127,14 +127,19 @@ function rangeErrorFor(field: 'bloodSugar' | 'carbs', value: number): FieldError
  * response rather than silently choosing one.
  */
 function lowReadingBands(parsed: ParsedField): Band[] | null {
-  // Stryker disable all: forcing the `valid` arm yields `undefined` for the
-  // other states, and `classifyLowBand(undefined)` answers null exactly as the
-  // `null` arm does — indistinguishable from outside. The four states are spelled
-  // out anyway, because §4.1's whole point is that they must not collapse into
-  // one another.
   const reading =
-    parsed.state === 'zero' ? 0 : parsed.state === 'valid' ? parsed.value : null;
-  // Stryker restore all
+    parsed.state === 'zero'
+      ? 0
+      : // Stryker disable next-line ConditionalExpression: forcing this arm
+        // yields `undefined` for the other states, and
+        // `classifyLowBand(undefined)` answers null exactly as the `null` arm
+        // does — indistinguishable from outside. The four states are spelled out
+        // anyway, because §4.1's whole point is that they must not collapse into
+        // one another. NARROWED 2026-09-11: the `=== 'zero'` arm beside it is
+        // killable and was being silenced by a block that never claimed it.
+        parsed.state === 'valid'
+        ? parsed.value
+        : null;
   if (reading === null) return null;
   // Below the hard floor is not merely "invalid" — §4.3 step 3 routes it to the
   // low-reading response, and below HYPO_LEVEL_1 does too. `classifyLowBand`
@@ -392,13 +397,15 @@ export function resolve(snapshot: Snapshot): Outcome {
   // always at least the meal-only figure, and rounding is monotonic in every
   // mode. `dose >= threshold` therefore implies `candidate >= threshold`, and
   // testing both would be a condition whose first half no input can decide.
-  // Stryker disable all: the null guard is not separately observable, because
-  // `null >= threshold` coerces to `0 >= threshold` and every threshold is at
-  // least 10. Same family as the two guards in history.ts, and kept for the same
-  // reason: §4.1 does not let a coercion stand in for a check.
   const overrideFiguresWithheld =
-    overrideCandidateHundredths !== null && overrideCandidateHundredths >= thresholdHundredths;
-  // Stryker restore all
+    // Stryker disable next-line ConditionalExpression,EqualityOperator: this
+    // null guard is not separately observable, because `null >= threshold`
+    // coerces to `0 >= threshold` and every threshold is at least 10. Same
+    // family as the guards in history.ts, and kept for the same reason: §4.1
+    // does not let a coercion stand in for a check. NARROWED 2026-09-11 — the
+    // `>=` beside it decides §7.4.1's withholding and is very much testable.
+    overrideCandidateHundredths !== null &&
+    overrideCandidateHundredths >= thresholdHundredths;
 
   const body = {
     hundredths: doseHundredths,

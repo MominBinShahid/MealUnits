@@ -35,6 +35,13 @@
     "mode": "nearest",
     "expected": { "kind": "dose", "hundredths": 400, "bands": ["A"], "correctionHundredths": -149, "suppressed": false, "advisories": [] }
   },
+  {
+    "name": "§2.2 — a knife-edge tie the doubles miss, pinned as the MEASURED EXCEPTION",
+    "note": "On paper: correction (72-150)/30 = -2.6, meal 41/10 = 4.1, total exactly 1.5, and §2.2's tie rule says 2. In doubles the sum is 1.4999999999999996, so the app answers 1. This case pins §2.2's measured exception, NOT its general rule — the shortfall is one increment, in the lower (safer) direction, and if the incidental behaviour ever moves this is the only thing that notices. Do not 'fix' the expectation to 2 without rewriting the arithmetic §2.2 describes.",
+    "input": { "bloodSugar": 72, "carbs": 41, "target": 150, "isf": 30, "icr": 10, "threshold": 20 },
+    "mode": "nearest",
+    "expected": { "kind": "dose", "hundredths": 100, "bands": ["B"], "correctionHundredths": -260, "suppressed": false, "advisories": ["band_b_caution"], "timingAdvice": "eat_first" }
+  },
 
   {
     "name": "§13.3 below target: 120 and 15 g",

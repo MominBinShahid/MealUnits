@@ -11,15 +11,14 @@
 
 import {
   ADVISORY_MIN_ELIGIBLE,
-  DELETE_CONFIRM_WINDOW_HOURS,
   JSON_INDENT,
   MS_PER_MINUTE,
   RANGE,
 } from '../config.js';
-import { deriveBandEFullCardShownToday, deriveHistory, hasRowInsideWindow } from '../core/history.js';
+import { deriveBandEFullCardShownToday, deriveHistory } from '../core/history.js';
 import { evaluateCarbAdvisory } from '../core/baseline.js';
 import { divergesFromCalculated } from '../core/divergence.js';
-import { hundredthsFromGrammarText } from '../core/decimal.js';
+import { formatHundredths, hundredthsFromGrammarText } from '../core/decimal.js';
 import { parseField, applyKeystroke } from '../core/parse.js';
 import { modeNeedsAcknowledgement } from '../core/round.js';
 import type { Injection, Reading, RoundingMode, Settings } from '../core/types.js';
@@ -47,7 +46,7 @@ import { initialState, reduce } from '../state/machine.js';
 import type { Action, AppState, FrozenLogPayload, RecordContext } from '../state/machine.js';
 import { localDayKey } from '../core/calendar.js';
 import { newId } from '../core/ids.js';
-import { COPY } from './copy.js';
+import { COPY, units } from './copy.js';
 import { button, captureFocus, replaceChildren, restoreFocus, h } from './dom.js';
 import { calculatorScreen } from './screens/calculator.js';
 import { draftFrom, settingsScreen } from './screens/settings.js';
@@ -76,6 +75,16 @@ interface ViewState {
   draft: SettingsDraft;
   disclaimerChecked: boolean;
   moreExpanded: boolean;
+  /** §4.5 — the HI/LO guidance disclosure on the reading screen. */
+  meterGuidanceShown: boolean;
+  /**
+   * §7.1 — which amount-gate answer is on screen. Safe OUTSIDE the reducer
+   * for the same reason `pendingDelete` is: `commitLog` re-runs the gate on
+   * every commit tap, so these flags decide what is rendered and can never
+   * bypass the check itself.
+   */
+  amountProblem: 'zero' | 'over_cap' | null;
+  amountDiverging: boolean;
   pendingDelete: string | null;
   clearConfirming: 'record' | 'startOver' | null;
   failClosedConfirming: boolean;
@@ -85,6 +94,13 @@ interface ViewState {
   dosingDraft: string;
   decliningDosing: boolean;
   screenBefore: AppState['screen'];
+  /**
+   * §7.9 v23 — another tab deleted the record, so this one is re-booting into
+   * the first-run gate. Outside the reducer with the rest of ViewState: it
+   * changes no dose, band or gate, only what the loading screen says while the
+   * database is being reopened.
+   */
+  recordDeletedElsewhere: boolean;
 }
 
 export interface Host {
@@ -141,6 +157,21 @@ export interface Host {
    * disclaimer is the same mistake with a smaller footprint.
    */
   readonly onSettled?: (() => void) | undefined;
+  /**
+   * §7.2 — a dose whose write has now failed TWICE, handed to something that
+   * follows him off the screen he logged it on.
+   *
+   * On the Host rather than built here because the bar lives outside the app
+   * root (it is fixed to the foot and offsets the page through `--prompt-h`,
+   * note 59), and because `src/ui` is driven by a jsdom harness that has to be
+   * able to see the escalation without a real document.
+   *
+   * Called with the amount (§10.4's spelled-out form, because by the time he
+   * sees this he may be two screens from the dose it names) and the retry.
+   * Called AGAIN if that retry also fails, which is what lets a bar that closes
+   * on tap come back rather than vanishing on a failure.
+   */
+  readonly onSaveStuck?: ((amount: string, retry: () => void) => void) | undefined;
 }
 
 export async function start(host: Host): Promise<void> {
@@ -153,6 +184,9 @@ export async function start(host: Host): Promise<void> {
     draft: draftFrom(null),
     disclaimerChecked: false,
     moreExpanded: false,
+    meterGuidanceShown: false,
+    amountProblem: null,
+    amountDiverging: false,
     pendingDelete: null,
     clearConfirming: null,
     failClosedConfirming: false,
@@ -161,6 +195,7 @@ export async function start(host: Host): Promise<void> {
     dosingDraft: '',
     decliningDosing: false,
     screenBefore: 'calculator',
+    recordDeletedElsewhere: false,
   };
 
   const dispatch = (action: Action): void => {
@@ -252,13 +287,55 @@ export async function start(host: Host): Promise<void> {
    * that re-reads a mutable draft is exactly the hole 'captured at the tap' is
    * meant to close."
    */
-  const commitLog = async (): Promise<void> => {
+  const commitLog = async (divergenceConfirmed: boolean): Promise<void> => {
     if (db === null || state.settings === null || state.snapshot === null) return;
     const outcome = state.outcome;
     if (outcome?.kind !== 'dose' && outcome?.kind !== 'meal_only_suppressed') return;
 
     const injected = Number(state.injectedDraft);
-    if (!Number.isFinite(injected) || injected <= 0) return;
+    // The draft is written only by the stepper, so a non-finite, negative or
+    // fractional-hundredth value is a corrupted state and refuses silently.
+    // ZERO is reachable — the stepper clamps there — and gets its words:
+    // §7.1, the tap asserts an injection happened, and zero contradicts it.
+    if (!Number.isFinite(injected) || !Number.isInteger(injected) || injected < 0) return;
+    if (injected === 0) {
+      view.amountProblem = 'zero';
+      view.amountDiverging = false;
+      render();
+      return;
+    }
+
+    // §7.1's amount gate, which v9 specified and the build left unwired. The
+    // draft holds integer HUNDREDTHS while `amountNeedsConfirming` reads §4.2
+    // grammar text in UNITS (note 3's naming trap), so the conversion goes
+    // through `formatHundredths` rather than a division that would hand a
+    // float to a safety predicate (§5.3).
+    const injectedText = formatHundredths(injected);
+    if (amountNeedsConfirming(outcome.hundredths, injectedText)) {
+      // The predicate folds §7.1's two rows into one answer, and they resolve
+      // differently: outside the hard range is the 100-unit cap — "a U-100
+      // syringe holds no more, so above it is a typo by construction" — and a
+      // hard range REJECTS with no confirm path (§4.5). Everything else it
+      // flags is the large divergence, which commits only through the
+      // explicit second tap.
+      const parsed = parseField(injectedText, 'injected');
+      const [lo, hi] = RANGE.injected.hard;
+      const withinHardRange = parsed.state === 'valid' && parsed.value >= lo && parsed.value <= hi;
+      if (!withinHardRange) {
+        view.amountProblem = 'over_cap';
+        view.amountDiverging = false;
+        render();
+        return;
+      }
+      if (!divergenceConfirmed) {
+        view.amountProblem = null;
+        view.amountDiverging = true;
+        render();
+        return;
+      }
+    }
+    view.amountProblem = null;
+    view.amountDiverging = false;
 
     const reading = parseField(state.inputs.bloodSugar, 'bloodSugar');
     const carbs = parseField(state.inputs.carbs, 'carbs');
@@ -289,10 +366,37 @@ export async function start(host: Host): Promise<void> {
     };
 
     dispatch({ type: 'commit_log', payload });
+    await attemptWrite(payload);
+  };
 
+  /**
+   * §7.2's *"with retry"*, which nothing implemented until 2026-09-11:
+   * `log_save_failed` was dispatched once and no code ever re-attempted, so
+   * `save.attempts` could not exceed 1 and the counter the reducer maintains
+   * counted nothing.
+   *
+   * The escalation, chosen over a bare button or a silent loop. Attempt 1 fails
+   * → the flag says so on the logged screen, where he is standing. Attempt 2
+   * runs IMMEDIATELY and silently, because most write failures here are
+   * transient — lock contention, quota pressure, a backgrounded tab — and a
+   * recovery he never had to notice is the best outcome. Only when that also
+   * fails does the prompt bar appear, because by then the app has genuinely
+   * lost the row and he has to write it down.
+   *
+   * The flag shows from the FIRST failure rather than after the retry settles:
+   * if he closes the app inside the retry window, a silent version would have
+   * shown him nothing at all about a dose that is not in his record.
+   *
+   * Immediate rather than backed off, deliberately. A delay needs a timer on
+   * the Host to stay drivable from the jsdom harness (§11.1), and buys little
+   * against the failure modes above. If it ever needs backoff, that is a Host
+   * capability, not a `setTimeout` reached for here.
+   */
+  const attemptWrite = async (payload: FrozenLogPayload): Promise<void> => {
+    if (db === null) return;
     const row: Injection = { ...payload };
     try {
-      await appendInjection(db, row, timestamp);
+      await appendInjection(db, row, payload.timestamp);
       stored = await readAll(db, host.now());
       watch.announce();
       dispatch({ type: 'log_saved', record: contextFrom(stored) });
@@ -302,9 +406,23 @@ export async function start(host: Host): Promise<void> {
       host.buzz();
     } catch {
       // §7.2 — the app enters a PENDING-SAVE state. The in-session gate still
-      // knows about the dose, and the timer started regardless.
+      // knows about the dose (`gateLastDose`), and the timer started regardless.
       dispatch({ type: 'log_save_failed' });
+      if (state.save.kind === 'pending' && state.save.attempts === 1) {
+        await attemptWrite(payload);
+        return;
+      }
+      // Twice is not transient. Hand it to something that follows him off this
+      // screen, because `committing` now outlives the logged step.
+      host.onSaveStuck?.(units(payload.injectedUnits), retryPendingSave);
     }
+  };
+
+  /** The frozen payload, never a re-read draft (§7.1). */
+  const retryPendingSave = (): void => {
+    const pending = state.committing;
+    if (pending === null || state.save.kind !== 'pending') return;
+    void attemptWrite(pending);
   };
 
   const saveReading = async (): Promise<void> => {
@@ -415,10 +533,37 @@ export async function start(host: Host): Promise<void> {
     return COPY.advisory.active(String(state.record.carbBaseline));
   };
 
+  /**
+   * §13.3's day-rollover case. Every `calculate` re-derives the record context
+   * from the rows the shell already holds, against the CURRENT clock, because
+   * three of its fields are time-dependent — `bandEFullCardShownToday` reads a
+   * day key, and `excludedTimeRecords` and `historyProvenance` read `now`.
+   *
+   * Deliberately not a `record_changed`: that means the ROWS moved and
+   * invalidates, which would wipe the confirmation the user just gave on the
+   * two paths that acknowledge and then recalculate.
+   */
+  const calculateNow = (): void => {
+    dispatch(
+      stored === null
+        ? { type: 'calculate', nowMs: host.now() }
+        : { type: 'calculate', nowMs: host.now(), record: contextFrom(stored) },
+    );
+  };
+
   function screenFor(): HTMLElement {
     switch (state.screen) {
       case 'loading':
-        return h('div', { class: 'screen' }, h('p', {}, 'Opening your record…'));
+        // §7.9 — a re-boot after another tab's delete says so. Its second
+        // sentence ("Setup will run again.") is true now: `boot()` is running.
+        return view.recordDeletedElsewhere
+          ? h(
+              'div',
+              { class: 'screen' },
+              h('h2', {}, COPY.recordDeleted.title),
+              h('p', {}, COPY.recordDeleted.body),
+            )
+          : h('div', { class: 'screen' }, h('p', {}, 'Opening your record…'));
 
       case 'fail_closed':
         return failClosedScreen({
@@ -598,6 +743,9 @@ export async function start(host: Host): Promise<void> {
           nowMs: host.now(),
           timeZone: host.timeZone,
           moreExpanded: view.moreExpanded,
+          meterGuidanceShown: view.meterGuidanceShown,
+          amountProblem: view.amountProblem,
+          amountDiverging: view.amountDiverging,
           onDigit: (field, digit) => {
             const current = state.inputs[field];
             // §4.2's grammar, per field, derived from that field's own range —
@@ -611,31 +759,49 @@ export async function start(host: Host): Promise<void> {
           },
           onNext: () => { dispatch({ type: 'wizard_next' }); },
           onBack: () => { dispatch({ type: 'wizard_back' }); },
-          onNewCalculation: () => { dispatch({ type: 'new_calculation' }); },
-          onCalculate: () => { dispatch({ type: 'calculate', nowMs: host.now() }); },
+          onNewCalculation: () => {
+            view.meterGuidanceShown = false;
+            dispatch({ type: 'new_calculation' });
+          },
+          onCalculate: () => { calculateNow(); },
           onAcknowledgeBlank: () => {
             dispatch({ type: 'blank_reading_acknowledged' });
-            dispatch({ type: 'calculate', nowMs: host.now() });
+            calculateNow();
           },
           onConfirmLargeDose: () => {
             dispatch({ type: 'large_dose_confirmed' });
-            dispatch({ type: 'calculate', nowMs: host.now() });
+            calculateNow();
           },
-          onBeginLogging: () => { dispatch({ type: 'begin_logging' }); },
+          onBeginLogging: () => {
+            view.amountProblem = null;
+            view.amountDiverging = false;
+            dispatch({ type: 'begin_logging' });
+          },
           onAdjustAmount: (delta) => {
+            // §6.3's principle at the amount step: a refusal or an open
+            // divergence confirmation was shown for the exact value on
+            // screen, so changing the value withdraws it. The commit tap
+            // re-runs the gate against the new value.
+            view.amountProblem = null;
+            view.amountDiverging = false;
             const next = Math.max(0, Number(state.injectedDraft) + delta);
             dispatch({ type: 'injected_draft_changed', value: String(next) });
           },
-          onCommitLog: () => { void commitLog(); },
+          onCommitLog: () => { void commitLog(false); },
+          onConfirmDivergent: () => { void commitLog(true); },
           onOpenOverride: () => { view.moreExpanded = false; state = { ...state, step: 'stacking_override' }; render(); },
           onTakeOverride: () => {
             dispatch({ type: 'stacking_override_taken' });
-            dispatch({ type: 'calculate', nowMs: host.now() });
+            calculateNow();
           },
           onOfferReading: () => { dispatch({ type: 'offer_reading' }); },
           onSaveReading: () => { void saveReading(); },
           onToggleMore: () => {
             view.moreExpanded = !view.moreExpanded;
+            render();
+          },
+          onShowMeterGuidance: () => {
+            view.meterGuidanceShown = true;
             render();
           },
           onOpenHistory: () => { dispatch({ type: 'go', screen: 'history' }); },
@@ -834,7 +1000,21 @@ export async function start(host: Host): Promise<void> {
         db = null;
         if (newVersion === null) {
           state = initialState();
+          // §7.9 v23's THIRD clause, which nothing implemented: "…invalidate the
+          // rendered result, AND RETURN TO THE FIRST-RUN GATE." Invalidating
+          // alone left `screen: 'loading'` on screen with nothing to re-boot it,
+          // so the surviving tab sat on "Opening your record…" forever — and
+          // `COPY.recordDeleted`, whose second sentence promises setup will run
+          // again, had no consumer at all.
+          //
+          // `open.ts` already closed the connection before calling this, so the
+          // delete is not blocked by re-opening: `openDatabase` recreates the
+          // database empty and `boot` lands on the disclaimer, which IS the
+          // first-run gate. The notice renders in the meantime rather than a
+          // spinner, because "out of date" is a truer thing to say than nothing.
+          view.recordDeletedElsewhere = true;
           render();
+          void boot();
         }
       },
     });
@@ -891,11 +1071,6 @@ export function amountNeedsConfirming(
   if (parsed.value < lo || parsed.value > hi) return true;
   const injected = hundredthsFromGrammarText(parsed.text);
   return divergesFromCalculated(calculatedHundredths, injected);
-}
-
-/** §7.9 — is there a row the clearing confirmation has to mention? */
-export function clearNeedsStackingLine(source: StoredState, nowMs: number): boolean {
-  return hasRowInsideWindow(source.log, nowMs, DELETE_CONFIRM_WINDOW_HOURS);
 }
 
 export type { Settings };
