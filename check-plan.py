@@ -277,6 +277,18 @@ RETIRED = [
     # not the rule living on — but it is indistinguishable to a substring
     # search, so the count is what separates them. A third occurrence is the
     # phrase coming back as live spec.
+    # Ruled 2026-09-11. §7.2's pending-save copy claimed TWO things that were
+    # false — "retrying" when nothing retried, and "still counted" when the
+    # snapshot took `lastDose` from the database a failed write never reached.
+    # Pinned because it is the worst shape a retired string can have: a false
+    # SAFETY claim on the screen a person reads while deciding whether to inject
+    # again. BUILD-NOTES note 61.
+    #
+    # The count is 4, not 0: §7.2's correction paragraph quotes it once and note
+    # 61 quotes it three times, all to record its death. A fifth occurrence is
+    # the phrase coming back as live spec — which is exactly how it survived in
+    # `design/step-flow.html` until this pin was written.
+    ("Couldn't save this yet", 4),
     ("above-range to band E wording", 2),
     ("last backup: N days ago", 2),
     ("the same mechanism `logRevision` already uses", 2),
@@ -341,6 +353,24 @@ RETIRED = [
     # deletion. Both are records OF the deletion, not descriptions of a live file.
     ("PLAN-v19-superseded.md", 1),
 ]
+
+# Retired phrases are counted in TypeScript source too — ADDED 2026-09-11. The
+# RETIRED counts above cover the document corpus (SWEPT_SUFFIXES), and .ts is
+# not in it. That blind spot let §4.5's deleted "above-range to band E wording"
+# rule live on as an authoritative-sounding docstring on `looksLikeAPossibleLow`
+# in src/core/bands.ts — the exact trap note 2 records ("a later reader finds
+# the losing sentence, sees the code disagree, and corrects the code"), one
+# directory over from every file this script could see. The counts below are
+# the ALLOWED occurrences inside src/**/*.ts: historical quotations whose whole
+# point is to explain a retirement. A phrase not named here is allowed zero.
+RETIRED_IN_SOURCE_OK = {
+    # copy.ts's band E docstring quotes v8's wrong compact copy, twice, to
+    # explain why the instruction never changes between forms.
+    "Above 250 again": 2,
+    # misc.ts's dosing-history docstring names the cut §6.7 setting to explain
+    # what replaced it.
+    "usualDose": 1,
+}
 
 
 # CORRECTION_MARKERS lived here until v19. It was defined and referenced NOWHERE —
@@ -720,6 +750,44 @@ def check_retired(corpus):
             out.append("retired phrase %r: expected %d across all live files, found "
                        "%d (%s) — if the change is intended, update the count"
                        % (phrase, expected, total, ", ".join(where) or "none"))
+    return out
+
+
+def check_retired_in_source(_plan):
+    """1b. A retired phrase living on in TypeScript source — ADDED 2026-09-11.
+
+    The corpus sweep cannot see .ts files, and a docstring is where a dead rule
+    reads most like live spec: src/core/bands.ts asserted §4.5's deleted
+    band-E-wording rule for two days after note 2's ruling retired it. Reads
+    the tree directly rather than through `load`, so the self-test's corpus
+    override does not reach it; it was instead shown to fail on the real
+    defect by execution — re-seeding the retired sentence into bands.ts
+    produces the finding, and removing it returns the checker to clean
+    (executed 2026-09-11, the same standard §20.3 sets for every other check).
+    """
+    files = {}
+    for dirpath, dirnames, filenames in os.walk(os.path.join(HERE, "src")):
+        dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+        for name in sorted(filenames):
+            if not name.endswith(".ts"):
+                continue
+            path = os.path.join(dirpath, name)
+            rel = os.path.relpath(path, HERE).replace(os.sep, "/")
+            with io.open(path, encoding="utf-8") as handle:
+                files[rel] = handle.read()
+    out = []
+    for phrase, _expected in RETIRED:
+        allowed = RETIRED_IN_SOURCE_OK.get(phrase, 0)
+        where, total = [], 0
+        for rel, text in sorted(files.items()):
+            hits = list(flexible(phrase).finditer(text))
+            total += len(hits)
+            where += ["%s:%d" % (rel, line_of(text, m.start())) for m in hits]
+        if total != allowed:
+            out.append("retired phrase %r in TypeScript source: expected %d, found %d (%s)"
+                       " — a doc-retired rule in a docstring is the rule living on; quote it"
+                       " to explain the retirement and pin the count, or delete it"
+                       % (phrase, allowed, total, ", ".join(where) or "none"))
     return out
 
 
@@ -1941,6 +2009,7 @@ def check_next_steps(plan):
 
 CHECKS = [
     ("retired phrases living as spec (ALL FILES)", check_retired, "corpus"),
+    ("retired phrases living in src/**/*.ts", check_retired_in_source, "plan"),
     ("dangling section references", check_references, "plan"),
     ("dangling section references in companions", check_references_corpus, "corpus"),
     ("unverifiable removal claims", check_removal_claims, "plan"),
