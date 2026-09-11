@@ -644,6 +644,60 @@ already handle reading rows, and §10.5's band E derivation already reads them.
 
 ---
 
+### T11. Credit the prescribing doctor — BLOCKED ON HIS PERMISSION
+
+**Momin offered the name 2026-09-12 and ruled it stays out until asked.** Recorded so the offer is
+not lost and not acted on early.
+
+**Why it is not a formality.** Crediting a named physician on an insulin calculator reads as
+clinical endorsement. If a dose goes wrong and his name is on the app, the exposure is professional
+and it is his, not ours. Three things follow:
+
+- **Ask him with the exact wording in front of him**, and say where it will appear — a public
+  repository and a live app, not a private tool.
+- **Credit what he actually did.** He wrote the prescription this app was built around and supplied
+  the carbohydrate handout. That is *not* "clinically reviewed by", which would be untrue today and
+  is precisely the claim that could harm him.
+- **One affiliation, not a list.** A name plus one institution is a credit; a name plus three
+  workplaces and their neighbourhoods is a directory entry, and it adds identifiability without
+  adding honour. Keep it minimal unless he asks otherwise.
+
+**Where it would go:** `docs/CLINICAL.md` and a credits line on the how-it-works screen. **Never
+beside a dose** — §14 says this is not a medical device, and a doctor's name next to a number
+argues with that.
+
+**Natural trigger:** the same conversation that asks him to sign off the ketones section (T12),
+since both need him and neither should ship without him.
+
+### T12. The ketones section — BLOCKED ON THE DOCTOR
+
+**Drafted 2026-09-12, not shipped.** Band E and the meter-HI guidance tell the reader to check
+ketones and name diabetic ketoacidosis, and nothing in the app says what to check with or what a
+result means. The draft explains and says when to seek help; it prescribes no doses, which is the
+line §14 draws.
+
+**It waits on a physician because three things in it are open, and two are about the app being
+wrong rather than incomplete:**
+
+1. **`COPY.meterHi.body` and `CLINICAL.md` §2.1 may now be out of date.** Both say injected insulin
+   alone will not treat ketoacidosis. ADA 2026 §6 and the 2024 ADA/EASD consensus permit home
+   management of MILD ketoacidosis with subcutaneous insulin. The claim is right for the vomiting
+   case and overstates the rest. Neither file was changed — §20.1.1 says ask.
+2. **The 250 mg/dL advisory threshold now sits ABOVE the diagnostic one.** The 2024 consensus and
+   ADA 2026 lowered the glucose criterion to 200, so a reading of 210 with ketones meets it and the
+   app says nothing. Changing `KETONE_ADVISORY` trades that gap against alarm fatigue, which is a
+   clinical judgement, not ours.
+3. **No guideline gives a ketone recheck interval for regular human insulin.** ISPAD's "should have
+   fallen by two hours" is analogue-derived, and `CLINICAL.md` §4 already refuses two-hour reasoning
+   for Humulin R.
+
+**Also settled by the draft's research and worth keeping:** no blood beta-ketone strip is registered
+with DRAP, and Abbott's Optium Neo registrations expired 2024-10-09 — so the copy must name no
+product. Urine strips are cheap but sold by diagnostic suppliers rather than pharmacies. The
+"neither" branch has a real local answer: a lab urine ketone, Rs 250-600, at a 24-hour lab.
+
+**Trigger: the appointment that also settles T11's attribution.** One conversation, both questions.
+
 ### T10. A sanity suite, separate from smoke — decide whether two files are worth it
 
 **Trigger: when `smoke.mjs` next feels too big, or when a change needs deep verification of one
