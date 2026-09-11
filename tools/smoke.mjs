@@ -18,6 +18,18 @@
  *     blanked the screen and looked like the tap was ignored.
  *
  * Run against a served build:  npm run build && npm run preview & npm run smoke
+ *
+ * WHAT EARNS A PLACE HERE, added 2026-09-11 so this file does not become the
+ * place every new assertion lands. A check belongs in this file only if BOTH:
+ *
+ *   1. jsdom cannot see it — it needs real layout, a real content security
+ *      policy, real fonts, or a real service worker; and
+ *   2. its failure makes the app UNUSABLE, not merely imperfect.
+ *
+ * Everything else belongs in the integration suite, which is faster, cheaper and
+ * already drives the whole app. Four pieces of interface were added in the batch
+ * this rule was written for; two qualified and two did not, and the two that did
+ * are below.
  */
 import { spawn } from 'node:child_process';
 import { setTimeout as wait } from 'node:timers/promises';
@@ -126,12 +138,52 @@ for (const [width, port] of [[412, 9302], [1440, 9303]]) {
     const box = async (sel) => ev(`(()=>{const n=document.querySelector('${sel}');if(!n)return null;const r=n.getBoundingClientRect();return [Math.round(r.x),Math.round(r.width)]})()`);
     check(`${width}px: the nav sits inside the app column`, await box('.foot-nav'), await box('.screen'));
     check(`${width}px: the version line sits inside it too`, await box('.foot'), await box('.screen'));
+    // The GENERAL form of note 56's defect, which build note 56 claimed was
+    // already asserted here and was not: the two checks above measure the two
+    // foot elements, so an element overflowing INSIDE `.screen` — which is
+    // exactly what note 56 fixed, export buttons bursting their card at 360px —
+    // passed them both. This asks the page itself, once per width, and it is
+    // the check that would have caught it without anyone naming the element.
+    check(`${width}px: nothing pushes the page sideways`,
+      await ev(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), true);
     for (const d of ['1', '8', '0']) await tap(`/^${d}$/`);
     await tap('/^Next$/'); for (const d of ['5', '0']) await tap(`/^${d}$/`);
     await tap('/Work out the dose/'); await wait(500); await tap('/I injected this/'); await wait(600);
     check(`${width}px: the +/- keys are square and meet §10.7's 48px floor`,
       await ev(`JSON.stringify([...document.querySelectorAll('.stepper .key')].map(k=>{const r=k.getBoundingClientRect();return [Math.round(r.width),Math.round(r.height)]}))`),
       JSON.stringify([[68, 68], [68, 68]]));
+
+    // §4.3 step 3's combined response, which qualifies on BOTH counts: it added
+    // a paragraph to the fullest card in the app, and if that card overflows,
+    // the instruction pushed out of view is "Treat it now". jsdom asserts the
+    // WORDS are present and is blind to whether they are on screen.
+    await open(URL_UNDER_TEST);
+    await wait(600);
+    for (const d of ['0']) await tap(`/^${d}$/`);
+    await tap('/^Next$/'); for (const d of ['5', '0']) await tap(`/^${d}$/`);
+    await tap('/Work out the dose/'); await wait(600);
+    // `innerText`, not `textContent`, and that is the whole reason this one is
+    // not a duplicate of the integration test that asserts the same words:
+    // jsdom does not implement `innerText` at all, and `textContent` includes
+    // elements CSS has hidden. A card broken by `display: none` reads as
+    // present there and absent here.
+    check(`${width}px: a typed 0 blocks, and says the reading cannot be real`,
+      await ev(`document.body.innerText.includes('cannot read below') && document.body.innerText.includes('Treat it now')`), true);
+    check(`${width}px: the block card still contains itself`,
+      await ev(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), true);
+    check(`${width}px: and the treat-first instruction is ABOVE THE FOLD`,
+      await ev(`(()=>{const n=[...document.querySelectorAll('*')].find(e=>e.children.length===0&&/Treat it now/.test(e.textContent));if(!n)return 'missing';return n.getBoundingClientRect().bottom <= window.innerHeight})()`), true);
+
+    // §4.5's HI/LO guidance. It qualifies because the text behind it is the
+    // app's diabetic-ketoacidosis warning, and it rendered NOWHERE until this
+    // batch — a disclosure that silently fails to open restores that defect.
+    await open(URL_UNDER_TEST);
+    await wait(600);
+    await tap('/Meter showing HI or LO/');
+    // Same `innerText` argument as above: jsdom proves the disclosure's text is
+    // in the tree, and only a real browser proves it is on the screen.
+    check(`${width}px: the meter guidance opens, and reaches the ketone warning`,
+      await ev(`document.body.innerText.includes('ketoacidosis')`), true);
   });
 }
 
