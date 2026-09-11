@@ -121,6 +121,38 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: true,
   },
+  /**
+   * `npm run preview -- --host`, reached from a phone on the same wifi. This is
+   * the ONLY way to test the things jsdom and headless Chrome cannot reach —
+   * touch targets, the on-screen keyboard, Android's back gesture, and the
+   * insecure-origin APIs §11.5 and note 48 are about.
+   *
+   * **Why a hostname rather than the IP.** Browser storage is per-ORIGIN, and a
+   * router hands out a different lease whenever it feels like it: the app at
+   * `192.168.1.40` and the app at `192.168.1.10` are two different installs
+   * with two different databases, so every IP change lands on the first-run
+   * screen with the record gone. macOS advertises a stable mDNS name —
+   * `<machine>.local` — which resolves on the LAN without a DNS server and does
+   * not move when the lease does. One origin, so the record survives.
+   *
+   * **Why this line is needed at all.** Vite's preview server refuses a request
+   * whose `Host` header it does not recognise, and that refusal is a real
+   * protection: without it a malicious page could use the browser as a relay to
+   * a dev server through DNS rebinding. An unrecognised host gets a 403, which
+   * is what `<machine>.local` was getting.
+   *
+   * **Why `.local` is a narrow allowance.** The leading dot matches the domain
+   * and its subdomains, so this admits any machine's mDNS name rather than
+   * hardcoding one developer's — and mDNS names resolve only on the local
+   * link. They cannot be pointed at a public address, which is the attack the
+   * allowlist exists to stop.
+   *
+   * It applies to `vite preview` and nothing else. No part of it reaches the
+   * built output or GitHub Pages.
+   */
+  preview: {
+    allowedHosts: ['.local'],
+  },
   test: {
     environment: 'node',
     include: ['test/**/*.test.ts'],
