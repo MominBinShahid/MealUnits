@@ -698,6 +698,36 @@ product. Urine strips are cheap but sold by diagnostic suppliers rather than pha
 
 **Trigger: the appointment that also settles T11's attribution.** One conversation, both questions.
 
+### T13. Rewriting `check-plan.py` in TypeScript — CONSIDERED AND DECLINED
+
+**Momin's question, 2026-09-12: the project is TypeScript, so should the checker be?** Recorded as a
+decision rather than left open, because it is the kind of thing that gets re-proposed every time
+somebody new reads the repository.
+
+**No, and the reason is what a rewrite would have to reproduce, not what it would gain.** The script
+is **2,536 lines** carrying **24 checks** and **103 seeded mutations** that each prove a specific
+check still bites. That self-test is the asset — more than the checks are. A rewrite is only finished
+when all 103 are reproduced and passing, and until that moment the repository has a checker nobody
+can trust, guarding a specification for an app that doses insulin. The best available outcome is
+*exactly what exists today, in a different language*.
+
+**The honest case FOR it, so this is not a strawman:** one language in the tree, no `python3` in CI,
+and 15 places where the checker reads `.ts` files as TEXT could instead read them as code. That last
+one is real — `check_constants` regex-matches `export const NAME = value` and is therefore blind to
+any value form its pattern does not anticipate, which is precisely how it failed before v20.
+
+**But that benefit does not need a rewrite, and that is the third option.** The valuable half is
+*parsing config as data instead of matching it as prose*, and a ~30-line build step emitting
+`src/config.ts` as JSON buys it outright — no language change, no 103 mutations to re-earn. **If this
+entry ever becomes work, it is that step, not a port.**
+
+**Python is also not a poor fit here.** What the script does is read documents and compare them to
+each other; text analysis is the job Python is best at, and the thing it checks — Markdown — is not
+TypeScript either.
+
+**Trigger: none. This is declined, not deferred.** Reopen only if the checker needs real TypeScript
+AST analysis that a JSON emit cannot supply, and say which check needs it.
+
 ### T10. A sanity suite, separate from smoke — decide whether two files are worth it
 
 **Trigger: when `smoke.mjs` next feels too big, or when a change needs deep verification of one
