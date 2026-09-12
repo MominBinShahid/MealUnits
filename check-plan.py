@@ -316,18 +316,18 @@ RETIRED = [
     # withdrawn in v16 — §11.6's two original step-0 instructions. Both were wrong:
     # the upgrade needs Gatsby 4+ on a Gatsby 2 blog, and the denylist is inert
     # because gatsby-plugin-offline never configures navigateFallback [R2].
-    ("navigation-fallback denylist", 2),   # §11.6 withdrawal + §20.2 build row
-    ("Upgrade `gatsby-plugin-offline`", 3),  # same two sites
+    ("navigation-fallback denylist", 1),   # §11.6 withdrawal + §20.2 build row
+    ("Upgrade `gatsby-plugin-offline`", 2),  # same two sites
     # v17: §6.7's usualDose setting cut entirely. Surviving mentions are all in
     # correction notes recording the removal — count-pinned so it cannot return.
     # 6 in PLAN.md (all correction notes recording the removal) + 2 in this
     # script's docstrings (check_tool_rot and check_next_steps), both of which
     # explain a past defect by naming it.
-    ("usualDose", 8),
+    ("usualDose", 7),
     # v17 cut §6.7's field. This is the phrase BACKLOG.md and the header used to
     # describe it as live; pinned so the cut is verifiable and cannot be undone
     # silently — the claim at PLAN.md:45 has nothing else to check against.
-    ("usual-dose field", 2),
+    ("usual-dose field", 1),
     # v19 retired three wordings and pinned NONE of them — the same defect the
     # revision was written to fix, in the revision whose header named it [R1].
     # Both remaining occurrences are historical quotes explaining the round-17
@@ -342,23 +342,20 @@ RETIRED = [
     ("at first export", 1),
     ("Carries the text and its date, silently", 0),
     # NEXT-STEPS.md deleted in v20 (§20.5). This was its charter line. The one
-    # surviving occurrence is §20.3 quoting it to explain the removal; a second
-    # would mean the file, or its charter, has come back — and check_next_steps
-    # separately fails if the file itself reappears.
-    ("DELIBERATELY EPHEMERAL", 1),
-    # v21 deleted PLAN-v1..v19-superseded.md once the plan was final (§20.5).
-    # Only PLAN-v20-superseded.md remains on disk. Each name below survives as a
-    # single reference explaining the deletion — a second occurrence would mean a
+    # §20.3's quotation of it went with the 2026-09-13 prune, so the expected
+    # count is 0: ANY occurrence means the file, or its charter, has come back —
+    # and check_next_steps separately fails if the file itself reappears.
+    ("DELIBERATELY EPHEMERAL", 0),
+    # The snapshot archive is gone: v21 deleted PLAN-v1..v19-superseded.md once
+    # the plan was final, v24 deleted the last one. The 2026-09-13 prune removed
+    # the header paragraph that explained the deletion, so the expected count is
+    # now 0 for each — the strongest form of this pin. ANY occurrence means a
     # deleted snapshot is being described as present again.
-    # 2: §20.5's listing names the range start, and v21's header explains the
-    # deletion.
-    # v24 deleted the last snapshot; §20.5 now mentions the series once, in the
-    # sentence recording that the archive is gone.
-    ("PLAN-v1-superseded.md", 1),
-    ("PLAN-v9-superseded.md", 1),
+    ("PLAN-v1-superseded.md", 0),
+    ("PLAN-v9-superseded.md", 0),
     # 2: §20.5's listing names the range end, and v21's header explains the
     # deletion. Both are records OF the deletion, not descriptions of a live file.
-    ("PLAN-v19-superseded.md", 1),
+    ("PLAN-v19-superseded.md", 0),
 ]
 
 # Retired phrases are counted in TypeScript source too — ADDED 2026-09-11. The
