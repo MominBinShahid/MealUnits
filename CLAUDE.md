@@ -12,7 +12,7 @@ hypoglycaemic event, not a bug report.** Read that sentence before changing anyt
 | `docs/CLINICAL.md` | Every clinical decision with its source and its reversals. Written to be read by a physician |
 | `docs/BUILD-NOTES.md` | Decisions the build had to make that the plan does not state. Entries are cited as **"note N"**, never `§N` |
 | **`docs/CARBS.md`** | The carbohydrate reference — what Pakistani food contains per real portion, every value with its source, confidence and licence. **Data of record; `PLAN.md` governs what the app does with it.** It does not use `§`, because `§` means a `PLAN.md` section everywhere else |
-| `docs/BACKLOG.md` | Everything deliberately excluded, with the reason. Includes a **TECHNICAL** section (T1-T4) for toolchain work and open defects |
+| `docs/BACKLOG.md` | Everything deliberately excluded, with the reason. Includes a **TECHNICAL** section (`T0`-`T13`) for toolchain work and open defects |
 | `docs/design/` | The screen designs. `step-flow.html` is the one that shipped |
 | `README.md` | For someone arriving at the repository |
 
@@ -40,9 +40,9 @@ hypoglycaemic event, not a bug report.** Read that sentence before changing anyt
 
 ## Before you claim something works
 
-`npm run check` is typecheck, lint and 625 tests. `npm run mutate` is the 100%-or-fail mutation gate
-on `src/core` **and `src/state`** (§13.4, extended 2026-09-11 — the reducer holds the gates, and it
-scored 94% the day it was measured). Neither proves the specification is right — this project has shipped a wrong expected
+`npm run check` is typecheck, lint and 647 tests. `npm run mutate` is the 100%-or-fail mutation gate
+on `src/core`, `src/state` and `src/config.ts` (§13.4, extended 2026-09-11 — the reducer holds the
+gates, and it scored 94% the day it was measured). Counts go stale; the commands print the live ones. Neither proves the specification is right — this project has shipped a wrong expected
 value more than once, and the honest claim is always the validation actually performed.
 
 **`npm run smoke` is the layer the others cannot reach.** jsdom does not lay pages out, load fonts,

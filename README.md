@@ -100,10 +100,16 @@ launder a literal through a local constant.
 
 ### The testing, and what it is worth
 
-- **566 tests**, including 76 golden cases that each carry the hand derivation of their expected
+- **647 tests**, including 77 golden cases that each carry the hand derivation of their expected
   value in the fixture.
-- **100% mutation score** on the core (1347 mutants killed, 0 survived). Eighteen mutants are disabled
-  by name, each with the reason written at the line — see `BUILD-NOTES.md` note 16.
+- **100% mutation score** on the core, the state machine and `config.ts` — 1,681 mutants killed, 0
+  survived, 0 uncovered. A further 69 are **disabled by name**, each with its reason written at the
+  line it silences; `BUILD-NOTES.md` note 16 tables every one and says why it is disabled rather
+  than killed.
+
+Figures as of 2026-09-13. `npm run check` and `npm run mutate` print the current ones, and
+`reports/mutation/report.json` is the authority for the second line — a number copied out of it by
+hand has gone stale twice here already.
 - **Integration tests** driving the whole app through a real DOM and a real IndexedDB, because a
   refactor can swap two field mappings without touching a single line of arithmetic.
 

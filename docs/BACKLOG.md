@@ -13,8 +13,8 @@ not that it is technically hard. **Technical** is not a priority tier — it is 
 entry, waiting on something outside this project rather than on a decision of ours.
 
 **Numbers are identity, not rank.** The feature entries are ONE sequence partitioned across the
-tiers — 1-19 today — so a number stays stable enough to cite, while **position within a tier**
-carries the priority. That is why 18 and 19 sit above 1, and why 4a and 10a sit above 6. Do not
+tiers — 1-20 today — so a number stays stable enough to cite, while **position within a tier**
+carries the priority. That is why 20, 18 and 19 sit above 1, and why 4a and 10a sit above 6. Do not
 renumber to tidy it: reusing a number is how `PLAN.md` v14 came to assert three falsehoods about
 this file, which is why §20.3 says reference an entry by NAME, never by number.
 
@@ -67,6 +67,28 @@ gates the public launch. They get a position here when `T5` lands — and 19 nee
 any code regardless of where it sits.
 
 ## NEXT — likely v2, in rough priority order
+
+### 20. §8.2 expires results, never inputs — is that right?
+**UNRULED. A specification question, not a screen fix.** Raised 2026-09-13 out of build note 60.
+
+**What the app does today.** §8.2 flips `expired` fifteen minutes after a result, and the result
+screen and the block screen both say so. It clears nothing: the typed reading stays in the field.
+So any path that recalculates — "Work out the dose" again, or §7.4.1's override, which invalidates,
+sets `expired: false` and recomputes — produces a result the app considers **fresh**, from a reading
+that is not.
+
+**Why this is not obviously a defect.** §8.2's subject is the ANSWER going stale, and it says so
+plainly. Forcing re-entry of the reading is a different rule, and a heavier one: it puts a keyboard
+between a man and a dose he has already decided to take, every time he lingers.
+
+**Why it is not obviously fine either.** The reading is the input whose staleness §8.2 exists to
+worry about, and the one path where this is sharpest is the override — reached from a screen that
+DOES carry the staleness notice, one tap, no input screen in between, and the result is a LARGER
+dose than the one that was suppressed.
+
+**What a ruling would have to decide:** whether a stale reading blocks recalculation everywhere,
+only on the override, or nowhere; and if it blocks, whether it clears the field or only warns.
+Build note 60 records the half that is already shipped — the block screen honouring expiry.
 
 ### 18. Carbohydrate reference phase 2 — his own grams, per food
 **Trigger: once the list has been used enough that the estimates are visibly wrong for his plate.**
@@ -767,9 +789,10 @@ the only question is when the migration gets paid.* **That is a deferral, not a 
 verdict in a heading over a conceded argument is advocacy rather than a record.
 
 **So: the cost, plainly, and nothing recommended.** The script
-is **2,536 lines** carrying **24 checks** and **103 seeded mutations** that each prove a specific
-check still bites. That self-test is the asset — more than the checks are. A rewrite is only finished
-when all 103 are reproduced and passing, and until that moment the repository has a checker nobody
+is **2742 lines** carrying **27 checks** and **104 seeded mutations** that each prove a specific
+check still bites — figures as of 2026-09-13; `python3 check-plan.py --self-test` prints the
+current one. That self-test is the asset, more than the checks are. A rewrite is only finished
+when every one of them is reproduced and passing, and until that moment the repository has a checker nobody
 can trust, guarding a specification for an app that doses insulin. The best available outcome is
 *exactly what exists today, in a different language*.
 
