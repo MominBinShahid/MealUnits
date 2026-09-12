@@ -3771,6 +3771,41 @@ export const POLL_INTERVAL_MS      = 4000;
 
 Every value carries a comment naming what it does and which section decided it.
 
+#### Reference data is not configuration — RULED BY MOMIN 2026-09-12
+
+**His ruling, on being asked where a food table belongs:** *"these are not configurations but just
+data... this should never be in config or something else file."*
+
+**The distinction this section needs, and did not have.** A carbohydrate reference is roughly 150
+foods, each carrying grams, a portion weight and a confidence marker — several hundred numbers. They
+are not tunable parameters. **Nobody edits "one medium roti is 18 g" to change how the app behaves;
+it is a measurement of the world.** Putting it in `config.ts` would ask a file of decisions to hold
+a dictionary, and would drown the forty values that genuinely are decisions.
+
+**The test that separates the two:** *does changing this number change a decision the app makes, or
+a fact about the world?* `HYPO_LEVEL_1 = 70` is a decision, taken from a clinical definition, and
+belongs above. A roti's carbohydrate content is not a decision anyone gets to take.
+
+**So reference data lives in its own module — `src/data/` — and the lint rules exempt it**, the same
+way they exempt the `test` directory, because golden cases must carry literal values rather than
+importing the
+constants they exist to pin.
+
+**Two conditions, because §11.8's value is that it has had exactly one exemption in its life and a
+second must not soften it into a habit:**
+
+1. **The module holds data and nothing else.** No thresholds, no behaviour, no branches. The moment
+   a `if (grams > X)` appears in `src/data/`, X is a decision wearing data's clothes and belongs in
+   `config.ts`.
+2. **Every row carries its source and its confidence.** A number nobody can trace is *worse* in a
+   data file than in `config.ts`, because `config.ts` at least has a section header saying who may
+   change it. `docs/CARBS.md` is the reasoning; the module is the payload; **they must agree, and
+   `check-plan.py` checks that they do** rather than trusting that they will.
+
+**What this does NOT license.** It is not a general escape from §11.8. A number that any part of the
+app branches on, compares against, or was chosen rather than measured stays in `config.ts`, wherever
+it physically sits.
+
 #### There are no prescription defaults, and that is the point — CORRECTED IN v9
 
 **v8's file shipped `DEFAULT_TARGET = 150`, `DEFAULT_ISF = 30`, `DEFAULT_ICR = 10` under the
