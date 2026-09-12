@@ -22,6 +22,8 @@ import {
   KETONE_ADVISORY,
   RANGE,
   RECHECK_MINUTES,
+  RESULT_EXPIRY_MINUTES,
+  STACK_ADVISE_HOURS,
   STACK_SUPPRESS_HOURS,
 } from '../config.js';
 import { formatHundredths } from '../core/decimal.js';
@@ -39,6 +41,69 @@ export function units(hundredths: number): string {
 
 export const COPY = {
   appName: 'MealUnits',
+
+  /**
+   * §10.6's explanation page — five sections added 2026-09-12, each for a term
+   * the app already used and had never defined.
+   *
+   * Every window here is INTERPOLATED. The page describes gates whose numbers
+   * live in config.ts, and prose that states them as digits drifts silently the
+   * day one changes — the defect fixed in `stacking.missingHistory`, which said
+   * "4 hours" as characters while the same file read the constant eleven lines
+   * away. `check-plan.py` now catches that class.
+   */
+  explain: {
+    namesTitle: 'The names your doctor uses',
+    namesLead: 'Those two numbers have clinical names, and your doctor will use them.',
+    /**
+     * The two clinical definitions are REUSED from settings rather than written
+     * again. Two copies of a clinical definition is two things to keep in step,
+     * and §10.2's premise is that the words are the specification — so when T5
+     * changes how those examples read, both places change together.
+     */
+    namesClose:
+      'Both are in Settings, labelled ISF and ICR, so if your doctor says "your ISF is 30" you know which field that is.',
+
+    carbTitle: 'What counts as carbohydrate',
+    carbBody: [
+      'The reading comes off your meter. The grams do not — that number is yours, and it is the one thing here the app takes entirely on trust. What it is counting is the carbohydrate in the food: starch and sugar. Rice, roti, potato, biryani, daal, fruit and the sugar in chai all count. A 250 g plate of biryani is about 50 g of carbohydrate, so this is never the weight of what is on the plate.',
+      'Fibre is carbohydrate as well, but your body does not absorb it, so it does not raise blood sugar the way starch does. Some clinicians subtract it from the total and some do not. Ask yours which they want, then do the same thing every meal — the app cannot tell which rule you used, and a figure you reach the same way each time is worth more to it than one that is right once.',
+      'Protein and fat are not carbohydrate and do not belong in this number. They do move blood sugar, hours later, and that is in "What this app does not know about" below.',
+    ] as const,
+
+    stackingTitle: 'What "stacking" means',
+    stackingBody: [
+      'Fast insulin does not finish when your blood sugar comes down. Humulin R goes on working for hours after you inject it. Take a correction while an earlier dose is still acting and the two add together, so the total can take you lower than either one was meant to. That is stacking, and it is the word the app uses on the result screen and in Settings.',
+      `For the first ${String(STACK_SUPPRESS_HOURS)} hours after a dose you logged, the app holds the correction back and gives you the meal dose alone. It says "Correction held back", and the correction is still there in the working, struck through, with its reason. The meal part is never held back — food needs covering whatever is on board. And a correction that makes the dose smaller, because you are at or below target, is applied in full every time: holding that one back would give you more insulin, not less.`,
+      `Between ${String(STACK_SUPPRESS_HOURS)} and ${String(STACK_ADVISE_HOURS)} hours the correction is applied in full and the app tells you the last dose may still be acting. After ${String(STACK_ADVISE_HOURS)} hours it says nothing. None of this is a model of how much insulin is left in you — how long a dose lasts depends on how large it was, so the app refuses to draw that curve.`,
+      'If you need the correction anyway, because the site did not absorb or the insulin has been in the heat or you are ill, "Why is this smaller?" on the result screen adds it back. It tells you first how far the earlier dose could still take you on its own. Using it is recorded on the row, so the pattern is in your history.',
+    ] as const,
+
+    missingTitle: '"No recent dose recorded"',
+    missingBody: `The stacking check knows one thing: what you logged. That line appears when the app has no recent dose it can reason from AND no confidence in the record either. It does not mean you have no insulin on board. The app will not tell you that, because it cannot know it. If you injected within the last ${String(STACK_SUPPRESS_HOURS)} hours, nothing has been held back from the dose in front of you — read it as a correction sitting on top of insulin that is still working, and decide from there. Logging every injection is what keeps this check from having to say this at all.`,
+    /**
+     * BOTH halves of the condition are load-bearing and were got wrong once: the
+     * caveat fires only when there is no usable record AND provenance is suspect
+     * (`needsMissingHistoryCaveat`, and `deriveHistory`'s five conditions). v4
+     * dropped the provenance half and the line appeared after every overnight
+     * gap. Enumerating them is what stops the copy describing v4's bug.
+     */
+    missingConditions: [
+      'nothing logged at all',
+      'the newest row predates this install',
+      'the history was just imported',
+      'a row was set aside for a time the app cannot believe',
+      'a row was dropped as unreadable when the app opened',
+    ] as const,
+
+    expiryTitle: `Why a result expires after ${String(RESULT_EXPIRY_MINUTES)} minutes`,
+    expiryBody: [
+      `A dose is only as good as the reading it came from. ${String(RESULT_EXPIRY_MINUTES)} minutes after it is worked out the result dims, the screen says what time it was from, and "Check again" becomes the first thing on it. Nothing is deleted. The number is still there to read, and if you have already injected you can still log it — the row is stamped at the moment you tap, not at the moment the dose was worked out, and the button says so.`,
+      `What does not survive is a double-check you already tapped through. Work the dose out again and the app asks again, because by then the ${String(STACK_SUPPRESS_HOURS)}-hour window may have passed, a correction that was being held back can come back, and the new total can be larger than the one you confirmed. A low reading goes stale the same way: the block tells you what time that reading was and asks for a fresh one, and it goes on telling you to treat first.`,
+    ] as const,
+
+    whatDoTheseMean: 'What do these mean?',
+  },
 
   // ── §3's bands ────────────────────────────────────────────────────────────
   bandC: {
