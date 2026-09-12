@@ -11,6 +11,7 @@ hypoglycaemic event, not a bug report.** Read that sentence before changing anyt
 | **`docs/PLAN.md`** | **The specification and the single source of truth.** 25 revisions, 22 adversarial review rounds. `§N` anywhere in this repository means a section of this file |
 | `docs/CLINICAL.md` | Every clinical decision with its source and its reversals. Written to be read by a physician |
 | `docs/BUILD-NOTES.md` | Decisions the build had to make that the plan does not state. Entries are cited as **"note N"**, never `§N` |
+| **`docs/CARBS.md`** | The carbohydrate reference — what Pakistani food contains per real portion, every value with its source, confidence and licence. **Data of record; `PLAN.md` governs what the app does with it.** It does not use `§`, because `§` means a `PLAN.md` section everywhere else |
 | `docs/BACKLOG.md` | Everything deliberately excluded, with the reason. Includes a **TECHNICAL** section (T1-T4) for toolchain work and open defects |
 | `docs/design/` | The screen designs. `step-flow.html` is the one that shipped |
 | `README.md` | For someone arriving at the repository |
