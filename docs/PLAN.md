@@ -4542,6 +4542,15 @@ should have gone on design.** `check-plan.py` catches that class.
 
 **It runs before every dispatch to reviewers, and a finding is fixed before the round opens.**
 
+**And since 2026-09-12 it runs in CI, which is the half that was missing for eight months
+[R26].** Until then this section said "runs before every dispatch" and nothing made that true:
+`check-plan.py` appeared nowhere in `.github/`, so twenty-four checks and a 103-mutation self-test
+fired only when somebody remembered to type them. Found the day a new rule was added under this
+section's own maintenance obligation — and the rule could not have caught a regression on anybody's
+pull request. A guarantee enforced by memory is the shape T1 warns about: it goes quiet rather than
+failing loudly. The `plan` job runs the self-test first, because a checker whose own seeded mutations
+escape has a worthless "clean."
+
 **The maintenance obligation is binding, and exists because an unmaintained checker is worse than
 none** — it reports "clean" while the document rots underneath it:
 
