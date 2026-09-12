@@ -219,7 +219,19 @@ export const COPY = {
      * §7.5 — "no usable recent record" must never silently assert "no recent
      * insulin".
      */
-    missingHistory: `No recent dose recorded. If you injected within the last 4 hours, this correction may stack.`,
+    /**
+     * The window is INTERPOLATED, not typed. Until 2026-09-12 this string said
+     * "the last 4 hours" as characters while `pending` eleven lines down already
+     * read `${String(STACK_SUPPRESS_HOURS)}` from config — the same file doing it
+     * both ways, agreeing only by coincidence. Change the constant and this
+     * sentence would have gone on naming the old window, in the one message
+     * whose job is warning that a correction may stack.
+     *
+     * §11.8's lint rules cannot see it: they match numeric LITERALS, and a digit
+     * inside a template string is just a character. `check-plan.py` catches the
+     * class now (§20.3 — the checker gains the check in the edit that fixes it).
+     */
+    missingHistory: `No recent dose recorded. If you injected within the last ${String(STACK_SUPPRESS_HOURS)} hours, this correction may stack.`,
     /** §7.6 — the app never converts "untrustworthy record" into "no insulin". */
     invalidTime: 'One dose record has an invalid time and is being ignored.',
     negativeApplied:
@@ -500,7 +512,6 @@ export const COPY = {
     deltaTitle: 'Check this change',
     delta: (was: string, now: string): string => `was: ${was}\nnow: ${now}`,
     softConfirm: 'That is outside the usual range. Is it right?',
-    /** §1.3 — visually separated, and labelled so it cannot read as a dose. */
     /**
      * §8.5 — "setup states the assumption". It never did: until 2026-09-12 the
      * string `U-100` appeared nowhere in `src/` except a passing mention in the
@@ -515,6 +526,7 @@ export const COPY = {
      */
     unitAssumption:
       'These are units of U-100 insulin — the standard strength, and what Humulin R is. There is no setting for any other strength, deliberately: one that could be set wrong would cause the exact 2.5x error it was meant to prevent. If your insulin is not U-100, these numbers are not right for it.',
+    /** §1.3 — visually separated, and labelled so it cannot read as a dose. */
     basalTitle: 'Your Lantus dose',
     basalNote: 'Set by your doctor, not calculated here.',
     modeQuestion: 'What can your syringe measure?',

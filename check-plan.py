@@ -1934,6 +1934,74 @@ def check_mock_doses(corpus):
                            exact, shown))
     return out
 
+def check_copy_hardcodes_config(_plan):
+    r"""Config values typed as digits inside user-facing copy.
+
+    `src/ui/copy.ts:222` read "if you injected within the last 4 hours" as
+    CHARACTERS while `pending`, eleven lines below it, already interpolated
+    `${String(STACK_SUPPRESS_HOURS)}` from config. The same file, the same
+    window, two mechanisms — agreeing only because nobody had changed the
+    constant yet. Change `STACK_SUPPRESS_HOURS` to 6 and the sentence whose
+    entire job is warning that a correction may stack would have gone on naming
+    the old window.
+
+    §11.8's two lint rules cannot reach it. Both match numeric LITERALS, and a
+    digit inside a template string is a character, not a literal — the same way
+    `.5` escaped through a raw beginning with a dot and `-100` escaped through a
+    unary minus carrying the exemption. Three doors now, one species: a number
+    leaving config.ts by a route the rules do not watch.
+
+    Deliberately narrow. It fires only where a constant names its own unit —
+    `*_HOURS`, `*_MINUTES`, `*_DAYS`, `*_SECONDS` — and copy states that value
+    followed by that unit word. Worked examples ("4.4 becomes 4") and numbers
+    that merely coincide are not flagged, because a check that cries wolf is one
+    people learn to route around.
+    """
+    config = os.path.join(HERE, "src", "config.ts")
+    copy = os.path.join(HERE, "src", "ui", "copy.ts")
+    if not os.path.exists(config) or not os.path.exists(copy):
+        return []
+
+    with open(config, encoding="utf-8") as fh:
+        text = fh.read()
+    units = {"HOURS": "hours?", "MINUTES": "minutes?", "DAYS": "days?",
+             "SECONDS": "seconds?"}
+    consts = []
+    for m in re.finditer(
+            r"^export const\s+([A-Z_][A-Z0-9_]*_(HOURS|MINUTES|DAYS|SECONDS))\s*=\s*(\d+)\s*;",
+            text, re.M):
+        consts.append((m.group(1), m.group(2), int(m.group(3))))
+    if not consts:
+        return []
+
+    with open(copy, encoding="utf-8") as fh:
+        body = fh.read()
+    out = []
+    for name, unit, value in consts:
+        word = units[unit]
+        # The value written out, followed by its unit word. Skip the line if the
+        # constant is interpolated on it — that is the correct form.
+        for m in re.finditer(r"\b%d\s+(?:%s)\b" % (value, word), body):
+            line_no = body.count("\n", 0, m.start()) + 1
+            line = body.splitlines()[line_no - 1]
+            if name in line:
+                continue
+            # Comments QUOTE copy — including the comment explaining this very
+            # defect, and a note recording what a screen used to say. Both
+            # tripped the first version of this check, which is the cry-wolf
+            # failure its own docstring warns about. A comment cannot drift
+            # against config because nobody reads it to a patient.
+            if line.lstrip().startswith(("*", "//", "/*")):
+                continue
+            if not ("`" in line or "'" in line or '"' in line):
+                continue
+            out.append(
+                "src/ui/copy.ts:%d states \"%s\" as text while %s = %d owns that "
+                "value — interpolate it (§11.8; the lint rules cannot see a digit "
+                "inside a string)" % (line_no, m.group(0), name, value))
+    return out
+
+
 def check_file_listing(plan):
     """13. §20.5's file listing against the actual directory, both directions.
 
@@ -2023,6 +2091,7 @@ CHECKS = [
     ("checker describing retired things", check_tool_rot, "plan"),
     ("unbalanced bold markers", check_bold_balance, "plan"),
     ("PLAN references BACKLOG by number", check_plan_against_backlog, "plan"),
+    ("config values typed as digits in copy", check_copy_hardcodes_config, "plan"),
     ("§20.5 listing vs the directory", check_file_listing, "plan"),
     ("NEXT-STEPS.md has come back", check_next_steps, "plan"),
     ("a mockup showing an impossible dose", check_design_arithmetic, "corpus"),
