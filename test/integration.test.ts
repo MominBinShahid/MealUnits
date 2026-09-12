@@ -416,6 +416,26 @@ describe('§10.6 the five terms the app used and never explained', () => {
     expect(page).toContain(`After ${String(STACK_ADVISE_HOURS)} hours it says nothing`);
   });
 
+  it('and setup can reach the page, which is where ISF and ICR are first asked for', async () => {
+    await boot();
+    await tap('\u2610  I have read this');
+    await tap('I understand — use at my own risk');
+    expect(text()).toContain('Your prescription');
+
+    // The button list is gated on !firstRun, so until 2026-09-12 the one moment
+    // the app asks for these numbers was the one moment the explanation was
+    // unreachable.
+    await tap('What do these mean?');
+    expect(text()).toContain('The names your doctor uses');
+
+    // And back returns to SETUP, not the calculator. Landing on the calculator
+    // mid-setup exposes a foot nav whose Settings renders firstRun: false —
+    // §10.6's inescapable gate walked around.
+    await tap('Back');
+    const after = text();
+    expect(after).toContain('Your prescription');
+    expect(after).not.toContain("What's your blood sugar");
+  });
 });
 
 describe('§10.6 back from "How this works" returns where you came from', () => {
