@@ -65,9 +65,17 @@ nowhere to survive. §11.2's list now names them.
 
 ## 5. §6.4's bound is checked twice, on purpose
 
-`src/core/resolve.ts`. The second check is unreachable given §4.5's ranges — see note 16's table. It
-stays because §6.2 gives `bound_failure` a refusal screen, and an edit that made it reachable must
-land somewhere that can render one.
+`src/core/resolve.ts`. §4.3 puts the bound at step 9 and the rounding at step 10, but §6.4 gives the
+check "a one-increment allowance for the rounded dose" — which does not exist until step 10. So the
+primary check runs at step 9 as written, and a second assertion including the allowance runs after
+step 10. **Both sit ahead of §6.2's confirmation**, so "the app is wrong, not the user" is never
+replaced by a prompt asking him to re-read his inputs.
+
+**The margin at the top is exactly zero, and that is why the strict `>` matters.** At the maximum
+reachable dose the two sides are equal, not merely close — 45 = 45 at the shipped prescription,
+pinned by the golden case *"§6.4 — the maximum reachable dose is NOT a bound failure"*. A
+one-character drift to `>=` refuses a legal maximal dose. Note 16's table records why the mutants
+here are disabled rather than killed.
 
 ## 6. A blocked low carries every input error alongside it `[RULED 2026-09-09: keep it]`
 
@@ -114,6 +122,10 @@ gap falls under one device pixel at launcher size and renders as a filled centre
 artwork. Notes 50, 53 and 55 are merged here — 55 is the one that matters: **Android uses the
 MASKABLE icon**, so the `any` icon's scale was never what was on the home screen.
 
+**Open, and recorded rather than resolved:** the blue circle is the IDF's registered symbol with
+published usage guidance. **Worth reading before any app-store listing.** Nothing about the current
+GitHub Pages deployment turns on it.
+
 ## 11. The calendar functions take an explicit time zone `[RULED 2026-09-11: the device's]`
 
 `src/core/calendar.ts`. Passed in as data, never read from the environment — that is what keeps
@@ -123,9 +135,11 @@ MASKABLE icon**, so the `any` icon's scale was never what was on the home screen
 
 Fixed. Compute expected values, do not recall them.
 
-## 13. `BLOG-FIX.md` §6's critique of the avatar CSS was wrong, and is withdrawn
+## 13. The avatar-CSS critique in `BLOG-FIX.md` was wrong, and is withdrawn
 
-Withdrawn; the section is gone from `BLOG-FIX.md`.
+Withdrawn, and out of scope besides — that file is Momin's and is untouched. The heading here used to
+name it as "`BLOG-FIX.md` §6", which broke this file's own notation rule two ways: the sigil means a
+`PLAN.md` section, so it resolved silently against §6, and BLOG-FIX renumbered in the prune anyway.
 
 ## 14. `Intl` renders September as "Sept" in en-GB, so month names are spelled out
 
@@ -145,7 +159,7 @@ unverified" would have sent someone writing tests for code the existing tests al
 **Unpin when** the runner's own devDependency moves past vitest 4. `BACKLOG.md` carries this as the
 vitest half of the toolchain work.
 
-## 16. The 100% mutation score is real, and 21 directives silence mutants by name `[RULED 2026-09-13]`
+## 16. The 100% mutation score is real, and directives silence mutants by name `[RULED 2026-09-13]`
 
 `npm run mutate`, `thresholds.break: 100`, over `src/core`, `src/state` and `src/config.ts`.
 
@@ -195,7 +209,14 @@ header you add at the end.
 
 ## 19. Two things that looked like bugs in the browser run and were not
 
-Both were the test harness, not the app.
+**Both were the app working correctly**, recorded because either would read as a defect to anyone
+re-running the walkthrough.
+
+The update prompt appearing mid-run is §11.4 doing its job: the new worker installed, waited, and
+offered the swap rather than taking it. And **the dose coming out 5 instead of 11 was §7.4's
+stacking gate firing on real data** — an 11-unit dose had been logged into the same profile minutes
+earlier, so the positive correction was suppressed and the meal covered alone, struck through with
+its reason exactly as §10.3 requires. The gate fired on its own, unprompted, on a real log.
 
 ## 20. Transient interface state lives outside the reducer `[RULED 2026-09-11]` `[RULE]`
 
@@ -311,8 +332,15 @@ Guessing at a layout defect twice costs more than measuring it once. See note 45
 
 ## 42. The keypad was narrower than the specification, and the rule was already in the core
 
-The constraint existed in `config.ts` and the stylesheet did not honour it. A number in one file and
-a layout in another is not enforcement.
+**Why the entry cap is four digits when both fields max out at three:** §4.2's grammar admits one
+digit more than the range does (`GRAMMAR_INTEGER_DIGIT_SLACK`), so a typed `6000` is answered with
+"that is more digits than this can be" rather than by a key that silently stops responding. **A key
+that does nothing reads as broken hardware**, which is worse than a message.
+
+**The defect it turned up:** `MAX_ENTRY_DIGITS` was one flat cap over both fields counting integer
+and fractional digits together, so `100.25` was blocked at `100.2` — while `core/parse.ts` already
+held the correct per-part rule. The constraint existed in the core and the keypad did not honour
+it.
 
 ## 43. The greeting waves, three times, and then stops
 
@@ -365,7 +393,16 @@ Merged into note 10.
 
 ## 51. A third dead end, and the leading zero
 
-`0` typed ahead of a digit parsed as a separate value. Fixed in `parse.ts`.
+**Same class as notes 38 and 47, reached a third way.** §4.3 step 5 is emphatic — *"blank and blank
+is no result, NOT '0 units'"* — and the core returned exactly that. **The interface rendered nothing
+for it.** The outcome existed; the words did not. Note 39's dead-end sweep walks the everyday path
+with values in the fields, so it could not see this one. Two messages now, because the two
+`no_result` branches mean different things: nothing entered is a prompt, while a reading at or below
+target with no carbohydrate is a real answer.
+
+**And the leading zero: the dose was never wrong.** §4.2's grammar accepts leading zeros and
+`Number('0008')` is 8. The DISPLAY was wrong — a screen whose whole job is showing one figure
+clearly was showing `0008`.
 
 ## 52. Vibration instead of a sound `[RULED 2026-09-13: the vibration stands]`
 
@@ -451,6 +488,13 @@ computed, which is not the same as proving the gate reads it.**
 `lastLocalWriteAtMs` was stamped by any local write, so recording a READING cleared the
 just-imported caveat. Renamed `lastLocalInjectionAtMs` and stamped only on an injection. **The wrong
 name invited the wrong write site**, which is note 7's definition being defeated by a field name.
+
+**The residual, accepted rather than migrated.** An install that imported and then recorded a
+reading BEFORE this fix carries a trusted-provenance stamp that cannot be re-derived — the event
+that set it wrongly left no trace. The reversal, if it is ever wanted, is a one-time migration
+nulling the stamp wherever `lastImportAtMs` is set. The affected population was judged plausibly
+zero, which is why it was accepted; the recipe is here so "plausibly" does not have to be
+re-derived.
 
 ## 63. §11.8's lint rules had two holes, found by probing rather than reading `[RULE]`
 

@@ -168,8 +168,11 @@ describe('§18.14 the wizard', () => {
   });
 
   it('GOING BACK NEVER DISCARDS A COMMITTED INPUT — the named consequence', () => {
-    // §18.14: "That is new machinery, it is in the §17 step 5 budget, and it is
-    // named here so it is not discovered during the build."
+    // §18.14: the wizard is "a screen sequence with a position, a back path, and
+    // the rule that GOING BACK NEVER DISCARDS A COMMITTED INPUT" — named before
+    // the build rather than discovered during it. (The quotation here used to
+    // cite "the §17 step 5 budget"; §17 no longer has steps, and a test quoting
+    // plan text that no longer exists is the rot §20.3 sweeps for.)
     let state = run([...typed('330', '50'), { type: 'calculate', nowMs: NOW }]);
     expect(state.step).toBe('result');
     state = reduce(state, { type: 'wizard_back' });

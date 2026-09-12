@@ -40,9 +40,9 @@ these steps have a dependency that is not obvious from reading them.
 | # | Step | State | Why here |
 |---|---|---|---|
 | 1 | **Push and deploy.** Blog first (§20.2), then this repository | **DONE 2026-09-07** | §1.4 — the app competes with a fixed 24-25 units injected blind |
-| 2 | **Confirm updates reach a real phone** | **DONE.** Three deploys have reached Momin's device, each after a full app restart | `T4` is therefore narrowed: delivery works, only the in-app "a newer version is ready" bar is unproven |
-| 3 | **Rule on the `[CONFIRM]` build notes**, one at a time | **IN PROGRESS.** Note 1 ruled 2026-09-09 | Moved AHEAD of `T5` on Momin's instruction. Each records a decision already implemented; the question is whether it was right |
-| 3a | **Prune every Markdown document**, on Momin's instruction 2026-09-11: `PLAN.md`, `BUILD-NOTES.md`, `BACKLOG.md`, `CLINICAL.md`, `BLOG-FIX.md`, `README.md`, `CLAUDE.md` | | **After step 3**, because the `[CONFIRM]` rulings decide what the notes still have to carry. *"We can't keep everything for ever, so we will only keep things that earn their place."* A finished `[FYI]` record of a bug fixed in week one is not earning 1,577 lines of attention, and 4,545 lines of `PLAN.md` is now read by people who need the live rules, not the round-by-round history of how they were reached. What comes out and what stays is a judgement per entry, so it is its own pass |
+| 2 | **Confirm updates reach a real phone** | **DONE.** Both paths confirmed on Momin's device: the in-app bar renders and can be tapped, and a full restart activates a waiting worker anyway | `T4` closed 2026-09-09 |
+| 3 | **Rule on the `[CONFIRM]` build notes**, one at a time | **DONE 2026-09-13.** No entry carries the tag any more. 52 and 59 ruled keep; 16 rewritten to stop hand-carrying counts; 60 split, its open half now entry 20 | Moved AHEAD of `T5` on Momin's instruction. Each recorded a decision already implemented; the question was whether it was right |
+| 3a | **Prune every Markdown document** | **DONE 2026-09-13.** `BUILD-NOTES.md` lost most of its body, `PLAN.md` its revision history, `BLOG-FIX.md` its investigation; `CLINICAL.md` and `CARBS.md` untouched. `git log` has the figures — they rot if written here | **After step 3**, because the `[CONFIRM]` rulings decided what the notes still had to carry. *"We can't keep everything for ever, so we will only keep things that earn their place."* Every build-note NUMBER survived even where its body did not — many are cited from source and tests |
 | 4 | **`T5` — the audience change.** Empty prescription fields with the strengthened hints, and the confirmation threshold made relative | | **This gates step 5.** Ranking an app that prefills a stranger's dosing ratios is the version of this that goes wrong |
 | 5 | **`4a` + `T6` — search and measurement.** Open Graph, canonical, sitemap, Search Console | | After `T5`, never before |
 | 6 | **`T3` — Preact** | | Kills the whole render-teardown defect class by construction |
@@ -600,6 +600,25 @@ reads), `README.md`, `CLAUDE.md`, and `docs/PLAN.md` §1.
 
 **Trigger: before the app is promoted anywhere.** Deploying it at a URL is not promotion; item 4a's
 search work is.
+
+### T14. Vitest is pinned to 4.x, and the pin is not ours to lift
+**Trigger: when `@stryker-mutator/vitest-runner`'s own devDependency moves past vitest 4.**
+
+**What:** `package.json` holds `vitest: ^4.1.11`. Vitest 5 is out.
+
+**Why it cannot be taken.** The runner activates a mutant with
+`ctx.provide('activeMutant', id)` and reads it back with `inject()` inside the test worker. Under
+Vitest 5 the value never arrives, so **every mutant runs against unmutated code and survives.** The
+first run under 5 scored **2.57% against 308 passing tests** — not a testing gap, a tool reporting
+that nothing happened. For a project whose merge gate is a 100% mutation score, a working runner is
+worth more than the newest minor.
+
+**How to tell it is fixed rather than guessing:** read the `Ran N tests per mutant on average` line,
+not the score. 1.28 means the mutants are not being activated; 9.05 is the healthy figure on 4.1.11.
+
+**Recorded 2026-09-13.** Build note 15 pointed at this file for it and there was no entry here to
+point at — the pin lived only in a build note and in `package.json`'s caret. Same class as the carbs
+phases: a constraint with no home is a constraint nobody will find.
 
 ### T6. Analytics and Search Console, for a public app
 
