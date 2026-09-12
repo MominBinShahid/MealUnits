@@ -10,7 +10,7 @@ hypoglycaemic event, not a bug report.** Read that sentence before changing anyt
 |---|---|
 | **`docs/PLAN.md`** | **The specification and the single source of truth.** `§N` anywhere in this repository means a section of this file. Its revision history was pruned on 2026-09-13; `git log` is the record |
 | `docs/CLINICAL.md` | Every clinical decision with its source and its reversals. Written to be read by a physician |
-| `docs/BUILD-NOTES.md` | Decisions the build had to make that the plan does not state. Entries are cited as **"note N"**, never `§N`, and every number resolves — 24 of them are cited from source and tests. `[RULED]` is binding, `[RULE]` is a constraint the code does not carry |
+| `docs/BUILD-NOTES.md` | Decisions the build had to make that the plan does not state. Entries are cited as **"note N"**, never `§N`, and every number resolves, because many are cited from source and tests. `[RULED]` is binding, `[RULE]` is a constraint the code does not carry |
 | **`docs/CARBS.md`** | The carbohydrate reference — what Pakistani food contains per real portion, every value with its source, confidence and licence. **Data of record; `PLAN.md` governs what the app does with it.** It does not use `§`, because `§` means a `PLAN.md` section everywhere else |
 | `docs/BACKLOG.md` | Everything deliberately excluded, with the reason. Includes a **TECHNICAL** section (`T0`-`T13`) for toolchain work and open defects |
 | `docs/design/` | The screen designs. `step-flow.html` is the one that shipped |
