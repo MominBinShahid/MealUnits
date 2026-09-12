@@ -3687,8 +3687,8 @@ schema no way to express it.
 baseline, no entry count), had no invalid-input or invalid-settings outcome, and carried a single
 `band` when B and E can co-occur. **This is the same defect class three revisions running** — v1
 for the ceiling, v2 for the log, v3 for the advisory: each revision added a feature the test
-schema could not represent. §17's build order now requires the schema extension to land **in the
-same step as the feature**, not after it.
+schema could not represent. §17's five-leg checklist now requires the schema extension to land **in
+the same change as the feature**, not after it.
 
 **Zero assertions must distinguish negative zero from positive zero** — ordinary equality does
 not, and JSON serialization erases the distinction. [R2]
@@ -4274,6 +4274,12 @@ The rule is enforced mechanically rather than by memory: the retired-phrase swee
 drift scan read every live file, so retiring something in one document flags every other mention.
 **What that cannot do** [R1]: it is automatic only *after* a retirement is pinned. **Retiring a
 phrase and adding its pin are one edit, not two.**
+
+**Reference a companion document's entries by NAME, never by number.** Numbers get renumbered and
+the pointer rots silently: v14 referenced two `BACKLOG.md` entries by number after those numbers had
+been reused, and asserted three falsehoods in one paragraph as a result. `check_plan_against_backlog`
+enforces it. `BACKLOG.md`'s own header carries the other half — that its numbers are identity rather
+than rank, so nobody renumbers the file to tidy it.
 
 #### The designs follow this document, not the other way round
 
