@@ -317,7 +317,7 @@ RETIRED = [
     # the upgrade needs Gatsby 4+ on a Gatsby 2 blog, and the denylist is inert
     # because gatsby-plugin-offline never configures navigateFallback [R2].
     ("navigation-fallback denylist", 1),   # §11.6 withdrawal + §20.2 build row
-    ("Upgrade `gatsby-plugin-offline`", 2),  # same two sites
+    ("Upgrade `gatsby-plugin-offline`", 1),  # same two sites
     # v17: §6.7's usualDose setting cut entirely. Surviving mentions are all in
     # correction notes recording the removal — count-pinned so it cannot return.
     # 6 in PLAN.md (all correction notes recording the removal) + 2 in this
