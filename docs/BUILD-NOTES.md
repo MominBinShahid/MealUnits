@@ -1321,14 +1321,14 @@ None of notes 41, 42 or 44 was visible to 559 unit tests or to the 100% mutation
 lay pages out, load fonts, enforce a content security policy, or run a service worker. Every one was
 found by Momin on a real device.
 
-`npm run smoke` drives a served build over the DevTools Protocol and asserts **thirty** things
+`npm run smoke` drives a served build over the DevTools Protocol and asserts **thirty-four** things
 that only exist in a real browser [corrected twice. 2026-09-11: this said twelve, which was right
 when written — counting each width's run separately, as this list does. The back-gesture block (four
 checks, note 47's regression) and the insecure-origin run (four checks, note 48) were added
 afterwards and the count was not. 2026-09-12: twenty was already stale when written — the two
 screens of note 49's batch had just added four more. **The count drifts every time the suite grows,
 which is the third time it has been wrong; it is written here because a number in prose has no test
-holding it.** A full local run prints 30 PASS, a remote one 26]:
+holding it.** 2026-09-12, again: the food list added four more. A full local run prints 34 PASS, a remote one 30 — the difference is the four insecure-origin checks a remote run cannot make]:
 
 - a first visit loads the document **once** (note 44)
 - the worker takes control, and a webfont is actually in use

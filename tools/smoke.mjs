@@ -209,6 +209,28 @@ for (const [width, port] of [[412, 9302], [1440, 9303]]) {
 
 // 3. The everyday path must reach a logged row, with nothing on the console.
 rmSync('/tmp/mealunits-smoke-path', { recursive: true, force: true });
+// §11.8's food list, at sanity level only. It is read-only, so the one thing
+// worth proving in a real browser is that the door opens, the table is behind
+// it, and coming back does not cost the number already typed.
+await session('/tmp/mealunits-smoke-foods', 9307, 412, async ({ ev, open }) => {
+  await open(URL_UNDER_TEST);
+  const tap = await setUp({ ev });
+  for (const d of ['1', '8', '0']) await tap(`/^${d}$/`);
+  await tap('/^Next$/'); for (const d of ['5', '0']) await tap(`/^${d}$/`);
+
+  check('the food list is offered on the carbohydrate step', await ev(`/Food list/.test(document.body.innerText)`), true);
+  await tap('/^Food list$/'); await wait(400);
+  check('and it opens with the table behind it', await ev(`/Tandoor naan/.test(document.body.innerText)`), true);
+  check('the caveat is above the numbers, not below them', await ev(
+    `document.body.innerText.indexOf('Estimates, not measurements') < document.body.innerText.indexOf('Tandoor naan')`), true);
+
+  await tap('/^Back$/'); await wait(400);
+  // The whole safety argument: it never writes into the field, and it never
+  // costs you what you already typed.
+  check('back returns the carbohydrate entry, still holding what was typed', await ev(
+    `/50/.test(document.body.innerText) && !/Tandoor naan/.test(document.body.innerText)`), true);
+});
+
 await session('/tmp/mealunits-smoke-path', 9304, 412, async ({ send, ev, open }) => {
   await send('Log.enable');
   await open(URL_UNDER_TEST);
