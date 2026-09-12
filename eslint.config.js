@@ -71,7 +71,7 @@ export default tseslint.config(
     // WebWorker lib, with no access to the app's module graph, so it cannot
     // import from `config.ts` at all. Its two numbers are declared at the top of
     // the file with the section that decided them.
-    ignores: ['src/config.ts', 'src/sw.ts'],
+    ignores: ['src/config.ts', 'src/sw.ts', 'src/data/**/*.ts'],
     rules: {
       // `^[0-9.]` rather than `^[0-9]`: a raw beginning with a dot is a legal
       // numeric literal (`const HALF = .5`) and escaped the original selector
@@ -92,10 +92,20 @@ export default tseslint.config(
     },
   },
   {
-    // §11.8's stated exemption. Fixtures carry literal values on purpose: a
-    // golden case that imports DEFAULT_THRESHOLD still passes when the constant
-    // changes, so it asserts nothing (§13.7's wrong-oracle class).
-    files: ['test/**/*.ts', 'src/config.ts'],
+    // §11.8's stated exemptions.
+    //
+    // Fixtures carry literal values on purpose: a golden case that imports
+    // DEFAULT_THRESHOLD still passes when the constant changes, so it asserts
+    // nothing (§13.7's wrong-oracle class).
+    //
+    // `src/data` is the second, RULED 2026-09-12: reference data is not
+    // configuration. A food table is several hundred measurements of the world
+    // rather than decisions the app takes, and §11.8's own test separates them —
+    // changing HYPO_LEVEL_1 changes what the app does, changing a roti's
+    // carbohydrate content does not. The exemption carries two conditions the
+    // linter cannot enforce and `check-plan.py` does: the module holds data and
+    // no behaviour, and every row agrees with docs/CARBS.md.
+    files: ['test/**/*.ts', 'src/config.ts', 'src/data/**/*.ts'],
     rules: { '@typescript-eslint/no-magic-numbers': 'off' },
   },
 );
