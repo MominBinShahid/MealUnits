@@ -212,6 +212,13 @@ rmSync('/tmp/mealunits-smoke-path', { recursive: true, force: true });
 // §11.8's food list, at sanity level only. It is read-only, so the one thing
 // worth proving in a real browser is that the door opens, the table is behind
 // it, and coming back does not cost the number already typed.
+// The profile is wiped first, like every other session here. Omitting it cost a
+// real hour: this block was written, run against the deployed site BEFORE the
+// feature shipped, and its service worker cached that build — so every later
+// run replayed the old bundle and reported four failures against code that was
+// live. A check reusing a dirty profile passes or fails on its own history
+// rather than on the build under test, which is worse than not having it.
+rmSync('/tmp/mealunits-smoke-foods', { recursive: true, force: true });
 await session('/tmp/mealunits-smoke-foods', 9307, 412, async ({ ev, open }) => {
   await open(URL_UNDER_TEST);
   const tap = await setUp({ ev });
