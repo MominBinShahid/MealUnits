@@ -36,9 +36,9 @@ Exit code 0 = clean, 1 = findings.
 """
 
 import io
+import json
 import math
 import os
-import json
 import re
 import sys
 from itertools import combinations
@@ -273,11 +273,14 @@ RETIRED = [
     # is a trap: a later reader finds the losing sentence, sees the code
     # disagree, and corrects the code. BUILD-NOTES note 2.
     #
-    # The count is 2, not 0: §4.5 and note 2 each QUOTE the retired phrase to
-    # explain that it was retired. Quoting a dead rule to record its death is
-    # not the rule living on — but it is indistinguishable to a substring
-    # search, so the count is what separates them. A third occurrence is the
-    # phrase coming back as live spec.
+    # The count is 1, not 0: §4.5 QUOTES the retired phrase to explain that it
+    # was retired. Quoting a dead rule to record its death is not the rule
+    # living on — but it is indistinguishable to a substring search, so the
+    # count is what separates them. A second occurrence is the phrase coming
+    # back as live spec.
+    #
+    # Was 2 until the 2026-09-13 prune: note 2 carried the second quotation and
+    # no longer restates the losing sentence.
     # Ruled 2026-09-11. §7.2's pending-save copy claimed TWO things that were
     # false — "retrying" when nothing retried, and "still counted" when the
     # snapshot took `lastDose` from the database a failed write never reached.
@@ -285,12 +288,15 @@ RETIRED = [
     # SAFETY claim on the screen a person reads while deciding whether to inject
     # again. BUILD-NOTES note 61.
     #
-    # The count is 4, not 0: §7.2's correction paragraph quotes it once and note
-    # 61 quotes it three times, all to record its death. A fifth occurrence is
-    # the phrase coming back as live spec — which is exactly how it survived in
-    # `design/step-flow.html` until this pin was written.
-    ("Couldn't save this yet", 4),
-    ("above-range to band E wording", 2),
+    # The count is 1, not 0: §7.2's correction paragraph quotes it to record its
+    # death. A second occurrence is the phrase coming back as live spec — which
+    # is exactly how it survived in `design/step-flow.html` until this pin was
+    # written.
+    #
+    # Was 4 until the 2026-09-13 prune: note 61 quoted the dead string three
+    # times and now states the defect without reprinting it.
+    ("Couldn't save this yet", 1),
+    ("above-range to band E wording", 1),
     ("last backup: N days ago", 2),
     ("the same mechanism `logRevision` already uses", 2),
     ("the log cannot record it", 1),
@@ -310,18 +316,19 @@ RETIRED = [
     # withdrawn in v16 — §11.6's two original step-0 instructions. Both were wrong:
     # the upgrade needs Gatsby 4+ on a Gatsby 2 blog, and the denylist is inert
     # because gatsby-plugin-offline never configures navigateFallback [R2].
-    ("navigation-fallback denylist", 2),   # §11.6 withdrawal + §20.2 build row
-    ("Upgrade `gatsby-plugin-offline`", 3),  # same two sites
+    ("navigation-fallback denylist", 1),   # §11.6's withdrawal only; §20.2 lost its build row in the prune
+    ("Upgrade `gatsby-plugin-offline`", 1),  # BLOG-FIX kept its withdrawal; §20.2's copy went with the row
     # v17: §6.7's usualDose setting cut entirely. Surviving mentions are all in
     # correction notes recording the removal — count-pinned so it cannot return.
-    # 6 in PLAN.md (all correction notes recording the removal) + 2 in this
+    # 5 in PLAN.md (all correction notes recording the removal) + 2 in this
     # script's docstrings (check_tool_rot and check_next_steps), both of which
-    # explain a past defect by naming it.
-    ("usualDose", 8),
+    # explain a past defect by naming it. Was 8 until the 2026-09-13 prune took
+    # the header's copy.
+    ("usualDose", 7),
     # v17 cut §6.7's field. This is the phrase BACKLOG.md and the header used to
     # describe it as live; pinned so the cut is verifiable and cannot be undone
     # silently — the claim at PLAN.md:45 has nothing else to check against.
-    ("usual-dose field", 2),
+    ("usual-dose field", 1),
     # v19 retired three wordings and pinned NONE of them — the same defect the
     # revision was written to fix, in the revision whose header named it [R1].
     # Both remaining occurrences are historical quotes explaining the round-17
@@ -336,23 +343,18 @@ RETIRED = [
     ("at first export", 1),
     ("Carries the text and its date, silently", 0),
     # NEXT-STEPS.md deleted in v20 (§20.5). This was its charter line. The one
-    # surviving occurrence is §20.3 quoting it to explain the removal; a second
-    # would mean the file, or its charter, has come back — and check_next_steps
-    # separately fails if the file itself reappears.
-    ("DELIBERATELY EPHEMERAL", 1),
-    # v21 deleted PLAN-v1..v19-superseded.md once the plan was final (§20.5).
-    # Only PLAN-v20-superseded.md remains on disk. Each name below survives as a
-    # single reference explaining the deletion — a second occurrence would mean a
+    # §20.3's quotation of it went with the 2026-09-13 prune, so the expected
+    # count is 0: ANY occurrence means the file, or its charter, has come back —
+    # and check_next_steps separately fails if the file itself reappears.
+    ("DELIBERATELY EPHEMERAL", 0),
+    # The snapshot archive is gone: v21 deleted PLAN-v1..v19-superseded.md once
+    # the plan was final, v24 deleted the last one. The 2026-09-13 prune removed
+    # the header paragraph that explained the deletion, so the expected count is
+    # now 0 for each — the strongest form of this pin. ANY occurrence means a
     # deleted snapshot is being described as present again.
-    # 2: §20.5's listing names the range start, and v21's header explains the
-    # deletion.
-    # v24 deleted the last snapshot; §20.5 now mentions the series once, in the
-    # sentence recording that the archive is gone.
-    ("PLAN-v1-superseded.md", 1),
-    ("PLAN-v9-superseded.md", 1),
-    # 2: §20.5's listing names the range end, and v21's header explains the
-    # deletion. Both are records OF the deletion, not descriptions of a live file.
-    ("PLAN-v19-superseded.md", 1),
+    ("PLAN-v1-superseded.md", 0),
+    ("PLAN-v9-superseded.md", 0),
+    ("PLAN-v19-superseded.md", 0),
 ]
 
 # Retired phrases are counted in TypeScript source too — ADDED 2026-09-11. The
@@ -789,6 +791,145 @@ def check_retired_in_source(_plan):
                        " — a doc-retired rule in a docstring is the rule living on; quote it"
                        " to explain the retirement and pin the count, or delete it"
                        % (phrase, allowed, total, ", ".join(where) or "none"))
+    return out
+
+
+def check_note_references(corpus):
+    r"""2c. A "note N" pointing at a build note that does not exist — ADDED 2026-09-13.
+
+    Written in the same edit as the prune that made the class possible. The notes
+    are cited from source, tests and the other documents — the sigil means a
+    PLAN.md section everywhere, so BUILD-NOTES entries are cited as "note N"
+    instead — and the prune deleted most of that file. Every number survived as a
+    heading on purpose; this is what keeps it that way.
+
+    Reads the source tree and the root-level configs directly as well as the
+    corpus, because most citations are in TypeScript where nothing else would see
+    them.
+
+    **WIDENED 2026-09-13, same day, after review found three holes in the first
+    version** — which is §19's "each revision's defects live in the previous
+    revision's fixes" arriving inside the check written to enforce that lesson:
+
+    1. **Case.** `\bnotes? (\d+)` missed "Note 26" at the start of a sentence.
+       Two notes were cited ONLY in that form — 26 from PLAN.md and 58 from
+       `tools/exact-oracle.mjs` — so deleting either heading passed clean.
+    2. **Root-level configs were invisible.** The walk covered `src`, `test` and
+       `tools`; `vite.config.ts` cites note 48, and this function's own SELF_TESTS
+       comment named that file as a citing site while the check could not read it.
+    3. **Multi-number citations.** "notes 11 and 21" and "notes 50, 53 and 55"
+       checked only the first number.
+
+    Holes 1 and 3 carry seeded mutations in SELF_TESTS. Hole 2 cannot: the
+    self-test overrides the CORPUS, and this function reads source and config
+    files straight from disk, so no corpus mutation reaches them — the same limit
+    check_retired_in_source documents. It was shown to fail by execution instead:
+    appending a citation of an out-of-range number to `vite.config.ts` produced a
+    finding naming that file and line, and reverting returned the checker to clean
+    (executed 2026-09-13). The finding is described rather than quoted because
+    this check reads its own source, and quoting one is how the first version
+    reported itself on its very first run.
+
+    A widening that is not itself executed is the class this check exists to
+    catch.
+    """
+    notes = corpus.get("BUILD-NOTES.md", "")
+    if not notes:
+        return []
+    defined = set(re.findall(r"^## (\d+)\.", notes, re.M))
+    files = dict(corpus)
+    for sub in ("src", "test", "tools"):
+        root = os.path.join(HERE, sub)
+        if not os.path.isdir(root):
+            continue
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+            for name in sorted(filenames):
+                if not name.endswith((".ts", ".mjs", ".css", ".js")):
+                    continue
+                path = os.path.join(dirpath, name)
+                rel = os.path.relpath(path, HERE).replace(os.sep, "/")
+                with io.open(path, encoding="utf-8") as handle:
+                    files[rel] = handle.read()
+    # Root-level configs are discovered, not listed: a hand-written list of four
+    # names is the rot this tool exists to prevent, and `vite.config.ts` was
+    # missed by exactly that kind of omission.
+    for name in sorted(os.listdir(HERE)):
+        if not name.endswith((".ts", ".mjs", ".cjs", ".js")):
+            continue
+        path = os.path.join(HERE, name)
+        if not os.path.isfile(path):
+            continue
+        with io.open(path, encoding="utf-8") as handle:
+            files[name] = handle.read()
+    out = []
+    for rel, text in sorted(files.items()):
+        if rel == "BUILD-NOTES.md":
+            continue
+        # Case-insensitive, and every number in the citation: "notes 50, 53 and
+        # 55" names three notes and all three must resolve.
+        for m in re.finditer(r"\bnotes?\s+(\d+(?:\s*(?:,|and)\s*\d+)*)", text, re.I):
+            for num in re.findall(r"\d+", m.group(1)):
+                if num in defined:
+                    continue
+                out.append("%s:%d: note %s cited but BUILD-NOTES.md has no such entry"
+                           % (rel, line_of(text, m.start()), num))
+    return out
+
+
+def check_readme_mutation_figures(corpus):
+    """2d. README's mutation figures against the report that generates them.
+
+    ADDED 2026-09-13, on review. Note 16 was pruned precisely because hand-copied
+    mutation counts went stale twice — and the same commit left four of them in
+    README.md, which is the "claims about own contents" class reappearing in the
+    edit that removed it. README keeps the numbers on purpose: it is the public
+    face and a reader deciding whether to trust this project is owed concrete
+    figures. So they are checked rather than deleted.
+
+    **Skipped when `reports/mutation/report.json` is absent**, which is the normal
+    case in CI: the `plan` job does not run Stryker, and the `mutation` job does
+    not read README. That is not a hole — the numbers are edited locally, by a
+    person who has just run `npm run mutate` and therefore has the report — so
+    local is exactly where the check has to bite.
+
+    **No SELF_TESTS entry, deliberately.** A seeded mutation must fail everywhere
+    the self-test runs, and in CI's `plan` job there is no report to compare
+    against, so the mutation would escape and the self-test would fail on a
+    correct tree. Shown to fail by execution instead: changing README's killed
+    figure produced the finding and reverting returned the checker to clean
+    (executed 2026-09-13).
+    """
+    readme = corpus.get("README.md", "")
+    if not readme:
+        return []
+    path = os.path.join(HERE, "reports", "mutation", "report.json")
+    if not os.path.isfile(path):
+        return []
+    try:
+        with io.open(path, encoding="utf-8") as handle:
+            report = json.load(handle)
+    except (ValueError, OSError):
+        return ["reports/mutation/report.json exists but could not be read"]
+    tally = {}
+    for entry in report.get("files", {}).values():
+        for mutant in entry.get("mutants", []):
+            status = mutant.get("status")
+            tally[status] = tally.get(status, 0) + 1
+    killed = tally.get("Killed", 0)
+    ignored = tally.get("Ignored", 0)
+    survived = tally.get("Survived", 0)
+    out = []
+    for label, actual in (("killed", killed), ("disabled by name", ignored)):
+        # The figure is written with a thousands separator or without it.
+        shapes = ("{:,}".format(actual), str(actual))
+        if not any(shape in readme for shape in shapes):
+            out.append("README.md states no %s figure matching report.json (%d) — "
+                       "regenerate with `npm run mutate` and update it, or drop the "
+                       "number the way BUILD-NOTES note 16 did" % (label, actual))
+    if survived and "0\n  survived" not in readme and "0 survived" not in readme:
+        out.append("report.json has %d SURVIVED mutant(s) while README claims 0 survived"
+                   % survived)
     return out
 
 
@@ -2224,6 +2365,8 @@ CHECKS = [
     ("retired phrases living in src/**/*.ts", check_retired_in_source, "plan"),
     ("dangling section references", check_references, "plan"),
     ("dangling section references in companions", check_references_corpus, "corpus"),
+    ("dangling build-note references", check_note_references, "corpus"),
+    ("README's mutation figures vs the report", check_readme_mutation_figures, "corpus"),
     ("unverifiable removal claims", check_removal_claims, "plan"),
     ("schema field with no snapshot home", check_schema_snapshot, "plan"),
     ("near-miss identifiers", check_near_miss, "plan"),
@@ -2267,6 +2410,21 @@ SELF_TESTS = [
      lambda t: t.replace("        {},", "", 1)),
     ("canonical: threshold drift seeded in BACKLOG.md [R2]", "BACKLOG.md",
      lambda t: t + "\n\nDEFAULT_THRESHOLD = 25;\n"),
+    # The 2026-09-13 prune cut most of BUILD-NOTES.md's body and kept every note
+    # NUMBER as a heading, because many are cited from source, tests and the other
+    # documents. This is the mutation that proves the keeping is checked: note 48
+    # is cited by CLAUDE.md, vite.config.ts and smoke.mjs. No line or citation
+    # count is written here — the first version carried both and both were stale
+    # within the hour, in the commit whose subject was removing counts that rot.
+    ("notes: note 48's heading deleted by a prune", "BUILD-NOTES.md",
+     lambda t: t.replace("## 48. `crypto.randomUUID`", "## Secure contexts and `crypto.randomUUID`")),
+    # The first version of check_note_references matched `\bnotes? (\d+)` — case
+    # sensitive, first number only. Both holes below escaped it, and note 26 was
+    # cited ONLY in the capitalised form, so deleting its heading passed clean.
+    ("notes: a capitalised citation of a note that does not exist", "PLAN.md",
+     lambda t: t.replace("Note 26's amber", "Note 97's amber")),
+    ("notes: the second number of a multi-number citation does not exist", "PLAN.md",
+     lambda t: t.replace("notes 11 and 21", "notes 11 and 96")),
     ("canonical: target ceiling reverted to 300 (table)", "PLAN.md",
      lambda t: t.replace("Target blood sugar | 70–**200** mg/dL",
                          "Target blood sugar | 70–**300** mg/dL")),

@@ -1,349 +1,31 @@
 # Project MealUnits — Implementation Plan
 
-**Version:** 25 (revised 2026-09-06 after twenty-two adversarial review rounds)
-**Status:** Specification complete. Not approved. No code written.
-**Round 20: [R1] returned fourteen findings and did not certify clean.** [R2] has been unavailable
-for two rounds (external limit), so rounds 19 and 20 were single-reviewer and are recorded as such.
-**No clinical-arithmetic error was found anywhere in seven files** — but seven checker escapes were,
-five of them inside v20's own flagship completeness fix.
+**Version:** 25 — the revision the app was built from, and the version the design files name.
+**Status: built, deployed, and in use.** https://mominbinshahid.github.io/MealUnits/
 
-**§19 held for a seventeenth consecutive revision.** v20 declared §11.8's constants checked "in both
-directions" while the pattern matched only `export const NAME = <digits>;` — so negating
-`BAND_B_CORRECTION_UNITS`, narrowing `EAT_DELAY_MINUTES` from `[20, 30]` to `[5, 10]`, and adding a
-brand-new negative constant all passed clean. Non-numeric values were invisible to the check written
-to catch exactly them.
+**This document is the specification and the single source of truth.** `§N` anywhere in this
+repository means a section of this file. Where the code and this document disagree, one of them is
+a defect and **which one is a question for Momin** — §20.1.1 forbids silently correcting either.
 
-**The blind spot v20 closed, re-opened one directory down.** v20 deleted `NEXT-STEPS.md` because an
-unswept file accumulates stale spec — then discovered only `.html` below the root, so `design/notes.md`
-and `design/helper.py` were invisible to everything. **Discovery is now by suffix, not by suffix and
-depth**, and `live_files()` is wholly discovered: the last hand-maintained input list is gone.
+**PRUNED 2026-09-13, on Momin's instruction.** This header carried 349 lines of revision history:
+twenty-five revisions, twenty-two adversarial review rounds, and what each one found. It is gone.
+The rules those rounds produced are in the sections below; the lessons that outlived them are in
+§19, which is where they were always meant to live. What the rounds actually did is in `git log`.
 
-**Two mockups specified weaker copy than the plan requires.** §10.3 demands a suppressed correction be
-*shown, struck through, with its reason*; step-flow rendered it as a bare dash, which makes the
-remaining lines visibly fail to reach the total. §7.4.1 demands the stacking consequence in his own
-units as a ceiling — *"at most about 180 mg/dL, likely less this far in"* — and the override screen
-gave none. Both are now machine-checked, along with a rule that a struck component is excluded from
-the sum but its markup still verified.
+**Two conventions the sections below depend on.**
 
-**§10.4's daily case had no screen.** The section names a lunch dose at noon as the reason the
-noon/midnight rule exists, and no mockup rendered one. The history screen now shows **12:00 noon** and
-an overnight **12:00 midnight**, and any design rendering "12:00 PM", "12:00 AM" or a 24-hour time
-fails the dispatch.
+**[R1] and [R2]** mark findings at the point of change — [R1] clinical and state-machine, [R2]
+implementation and code-level, from different model families. They are kept because a rule that
+exists because a reviewer caught something reads differently from one somebody preferred, and
+because §20.3's review cycle is still the process for any substantial change.
 
-**v21 adds §7.7.1, a second export.** Until now the record existed in exactly one format, readable
-by exactly one program — this app's own import — while §11.7 simultaneously accepts that the export
-*is* the record's survival path. A survival path only one program can read is not one. There are now
-two exports named by what the person is trying to do: **move to another phone** (the JSON, the only
-restorable file, the only one the backup counter counts) and **save the record** (a self-contained
-HTML file, readable anywhere, printable to PDF through the browser, explicitly not a backup). The
-readable file is **grouped by prescription period rather than sorted by date**, which carries §7.7's
-attribution rule into the rendering: a flat table would print every historical row under today's
-ratios, the exact false claim v9 was corrected to remove.
+**Terminology.** Full form on first use in each section, short form in brackets, short form
+thereafter within that section. **In the app itself, no bare abbreviations at all** — the only
+exception is small secondary text giving the clinical term so the user can talk to their doctor.
 
-**v21 adds §7.9, the data-clearing controls.** Momin asked for them and the plan turned out to
-already assume them: a §13.3 test case for "a full app reset", a §11.7 scope constraint on one, and a
-§10.7 placement rule for one — **a shipped test for a feature with no specification**. The controls
-are also not optional: on an installed PWA, uninstalling without accepting "also clear data" leaves
-the IndexedDB intact, and accepting it is origin-wide and takes the blog with it (§11.7). Only code
-inside the app can filter by scope.
-
-**v25 closes the last open decision: the interface is Step** (§18.14). `design/step-flow.html`'s
-44 screens are the build reference. The author recommended a Card/Step hybrid and was overruled;
-both the argument and the accepted trade-off are recorded rather than dropped, because §19's first
-principle is that the user holds facts a reviewer does not — in this case, what his brother will
-actually open three times a day. **The one structural consequence is named up front: Step adds a
-wizard state on top of §11.2's reducer**, and that is §17 step 5 work, not a discovery.
-
-**Round 22 was a narrow verification of v23's diff, and its verdict on this repository's tooling was
-worse than round 21's.** [R1] seeded 21 fresh mutations and **all 21 escaped**; [R2] seeded 50 and
-**38 escaped**. Both confirmed that the three specific holes round 21 reported are genuinely closed
-and stay closed — and both established that **the class was not.**
-
-**v23's header claimed the class was closed structurally. That claim was false and is withdrawn.**
-What v23 actually did was fix the seven examples it had been shown and generalise from them, which
-is the same error as the pin-the-prose habit it replaced, in a new register. The patterns stopped at
-the `.md` boundary, so every numeral in the three design files was unguarded — the ketone threshold,
-the band D boundary, §7.4.1's ceiling, the eat-by window. They knew band C's shape and not band A's
-one row above it. Bolding a field label removed the coverage.
-
-**And the check v23 wrote to catch an unproducible dose accepted one.** `_allowed_doses` listed
-floor-half *and* ceil-half as though `half` were a range; it is one mode and rounds to the nearest
-half. For 194 mg/dL and 45 g it admitted 5.5 against an exact 5.9667 [R2]. **A recomputation is only
-safer than a pin when the recomputation is right**, which is now written into the function.
-
-v24 widens the patterns to every live file and every shape the reviewers found, corrects the oracle,
-pins the fifth line of the dose algorithm (v23 pinned four of five and reported the algorithm
-protected), and makes a worked example the check **cannot parse** a finding rather than a silence.
-It also stops pinning headings: [R1] inverted six v23 rules one line under their own pins. The
-checker now runs **twenty-two checks** and holds **101** seeded mutations, all caught.
-
-**Three findings above the round's bar, all in v23's own work.** §13.3 still shipped v22's clearing
-case asserting that the "result-scoped" acknowledgements are dropped, eight bullets from v23's new
-case asserting that none are — **two shipped tests commanding opposite gate behaviour for one
-action**, and a test author follows the one listed first. The tombstone §7.3 specified could not be
-exported: §7.7's envelope required `settingsRevision` on every log row and import remapped it on
-every row, so the restore path had an unspecified branch. And the post-commit edit control was still
-on the Logged screen — **v23 rewrote the paragraph above it and left the button.**
-
-**Round 21 ran with both reviewers for the first time since round 18, and neither certified clean.**
-[R2] returned seven findings above the round's bar, [R1] one, and between them thirty-one below it.
-**No clinical-arithmetic error was found anywhere in seven files** — [R1] re-derived every worked dose
-in the document and every dose in the mockups independently. The bar was changed for this round, on
-the owner's decision: not *"no findings at any severity"*, which twenty rounds had shown to be
-self-perpetuating, but **"does anything left change a dose, a gate, or a stored shape."**
-
-**The round's most important finding is about this repository's own tooling, and it invalidates a
-claim v22 made repeatedly.** Both reviewers, independently and by different routes, established that
-the pin set protected **explanatory prose** and left the **operative rules** bare. [R1] executed three
-mutations that a reader would call unthinkable — clamping the correction instead of the total
-(§2.1's named defect), inverting §7.4's suppression direction (the round-2 CRITICAL, reverted
-verbatim), and moving band C from 54/70 to 44/60 — and **all three printed `clean`.** [R2] escaped 17
-of 19 seeded mutations the same way. **The five-line dose algorithm had no pin at all**, and neither
-did the band table or §4.5's range table that an implementer actually reads; §11.8's declarations
-were pinned in both directions while every prose restatement of the same numbers was unguarded.
-
-v23 stops pinning sentences. Three new checks **recompute the document's own numbers**: §2's worked
-examples are recalculated from their own inputs, every prose restatement of a §11.8 constant or range
-is compared against the declaration, and **every mock history row is recomputed from the reading and
-carbohydrate figure it prints beside itself**. All seven of [R1]'s escapes and the checker half of
-[R2]'s are now caught, seeded permanently, and executed by `--self-test`.
-
-**v22 was a self-review pass over v21's own new material, and it found thirteen defects there — four of
-them blocking.** No reviewer has seen v21; this was run before dispatch on the explicit reasoning that
-§19's pattern makes the newest 156 lines the likeliest place for the next round's findings, and that
-paying a review round to learn what a careful read would surface is the wrong way round. Four passes
-were run, and **each of the last four found something every pass before it had read straight past** —
-including the two that are arguably the worst of the thirteen.
-
-**The blocking one is §7.9's fail-closed escape, which could not run.** v21 correctly identified that
-a build meeting a schema from the future is bricked with no way out, and named "start over" as the
-escape — then specified that control as *clearing six stores*. §11.3 states the fail-closed state's
-defining property one section away: **a failed downgrade yields no connection.** A store clear needs a
-transaction, a transaction needs a connection, and the absence of one is what the state *is*. The
-escape ran only when it was not needed. It is now `deleteDatabase` on **both** paths — it takes no
-version and needs no connection, and using it for the ordinary reset too retires a hand-enumerated
-list of six stores that would have rotted, silently and unsafely, on the day a seventh was added.
-The escape lives on the fail-closed screen rather than behind the calculator that refused, and
-carries the `blocked` handler that call requires. The screen shows his settings from the recovery
-block **before** offering it, because after the delete that block is gone too and no export is
-possible without a connection.
-
-**The second blocking one: §7.9 dropped `acks` as though it were one thing.** §11.3 puts three
-unrelated kinds in that store, and *"clear the record"* would have taken §10.6's blocking disclaimer
-with the log — putting the first-run disclosure gate in front of a man who asked to delete some test
-entries, in flat contradiction of the same table's *"the app is immediately usable"*. The
-result-scoped rows go with the record; the disclaimer dies only with "start over", where re-showing
-it is the point.
-
-**And §7.7.1 grouped readings by a revision they do not carry.** §7.8's row is `id`, `timestamp`,
-`bloodSugar`, `note` — deliberately, since no settings produce a reading — while v21's worked example
-printed a reading count inside every prescription group. Doses are placed by their stamp; readings by
-their timestamp falling inside the period. **Not** by giving readings a revision, which would
-manufacture §7.7's attribution claim on a row nothing produced.
-
-**The fourth blocking one came from the third pass, and it is the one that should not have taken
-three.** §7.3 requires a confirmation stating the stacking consequence before deleting **one** row
-inside the window — and v21 wrote a control that deletes all 67 without one. Delete-one was guarded;
-delete-everything was the unguarded door beside it, which is §4.6's *users learn the escape route*
-argument arriving from the direction nobody was watching. Both confirmations now carry the line.
-
-**And the fourth pass found the injection surface v22 itself had just created.** Choosing HTML for
-the readable file means rendering §6.7's dosing note and §1.3's `basalName` — the app's only two
-free-text values — into markup, in the one file whose entire purpose is that it forwards to other
-people. Everything rendered is escaped and the file carries no script.
-
-**The fifth pass found a data control with a code side-effect.** v21 had both operations clearing
-"this app's owned caches and its own registration" — deleting the app's *code* to reset the user's
-*data*, which advances nothing and can leave the app unopenable until the next online load, on a
-phone that may not be online. Neither operation now touches a cache or a registration. §11.7's
-origin-wide constraint does not weaken; it moves to §11.4's cleanup-on-activation, where an
-unfiltered sweep actually happens, and §13.3's blog-preservation case moves with it. **That case was
-written in v15 against a feature nobody had specified yet** — this section's own opening complaint,
-arriving one revision later as an inheritance.
-
-The remaining seven: the backup counter got a rule about what it may count and no field to count into
-(**§6.7's v17 defect exactly, four revisions later**); *"[ Export first ]"* named neither export in
-the revision that split export in two; the prompt reported the freshness of a *"backup"* no button
-anywhere offered to make; the clearing paths never bumped `logRevision`, so another tab would keep
-rendering a result citing an injection that no longer exists; §6.7's *"asked at export"* was left
-pointing at two exports and neither; and "start over" enumerated its six stores by hand, which
-**rots unsafely on the day a seventh is added** — a reset that quietly does not reset. That last one
-is why the escape mechanism is now `deleteDatabase` on both paths rather than only the bricked one.
-
-**Both v21 features also arrived with no §13.3 cases and no §17 build-order slot** — §17's own
-standing checklist, unrun. Both are now placed, and §17 records which of its five legs genuinely do
-not apply rather than leaving them looking skipped. **§13.3 is where the fail-closed defect would
-have surfaced without a reviewer**: you cannot write *"assert the six-store clear runs"* against a
-state defined by having no connection.
-
-**§19 therefore holds for an eighteenth consecutive revision**, and this time without a reviewer to
-report it: every one of the thirteen lives inside v21's fixes, and v21 ran clean through nineteen
-checks and thirty-seven mutations while carrying all of them. **A clean checker run is evidence about
-the rules the checker holds, and about nothing else** — which is the argument for writing the new
-rules down as pins rather than as prose — **and rounds 21 and 22 then showed that pinning prose, and
-then recomputing through patterns chosen from examples, were the same mistake twice.** v22's header claimed nineteen checks and fifty-eight mutations against a
-file that ran eighteen and held fifty-nine; both reviewers caught the discrepancy, which is the
-claim-about-own-contents class §19 names, committed inside the anti-rot tool itself.
-
-**The escape detector fired three times during v23**, on mutations whose anchors its own edits had
-moved. [R2] predicted exactly this in the round-21 brief — *"v22 added 21 mutations and 30-odd pins in
-one revision, which is the condition under which a pin gets written against text that later moves"* —
-and it was right, one revision later, in the revision written to answer it.
-
-**v21 also retires the snapshot archive.** `PLAN-v1-superseded.md` through `PLAN-v19-superseded.md`
-were deleted on Momin's instruction once the plan was final (§20.5). The self-test grew to
-thirty-one seeded mutations and caught three regressions introduced during v21 itself, including one
-where a refactor silently lost cross-file drift coverage.
-
-**v17 made four substantive changes, three of them from the user.**
-
-1. **§6.7 is cut entirely.** The `usualDose` setting is gone — no onboarding question, no settings
-   row, no range, no constant. Replaced by one optional free-text question asked **at export**,
-   stored as dated patient-reported history. Both reviewers, asked in isolation and without this
-   document, independently said cut it; [R2]'s export placement and free-text form were adopted
-   over [R1]'s settings-adjacent version. v18 gave it a store and three states; v19 settled the
-   five transitions around them (§6.7).
-2. **The target ceiling drops 300 → 200** (§4.5). 300 had no clinical basis and was picked as
-   "generously permissive". ADA puts the preprandial goal at 80–130 for Type 1 and allows less
-   stringent targets for hypoglycaemia unawareness; 200 accepts a genuine one and rejects a typo.
-3. **Times are 12-hour with AM/PM** (§10.4), with the ambiguity that creates handled explicitly.
-4. **The designs-follow-the-plan ground rule** is recorded in §20.3.
-
-Plus round 16's seven checker-precision items, each re-verified by seeded mutation rather than by
-reading.
-
-**BOTH REVIEWERS CONFIRMED v15** — the third time both have passed. v16 clears their combined
-non-blocking list: four checker repairs that still certified nothing (each now re-verified by
-seeded mutation rather than by reading), two live by-number pointers into `BACKLOG.md` — one
-already rotted onto the wrong entry — a candidate count contradicting the file it cited, and
-§11.6/§20.2 still prescribing the two step-0 instructions `BLOG-FIX.md` had withdrawn.
-
-**Round 14 split:** [R1] CONFIRMED with nine non-blocking items; [R2] BLOCKED on step 0 — the
-blog-worker fix targeted one route when the plugin registers four, and the second one matches
-`.js` and `.css` again, so the fix could have "worked" while the app stayed intercepted. That is
-corrected in `BLOG-FIX.md` with the full route table. **[R1] also mutation-tested `check-plan.py`
-and proved three of its checks certified nothing** — including the flagship, which reported zero
-findings against the very document state whose leftover caused round 13. All rebuilt around
-occurrence counts; the fix is verified against that same state.
-
-**Review standing: BOTH REVIEWERS CONFIRMED v13** — the second time both have passed, after v10.
-Rounds 11 and 12 each returned one blocker, both inside the settings-provenance mechanism (§7.7,
-§11.3), each introduced by the previous round's fix. v14 clears the eight non-blocking items from
-round 13 and is **not yet reviewed**.
-
-**Scope note — RESOLVED IN v15.** Four things entered v1 without the user being asked:
-`injectedUnits` (§7.1), the settings-provenance mechanism (§7.7, §11.3) — the source of every
-blocker in rounds 11–13 — and, invented outright, §7.8's readings store and §6.7's usual-dose
-field. **The user's ruling in v15 was that all four stay** — they were built, correct and
-reviewer-confirmed, and a feature that ships cannot also be deferred. **Three of them still do.**
-**§6.7 was subsequently cut in v17** on the user's own objection (change 1 above), so this note now
-covers `injectedUnits`, §7.8's readings store and §10.6's setup disclosure. [R1] caught v17
-asserting "all four stay" thirty lines below the change list announcing the cut — the same class as
-the v14 header defect this note replaced. `BACKLOG.md` removed the two entries that named them
-and now carries the rule that produced that removal: *if it is built, it comes out of this file.*
-
-**v14's version of this note asserted three falsehoods** [R1] — it referenced the two by backlog
-number after those numbers had been reused, and claimed `BACKLOG.md` still listed them as
-deferred when the same afternoon's edit had removed them. **Reference companion-document entries
-by name, never by number**; numbers are renumbered and the pointer rots silently.
-
-**v12 fixes the blocker that v11's cleanup created.** Round 11 split: [R2] CONFIRMED, [R1]
-BLOCKED on one item — `settingsHistory`'s primary key collides with the live `revision` counter
-after either import path, silently re-attributing log rows to settings that never produced them,
-or bricking settings saves forever. **v11's entire purpose was clearing non-blocking items, and it
-introduced the round's only blocker** (§19, ninth consecutive revision). Both reviewers also found
-that v11's restatement of the divergence residual measured the ratio against the wrong operand and
-gave the wrong mechanism for it — a correction this document had already made in v9, contradicted
-eleven lines from where it was written.
-
-**What v11 did, for the record.** Round 10 was the first round both
-reviewers passed: [R2] found no implementation blockers, [R1] verified the freeze by hash and
-confirmed all three of its round-9 blockers closed. v11 clears the eleven **non-blocking** items
-they raised anyway — a storage home for `settingsHistory`, three missing entries in §13.1's core
-list, one genuine uncovered residual in §6.6, and eight leftovers where a v9 or v10 correction was
-written while the sentence it replaced stayed standing three sections away. **That leftover-copy
-class is this document's most persistent defect** (§19), and clearing it is worth one revision.
-**Supersedes:** `PLAN-v17-superseded.md` and earlier, all retained for provenance.
-**Provenance gap:** v9 was never snapshotted — the copy was taken *after* the v10 edits were
-applied, so `PLAN-v9-superseded.md` was a byte-duplicate of v10 rather than of v9. It is **gone with the rest
-of v1..v19**, deleted in v21 (§20.5). Ten revisions ran with this paragraph ordering a deletion that
-§20.5 simultaneously described as retained — one of the two had to be wrong, and the question is now
-moot. **The lesson it recorded is kept here because it is the only place it now survives:** v9's
-content is v8 plus the round-9 changes, each marked `ADDED IN v9` in place, and the mistake was
-acting on a file before capturing its prior state — the same class as the freeze failure below.
-
-**A process failure in round 9, recorded because it invalidated a verdict.** Round 9's fixes from
-[R2] were applied to `PLAN.md` **while [R1] was still reading it**. The file grew from 2,764 to
-2,816 lines mid-review, so the two reviewers necessarily reviewed different documents and [R1]
-correctly refused to let any verdict bind to a moving artifact. **§20.3 now forbids it.** Round 10
-reviews this frozen v10.
-
-**v9 closes round 8's blockers.** Round 8 produced no new design arguments — every finding was a
-contradiction between two parts of this document, a missing range, or copy left behind by an
-earlier fix. Both reviewers said the decisions were made and only the *specification* was
-incomplete. v9 is that specification: `injectedUnits` given a grammar and bounds, `lastDose.units`
-defined as the injected figure, band E's daily state given a home, the config file's prescription
-defaults deleted, **and one genuine hole nobody had seen in eight revisions — §7.8.**
-
-**What changed in v7 and v8, and why they differ from v1–v6.** Every revision through v6 was
-driven by reviewer findings. **These two were driven by facts, and each fact invalidated the
-round of review before it.**
-
-**v7's fact:** his brother injects 24–25 units of Humulin R *per meal*, not per day. That
-invalidated the premise all six earlier rounds had reasoned from, and with it §6.2's threshold,
-round 6's two competing proposals for it, and §1.4's whole calibration analysis.
-
-**v8's fact, and it is the more important one:** *his blood sugar does not only run high.* **It
-sometimes falls to 65 mg/dL.** Round 7's central recommendation — do not ship the calculator,
-because 25 units is empirically tolerated and the app's smaller number is the hazard — rested on
-the sentence "he injects 25 per meal without hypoglycaemia." **That sentence is false.** A
-reading of 65 means 25 units has sometimes been too much, and the recommendation built on it does
-not hold.
-
-**What the new fact actually shows** is in §1.4: a fixed dose meeting variable meals produces
-exactly this signature — high most of the time, occasionally crashing — and the remedy for it is
-a calculation, which is what this app is. **The project is confirmed, and the full app ships**
-(§20.6).
-
-**Three times now a review verdict has collapsed on a fact only the user held.** Recorded in
-§19, because it is the most transferable thing this process has produced.
-**Companion:** `BACKLOG.md` — everything deliberately deferred.
-
-**Revision note.** Reviewed twice by two independent model families. Findings are marked
-**[R1]** (clinical / state-machine) and **[R2]** (implementation / code-level) at the point of
-change.
-
-**Round 1** found the same class of failure from two unrelated directions — the app silently
-dosing on default settings that are not the prescription — which drives §1.2 and §11.3.
-
-**Round 2 found that the round-1 fixes introduced new defects**, all in §7, the log added to
-fix a round-1 finding. Both reviewers independently traced the same critical: suppressing the
-correction term to prevent stacking *raised* the dose when the correction was negative, because
-a negative correction is a dose reduction. §7 has been rewritten and integrated into the
-precedence order (§4.3), the state snapshot (§11.2) and the test schema (§13.2) — the three
-places v2 omitted it.
-
-**Round 3** confirmed the round-2 critical was properly fixed — with a monotonicity proof that
-positive-only suppression cannot raise a dose — and then found the pattern had held again. §6.5,
-the advisory added in v3 to close a round-2 gap, was **structurally incapable of ever firing**:
-its trigger sat above the maximum dose the plan's own bound permits. Round 3 also found the
-storage concurrency fix did not work, and that a fix's own error message recreated the error it
-prevented.
-
-**Round 4** blocked on four items, all in v4's new material. The finding of the round was a
-compliance failure: v4 introduced §17's standing rule and violated it for the very feature it
-redesigned. Round 4 also found that the IndexedDB switch had silently discarded cross-tab change
-notification, and that a v4 fix's leftover copy again contradicted the fix beside it.
-
-**The pattern is established over four rounds: each revision's defects live in the code added by
-the previous revision's fixes.** Every revision, including this one, should be assumed to contain
-its own. Findings are diminishing — round 2 required a rewrite, round 3 a redesign, round 4
-amendments — but they have not reached zero.
-
-**Terminology rule.** Full form on first use in each section, short form in brackets, short
-form thereafter within that section. **In the app itself, no bare abbreviations at all** —
-the only exception is small secondary text giving the clinical term so the user can talk to
-their doctor.
+**Companions.** `BACKLOG.md` is everything deliberately excluded, with the reason. `BUILD-NOTES.md`
+is what the build had to decide that this document does not state, cited as *note N*, never `§N`.
+`CLINICAL.md` is every clinical decision with its source. `CARBS.md` is the carbohydrate reference.
 
 ---
 
@@ -412,7 +94,7 @@ recovery — is the failure mode that gets the app abandoned for the fixed 24–
 replace (§1.4). Each value is on its own screen (§18.14) so that tapping through is at least
 tapping past something legible. Recorded in `docs/CLINICAL.md`.
 
-### 1.3 Basal insulin — recorded, never calculated — NEW IN v6
+### 1.3 Basal insulin — recorded, never calculated
 
 The app records the basal regimen as a **setting** so the stored picture is the whole regimen
 rather than half of it:
@@ -445,7 +127,7 @@ that changing any basal field leaves every calculated dose bit-identical.
 **Not logged daily in v1.** Whether he took it today is a different feature — adherence tracking
 with reminders — and belongs in `BACKLOG.md`, not here.
 
-### 1.4 Calibration — RESOLVED IN v7, and not as anyone expected
+### 1.4 Calibration — not as anyone expected
 
 v6 recorded a doubt: a total daily dose near 45–50 units with 36 of them basal would leave only
 9–14 units of bolus a day, implying meals near 30–50 g rather than §2's illustrative 200 g. Both
@@ -614,7 +296,7 @@ total                          = 26.0 units
 4. **Never display a value that was not used to compute the dose**, and never recompute a
    dose from a displayed string. [R2]
 
-### 2.2 Where quantization happens — CHANGED IN v2 [R2]
+### 2.2 Where quantization happens
 
 Version 1 said "compute and store insulin in integer hundredths of a unit" without saying
 *what* gets quantized. That is a dosing-policy decision, not a representation detail, and the
@@ -679,7 +361,7 @@ at a 1.5-unit tie under `nearest` the shortfall is 0.5 units, which is proportio
 small doses. The 72/41 case is pinned as a golden fixture as the MEASURED EXCEPTION, so the
 incidental behaviour cannot move unnoticed.
 
-### 2.3 Finiteness and safe range — NEW IN v2 [R2]
+### 2.3 Finiteness and safe range
 
 `Math.round(1.005 * 100)` is `100`, not `101`, because `1.005 * 100` evaluates to
 `100.49999999999999`. Scaling does not make binary division exact: `100/3` is still not an
@@ -722,7 +404,7 @@ The structural consequence: **"below target" is the normal case, not an edge cas
 70 and 54 are the ADA/EASD international consensus levels. **They are absolute and never
 derived from any setting.**
 
-### 3.1 Band E is advisory, not blocking — and that asymmetry is deliberate [R1, partial]
+### 3.1 Band E is advisory, not blocking — and that asymmetry is deliberate
 
 R1 proposed refusing to dose above 600 mg/dL and routing to "seek care." **Rejected.** That
 repeats the mistake of the v1 dose ceiling: someone at 500 mg/dL needs insulin most, and
@@ -765,7 +447,7 @@ the fired band is in fact *narrower* on screen (70–75 at ISF 50 against 70–1
 widens is the distance below target at which caution begins. The predicate is exact and
 golden-cased; only the word was wrong.
 
-### 3.3 "No insulin number" — precise scope [R1]
+### 3.3 "No insulin number" — precise scope
 
 Bands C and D suppress **every insulin quantity**: the main result, the breakdown components,
 the confirmation preview, the settings worked-examples, and the accessibility announcement.
@@ -784,7 +466,7 @@ timing instruction, no confirmation prompt.
 
 ## 4. Input states, validation, and precedence
 
-### 4.1 Four states, not three [R2]
+### 4.1 Four states, not three
 
 Version 1 said "empty, zero, invalid — and they are not the same." There is a fourth:
 **valid non-zero**. All four must be distinguishable before any numeric conversion, because
@@ -801,7 +483,7 @@ JavaScript collapses them:
 **The raw-state decision happens before numeric conversion, always.** TypeScript annotations
 do not change these coercions.
 
-### 4.2 Lexical grammar — NEW IN v2 [R2]
+### 4.2 Lexical grammar
 
 Version 1 said "reject text and negative numbers, accept decimals." That is not a
 specification. Prefix parsing accepts garbage:
@@ -845,7 +527,7 @@ hundredfold under-dose, one obedience step later. The message is:
 invalid under this grammar but are transient states while typing `5.5`; mid-typing shows no
 error. §10.8's clear-on-change still applies — it clears the *result*, it does not validate.
 
-### 4.3 Precedence order — NEW IN v2 [R2]
+### 4.3 Precedence order
 
 Version 1 gave bands (§3), input states (§4) and ranges (§4.1) as three independent tables
 with no stated resolution order, leaving many cells contradictory. This is the order:
@@ -973,7 +655,7 @@ it, which is where the §3.1 disagreement actually resolves. The Accu-Chek Insta
 A typed `605` (a plausible typo for `60.5`) gets plain *"check the number"* plus a link to the
 HI guidance, **not** band E's ketone wording — "check ketones" is a confusing reply to a typo.
 
-### 4.6 The blank-blood-sugar path needs friction [R1]
+### 4.6 The blank-blood-sugar path needs friction
 
 Version 1 let a blank reading produce a meal dose with no gate — but the low-blood-sugar
 check never runs when there is no reading, so someone at 60 mg/dL who skips the fingerstick
@@ -1022,7 +704,7 @@ intended movement. Rounding up adds as much as a full unit — 30 mg/dL of unint
 drop — on *every* dose, always toward low blood sugar. On a 20-unit meal dose that is 5% and
 irrelevant; on a 1-unit correction it is a 100% overdose. The modes are not neutral peers.
 
-### 5.2 Negative values — scope clarified [R2]
+### 5.2 Negative values — scope clarified
 
 Because the total is clamped before rounding, **final-dose rounding never receives a negative
 number.** Negative behaviour therefore affects only display of the correction component, and
@@ -1084,7 +766,7 @@ doses — it lives in build note 1 and `test/decimal.test.ts`, not in §13.3.
 because C is worse in kind.** C is recorded so that a later reader does not rediscover it and
 assume it was overlooked.
 
-### 5.3 Formatting is not a second rounding engine [R2]
+### 5.3 Formatting is not a second rounding engine
 
 - **`toFixed` is banned in the dosing path.** It returns a string, rounds the binary value it
   receives, and uses half-away-from-zero — a different mode from `Math.round`. 381
@@ -1095,7 +777,7 @@ assume it was overlooked.
 - Locale formatting can emit decimal commas that the input parser would read differently.
 - Normalize negative zero on **every** displayed quantity, not only the main readout.
 
-### 5.4 Rounding is small next to carb-counting error — but only for meal doses [R1]
+### 5.4 Rounding is small next to carb-counting error — but only for meal doses
 
 Adults miss carbohydrate estimates by 15–21 g on average, about 21% of the meal, which at an
 insulin-to-carb ratio of 10 is 1.5–2 units. A trial feeding 50/60/70 g meals all dosed for 60
@@ -1175,7 +857,7 @@ ending at 30 would object at precisely the value it is most likely to become.
 `threshold` is a settings constant **and** a §13.2 golden-case field [R1], so the build does not
 wait on this number being final.
 
-### 6.3 The confirmation shows inputs, not the dose — CONTRADICTION RESOLVED [R1-H2, R2]
+### 6.3 The confirmation shows inputs, not the dose — CONTRADICTION RESOLVED
 
 v2 said in §6.2 that the dose is "not rendered anywhere — including the accessibility tree —
 until the tap", then printed `→ 27 units` in §6.3's own example copy. Both reviewers flagged
@@ -1215,7 +897,7 @@ confirmation that outlived it could reveal a previously hidden correction under 
 acknowledgement once §7.4's window lapses — the exact thing §7.4.1 forbids. Not persisted across
 sessions. Cancelling leaves no result.
 
-### 6.4 The bound is a tripwire, not a settings validator [R2]
+### 6.4 The bound is a tripwire, not a settings validator
 
 v1 claimed the hard stop detects "settings corruption." **Withdrawn.** A wrong sensitivity
 inflates the dose and the bound identically; a matching unit-scale error passes both; and a
@@ -1240,7 +922,7 @@ Checked on the unrounded clamped total, with a one-increment allowance for the r
 rounding cannot make an attainable maximum look impossible. Preceded by an explicit
 `Number.isFinite` check.
 
-### 6.5 Plausibility advisory — REDESIGNED IN v4 [R1-HIGH-1, R1-HIGH-2, R2-F6]
+### 6.5 Plausibility advisory
 
 **v3's version was structurally dead code, and both reviewers proved it.** Recorded in full,
 because the failure mode is instructive.
@@ -1329,7 +1011,7 @@ never a period.
 
 **It never changes the dose.** Advisory text only, no tap, no gate.
 
-### 6.6 Residual risk — restated honestly [R1, R2]
+### 6.6 Residual risk — restated honestly
 
 v3 understated this. The full picture:
 
@@ -1355,7 +1037,7 @@ the threshold change). §6.4's bound still does not, and a prompt to reread is n
 The remaining defences are the §10.3 breakdown — which §10.3 itself says is necessary but not
 sufficient — and the user reading it. **This is the largest unmitigated risk in the design.**
 
-### 6.7 The usual-dose record — REDUCED IN v8 [R2, ruling adopted]
+### 6.7 The usual-dose record
 
 **v7 proposed a per-result divergence line** — beside every dose, "this is 11 units, you usually
 take about 25." **v8 removes it.** The stored figure survives; the line does not.
@@ -1644,7 +1326,7 @@ dosing snapshot. Both numbers show in the history table, labelled *calculated* a
 divergence alone **does not** exclude a row — the carbohydrates are still a true record of what
 was eaten. Recorded as the v1 decision.
 
-### 7.2 Logging is explicit, transactional, and idempotent [R2, R1-M2, R1-M3]
+### 7.2 Logging is explicit, transactional, and idempotent
 
 Automatic logging would fill the log with doses computed but never taken, making "last dose 2
 hours ago" false in the exact field the safety gate reads.
@@ -1733,7 +1415,7 @@ value. A third consumer, restart recovery, was specified here and never built; i
   the row, and the history screen shows it. Recorded as a deliberate removal with its date, so
   it does not return as an unimplemented promise.
 
-### 7.3 Delete only, with consequence [R1-H3]
+### 7.3 Delete only, with consequence
 
 No edit. Deleting the most recent entry falls the gate back to the previous one.
 
@@ -1801,7 +1483,7 @@ recreating the error it removed (§19).
 **The delete confirmation quotes the injected figure**, not the calculated one — it is the number
 §7.4 is using and the number he acted on.
 
-### 7.4 The stacking rule — CRITICAL FIX [R1-C1, R2-CRITICAL]
+### 7.4 The stacking rule — CRITICAL FIX
 
 **v2 said "suppress the correction term." That was wrong and dangerous.** The correction may be
 negative, in which case it *reduces* the dose — so suppressing it *raises* the dose, in exactly
@@ -1840,7 +1522,7 @@ override, since blocking outright is what drove users to delete rows.
 only, so erring long is free. **No decay model, now or ever**: dose-dependent duration makes a
 fixed curve false precision.
 
-#### 7.4.1 The override — fully specified [R1-H5]
+#### 7.4.1 The override — fully specified
 
 v2 said "user may override deliberately" and specified nothing. That is a rubber stamp by
 omission, and the legitimate need is real: an injection into a scarred site that did not absorb,
@@ -1885,7 +1567,7 @@ point estimate is not.
   the correction. Both are wrong in some situations, and without a decay model that is
   irreducible.
 
-### 7.5 Missing history has no safety meaning [R2]
+### 7.5 Missing history has no safety meaning
 
 The app knows only the last **recorded** injection. A backup from yesterday passes every schema,
 type and range check while omitting an injection from an hour ago; storage loss followed by
@@ -1933,7 +1615,7 @@ not fully catchable** and is recorded in §6.6.
 **Import is a merge, not a replacement.** Deduplicate on `id`. Out-of-order and duplicate rows
 are handled explicitly. An import invalidates any open result and confirmation (§4.3 step 1).
 
-### 7.6 Time handling [R2]
+### 7.6 Time handling
 
 - Timestamps stored as absolute epoch milliseconds.
 - Clock discontinuity and restart semantics are passed into the pure core **as data**, never
@@ -2099,7 +1781,7 @@ and doses without the ratios that produced them cannot be reasoned about.
 you can restore from: N days ago"** prompt are in v1 (§12). The prompt's wording is §7.7.1's — it names the
 control that produces the file, and the field it reads is §11.3's `meta.backup`.
 
-#### 7.7.1 Two exports, named by purpose — NEW IN v21 [Momin]
+#### 7.7.1 Two exports, named by purpose
 
 Until v21 there was **one** export, the JSON envelope above, readable by exactly one program: this
 app's own import. That made the record's survival permanently conditional on this app continuing to
@@ -2321,7 +2003,7 @@ useful — that anyone can open and forward it — is the property that makes it
 than mitigated, following §11.7's precedent for accepted risks. No password, no encryption: both
 would defeat the purpose and neither survives the file being forwarded anyway.
 
-### 7.8 Readings without injections — NEW IN v9 [R2, blocking]
+### 7.8 Readings without injections
 
 **The log could not answer the question this project depends on, and eight revisions did not
 notice.** Trace it:
@@ -2388,7 +2070,7 @@ so the deferral is his record, not this amendment's side effect.
 **This is the smallest possible version of it.** No charts, no averages, no time-in-range — those
 are `BACKLOG.md`. One number, one timestamp, one optional note.
 
-### 7.9 Clearing the data — NEW IN v21 [Momin]
+### 7.9 Clearing the data
 
 **Two controls, and the second one is not a convenience.** v20 shipped a §13.3 test case for "a full
 app reset", a §11.7 scope constraint on one, and a §10.7 placement rule for one — and never specified
@@ -2696,7 +2378,7 @@ the previous revision's fixes**, and this one lived inside the paragraph written
 **Humulin R is short-acting regular human insulin, not rapid-acting.** The app must never
 call it rapid — the timing advice depends on the distinction.
 
-### 8.1 Pre-meal timing — anchored to injection [R1]
+### 8.1 Pre-meal timing — anchored to injection
 
 The FDA label says inject about 30 minutes before meals; ISPAD says 20–30. This is the largest
 practical difference from a rapid analog.
@@ -2720,7 +2402,7 @@ app shows the *rule*, not a time: "Inject 20–30 minutes before eating." After 
 | Bands C / D | **Suppressed** — no dose exists |
 | Blood sugar blank | **Suppressed** — cannot know the band (§4.6) |
 
-### 8.2 Results expire [R1]
+### 8.2 Results expire
 
 Version 1 cleared the dose when *inputs* changed but never when *time* passed. A resumed app
 could show "7 units — inject now" computed from a reading three hours old, which is both a
@@ -2958,7 +2640,7 @@ for a cost this speculative. What this ruling does *not* settle is where §10.5'
 boundary should fall at all; that half stays with §18.8's existing physician question, exactly
 where note 21 routed it.
 
-### 10.5 Warning budget — NEW IN v2 [R1]
+### 10.5 Warning budget
 
 Version 1 could put four separate warnings on one result screen. Each was individually
 defensible; together they train "warnings here are noise," which then degrades the band B
@@ -3181,7 +2863,7 @@ bundles for the same two-input app: vanilla TypeScript 629 B gzipped (16 package
   untouched. The pure core enables isolated testing; it does not remove the need for
   integration tests.
 
-### 11.2 One explicit application state — NEW IN v2 [R2]
+### 11.2 One explicit application state
 
 The bundle comparison justifies "no framework." It does **not** justify implementing state as
 scattered DOM mutations and booleans — and this interface has setup gates, settings drafts,
@@ -3291,7 +2973,7 @@ dosing input, so a result computed in one tab could be silently stale against an
 recorded in another. The log revision and the decision time are part of what the dose was
 computed *from*, and changing either invalidates the result (§4.3 step 1).
 
-### 11.3 Storage — IndexedDB — CHANGED IN v4 [R2-F1]
+### 11.3 Storage — IndexedDB
 
 **v1 and v2 chose localStorage. v3 tried to patch its concurrency. v4 abandons it.** The
 reasoning is recorded because the premises moved underneath the decision.
@@ -3574,7 +3256,7 @@ tap (§7.2); only the *result* is invalidated.
 acknowledged. The §4.6 blank-reading acknowledgement is **not** among them — it is
 per-calculation.
 
-### 11.4 Service worker — scope corrected [R2]
+### 11.4 Service worker — scope corrected
 
 Version 1 claimed a hand-written worker covering precache, cache-first and cleanup is "~15
 lines, 374 B." **That claim is withdrawn.** It omits what this plan actually requires:
@@ -3695,7 +3377,7 @@ worker.
 
 ---
 
-### 11.8 Every number lives in one file — NEW IN v8
+### 11.8 Every number lives in one file
 
 **Requirement from the user, and a real hole in v1–v7: no numeric literal appears anywhere in the
 codebase except `src/config.ts`.** Enforced by lint rule, not convention. One structural exemption
@@ -3915,7 +3597,7 @@ Android install criteria: HTTPS, linked manifest with a name, icons at **both** 
 
 ## 13. Testing
 
-### 13.1 What goes in the tested core — CHANGED IN v2 [R1]
+### 13.1 What goes in the tested core
 
 Version 1 put only the arithmetic in `dose.ts` under mutation testing, and scheduled bands and
 validation into the interface step. So the verified 100%-mutation-covered code was the
@@ -3953,7 +3635,7 @@ deleting the band C block would have passed CI.
 data**, so §8.1's timing is a separate pure function tested with fixed timestamps and an
 explicit timezone. [R2]
 
-### 13.2 Golden cases — schema extended [R2]
+### 13.2 Golden cases — schema extended
 
 Version 1's schema had no rounding-mode field, making §5.2's own requirement to pin both
 branches of each mode literally unexpressible, and could not represent a blocked or gated
@@ -4005,13 +3687,13 @@ schema no way to express it.
 baseline, no entry count), had no invalid-input or invalid-settings outcome, and carried a single
 `band` when B and E can co-occur. **This is the same defect class three revisions running** — v1
 for the ceiling, v2 for the log, v3 for the advisory: each revision added a feature the test
-schema could not represent. §17's build order now requires the schema extension to land **in the
-same step as the feature**, not after it.
+schema could not represent. §17's five-leg checklist now requires the schema extension to land **in
+the same change as the feature**, not after it.
 
 **Zero assertions must distinguish negative zero from positive zero** — ordinary equality does
 not, and JSON serialization erases the distinction. [R2]
 
-### 13.3 Required cases the plan previously did not name [R2]
+### 13.3 Required cases the plan previously did not name
 
 - The §2.2 component-versus-total quantization pair, and totals 4.499, 0.999, 0.001
 - Below-target cases: blood sugar 120 carbs 15 (correction −1, meal 1.5, total 0.5); 135/14
@@ -4229,7 +3911,7 @@ negative zero", which `return 0` satisfies. **Property tests assert shape, and s
 satisfiable by degenerate implementations.** Every property needs a paired golden case pinning
 a real value.
 
-### 13.5 Boundary sweep instead of a property library [R2]
+### 13.5 Boundary sweep instead of a property library
 
 A deterministic generated sweep over the boundaries in §13.3 gives comparable coverage without
 a dependency. One property worth stating because it is counter-intuitive: **increasing the
@@ -4242,7 +3924,7 @@ The pure core cannot guarantee the interface maps fields correctly, parses separ
 consistently, uses current settings, or honours a gate (§11.1). Interface-to-core mapping,
 band-to-message pairing, and the confirmation flow each get tests.
 
-### 13.7 What tests cannot catch — recorded [R2]
+### 13.7 What tests cannot catch — recorded
 
 Mutation testing validates that the tests exercise the code. **It cannot validate the
 specification used as the oracle.** v2 proved this on itself: §2.2's worked example contained a
@@ -4347,28 +4029,18 @@ at the same sentence-form labelling as §10.1.
 
 ---
 
-## 17. Build order
+## 17. The five-leg checklist
 
-0. **Blog service worker fix** (§11.6) — separate repo, first, so it propagates.
-1. Repo scaffold, CI, deploy pipeline, empty app at a live URL.
-2. **The whole core** (§13.1) — calculation, bands, precedence, parsing, gates, rounding,
-   ceiling, stacking — with golden cases, boundary sweep and Stryker. **No interface.**
-3. The state machine and reducer (§11.2), tested against the core.
-4. Settings screen: sentence labels, live examples, delta confirmation.
-5. Calculator screen: breakdown, bands, validation, ceiling confirmation.
-6. Log: transactional "I injected" tap, history list, delete-with-consequence, **both exports
-   (§7.7.1) and the backup timestamp**, the §7.4 stacking gate, the §7.4.1 override, and the §6.5
-   plausibility advisory. **Built with §4.3, §11.2 and §13.2 integration in the same step, not
-   after it.**
+**The build order this document specified — blog worker fix, scaffold, core, reducer, settings,
+calculator, log, service worker, first-run — was followed and is finished.** `git log` is the
+record of it. What survives is the rule that governed each step, because it still governs every
+change made from here.
 
-**Standing rule, learned four times over** [v1 ceiling, v2 log, v3 advisory, **v4 the redesigned
-advisory**]: *no feature lands without its precedence step, its snapshot field, and its
-test-schema representation in the same change.*
-
-**v4 wrote this rule and broke it in the same revision** — §6.5 was redesigned with a schema
-representation and neither of the other two legs. That is evidence a stated principle does not
-prevent the error. It is therefore a **checklist run explicitly at each change**, not a
-declaration:
+**No feature lands without its precedence step, its snapshot field, and its test-schema
+representation in the same change.** Learned four times over — the v1 ceiling, the v2 log, the v3
+advisory, and then the v4 redesign of that same advisory, which arrived with a schema
+representation and neither of the other two legs. **v4 wrote this rule and broke it in the same
+revision**, which is why it is a checklist run explicitly at each change rather than a principle:
 
 ```
 [ ] §4.3  — which precedence step evaluates it, and against which value?
@@ -4377,99 +4049,89 @@ declaration:
 [ ] §13.3 — which required cases exercise it?
 [ ] §10.5 — where does it sit in the warning budget, if it renders anything?
 ```
-7. Service worker, manifest, install prompt, backup prompt.
-8. First-run disclaimer, "how this works", "what this doesn't know", settings-as-text, **and
-   §7.9's two clearing controls with the fail-closed escape** — "start over" is only testable once
-   there is a first run to return to, and the escape needs the fail-closed screen built in step 3.
 
-**v21 added two features and ran none of this checklist — RECORDED IN v22** (§19). §7.7.1 and §7.9
-arrived with no §13.3 cases and no place in this list, in a document whose every other feature has
-both. Three of the five legs are genuinely not applicable and are recorded as such rather than left
-looking skipped: neither feature has a §4.3 precedence step (neither is a calculation input), a
-§11.2 snapshot field (neither enters the dosing snapshot), or a §10.5 rank (a confirmation is not a
-result-screen advisory — §7.8's affordance ruling, applied again). The two that did apply were both
-missing, and one of them, §13.3, is where the fail-closed escape's impossibility would have surfaced
-without a reviewer: **you cannot write "assert the six-store clear runs" against a state defined by
-having no connection.**
-9. `CLINICAL.md`, README, on-device testing on his actual Android phone, then iOS.
-
-Estimated: 700–900 lines of TypeScript — up from v1's 400–500, because the core grew to
-include everything in §13.1 and the log is now in scope.
-
----
+**A leg that does not apply is recorded as not applying, never left blank.** §7.7.1 and §7.9 have
+no §4.3 step, no §11.2 field and no §10.5 rank — none of the three is a calculation input or a
+result-screen advisory — and writing that down is what distinguishes considered from skipped. Both
+features shipped missing the two legs that DID apply, and §13.3 is where the omission would have
+surfaced without a reviewer.
 
 ## 18. Open questions
 
-1. **Is the 150 mg/dL target deliberate?** Confirmed as the physician's recommendation and
-   **not to be changed by this project.** Worth one question at the next appointment — "is 150
-   deliberate, and what would need to change for it to come down?" — purely so we know whether
-   low-blood-sugar caution is the driver. If it is, that reinforces §3.
-2. ~~U-100 or U-40?~~ **RESOLVED: U-100.**
-3. ~~Pre-meal rule communicated?~~ **RESOLVED: yes.**
-4. ~~Blog: remove or upgrade?~~ **RESOLVED: upgrade, keep both offline (§11.6).**
-5. ~~Which phone?~~ **RESOLVED: Android (§12).**
-6. ~~**What is a typical meal, in grams?**~~ **CLOSED IN v7.** Answered directly: about **50 g**
-   of carbohydrate for a 250 g plate of biryani — and, the figure that actually mattered,
-   **24–25 units of Humulin R per meal**. Six review rounds never asked for the second one.
-   §6.2's threshold is recalibrated to **20** (§1.4, §6.2) and is no longer provisional.
-7. **Regulatory framing** — deferred to launch (§14).
-8. **Should the physician see the band thresholds and the ceiling before launch?** [R1]
-   Recommended, not a hard gate.
-9. **Human-factors walkthrough** [R1] — walk the actual user through band C, a ceiling
-   confirmation, the fail-closed screen and the blank-reading path before shipping. The plan
-   tests arithmetic exhaustively and the experience not at all.
+**Still open: 1, 7, 8, 9 and 13.** The rest are closed and kept as one line each, because every one
+of them is referenced from somewhere in this repository and a number that stops resolving is a
+silently broken pointer.
 
----
+1. **Is the 150 mg/dL target deliberate?** OPEN. Confirmed as the physician's recommendation and
+**not to be changed by this project.** Worth one question at the next appointment — *"is 150
+deliberate, and what would need to change for it to come down?"* — purely so we know whether
+low-blood-sugar caution is the driver. If it is, that reinforces §3.
 
-10. ~~**What should §6.7's divergence check trigger on, and where does it rank?**~~ **CLOSED IN
-    v8.** The trigger is withdrawn along with the result-screen line (§6.7). Both reviewers found
-    the upper branch unreachable; [R2]'s three arguments against the line were adopted; and the
-    65 mg/dL fact made the anchor itself unsafe. No trigger, no rank, no question.
+2. ~~U-100 or U-40?~~ **RESOLVED: U-100** (§8.5).
 
-11. ~~**Does band E need a repetition rule?**~~ **RULED IN v8** (§10.5): presence never
-    suppressed, form de-escalates after the first firing each day. Both reviewers concurred. **One
-    residual for the physician, under §18.8:** where the daily reset boundary falls.
+3. ~~Pre-meal rule communicated?~~ **RESOLVED: yes** (§8.1).
 
-12. ~~**Should a divergence between `injectedUnits` and `units` be flagged for §6.5
-    eligibility?**~~ **SETTLED IN v9** [R2]: under §6.5's eligibility predicate as written,
-    divergence alone does **not** exclude a row — the carbohydrate figure remains a true record of
-    what was eaten, and that is the only thing the baseline uses. Recorded as the v1 decision, no
-    new feature required.
+4. ~~Blog: remove or upgrade?~~ **RESOLVED: upgrade, keep both offline** (§11.6).
 
-13. **Where do the 65 mg/dL readings cluster?** — NEW IN v8, **and v8 could not have answered
-    it** [R2]. The app logged injections only, so a blocked low produced no row at all and the
-    very events in question were the ones systematically missing. **§7.8 exists because of this
-    question.** With readings recorded: clustering after smaller-than-usual meals **supports**
-    §1.4's fixed-dose hypothesis; clustering overnight points at the 36 units of Lantus instead.
-    Note the verb — support, not confirm. Several explanations remain consistent with any
-    pattern, and this question is for the prescriber reading the export, not for this document.
+5. ~~Which phone?~~ **RESOLVED: Android** (§12).
 
-14. **Which interface ships? — RESOLVED IN v25 BY THE USER: Step.** `design/step-flow.html`,
-    all 44 screens, as drawn. Card and Band are not shipping and `design/looks.html` becomes a
-    record of the comparison rather than a live option.
+6. ~~What is a typical meal, in grams?~~ **CLOSED.** About **50 g** of carbohydrate for a 250 g
+plate of biryani — and the figure that actually mattered, **24-25 units of Humulin R per meal**.
+Six review rounds never asked for the second one, and it invalidated the premise all six had
+reasoned from. §6.2's threshold is **20** because of it (§1.4, §6.2).
+
+7. **Regulatory framing** — OPEN, deferred to launch (§14).
+
+8. **Should the physician see the band thresholds and the ceiling?** OPEN. [R1] recommended it;
+never a hard gate. §18.11's residual rides here too: where band E's daily reset boundary falls.
+
+9. **Human-factors walkthrough** — OPEN [R1]. Walk the actual user through band C, a ceiling
+confirmation, the fail-closed screen and the blank-reading path. **The plan tests arithmetic
+exhaustively and the experience not at all**, and every layout defect so far was found by Momin on
+a real device rather than by any test.
+
+10. ~~What should §6.7's divergence check trigger on?~~ **CLOSED.** The trigger is withdrawn with
+the result-screen line; both reviewers found the upper branch unreachable, and the 65 mg/dL fact
+made the anchor itself unsafe.
+
+11. ~~Does band E need a repetition rule?~~ **RULED** (§10.5): presence never suppressed, form
+de-escalates after the first firing each day. The reset boundary is the residual under §18.8.
+
+12. ~~Should a divergence between `injectedUnits` and `units` affect §6.5 eligibility?~~
+**SETTLED** [R2]: no. The carbohydrate figure remains a true record of what was eaten, and that is
+the only thing the baseline uses.
+
+13. **Where do the 65 mg/dL readings cluster?** OPEN, and **the app could not answer it until §7.8
+existed** — it logged injections only, so a blocked low produced no row at all and the very events
+in question were the ones systematically missing. With readings recorded: clustering after
+smaller-than-usual meals **supports** §1.4's fixed-dose hypothesis; clustering overnight points at
+the Lantus instead. **Note the verb — support, not confirm.** This question is for the prescriber
+reading the export, not for this document.
+
+14. **Which interface ships? — RESOLVED IN v25 BY THE USER: Step.** `design/step-flow.html`, all 44 screens.
+Card and Band are not shipping; `design/looks.html` is a record of the comparison.
 
     **This overrules a recommendation, and the recommendation is recorded because §19 requires
-    it.** The author argued for a hybrid — Card for the everyday path, Step's takeover reserved
-    for the band C/D refusals — on the grounds that **abandonment, not a misread number, is this
-    project's real failure mode**: the app competes with a zero-tap habit (§1.4's fixed 24–25
-    units), Step's everyday path is four screens against Card's one, and that tax is paid three
-    times a day forever. Momin's answer was that Card is too basic. **That is a judgement about
-    his own brother's phone and the thing he will actually open, and it beats a reasoned argument
-    about tap counts** — §19's first principle is that a review verdict collapses on facts only
+    it.** The author argued for a Card/Step hybrid — Card for the everyday path, Step's takeover
+    reserved for the band C/D refusals — on the grounds that **abandonment, not a misread number,
+    is this project's real failure mode**: the app competes with a zero-tap habit (§1.4's fixed
+    24-25 units), Step's everyday path is four screens against Card's one, and that tax is paid
+    three times a day forever. Momin's answer was that Card is too basic. **That is a judgement
+    about his own brother's phone and the thing he will actually open, and it beats a reasoned
+    argument about tap counts** — §19's first principle is that a verdict collapses on facts only
     the user holds, and this is one of them.
 
     **The trade-off is accepted, not dissolved.** If the app is abandoned for the old habit, the
-    everyday tap count is the first thing to examine, and §17's step 9 — on-device testing on his
-    actual Android phone — is where it would first show. Two things already in the plan blunt it:
-    §7.1's `injectedUnits` defaults to the calculated dose so the common case needs no typing,
-    and §7.2's commit is two taps with no keyboard.
+    everyday tap count is the first thing to examine. Two things already blunt it: §7.1's
+    `injectedUnits` defaults to the calculated dose so the common case needs no typing, and §7.2's
+    commit is two taps with no keyboard.
 
-    **What this decision does not change:** every rule in this document is stated as *what a
-    screen must say*, never how it is laid out, so §13.1's core, §11.2's reducer and §4.3's
-    precedence are untouched. What it does add is a **wizard state on top of §11.2's reducer** —
-    a screen sequence with a position, a back path, and the rule that going back never discards a
-    committed input. That is new machinery, it is in the §17 step 5 budget, and it is named here
-    so it is not discovered during the build.
+    **What it does not change, and the one thing it adds.** Every rule in this document is stated
+    as *what a screen must say*, never how it is laid out, so §13.1's core, §11.2's reducer and
+    §4.3's precedence are untouched. What Step adds is a
+    **wizard state on top of §11.2's reducer** — a screen sequence with a position, a back path,
+    and the rule that going back never discards a committed input. It is named here because it was named before the build rather than
+    discovered during it.
 
 ## 19. Principles
 
@@ -4484,6 +4146,16 @@ include everything in §13.1 and the log is now in scope.
   the lesson was written down in this very document. A rule you have recorded is not a rule you
   have absorbed; §17's checklist exists because of this and has still been broken five revisions
   running.
+- **A guarantee enforced by memory is not enforced.** §20.3 said `check-plan.py` "runs before
+  every dispatch" for eight months while nothing made it true — the script appeared nowhere in
+  `.github/`, so every check and every seeded mutation in it fired only when somebody remembered to
+  type them. The same shape produced three documents carrying hand-copied test and mutation counts
+  that went stale twice. **The answer is never to try harder**: make the machine fail, or stop
+  making the claim and point at whatever generates it.
+- **A clean checker run is evidence about the rules the checker holds, and about nothing else.**
+  Five separate rounds found checks that certified nothing, and in every case *reading* the check
+  suggested it worked — only seeding the defect it claimed to catch revealed otherwise. Every check
+  therefore arrives with its mutation in `SELF_TESTS`, in the same edit.
 - A wrong dose is worse than no dose — **at the low end.** At the high end, no dose is worse.
   The gate goes where inaction is safe (§3.1).
 - The arithmetic is three lines. The work is guardrails, input state, output clarity and tests.
@@ -4553,140 +4225,81 @@ document exists to prevent, arriving through the back door.
 
 ### 20.2 Repositories and order
 
-| # | Repository | Change |
-|---|---|---|
-| 0 | `mominbinshahid.github.io` (existing blog) | **`workboxConfig` override on `gatsby-config.plugins.js`, excluding `/MealUnits/` from runtime routes 0 AND 2** — then execute every `urlPattern` in the generated `sw.js` against representative app URLs and assert none match (§11.6, `BLOG-FIX.md`). **Withdrawn in v16** [R2]: neither *Upgrade `gatsby-plugin-offline`* nor the *navigation-fallback denylist* — the first needs Gatsby 4+ on a Gatsby 2 blog, the second is inert because the plugin never configures `navigateFallback` |
-| 1 | `MealUnits` (new) | The app |
-
-**Blog first**, so the worker change has time to propagate — it only reaches a browser when that
-browser next visits the blog. The maintainer's own browser is the most likely to hold the stale
-worker, so leaving it in place would also poison his own testing.
+Two repositories: `mominbinshahid.github.io` (the blog, which owns the origin) and `MealUnits`.
+**The blog's service worker is changed first**, because a worker change only reaches a browser when
+that browser next visits the blog — and the maintainer's own browser is the most likely to hold the
+stale one, so leaving it would poison his own testing too. `BLOG-FIX.md` carries the route table and
+the exclusion that is live today.
 
 ### 20.3 Review cycle
 
-Every revision of this plan goes to two independent reviewers before implementation:
-**[R1]** clinical / state-machine, **[R2]** implementation / code-level, from different model
-families. Findings are marked at the point of change.
+Substantial changes go to two independent reviewers before implementation: **[R1]** clinical and
+state-machine, **[R2]** implementation and code-level, from different model families. Findings are
+marked at the point of change.
 
-#### `check-plan.py` runs before every dispatch, and is maintained with the document — ADDED IN v14
+**The bar:** a finding stops the work only if it changes **a dose, a gate, or a stored shape.**
+"No findings at any severity" ran for twenty rounds and is self-perpetuating — each round's fixes
+are the next round's findings (§19).
 
-Thirteen rounds produced a stable set of *mechanical* defects: a phrase this document condemns
-still standing as live spec, a §reference resolving to nothing, a completion claim about text
-that is still there, a §13.2 field with no §11.2 home. **Every one cost a review round that
-should have gone on design.** `check-plan.py` catches that class.
+#### `check-plan.py` is part of this document, not a tool beside it
 
-**It runs before every dispatch to reviewers, and a finding is fixed before the round opens.**
+It runs **in CI as the `plan` job**, and before any dispatch to reviewers. The job runs
+`--self-test` first, because a checker whose own seeded mutations escape has a worthless "clean".
 
-**And since 2026-09-12 it runs in CI, which is the half that was missing for eight months
-[R26].** Until then this section said "runs before every dispatch" and nothing made that true:
-`check-plan.py` appeared nowhere in `.github/`, so twenty-four checks and a 103-mutation self-test
-fired only when somebody remembered to type them. Found the day a new rule was added under this
-section's own maintenance obligation — and the rule could not have caught a regression on anybody's
-pull request. A guarantee enforced by memory is the shape T1 warns about: it goes quiet rather than
-failing loudly. The `plan` job runs the self-test first, because a checker whose own seeded mutations
-escape has a worthless "clean."
+**A revision that changes `PLAN.md` without changing `check-plan.py`, where the change touches
+anything the script tracks, is incomplete.** The obligation is binding because an unmaintained
+checker is worse than none — it reports "clean" while the document rots underneath it:
 
-**The maintenance obligation is binding, and exists because an unmaintained checker is worse than
-none** — it reports "clean" while the document rots underneath it:
-
-- A reviewer finds a defect the script *could* have caught → **add the check in the same edit that
-  fixes the document.** Not afterwards.
-- A phrase is retired, corrected or reworded → **add it to `RETIRED` in the same edit.**
+- A defect the script *could* have caught → **add the check in the same edit that fixes the
+  document.** Not afterwards.
+- A phrase retired, corrected or reworded → **add it to `RETIRED` in the same edit.**
 - A canonical number changes → **update `CANONICAL` in the same edit.**
-- A snapshot or schema field is added or removed → **update `SNAPSHOT_EXEMPT` or `GROUPED`.**
+- A snapshot or schema field added or removed → **update `SNAPSHOT_EXEMPT` or `GROUPED`.**
 - **A check produces false positives → fix the check.** Never delete it, never start ignoring its
-  output. Its first run reported 23 findings of which 21 were its own
-  bugs; every cause was fixed rather than suppressed, which is the standard. **[R1] later
-  mutation-tested it and found three checks certifying nothing** — the flagship among them. See
-  the count-pinning note in the script.
-
-**The script is part of this document, not a tool beside it.** A revision that changes PLAN.md
-without changing `check-plan.py`, where the change touches anything the script tracks, is
-incomplete.
-
-**The checker verifies itself — ADDED IN v19.** `python3 check-plan.py --self-test` re-runs every
-seeded mutation reviewers have used to break it: the four BLOG-FIX route escapes, canonical drift in
-a non-PLAN file, both target-ceiling reversions, the deletion of §6.7's store row and its three
-states, the noon/midnight revert, a retired name resurrected in a design file **and in this script's
-own comments**, and a §20.5 listing naming a file that does not exist. Each mutation must produce a
-finding; a mutation that changes nothing is itself reported, because a test whose anchor has moved
-verifies nothing while still passing.
-
-**This is not belt-and-braces — it is the answer to this project's most persistent defect.** Five
-separate rounds found checks that certified nothing, and in every case *reading* the check suggested
-it worked; only *running* it revealed otherwise. The self-test earned its place immediately: it
-caught a broken sentinel in v19's own redaction, introduced minutes earlier, which had silently
-switched the script's self-sweep back off while the checker still printed `clean`.
+  output. Its first run reported 23 findings of which 21 were its own bugs; every cause was fixed
+  rather than suppressed, and that is the standard.
 
 **A check that cannot be shown to fail on a real defect is not a check.** New checks arrive with a
-seeded mutation in `SELF_TESTS`, in the same edit.
+seeded mutation in `SELF_TESTS`, in the same edit — see §19. `--self-test` also reports a mutation
+that changes nothing, because a test whose anchor has moved verifies nothing while still passing.
 
-#### A change here is a change everywhere — ADDED IN v18
+#### A change here is a change everywhere
 
-**Momin's rule, set after the §6.7 cut left the feature described as live in three other files.**
-**Editing `PLAN.md` is not finishing a change.** Every edit is followed by a sweep of every live
-file — every `.md`, `.py` and `.html` under this directory, at any depth, which is exactly what
-`python3 check-plan.py --files` prints — for references to whatever moved. **The list is discovered,
-never written down here**: v20 named `NEXT-STEPS.md` in this very sentence after deleting it in the
-same revision, and named `design/*.html` after discovery had stopped being one level deep. A rule
-about stale references that carries a stale reference is not a rule.
+**Momin's rule.** Editing `PLAN.md` is not finishing a change. Every edit is followed by a sweep of
+every live file for references to whatever moved — and **the file list is discovered, never written
+down here**, which is exactly what `python3 check-plan.py --files` prints. A rule about stale
+references that carries a stale reference is not a rule.
 
-v17 cut §6.7 and left it described as shipping in `BACKLOG.md`, exempted in `check-plan.py`'s own
-`SNAPSHOT_EXEMPT`, tagged in a design file, and asserted as one of "all four stay" in this
-document's own header. **Both reviewers found them; the author found none of them.**
+The rule is enforced mechanically rather than by memory: the retired-phrase sweep and the canonical
+drift scan read every live file, so retiring something in one document flags every other mention.
+**What that cannot do** [R1]: it is automatic only *after* a retirement is pinned. **Retiring a
+phrase and adding its pin are one edit, not two.**
 
-**The rule is enforced mechanically, not by memory** (§20.3's checker paragraph): the retired-phrase
-sweep and the canonical **drift** scan read **every live file**, so retiring something in one
-document flags every other mention automatically. A promise to sweep is worth nothing; a check that
-fails the dispatch is.
+**Reference a companion document's entries by NAME, never by number.** Numbers get renumbered and
+the pointer rots silently: v14 referenced two `BACKLOG.md` entries by number after those numbers had
+been reused, and asserted three falsehoods in one paragraph as a result. `check_plan_against_backlog`
+enforces it. `BACKLOG.md`'s own header carries the other half — that its numbers are identity rather
+than rank, so nobody renumbers the file to tidy it.
 
-**What the sweep cannot do, stated so it is not mistaken for total coverage** [R1]: it is automatic
-only *after* a retirement is pinned. v18 retired two wordings and pinned neither, so both leftovers
-sat in a frozen corpus under a "clean" verdict. **Retiring a phrase and adding its pin are one edit,
-not two** — which is why the canonical table now also pins the things each revision most recently
-fixed, those being the ones the next revision is likeliest to undo.
-
-#### The designs follow this document, not the other way round — ADDED IN v17
+#### The designs follow this document, not the other way round
 
 **Momin's ground rule.** Any mockup, prototype or screen design must match `PLAN.md` **as it
 currently stands** — not a proposal for it, and not anyone's memory of it. Where a proposal
-conflicts with live plan text, **the plan wins until Momin rules otherwise.**
+conflicts with live plan text, **the plan wins until Momin rules otherwise.** Its first application
+went *against* the recommendation of whoever was holding the pen, which is the rule working.
 
-It was set after a mockup reintroduced §6.7's removed per-result line — the third recurrence of a
-deleted feature in this project, and the first in a form that looks like a decision rather than a
-slip. Its first application went **against** the recommendation of whoever was holding the pen:
-§6.7 was still live, so the design kept it, while the proposal to cut it waited for a ruling. **That
-is the rule working.**
+#### The document is frozen while a round is open
 
-**THE DOCUMENT IS FROZEN WHILE A ROUND IS OPEN — ADDED IN v10** [R1]. No edit is applied to
-`PLAN.md` between dispatching a round and receiving **both** verdicts, however obviously correct
-the edit seems. Round 9 broke this: [R2]'s findings were applied while [R1] was still reading,
-the file grew by 52 lines mid-review, and [R1] correctly refused to let its verdict bind to a
-moving artifact. **Two reviewers reviewing different documents are not two independent reviews of
-anything.** Fixes from both are batched into the next version, which is what gets dispatched.
+No edit is applied between dispatching a round and receiving **both** verdicts, however obviously
+correct the edit seems. Round 9 broke this: one reviewer's findings were applied while the other was
+still reading, the file grew by 52 lines mid-review, and the verdict could not bind to a moving
+artifact. **Two reviewers reviewing different documents are not two independent reviews of
+anything.**
 
-**The freeze covers every file `check-plan.py` reads — EXTENDED IN v15, WIDENED IN v19** [R1]:
-every file `--files` prints. v14 froze only
-`PLAN.md`, and `BACKLOG.md` was edited mid-round — [R1] caught it by hash. v18 made the designs
-checker inputs via the all-files sweep but left them outside the freeze and outside the dispatch
-hash set, so a mid-round design edit could move a reviewed input undetected — the identical class,
-one file further out. **A checker input that moves after dispatch means "clean at dispatch" no
-longer describes the reviewed state**, so the dispatch hashes **every** file the script reads.
-
-**`python3 check-plan.py --files` prints that list** — the dispatch hash set must be exactly it,
-name for name. v19 asserted this was verified and nothing verified it: the list held eight files
-while the dispatch hashed seven, so a mid-round edit to the eighth could flip the verdict after
-dispatch [R1]. The eighth was `NEXT-STEPS.md` — the file whose charter called it **DELIBERATELY
-EPHEMERAL** — and v20 removed it, moving its two surviving items to §20.5 and §18.14. The check now
-exists rather than the claim.
-
-**The dispatch carries the script's output and its hash**, so a reviewer can tell whether the
-checker ran and against what — a written rule alone broke under momentum in round 9.
-
-**Established empirically over three rounds: each revision's defects live in the previous
-revision's fixes.** Round 2's critical was in the log added to fix round 1. Round 3 found two
-fixes that reintroduced defects earlier fixes had removed. Reviews therefore target the newest
-material first, and a revision is never assumed clean because the previous one was reviewed.
+**The freeze covers every file the checker reads** — every file `--files` prints, not just
+`PLAN.md`. A checker input that moves after dispatch means "clean at dispatch" no longer describes
+the reviewed state, so **the dispatch hashes exactly that list, name for name**, and carries the
+script's output alongside it.
 
 ### 20.4 Decisions made in conversation
 

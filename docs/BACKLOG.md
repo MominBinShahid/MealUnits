@@ -12,27 +12,23 @@ Categories: **Next**, **Later**, **Never** for features, plus **Technical** for 
 not that it is technically hard. **Technical** is not a priority tier — it is a different KIND of
 entry, waiting on something outside this project rather than on a decision of ours.
 
+**Numbers are identity, not rank.** The feature entries are ONE sequence partitioned across the
+tiers — 1-20 today — so a number stays stable enough to cite, while **position within a tier**
+carries the priority. That is why 20, 18 and 19 sit above 1, and why 4a and 10a sit above 6. Do not
+renumber to tidy it: reusing a number is how `PLAN.md` v14 came to assert three falsehoods about
+this file, which is why §20.3 says reference an entry by NAME, never by number.
+
 **THE RULE, added 2026-09-06: if it is built, it comes out of this file.** An entry here means
 "excluded from v1". A feature that is implemented and shipping cannot also be deferred, and
 leaving it in both places makes the two documents lie about each other.
 
-Two entries were removed under this rule on the day it was written:
-
-| Removed | Now lives in | Note |
-|---|---|---|
-| *Dose adjuster at the confirm step* | `PLAN.md` §7.1, as `injectedUnits` | Implemented in plan v8. Its constraint here — "must not become a way to type any number" — was dropped in transit and restored in v9 with a full input specification: grammar, integer hundredths, finiteness, zero/negative rejection, a 100-unit cap, soft confirm |
-| *Settings snapshot on each log row* | `PLAN.md` §7.7, §11.3, as `settingsRevision` + `settingsHistory` | Implemented in plan v9. Took review rounds 11, 12 and 13 to get correct; both reviewers now pass it |
-
-Also now in v1 and never listed here, recorded so the omission is visible: **§7.8's readings
-store** (a blood-sugar reading recorded without an injection — the app previously discarded every
-blocked low, which made §18.13 unanswerable) and **§10.6's setup disclosure** (wording only, no
-stored number).
-
-**§6.7's usual-dose field was also in that list, and was CUT in plan v17** on Momin's objection: a
-calculator whose premise is that the dose varies cannot store a field asserting a constant. It is
-replaced by one optional free-text question asked **at export and re-offered until answered or
-declined** (plan §6.7), kept as dated patient-reported history — **not a setting, and nothing this
-file needs to carry.**
+Applied twice on the day it was written: the *dose adjuster at the confirm step* and the *settings
+snapshot on each log row* both moved into `PLAN.md` as `injectedUnits` (§7.1) and `settingsRevision`
+(§7.7, §11.3). **§7.8's readings store and §10.6's setup disclosure** were in v1 and never listed
+here at all, recorded so the omission is visible. **§6.7's usual-dose field was cut** on Momin's
+objection — a calculator whose premise is that the dose varies cannot store a field asserting a
+constant — and replaced by one optional free-text question asked at export, which is plan business
+and nothing this file needs to carry.
 
 ---
 
@@ -44,9 +40,9 @@ these steps have a dependency that is not obvious from reading them.
 | # | Step | State | Why here |
 |---|---|---|---|
 | 1 | **Push and deploy.** Blog first (§20.2), then this repository | **DONE 2026-09-07** | §1.4 — the app competes with a fixed 24-25 units injected blind |
-| 2 | **Confirm updates reach a real phone** | **DONE.** Three deploys have reached Momin's device, each after a full app restart | `T4` is therefore narrowed: delivery works, only the in-app "a newer version is ready" bar is unproven |
-| 3 | **Rule on the `[CONFIRM]` build notes**, one at a time | **IN PROGRESS.** Note 1 ruled 2026-09-09 | Moved AHEAD of `T5` on Momin's instruction. Each records a decision already implemented; the question is whether it was right |
-| 3a | **Prune every Markdown document**, on Momin's instruction 2026-09-11: `PLAN.md`, `BUILD-NOTES.md`, `BACKLOG.md`, `CLINICAL.md`, `BLOG-FIX.md`, `README.md`, `CLAUDE.md` | | **After step 3**, because the `[CONFIRM]` rulings decide what the notes still have to carry. *"We can't keep everything for ever, so we will only keep things that earn their place."* A finished `[FYI]` record of a bug fixed in week one is not earning 1,577 lines of attention, and 4,545 lines of `PLAN.md` is now read by people who need the live rules, not the round-by-round history of how they were reached. What comes out and what stays is a judgement per entry, so it is its own pass |
+| 2 | **Confirm updates reach a real phone** | **DONE.** Both paths confirmed on Momin's device: the in-app bar renders and can be tapped, and a full restart activates a waiting worker anyway | `T4` closed 2026-09-09 |
+| 3 | **Rule on the `[CONFIRM]` build notes**, one at a time | **DONE 2026-09-13.** No entry carries the tag any more. 52 and 59 ruled keep; 16 rewritten to stop hand-carrying counts; 60 split, its open half now entry 20 | Moved AHEAD of `T5` on Momin's instruction. Each recorded a decision already implemented; the question was whether it was right |
+| 3a | **Prune every Markdown document** | **DONE 2026-09-13.** `BUILD-NOTES.md` lost most of its body, `PLAN.md` its revision history, `BLOG-FIX.md` its investigation; `CLINICAL.md` and `CARBS.md` untouched. `git log` has the figures — they rot if written here | **After step 3**, because the `[CONFIRM]` rulings decided what the notes still had to carry. *"We can't keep everything for ever, so we will only keep things that earn their place."* Every build-note NUMBER survived even where its body did not — many are cited from source and tests |
 | 4 | **`T5` — the audience change.** Empty prescription fields with the strengthened hints, and the confirmation threshold made relative | | **This gates step 5.** Ranking an app that prefills a stranger's dosing ratios is the version of this that goes wrong |
 | 5 | **`4a` + `T6` — search and measurement.** Open Graph, canonical, sitemap, Search Console | | After `T5`, never before |
 | 6 | **`T3` — Preact** | | Kills the whole render-teardown defect class by construction |
@@ -55,7 +51,79 @@ these steps have a dependency that is not obvious from reading them.
 **The two dependencies worth restating, because getting them wrong is expensive:** search work waits
 on `T5`, and Urdu waits on `T3`.
 
+**Deliberately not in this table: carbohydrate reference phases 2 and 3** (entries 18 and 19).
+They are real work with code already depending on them, but every slot above is earned and `T5`
+gates the public launch. They get a position here when `T5` lands — and 19 needs a ruling before
+any code regardless of where it sits.
+
 ## NEXT — likely v2, in rough priority order
+
+### 20. §8.2 expires results, never inputs — is that right?
+**UNRULED. A specification question, not a screen fix.** Raised 2026-09-13 out of build note 60.
+
+**What the app does today.** §8.2 flips `expired` fifteen minutes after a result, and the result
+screen and the block screen both say so. It clears nothing: the typed reading stays in the field.
+So any path that recalculates — "Work out the dose" again, or §7.4.1's override, which invalidates,
+sets `expired: false` and recomputes — produces a result the app considers **fresh**, from a reading
+that is not.
+
+**Why this is not obviously a defect.** §8.2's subject is the ANSWER going stale, and it says so
+plainly. Forcing re-entry of the reading is a different rule, and a heavier one: it puts a keyboard
+between a man and a dose he has already decided to take, every time he lingers.
+
+**Why it is not obviously fine either.** The reading is the input whose staleness §8.2 exists to
+worry about, and the one path where this is sharpest is the override — reached from a screen that
+DOES carry the staleness notice, one tap, no input screen in between, and the result is a LARGER
+dose than the one that was suppressed.
+
+**What a ruling would have to decide:** whether a stale reading blocks recalculation everywhere,
+only on the override, or nowhere; and if it blocks, whether it clears the field or only warns.
+Build note 60 records the half that is already shipped — the block screen honouring expiry.
+
+### 18. Carbohydrate reference phase 2 — his own grams, per food
+**Trigger: once the list has been used enough that the estimates are visibly wrong for his plate.**
+
+**What phase 1 shipped:** 31 foods, each with an estimate, a confidence (6 high, 24 medium, 1 low)
+and a source; 14 carry a `gramsMax` and 25 carry a `varies` note, because the portion genuinely
+ranges. The number is an estimate of *a plate nobody weighed* — which is honest, and also the limit
+of what a reference can do.
+
+**What phase 2 adds:** he records what **his** roti weighs, and the list shows that instead.
+
+**Constraints, all of which are the point:**
+- The stored value is the user's, not reference data. `src/data/carbs.ts` stays a data module with
+  no writes — §11.8's reference-data exemption, condition 1: *the module holds data and nothing
+  else.* A calibration store is user data and lives with the rest of it.
+- A calibrated row must still show the reference figure it replaced and the date it was set. A
+  number whose provenance is gone is the class §7.7 exists to prevent.
+
+**Unruled:** per food, per portion, or a single "my roti is this heavy" scale factor.
+
+### 19. Carbohydrate reference phase 3 — the tally that fills the carbohydrate field
+**UNRULED, AND IT DELIBERATELY BREAKS A SAFETY PROPERTY. Needs a ruling before any code.**
+
+**What:** pick foods, give each a count, read the total, put the total in the carbohydrate box.
+
+**Phase 1's whole safety argument is that the list never writes into that box.** Both
+`src/ui/screens/foods.ts` and `src/ui/copy.ts` state it in those words: *a wrong row can mislead
+someone and can never silently drive a dose* — §7.8's property for readings, applied to food.
+Phase 3 removes exactly that. A wrong row, or a mis-tapped count, becomes units of insulin.
+
+That is not an argument against building it — the retyping is real friction three times a day, and
+friction is what §18.14 names as this app's actual failure mode. It is an argument for deciding the
+following **before** any of it exists:
+
+- Does the total arrive as an editable number he confirms, or as a committed value? Editable keeps
+  him in the loop; committed is the thing that actually saves the taps.
+- Does §10.3's working show the tally, so the dose's provenance survives onto the result screen?
+- Does a `low`-confidence row disqualify a food from the tally, or only warn? §10.5's warning
+  budget decides where that sits, if anywhere.
+- §17's five legs all apply: §4.3 precedence, §11.2 snapshot, §13.2 schema, §13.3 cases, §10.5 rank.
+
+**Recorded 2026-09-13 because it existed nowhere.** Both phases were agreed in conversation while
+phase 1 was being built and lived only in a session task list — which is exactly what §20.5's rule
+names: a decision not written down does not exist. Found while auditing the documents for the
+prune, one step before the prune would have made it permanent.
 
 ### 1. Blood-sugar plausibility advisory
 **What:** the mirror of §6.5 for the blood-sugar field — 350 typed as 530, or as 150.
@@ -448,62 +516,19 @@ the label's parent.
 
 ### T4. The in-app update prompt — CLOSED 2026-09-09, IT WORKS
 
-**CLOSED. Momin, 2026-09-09, on a real phone against the deployed app: "in app bar does render and
-ask me to use it now, so that's perfect."** The prompt appears and the update can be taken by tapping
-it. Nothing further is outstanding.
+**Momin, on a real phone against the deployed app: "in app bar does render and ask me to use it now,
+so that's perfect."** Updates reach a phone two ways, both confirmed: the in-app bar renders and can
+be tapped, and a full close-and-reopen activates a waiting worker anyway. Nothing outstanding.
 
-**The entry is kept because it was wrong twice, in opposite directions, and both are instructive.**
+**Kept because it was wrong twice, in opposite directions.** First it claimed a device that had
+cached a build "stays on it, permanently" and that this blocked launch — wrong; closing and
+reopening delivers the new build, which is the lifecycle working as specified. Then it claimed the
+in-app prompt never rendered, on the strength of `vite preview` over a LAN — also wrong.
 
-First it claimed a device which had cached a build "stays on it, permanently" and that this blocked
-launch. **That was wrong** — Momin rejected it and told me to confirm from the code. Closing and
-reopening delivers the new build, which is the specified service-worker lifecycle working correctly.
-
-Then it claimed the in-app prompt did not render at all, on the strength of `vite preview` over a
-LAN. **That was wrong too.** On real HTTPS with real Pages caching it renders. A local preview is not
-the deployment, and I reported a negative result from the wrong environment as a defect in the app.
-
-**The lesson, which outlives the entry: I twice reported a confident conclusion from an environment
+**The lesson that outlives the entry: twice, a confident conclusion was reported from an environment
 that could not produce the behaviour under test.** The measurements were real; the setting was not.
-
-**What actually happens, measured across a close-and-reopen:**
-
-| | Bundle served |
-|---|---|
-| Install build A | `index-BjuqWl9V.js` |
-| Ship build B, revisit while the app is still open | `index-BjuqWl9V.js` — old worker in control, new one `waiting: "installed"` |
-| **Close the app entirely, reopen** | **`index-v3G2ALM4.js` — the new build** |
-
-That is the **standard service-worker lifecycle working correctly**: a waiting worker activates as
-soon as every client using the old one is gone. I read "old bundle served while a new worker waits"
-as a fault when it is the specified behaviour, and never ran the close-and-reopen that would have
-shown it.
-
-**What IS still missing:** the in-app offer — *"A newer version is ready — Use it now"* — does not
-render, so an update cannot be taken WITHOUT closing and reopening the app. That is a convenience
-gap, not a trap. §11.4 chose a prompt over an automatic reload deliberately (never swap versions
-mid-dose), and the prompt is the part not working.
-
-**Three real defects were fixed on the way and are worth keeping regardless:**
-
-- **Nothing ever asked whether an update existed.** `registration.update()` now runs at startup and
-  on returning to the foreground, throttled. The browser's own check needs a navigation, which an
-  installed PWA can go a long time without — so without this the check could be much later than it
-  should be.
-- **Registration depended on the `load` event alone**, which never fires if the document is already
-  complete when the module runs.
-- **Every hook could miss the moment** — `waiting` null at registration, `updatefound` firing before
-  the listener attaches, `installing` already moved on. `offerIfReady` is idempotent and runs from
-  all of them plus a bounded poll.
-
-**Trigger: after the first deployment**, and Momin named the test — change something visible and
-cheap, such as the position of the greeting, deploy, and watch a real phone. A real deploy over HTTPS
-with real Pages caching is a different environment from `vite preview` on a LAN, and it is the one
-that matters.
-
-**The lesson recorded rather than the fix:** I called a launch blocker on a mechanism I had not
-finished understanding, and stated it three times. §20.1.1 now covers the mirror of this — ask when
-something looks wrong — and this is the same failure pointed at the platform instead of at the
-document.
+`tools/smoke.mjs` exists partly because of this, and the same trap caught the lower-case redirect
+check a week later (`BLOG-FIX.md` section 6).
 
 ### T5. AUDIENCE CHANGE — the app is for anyone, and three things assume it is not
 
@@ -575,6 +600,25 @@ reads), `README.md`, `CLAUDE.md`, and `docs/PLAN.md` §1.
 
 **Trigger: before the app is promoted anywhere.** Deploying it at a URL is not promotion; item 4a's
 search work is.
+
+### T14. Vitest is pinned to 4.x, and the pin is not ours to lift
+**Trigger: when `@stryker-mutator/vitest-runner`'s own devDependency moves past vitest 4.**
+
+**What:** `package.json` holds `vitest: ^4.1.11`. Vitest 5 is out.
+
+**Why it cannot be taken.** The runner activates a mutant with
+`ctx.provide('activeMutant', id)` and reads it back with `inject()` inside the test worker. Under
+Vitest 5 the value never arrives, so **every mutant runs against unmutated code and survives.** The
+first run under 5 scored **2.57% against 308 passing tests** — not a testing gap, a tool reporting
+that nothing happened. For a project whose merge gate is a 100% mutation score, a working runner is
+worth more than the newest minor.
+
+**How to tell it is fixed rather than guessing:** read the `Ran N tests per mutant on average` line,
+not the score. 1.28 means the mutants are not being activated; 9.05 is the healthy figure on 4.1.11.
+
+**Recorded 2026-09-13.** Build note 15 pointed at this file for it and there was no entry here to
+point at — the pin lived only in a build note and in `package.json`'s caret. Same class as the carbs
+phases: a constraint with no home is a constraint nobody will find.
 
 ### T6. Analytics and Search Console, for a public app
 
@@ -711,9 +755,10 @@ the only question is when the migration gets paid.* **That is a deferral, not a 
 verdict in a heading over a conceded argument is advocacy rather than a record.
 
 **So: the cost, plainly, and nothing recommended.** The script
-is **2,536 lines** carrying **24 checks** and **103 seeded mutations** that each prove a specific
-check still bites. That self-test is the asset — more than the checks are. A rewrite is only finished
-when all 103 are reproduced and passing, and until that moment the repository has a checker nobody
+is **2742 lines** carrying **27 checks** and **104 seeded mutations** that each prove a specific
+check still bites — figures as of 2026-09-13; `python3 check-plan.py --self-test` prints the
+current one. That self-test is the asset, more than the checks are. A rewrite is only finished
+when every one of them is reproduced and passing, and until that moment the repository has a checker nobody
 can trust, guarding a specification for an app that doses insulin. The best available outcome is
 *exactly what exists today, in a different language*.
 
@@ -900,21 +945,10 @@ built by teams. This app is a calculator.
 
 ## Open questions carried from PLAN.md §18
 
-1. Is the 150 mg/dL target deliberate? Physician's choice, not to be changed by this project —
-   but worth one question at the next appointment.
-2. Regulatory framing — deferred to launch (§14).
-3. Should the physician see the band thresholds and the ceiling before launch? Recommended, not a
-   hard gate.
-4. Human-factors walkthrough — walk the actual user through band C, a ceiling confirmation, the
-   fail-closed screen and the blank-reading path before shipping.
-5. ~~Name — undecided~~ **DECIDED: `MealUnits`.** Chosen over `MealMath` because it carries no
-   spelling trap (British "maths" lands in Waitrose/Ocado territory), is clean on every search,
-   and names the app's output rather than its process. Research table below kept as the record.
-6. ~~Typical meal size in grams~~ **ANSWERED, and it moved two thresholds.** About **50 g** of
-   carbohydrate for a 250 g plate of biryani, and — the figure that actually mattered — **24–25
-   units of Humulin R per meal**, two or three meals daily, plus 36 units of Lantus. Also
-   answered: **his blood sugar sometimes falls to 65 mg/dL**, which falsified the premise two
-   review rounds had been built on. See `PLAN.md` §1.4; §18.6 is closed.
+**Not restated here.** `PLAN.md` §18 is the list, and keeping a second copy is how the two came to
+disagree once already. Five are open: §18.1 (is the 150 target deliberate), §18.7 (regulatory
+framing), §18.8 (should the physician see the thresholds), §18.9 (the human-factors walkthrough)
+and §18.13 (where the 65 mg/dL readings cluster). The last one is what the export exists to answer.
 
 ---
 
