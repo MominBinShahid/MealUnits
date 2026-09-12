@@ -60,7 +60,7 @@ CI reads that file rather than carrying its own copy.
 ```sh
 npm install
 npm run dev        # development server
-npm test           # 566 tests
+npm test           # 647 tests
 npm run check      # typecheck, lint and tests — what CI runs
 npm run mutate     # mutation testing on the core, at a 100% break threshold
 npm run build      # production build, including the service worker
@@ -81,8 +81,9 @@ Everything is on its latest release except two, both deliberate:
 ## How it is put together
 
 ```
-docs/              PLAN.md, CLINICAL.md, BUILD-NOTES.md, BACKLOG.md, the designs
+docs/              PLAN.md, CLINICAL.md, CARBS.md, BUILD-NOTES.md, BACKLOG.md, the designs
 src/config.ts      every number in the codebase, and nothing else has one
+src/data/          reference data: the carbohydrate table, which drives nothing
 src/core/          pure functions: the arithmetic, the bands, the gates, the parsing
 src/state/         one application state and one pure transition function
 src/storage/       IndexedDB, the two exports, the import, cross-tab invalidation
@@ -91,7 +92,7 @@ src/sw.ts          the service worker
 ```
 
 **`src/core` imports nothing** — no DOM, no storage, no clock, no framework. Time is passed in as
-data. That is what makes the 76 golden cases and the boundary sweep possible, and it is why the
+data. That is what makes the 77 golden cases and the boundary sweep possible, and it is why the
 mutation-testing gate can be set to 100%.
 
 **Every number lives in `src/config.ts`**, enforced by two lint rules rather than by convention. The
@@ -137,9 +138,10 @@ no backend, no accounts, no sync, no analytics.
 
 | File | What it is |
 |---|---|
-| [PLAN.md](docs/PLAN.md) | The specification. Twenty-five revisions, twenty-two adversarial review rounds. The single source of truth. |
+| [PLAN.md](docs/PLAN.md) | The specification, and the single source of truth. Twenty-five revisions and twenty-two adversarial review rounds went into it; `git log` is the record of them. |
 | [CLINICAL.md](docs/CLINICAL.md) | Every clinical decision with its source, and the reversals. |
 | [BUILD-NOTES.md](docs/BUILD-NOTES.md) | Every decision the build had to make that the plan does not state. |
+| [CARBS.md](docs/CARBS.md) | The carbohydrate reference for Pakistani food, every value with its source, confidence and licence. |
 | [BACKLOG.md](docs/BACKLOG.md) | Everything deliberately left out, with reasons. |
 | [BLOG-FIX.md](docs/BLOG-FIX.md) | A separate repository's service-worker fix, which had to ship first. |
 

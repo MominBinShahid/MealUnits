@@ -22,23 +22,13 @@ this file, which is why §20.3 says reference an entry by NAME, never by number.
 "excluded from v1". A feature that is implemented and shipping cannot also be deferred, and
 leaving it in both places makes the two documents lie about each other.
 
-Two entries were removed under this rule on the day it was written:
-
-| Removed | Now lives in | Note |
-|---|---|---|
-| *Dose adjuster at the confirm step* | `PLAN.md` §7.1, as `injectedUnits` | Implemented in plan v8. Its constraint here — "must not become a way to type any number" — was dropped in transit and restored in v9 with a full input specification: grammar, integer hundredths, finiteness, zero/negative rejection, a 100-unit cap, soft confirm |
-| *Settings snapshot on each log row* | `PLAN.md` §7.7, §11.3, as `settingsRevision` + `settingsHistory` | Implemented in plan v9. Took review rounds 11, 12 and 13 to get correct; both reviewers now pass it |
-
-Also now in v1 and never listed here, recorded so the omission is visible: **§7.8's readings
-store** (a blood-sugar reading recorded without an injection — the app previously discarded every
-blocked low, which made §18.13 unanswerable) and **§10.6's setup disclosure** (wording only, no
-stored number).
-
-**§6.7's usual-dose field was also in that list, and was CUT in plan v17** on Momin's objection: a
-calculator whose premise is that the dose varies cannot store a field asserting a constant. It is
-replaced by one optional free-text question asked **at export and re-offered until answered or
-declined** (plan §6.7), kept as dated patient-reported history — **not a setting, and nothing this
-file needs to carry.**
+Applied twice on the day it was written: the *dose adjuster at the confirm step* and the *settings
+snapshot on each log row* both moved into `PLAN.md` as `injectedUnits` (§7.1) and `settingsRevision`
+(§7.7, §11.3). **§7.8's readings store and §10.6's setup disclosure** were in v1 and never listed
+here at all, recorded so the omission is visible. **§6.7's usual-dose field was cut** on Momin's
+objection — a calculator whose premise is that the dose varies cannot store a field asserting a
+constant — and replaced by one optional free-text question asked at export, which is plan business
+and nothing this file needs to carry.
 
 ---
 
@@ -526,62 +516,19 @@ the label's parent.
 
 ### T4. The in-app update prompt — CLOSED 2026-09-09, IT WORKS
 
-**CLOSED. Momin, 2026-09-09, on a real phone against the deployed app: "in app bar does render and
-ask me to use it now, so that's perfect."** The prompt appears and the update can be taken by tapping
-it. Nothing further is outstanding.
+**Momin, on a real phone against the deployed app: "in app bar does render and ask me to use it now,
+so that's perfect."** Updates reach a phone two ways, both confirmed: the in-app bar renders and can
+be tapped, and a full close-and-reopen activates a waiting worker anyway. Nothing outstanding.
 
-**The entry is kept because it was wrong twice, in opposite directions, and both are instructive.**
+**Kept because it was wrong twice, in opposite directions.** First it claimed a device that had
+cached a build "stays on it, permanently" and that this blocked launch — wrong; closing and
+reopening delivers the new build, which is the lifecycle working as specified. Then it claimed the
+in-app prompt never rendered, on the strength of `vite preview` over a LAN — also wrong.
 
-First it claimed a device which had cached a build "stays on it, permanently" and that this blocked
-launch. **That was wrong** — Momin rejected it and told me to confirm from the code. Closing and
-reopening delivers the new build, which is the specified service-worker lifecycle working correctly.
-
-Then it claimed the in-app prompt did not render at all, on the strength of `vite preview` over a
-LAN. **That was wrong too.** On real HTTPS with real Pages caching it renders. A local preview is not
-the deployment, and I reported a negative result from the wrong environment as a defect in the app.
-
-**The lesson, which outlives the entry: I twice reported a confident conclusion from an environment
+**The lesson that outlives the entry: twice, a confident conclusion was reported from an environment
 that could not produce the behaviour under test.** The measurements were real; the setting was not.
-
-**What actually happens, measured across a close-and-reopen:**
-
-| | Bundle served |
-|---|---|
-| Install build A | `index-BjuqWl9V.js` |
-| Ship build B, revisit while the app is still open | `index-BjuqWl9V.js` — old worker in control, new one `waiting: "installed"` |
-| **Close the app entirely, reopen** | **`index-v3G2ALM4.js` — the new build** |
-
-That is the **standard service-worker lifecycle working correctly**: a waiting worker activates as
-soon as every client using the old one is gone. I read "old bundle served while a new worker waits"
-as a fault when it is the specified behaviour, and never ran the close-and-reopen that would have
-shown it.
-
-**What IS still missing:** the in-app offer — *"A newer version is ready — Use it now"* — does not
-render, so an update cannot be taken WITHOUT closing and reopening the app. That is a convenience
-gap, not a trap. §11.4 chose a prompt over an automatic reload deliberately (never swap versions
-mid-dose), and the prompt is the part not working.
-
-**Three real defects were fixed on the way and are worth keeping regardless:**
-
-- **Nothing ever asked whether an update existed.** `registration.update()` now runs at startup and
-  on returning to the foreground, throttled. The browser's own check needs a navigation, which an
-  installed PWA can go a long time without — so without this the check could be much later than it
-  should be.
-- **Registration depended on the `load` event alone**, which never fires if the document is already
-  complete when the module runs.
-- **Every hook could miss the moment** — `waiting` null at registration, `updatefound` firing before
-  the listener attaches, `installing` already moved on. `offerIfReady` is idempotent and runs from
-  all of them plus a bounded poll.
-
-**Trigger: after the first deployment**, and Momin named the test — change something visible and
-cheap, such as the position of the greeting, deploy, and watch a real phone. A real deploy over HTTPS
-with real Pages caching is a different environment from `vite preview` on a LAN, and it is the one
-that matters.
-
-**The lesson recorded rather than the fix:** I called a launch blocker on a mechanism I had not
-finished understanding, and stated it three times. §20.1.1 now covers the mirror of this — ask when
-something looks wrong — and this is the same failure pointed at the platform instead of at the
-document.
+`tools/smoke.mjs` exists partly because of this, and the same trap caught the lower-case redirect
+check a week later (`BLOG-FIX.md` section 6).
 
 ### T5. AUDIENCE CHANGE — the app is for anyone, and three things assume it is not
 
@@ -979,21 +926,10 @@ built by teams. This app is a calculator.
 
 ## Open questions carried from PLAN.md §18
 
-1. Is the 150 mg/dL target deliberate? Physician's choice, not to be changed by this project —
-   but worth one question at the next appointment.
-2. Regulatory framing — deferred to launch (§14).
-3. Should the physician see the band thresholds and the ceiling before launch? Recommended, not a
-   hard gate.
-4. Human-factors walkthrough — walk the actual user through band C, a ceiling confirmation, the
-   fail-closed screen and the blank-reading path before shipping.
-5. ~~Name — undecided~~ **DECIDED: `MealUnits`.** Chosen over `MealMath` because it carries no
-   spelling trap (British "maths" lands in Waitrose/Ocado territory), is clean on every search,
-   and names the app's output rather than its process. Research table below kept as the record.
-6. ~~Typical meal size in grams~~ **ANSWERED, and it moved two thresholds.** About **50 g** of
-   carbohydrate for a 250 g plate of biryani, and — the figure that actually mattered — **24–25
-   units of Humulin R per meal**, two or three meals daily, plus 36 units of Lantus. Also
-   answered: **his blood sugar sometimes falls to 65 mg/dL**, which falsified the premise two
-   review rounds had been built on. See `PLAN.md` §1.4; §18.6 is closed.
+**Not restated here.** `PLAN.md` §18 is the list, and keeping a second copy is how the two came to
+disagree once already. Five are open: §18.1 (is the 150 target deliberate), §18.7 (regulatory
+framing), §18.8 (should the physician see the thresholds), §18.9 (the human-factors walkthrough)
+and §18.13 (where the 65 mg/dL readings cluster). The last one is what the export exists to answer.
 
 ---
 
