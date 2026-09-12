@@ -8,8 +8,9 @@ decided and not written down does not exist.
 **PRUNED 2026-09-13, on Momin's instruction.** This file held 2,035 lines, most of it the full
 write-up of bugs fixed in week one and now guarded by tests. Those write-ups are gone. What is kept:
 every **ruling**, every **constraint still in force**, and a one-line stub for everything else —
-because **24 of these notes are cited from source files and tests**, and a dangling "note N" in a
-comment is the rot this project keeps fighting. `check-plan.py` now fails on one.
+because **many of these notes are cited from source files and tests**, and a dangling "note N" in a
+comment is the rot this project keeps fighting. **Every number below keeps a heading for that
+reason**, and `check-plan.py` fails on a citation that resolves to nothing.
 
 **Legend.** `[RULED date]` is Momin's decision and is binding. `[RULE]` is a constraint the code
 does not carry on its own — breaking it breaks something. Untagged entries are finished work, kept

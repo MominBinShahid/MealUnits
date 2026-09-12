@@ -799,10 +799,10 @@ def check_note_references(corpus):
     """2c. A "note N" pointing at a build note that does not exist — ADDED 2026-09-13.
 
     Written in the same edit as the prune that made the class possible. The notes
-    are cited from 24 places across source, tests and the other documents — the
-    sigil means a PLAN.md section everywhere, so BUILD-NOTES entries are cited as
-    "note N" instead — and the prune deleted 1,566 lines from that file. Every
-    number survived as a heading on purpose; this is what keeps it that way.
+    are cited from source, tests and the other documents — the sigil means a
+    PLAN.md section everywhere, so BUILD-NOTES entries are cited as "note N"
+    instead — and the prune deleted most of that file. Every number survived as a
+    heading on purpose; this is what keeps it that way.
 
     Reads the source tree directly as well as the corpus, because most of the
     citations are in TypeScript, where nothing else would see them. Shown to fail
