@@ -275,7 +275,51 @@ working tree only
 
 ---
 
-## 8. Open
+## 8. The worker exclusion is LIVE — verified 2026-09-13
+
+**Confirmed against the deployed blog, not the working copy**, because the config file had
+uncommitted edits at the time and a local grep would have proved nothing. `mominbinshahid.github.io/sw.js`
+carries both routes:
+
+```js
+registerRoute(/^(?!.*\/MealUnits\/).*(?:\.js$|\.css$|static\/)/, CacheFirst)
+registerRoute(/^(?!.*\/MealUnits\/)https?:.*\.(png|jpg|…)/,        StaleWhileRevalidate)
+```
+
+**The work is done. This document is not therefore finished.** It is the only place explaining why
+those negative lookaheads exist, and a lookahead inside a URL pattern is exactly the kind of thing a
+later tidy-up deletes as noise. The blog's own config carries a short version in comments; this file
+carries the failure it prevents.
+
+## 9. Lower-case URLs — FIXED 2026-09-13, in the BLOG repo
+
+**`mominbinshahid.github.io/mealunits/` returned a 404 and `/MealUnits/` did not.** Worth recording
+precisely, because the obvious diagnosis is wrong: **that 404 never came from this app.** GitHub
+Pages serves a project site at its repository's EXACT case, so any other casing does not resolve to
+the project at all — it falls through to the user site, and the blog's 404 page answers it. The
+response body was Gatsby's.
+
+**Which means it could not be fixed from this repository**, and two of the three available options
+were worse than the problem:
+
+| | |
+|---|---|
+| Rename the repo to lower case | Swaps which casing works. And BACKLOG T0 establishes the real cost: a new manifest `id` and `scope` is a different app to the browser, so **every installed home-screen icon dies** |
+| A second repository named `mealunits` | Works, and is an entire repository holding a redirect |
+| **Redirect from the blog's 404** | **Taken.** `src/pages/404/index.jsx` in the blog repo |
+
+**Two things in that redirect are load-bearing and easy to drop in a rewrite:** the effect is
+guarded on `window` because Gatsby renders the page at build time, and a path whose casing is
+already correct returns `null` rather than redirecting — **that null is what stops it looping.**
+Only a first segment that case-insensitively matches a listed project is rewritten, so every other
+404 still renders as one.
+
+**Verified in a real browser after deploy:** `/mealunits/` lands on `/MealUnits/` with the app
+loaded. A first attempt appeared to fail and did not — the tab held a service-worker-cached copy of
+the old 404 chunk, which the blog worker caches `CacheFirst` because it is not under `/MealUnits/`.
+Same trap as §7 and as note 45's smoke profile: the measurement was real, the setting was stale.
+
+## 10. Open
 
 - Remove-vs-upgrade was decided as **upgrade** (keep the blog offline). §4 above is the upgrade
   path.
