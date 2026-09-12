@@ -609,8 +609,22 @@ export async function start(host: Host): Promise<void> {
           },
           onOpenClear: () => { dispatch({ type: 'go', screen: 'export' }); view.clearConfirming = null; showClear = true; render(); },
           onOpenExport: () => { showClear = false; dispatch({ type: 'go', screen: 'export' }); },
-          onOpenHowItWorks: () => { dispatch({ type: 'go', screen: 'how_it_works' }); },
-          onOpenSettingsAsText: () => { showAsText = true; dispatch({ type: 'go', screen: 'how_it_works' }); },
+          // §10.6 — record where we came FROM before leaving. `screenBefore` was
+          // declared and initialised in v23 and read nowhere, and the back path
+          // hardcoded 'calculator' instead. That is survivable only while this
+          // page is unreachable during setup: the moment a first-run link exists,
+          // back-from-here lands on the calculator MID-SETUP, whose foot nav
+          // offers Settings, which renders `firstRun: false`. The gate §10.6
+          // calls inescapable is then walked around rather than broken.
+          onOpenHowItWorks: () => {
+            view.screenBefore = state.screen;
+            dispatch({ type: 'go', screen: 'how_it_works' });
+          },
+          onOpenSettingsAsText: () => {
+            view.screenBefore = state.screen;
+            showAsText = true;
+            dispatch({ type: 'go', screen: 'how_it_works' });
+          },
         });
 
       case 'history':
@@ -877,9 +891,14 @@ export async function start(host: Host): Promise<void> {
           ? (): void => { showClear = false; dispatch({ type: 'go', screen: 'settings' }); }
           : (): void => { dispatch({ type: 'go', screen: 'calculator' }); };
       case 'how_it_works':
-        return showAsText
-          ? (): void => { showAsText = false; dispatch({ type: 'go', screen: 'settings' }); }
-          : (): void => { dispatch({ type: 'go', screen: 'calculator' }); };
+        // Back goes where you CAME from, not to a fixed screen. The two entry
+        // points both sit in settings today, so this reads as "settings" either
+        // way — but it is the mechanism that lets first-run setup link here
+        // without handing out an exit from itself.
+        return (): void => {
+          showAsText = false;
+          dispatch({ type: 'go', screen: view.screenBefore });
+        };
       // §10.6 and §11.3 — the first run and the fail-closed screen are
       // deliberately inescapable. No back, and no hardware back either.
       case 'loading':
