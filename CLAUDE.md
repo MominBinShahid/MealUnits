@@ -31,13 +31,15 @@ hypoglycaemic event, not a bug report.** Read that sentence before changing anyt
    what makes the golden cases, the boundary sweep and the 100% mutation gate possible.
 5. **Clamp the total, never the correction** (§2.1). Flooring a negative correction discards the
    fact that the reading is low, in the direction that gives more insulin.
-6. **Run `python3 check-plan.py` before finishing.** It checks the documents against each other and
-   against the code. If it reports a defect it could have caught earlier, add that check in the same
-   edit that fixes the document — §20.3 makes that an obligation, not a suggestion.
+6. **Run `python3 check-plan.py` before finishing** — CI runs it too, as the `plan` job, so this
+   is about finding a defect in seconds rather than in a failed pipeline. It checks the documents
+   against each other and against the code. If it reports a defect it could have caught earlier,
+   add that check in the same edit that fixes the document — §20.3 makes that an obligation, not a
+   suggestion.
 
 ## Before you claim something works
 
-`npm run check` is typecheck, lint and 622 tests. `npm run mutate` is the 100%-or-fail mutation gate
+`npm run check` is typecheck, lint and 625 tests. `npm run mutate` is the 100%-or-fail mutation gate
 on `src/core` **and `src/state`** (§13.4, extended 2026-09-11 — the reducer holds the gates, and it
 scored 94% the day it was measured). Neither proves the specification is right — this project has shipped a wrong expected
 value more than once, and the honest claim is always the validation actually performed.

@@ -13,8 +13,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
 
-# §13.8: typecheck, unit suite, Stryker on the core and the integration suite
-# are all required to merge. They run as separate jobs so a failure names itself.
+# §13.8: typecheck, unit suite, Stryker on the core and the integration suite,
+# and the plan checker are all required to merge. They run as separate jobs so a
+# failure names itself.
 permissions:
   contents: read
 
@@ -38,6 +39,28 @@ jobs:
         run: npm run lint
       - name: Unit and integration tests
         run: npm test
+
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      # §20.3 — 24 registered checks and a 103-mutation self-test which, until
+      # 2026-09-12, ran only when somebody remembered to type them. CLAUDE.md
+      # rule 6 asked for it by convention and nothing enforced it, so every
+      # plan-against-code guarantee in this repository was one forgetful commit
+      # from going quiet — which T1 already names as the worst way for a
+      # guarantee to end. Found when a rule added under §20.3's own obligation
+      # turned out to be unable to run on anybody's pull request.
+      #
+      # No npm step: the checker reads the documents and the TypeScript as text.
+      #
+      # The self-test runs FIRST and on its own line. A checker whose own seeded
+      # mutations escape has a worthless "clean.", so proving the instrument
+      # before reading it is the whole point of running both.
+      - name: The checker's own seeded mutations
+        run: python3 check-plan.py --self-test
+      - name: PLAN, BACKLOG and BUILD-NOTES against the code
+        run: python3 check-plan.py
 
   mutation:
     runs-on: ubuntu-latest
