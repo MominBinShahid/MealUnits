@@ -10,6 +10,13 @@ import { defineConfig } from 'vitest/config';
  *
  * `npm test` still runs everything. This file narrows the MUTATION run to the
  * suites that cover the mutated files, which is what the plan asks for anyway.
+ *
+ * **The list is hand-maintained and therefore rots.** `test/foods.test.ts` was
+ * written, passed, and left out of it — so `src/core/foods.ts` scored 0.00% with
+ * eighteen mutants reported as having NO COVERAGE, while the suite itself was
+ * green. A file can be fully tested and score zero here, and the only symptom is
+ * a number in a report nobody reads line by line. `check-plan.py` now fails when
+ * a test that imports from a mutated directory is missing from this list.
  */
 export default defineConfig({
   test: {
@@ -22,6 +29,7 @@ export default defineConfig({
       'test/config.test.ts',
       'test/decimal.test.ts',
       'test/divergence.test.ts',
+      'test/foods.test.ts',
       'test/golden.test.ts',
       'test/history.test.ts',
       'test/ids.test.ts',
