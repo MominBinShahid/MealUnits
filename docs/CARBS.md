@@ -105,7 +105,7 @@ Weight captures diameter and thickness together; density is stable at ≈ 0.43�
 | Home roti, 7", medium | ~40 g [FNDDS] | **18–19 g** | (a) | **HIGH** |
 | Home roti, 8", thin | ~50 g [CALC scaled] | **≈ 23 g** | (a) | **MED** |
 | Moti roti — 8", thick, heavy | 60–80 g [*assumed*] | **28–37 g** [CALC] | (a) — weigh once | **MED** |
-| Large thick roti / **Chapatti 12"** | 90–100 g [**LFAC large chapatti = 92 g**] | **40–46 g** [**LFAC 92 g = 40 g**; CALC 41–46] — LFAC lands at the bottom: its density is 0.435 | (a) | **MED-HIGH** — was MED; LFAC corroborates |
+| Large thick roti / **Chapatti 12"** (Bari chapatti / bari roti) | 90–100 g [**LFAC large chapatti = 92 g**] | **40–46 g** [**LFAC 92 g = 40 g**; CALC 41–46] — LFAC lands at the bottom: its density is 0.435 | (a) | **MED-HIGH** — was MED; LFAC corroborates |
 | **Tandoori roti** — bought, atta | Karachi official 100 g [KHI-OFFICIAL]; **LFAC's "1 medium" is only 33 g** | Karachi tandoor roti: **46–55 g** [KHI-OFFICIAL × 0.46]. LFAC small roti: **15 g per 33 g piece** — same density (45.5/100 g), very different piece. **The density agrees; the piece weight is the whole question — weigh yours** | (a) your tandoor vs a small home-style roti — a 3× spread in piece weight | **MED** — density HIGH, portion (a) |
 | **Laal chapati** (red/whole atta) | 80 g | **28 g** [LFAC] (35/100 g — below the atta anchor; moister dough) | (a) | **MED** — NEW |
 | **Baajrey ki roti** (bajra/millet) | 55 g | **35 g** [LFAC] — *flag: implies 64/100 g, well above any fresh-roti density; plausible only for a very dry, thin bajra roti. Use with caution, verify with the meter* | (a); (b) dryness | **LOW-MED** — LFAC value passes no independent check |
@@ -197,8 +197,8 @@ Thin vs thick matters more than which daal: thin tarka daal **8–12/100 g**, th
 
 | Food | CHO per katori (150 g) | Varies | Conf |
 |---|---|---|---|
-| Thin daal (patli/tarka) | **13–18 g** [CoFID; LFAC daal-chawal daal 12.8/100 g agrees] | (a) katori; (b) wetness | **MED-HIGH** — was MED |
-| Thick daal (gaarhi) | **23–32 g** [FNDDS; CoFID; KHAN] | (a); (b) | **MED** |
+| Thin daal (Patli daal / tarka daal) | **13–18 g** [CoFID; LFAC daal-chawal daal 12.8/100 g agrees] | (a) katori; (b) wetness | **MED-HIGH** — was MED |
+| Thick daal (Gaarhi daal) | **23–32 g** [FNDDS; CoFID; KHAN] | (a); (b) | **MED** |
 | Chana daal | **22–27 g** [KHAN 14.9; CoFID 17.8] | (a); (b) small | **MED-HIGH** |
 | Masoor daal | **16–29 g** [CoFID by thickness] | (a); (b) | **MED** |
 | Moong daal | **11–29 g** [CoFID thin → USDA boiled]; **LFAC moong-masoor cup 185 g = 27 g (14.6/100 g)** pins the everyday mid | (a); (b) thickness | **MED-HIGH** — was MED |
@@ -256,7 +256,7 @@ Carbs come from onion masala, potato chunks, and thickeners (atta in nihari, bes
 | Food | CHO per portion | Varies | Conf |
 |---|---|---|---|
 | **Samosa, aloo** | large 100 g = **30 g** [**LFAC 100 g = 30 g**; FNDDS 33.1; CoFID 30.0 — three-source agreement]; cocktail 25 g ≈ 8 g | (a) size; (b) filling | **HIGH** — was MED |
-| Samosa, qeema | 45 g = **8 g** [**LFAC 17.8/100 g**; CoFID 17–19 — agree] | (a); (b) | **MED-HIGH** — was MED |
+| Mince samosa (Qeema samosa / keema samosa) | 45 g = **8 g** [**LFAC 17.8/100 g**; CoFID 17–19 — agree] | (a); (b) | **MED-HIGH** — was MED |
 | **Qeema kachori** | 126 g = **33 g** [LFAC] | (a); (b) | **MED** — NEW |
 | Pakora | plate ~100 g ≈ **16–30 g** [FNDDS 16.2; CoFID 16.5–30; **LFAC aloo pakora 60 g = 15 g (25/100 g), onion pakora 50 g = 11 g (22/100 g) — both inside**] | (a) plate; (b) besan:vegetable + which vegetable | **MED-HIGH** — was MED |
 | Bun kabab | **35–45 g** [CALC: bun 26 + patty 8–15 + chutney 2–4] — still no measured value; LFAC lacks it | (b) aloo vs shami patty | **LOW-MED** — unconfirmed by the Pakistani source |

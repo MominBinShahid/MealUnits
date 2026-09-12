@@ -38,6 +38,7 @@ Exit code 0 = clean, 1 = findings.
 import io
 import math
 import os
+import json
 import re
 import sys
 from itertools import combinations
@@ -2002,6 +2003,149 @@ def check_copy_hardcodes_config(_plan):
     return out
 
 
+def check_reference_data(_plan):
+    r"""§11.8's second exemption, and the two conditions it was granted on.
+
+    RULED 2026-09-12: reference data is not configuration, so `src/data/` is
+    exempt from the numeric-literal rules. §11.8 grants that on two conditions
+    the linter cannot see, and states that this checker verifies them rather
+    than trusting they hold. This is that check; without it the section promises
+    something nothing performs, which is the class §20.3 exists to stop.
+
+    **Condition 1 — the module holds data and nothing else.** No thresholds, no
+    behaviour, no branches. The moment `if (grams > X)` appears there, X is a
+    decision wearing data's clothes and belongs in `config.ts` where §11.8 can
+    see it. Enforced by refusing control flow outright: a data file has no need
+    of any, so there is no honest false positive to weigh.
+
+    **Condition 2 — every row is documented.** A food in the code that is not in
+    `docs/CARBS.md` has no source and no confidence anyone can check, which is
+    worse in a data file than in `config.ts` — at least `config.ts` has a header
+    saying who may change a value. Matched on the Roman Urdu name, because that
+    is the stable one: English descriptions get reworded, "Qorma" does not.
+    """
+    data_dir = os.path.join(HERE, "src", "data")
+    carbs_doc = os.path.join(HERE, "docs", "CARBS.md")
+    if not os.path.isdir(data_dir):
+        return []
+    out = []
+
+    # The first version of this list was too short and let a seeded ternary
+    # through — a check claiming a guarantee it did not perform, which is the
+    # class §20.3 exists to stop, appearing inside a check written under §20.3.
+    # `" ? "` catches the ternary while optional properties (`gramsMax?: x`) and
+    # object literals, which have no spaces around the mark, pass untouched.
+    banned = [("if (", "a branch"), ("for (", "a loop"), ("while (", "a loop"),
+              ("switch (", "a branch"), ("function ", "a function"),
+              ("=>", "a function"), (" ? ", "a ternary"),
+              (".map(", "a transformation"), (".filter(", "a transformation"),
+              (".reduce(", "a transformation"), (".sort(", "a transformation"),
+              ("...", "a spread, which hides where rows come from")]
+    sources = {}
+    for name in sorted(os.listdir(data_dir)):
+        if not name.endswith(".ts"):
+            continue
+        with open(os.path.join(data_dir, name), encoding="utf-8") as fh:
+            body = fh.read()
+        sources[name] = body
+        for line_no, line in enumerate(body.splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith(("*", "//", "/*")):
+                continue
+            for token, what in banned:
+                if token in stripped:
+                    out.append(
+                        "src/data/%s:%d contains %s — §11.8 exempts this "
+                        "directory for DATA only, and behaviour here is a "
+                        "decision escaping config.ts" % (name, line_no, what))
+
+    if not os.path.exists(carbs_doc):
+        if sources:
+            out.append("src/data holds reference data but docs/CARBS.md is "
+                       "missing — §11.8's second condition is that every row is "
+                       "documented, and nothing can satisfy it")
+        return out
+
+    with open(carbs_doc, encoding="utf-8") as fh:
+        doc = fh.read().lower()
+
+    for name, body in sources.items():
+        for m in re.finditer(r"^\s*urdu:\s*'([^']+)'", body, re.M):
+            urdu = m.group(1)
+            if urdu.lower() not in doc:
+                out.append(
+                    "src/data/%s offers \"%s\" but docs/CARBS.md never mentions "
+                    "it — §11.8's exemption requires every row to carry a source "
+                    "and a confidence the document can be checked against"
+                    % (name, urdu))
+    return out
+
+
+def check_mutation_coverage_list(_plan):
+    r"""Tests that exercise mutated code but are missing from the Stryker run.
+
+    `vitest.stryker.config.ts` names the suites the mutation run executes, by
+    hand, and a hand-maintained list rots. `test/foods.test.ts` was written,
+    passed, and left out — so `src/core/foods.ts` scored **0.00% with eighteen
+    mutants reported as having no coverage** while `npm test` was green. A file
+    can be fully tested and score zero, and the only symptom is a number in a
+    report nobody reads line by line.
+
+    The invariant: a test that VALUE-imports from a mutated directory belongs in
+    the list. Type-only imports are excluded because they execute nothing —
+    `test/sync.test.ts` imports `Settings` as a type and correctly adds nothing
+    to the score. Suites importing `fake-indexeddb` are excluded too, and that
+    exclusion is deliberate rather than forgotten: the runner cannot stringify
+    its `DOMException` and the dry run crashes outright, which the config says.
+    """
+    cfg = os.path.join(HERE, "vitest.stryker.config.ts")
+    stryker = os.path.join(HERE, "stryker.config.json")
+    test_dir = os.path.join(HERE, "test")
+    if not (os.path.exists(cfg) and os.path.exists(stryker) and os.path.isdir(test_dir)):
+        return []
+
+    with open(stryker, encoding="utf-8") as fh:
+        mutated = json.load(fh).get("mutate", [])
+    # "src/core/**/*.ts" -> "src/core". config.ts is a file, not a directory.
+    dirs = set()
+    for glob in mutated:
+        head = glob.split("/**")[0]
+        if head.endswith(".ts"):
+            continue
+        dirs.add(head)
+    if not dirs:
+        return []
+
+    with open(cfg, encoding="utf-8") as fh:
+        listed = set(re.findall(r"'(test/[^']+\.ts)'", fh.read()))
+
+    out = []
+    for name in sorted(os.listdir(test_dir)):
+        if not name.endswith(".ts"):
+            continue
+        rel = "test/" + name
+        with open(os.path.join(test_dir, name), encoding="utf-8") as fh:
+            body = fh.read()
+        if "fake-indexeddb" in body:
+            continue
+        value_import = False
+        for m in re.finditer(r"^import\s+(type\s+)?.*?from\s+'\.\./(src/[^']+)'",
+                             body, re.M | re.S):
+            if m.group(1):
+                continue
+            target = m.group(2)
+            if any(target.startswith(d + "/") for d in dirs):
+                value_import = True
+                break
+        if value_import and rel not in listed:
+            out.append(
+                "%s runs mutated code but is not in vitest.stryker.config.ts — "
+                "its coverage is silently absent from the 100%% gate, which is "
+                "how src/core/foods.ts once scored 0.00%% with a green suite"
+                % rel)
+    return out
+
+
 def check_file_listing(plan):
     """13. §20.5's file listing against the actual directory, both directions.
 
@@ -2092,6 +2236,8 @@ CHECKS = [
     ("unbalanced bold markers", check_bold_balance, "plan"),
     ("PLAN references BACKLOG by number", check_plan_against_backlog, "plan"),
     ("config values typed as digits in copy", check_copy_hardcodes_config, "plan"),
+    ("§11.8's reference-data exemption", check_reference_data, "plan"),
+    ("tests missing from the mutation run", check_mutation_coverage_list, "plan"),
     ("§20.5 listing vs the directory", check_file_listing, "plan"),
     ("NEXT-STEPS.md has come back", check_next_steps, "plan"),
     ("a mockup showing an impossible dose", check_design_arithmetic, "corpus"),
