@@ -12,6 +12,12 @@ Categories: **Next**, **Later**, **Never** for features, plus **Technical** for 
 not that it is technically hard. **Technical** is not a priority tier — it is a different KIND of
 entry, waiting on something outside this project rather than on a decision of ours.
 
+**Numbers are identity, not rank.** The feature entries are ONE sequence partitioned across the
+tiers — 1-19 today — so a number stays stable enough to cite, while **position within a tier**
+carries the priority. That is why 18 and 19 sit above 1, and why 4a and 10a sit above 6. Do not
+renumber to tidy it: reusing a number is how `PLAN.md` v14 came to assert three falsehoods about
+this file, which is why §20.3 says reference an entry by NAME, never by number.
+
 **THE RULE, added 2026-09-06: if it is built, it comes out of this file.** An entry here means
 "excluded from v1". A feature that is implemented and shipping cannot also be deferred, and
 leaving it in both places makes the two documents lie about each other.
@@ -55,7 +61,57 @@ these steps have a dependency that is not obvious from reading them.
 **The two dependencies worth restating, because getting them wrong is expensive:** search work waits
 on `T5`, and Urdu waits on `T3`.
 
+**Deliberately not in this table: carbohydrate reference phases 2 and 3** (entries 18 and 19).
+They are real work with code already depending on them, but every slot above is earned and `T5`
+gates the public launch. They get a position here when `T5` lands — and 19 needs a ruling before
+any code regardless of where it sits.
+
 ## NEXT — likely v2, in rough priority order
+
+### 18. Carbohydrate reference phase 2 — his own grams, per food
+**Trigger: once the list has been used enough that the estimates are visibly wrong for his plate.**
+
+**What phase 1 shipped:** 31 foods, each with an estimate, a confidence (6 high, 24 medium, 1 low)
+and a source; 14 carry a `gramsMax` and 25 carry a `varies` note, because the portion genuinely
+ranges. The number is an estimate of *a plate nobody weighed* — which is honest, and also the limit
+of what a reference can do.
+
+**What phase 2 adds:** he records what **his** roti weighs, and the list shows that instead.
+
+**Constraints, all of which are the point:**
+- The stored value is the user's, not reference data. `src/data/carbs.ts` stays a data module with
+  no writes — §11.8's reference-data exemption, condition 1: *the module holds data and nothing
+  else.* A calibration store is user data and lives with the rest of it.
+- A calibrated row must still show the reference figure it replaced and the date it was set. A
+  number whose provenance is gone is the class §7.7 exists to prevent.
+
+**Unruled:** per food, per portion, or a single "my roti is this heavy" scale factor.
+
+### 19. Carbohydrate reference phase 3 — the tally that fills the carbohydrate field
+**UNRULED, AND IT DELIBERATELY BREAKS A SAFETY PROPERTY. Needs a ruling before any code.**
+
+**What:** pick foods, give each a count, read the total, put the total in the carbohydrate box.
+
+**Phase 1's whole safety argument is that the list never writes into that box.** Both
+`src/ui/screens/foods.ts` and `src/ui/copy.ts` state it in those words: *a wrong row can mislead
+someone and can never silently drive a dose* — §7.8's property for readings, applied to food.
+Phase 3 removes exactly that. A wrong row, or a mis-tapped count, becomes units of insulin.
+
+That is not an argument against building it — the retyping is real friction three times a day, and
+friction is what §18.14 names as this app's actual failure mode. It is an argument for deciding the
+following **before** any of it exists:
+
+- Does the total arrive as an editable number he confirms, or as a committed value? Editable keeps
+  him in the loop; committed is the thing that actually saves the taps.
+- Does §10.3's working show the tally, so the dose's provenance survives onto the result screen?
+- Does a `low`-confidence row disqualify a food from the tally, or only warn? §10.5's warning
+  budget decides where that sits, if anywhere.
+- §17's five legs all apply: §4.3 precedence, §11.2 snapshot, §13.2 schema, §13.3 cases, §10.5 rank.
+
+**Recorded 2026-09-13 because it existed nowhere.** Both phases were agreed in conversation while
+phase 1 was being built and lived only in a session task list — which is exactly what §20.5's rule
+names: a decision not written down does not exist. Found while auditing the documents for the
+prune, one step before the prune would have made it permanent.
 
 ### 1. Blood-sugar plausibility advisory
 **What:** the mirror of §6.5 for the blood-sugar field — 350 typed as 530, or as 150.
