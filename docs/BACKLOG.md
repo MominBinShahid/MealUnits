@@ -698,13 +698,19 @@ product. Urine strips are cheap but sold by diagnostic suppliers rather than pha
 
 **Trigger: the appointment that also settles T11's attribution.** One conversation, both questions.
 
-### T13. Rewriting `check-plan.py` in TypeScript — CONSIDERED AND DECLINED
+### T13. Rewriting `check-plan.py` in TypeScript — UNRULED, the trade-off in full
 
-**Momin's question, 2026-09-12: the project is TypeScript, so should the checker be?** Recorded as a
-decision rather than left open, because it is the kind of thing that gets re-proposed every time
-somebody new reads the repository.
+**Momin's question, 2026-09-12: the project is TypeScript, so should the checker be?** Written up so
+the question is not re-asked from scratch by every new reader, and left open because it is his.
 
-**No, and the reason is what a rewrite would have to reproduce, not what it would gain.** The script
+**Two earlier drafts of this entry got the framing wrong and both are worth recording.** The first
+was headed "CONSIDERED AND DECLINED", stating a ruling nobody made. The second said "recommendation
+is to decline" while the body conceded there is no technical benefit to Python — which Momin caught:
+*if there is no benefit, and this is a TypeScript project, then TypeScript is the natural state and
+the only question is when the migration gets paid.* **That is a deferral, not a decline**, and a
+verdict in a heading over a conceded argument is advocacy rather than a record.
+
+**So: the cost, plainly, and nothing recommended.** The script
 is **2,536 lines** carrying **24 checks** and **103 seeded mutations** that each prove a specific
 check still bites. That self-test is the asset — more than the checks are. A rewrite is only finished
 when all 103 are reproduced and passing, and until that moment the repository has a checker nobody
@@ -721,12 +727,54 @@ any value form its pattern does not anticipate, which is precisely how it failed
 `src/config.ts` as JSON buys it outright — no language change, no 103 mutations to re-earn. **If this
 entry ever becomes work, it is that step, not a port.**
 
-**Python is also not a poor fit here.** What the script does is read documents and compare them to
-each other; text analysis is the job Python is best at, and the thing it checks — Markdown — is not
-TypeScript either.
+**Why it is Python at all — the actual reason, recovered 2026-09-12 rather than assumed.** Nothing
+ever recorded it, and no session transcript on this machine contains the decision. But §20.3 dates
+the tool to **plan revision v14**, after *"thirteen rounds"* of review, and every defect class it
+was built for is a DOCUMENT defect: a condemned phrase still standing as live spec, a §reference
+resolving to nothing, a false completion claim, a §13.2 field with no §11.2 home. **When it was
+written this repository was a Markdown specification under adversarial review — no `package.json`,
+no `node_modules`, no build, no TypeScript.** Python for a document checker in a repo with no
+JavaScript toolchain was not a preference; it was the only thing available.
 
-**Trigger: none. This is declined, not deferred.** Reopen only if the checker needs real TypeScript
-AST analysis that a JSON emit cannot supply, and say which check needs it.
+The fifteen checks that read `.ts` files were bolted on afterwards, once code existed. **That is
+also why they read source as TEXT rather than importing it** — an artifact of the tool being older
+than the code it now checks, not a robustness decision somebody made.
+
+**And TypeScript is perfectly capable of the job — this entry declines on cost, not on
+impossibility.** Node 24 runs a `.ts` file directly with no compile step and no dependencies
+(verified by execution, 2026-09-12), so a TypeScript checker would keep the one property that
+matters: still working when `src/` does not compile, which is exactly when a checker earns its
+keep. An earlier draft of this entry implied otherwise. **An argument won with a wrong reason is
+worse than one that concedes the point and still wins**, and the point above — 103 seeded mutations
+to re-earn before anyone can trust the result — wins without help.
+
+**Stated plainly, because the entry should not be read as advocacy: there is no remaining technical
+benefit of Python over TypeScript here.** Not speed, not the regular expressions, not the file
+handling — the work is reading text and comparing it, and both languages do that equally well. The
+ONLY thing keeping the script in Python is the cost of moving it. If someone is willing to pay that
+cost properly, there is no principle standing in the way.
+
+**And a port is not just the script — the `plan` CI job changes with it.** Recorded because it is
+easy to miss and it is where the current arrangement is quietly better:
+
+- The job today is a checkout and two `python3` commands. **No `setup-node`, no `npm ci`, no
+  `node_modules`** — `python3` is preinstalled on `ubuntu-latest`.
+- A TypeScript checker needs `actions/setup-node` pinned to `.node-version`, because running a
+  `.ts` file directly requires Node 22.6 or newer and the system Node on the runner is not
+  guaranteed to be one.
+- **The zero-dependency property has to be kept deliberately.** The moment the checker imports one
+  npm package, the job gains `npm ci` — and then the tool that tells you the specification and the
+  code disagree stops working whenever the install is broken. That is the state it must never be
+  in, and it is a constraint a port has to be held to rather than discovering later.
+
+**What would make it worth doing, since cost is the only thing holding it:** the port stops being
+speculative the moment somebody is already deep in the checker — the `config.ts`-as-JSON work above
+is the obvious candidate, since it touches `check_constants` anyway. Doing both at once pays the
+migration against a change that was happening regardless.
+
+**Trigger: Momin's ruling, and the options are three, not two.** Port it now; port it alongside the
+config-as-data work; or leave it and accept that the repository has one file in another language.
+The constraints above are the brief for whichever he picks.
 
 ### T10. A sanity suite, separate from smoke — decide whether two files are worth it
 
