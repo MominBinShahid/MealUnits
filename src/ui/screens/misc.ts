@@ -578,8 +578,49 @@ export function howItWorksScreen(advisoryStatus: string): HTMLElement {
     ),
     h('p', {}, 'If the two together come out below zero, the answer is zero units — never a negative one.'),
 
+    // The two phrases above are what these names NAME, so the section attaches
+    // to them rather than opening the page. The clinical definitions are the
+    // settings strings themselves, not copies of them (§10.2 — the words are
+    // the specification, and two copies are two things to keep in step).
+    h('h2', {}, COPY.explain.namesTitle),
+    h('p', {}, COPY.explain.namesLead),
+    h('p', { class: 'clinical' }, COPY.settings.isfClinical),
+    h('p', { class: 'clinical' }, COPY.settings.icrClinical),
+    h('p', {}, COPY.explain.namesClose),
+
+    // §10.6 — the reading comes off a meter; this number does not, and until
+    // now nothing anywhere said what it should contain. It sits before "what
+    // this app does not know about" so its third paragraph can point forward at
+    // the fat-and-protein item rather than repeat it.
+    h('h2', {}, COPY.explain.carbTitle),
+    ...COPY.explain.carbBody.map((para) => h('p', {}, para)),
+
     h('h2', {}, COPY.doesNotKnow.title),
     h('ul', { class: 'list' }, ...COPY.doesNotKnow.items.map((item) => h('li', { class: 'li' }, item))),
+
+    // The word appeared SEVEN times in user-facing copy and was never defined —
+    // the app's most important safety behaviour explained in a term the reader
+    // was assumed to know. It follows the list above because that list's first
+    // item ("insulin you injected that it has no record of") is the thing this
+    // section is about.
+    h('h2', {}, COPY.explain.stackingTitle),
+    ...COPY.explain.stackingBody.map((para) => h('p', {}, para)),
+
+    // A stacking message, unreadable apart from one, so it follows immediately.
+    // The five conditions are enumerated rather than summarised: copy that says
+    // only "when you have not logged anything recently" describes v4's bug,
+    // which fired the caveat after every overnight gap.
+    h('h2', {}, COPY.explain.missingTitle),
+    h('p', {}, COPY.explain.missingBody),
+    h('p', { class: 'hint' }, 'Any one of these is enough:'),
+    h(
+      'ul',
+      { class: 'list' },
+      ...COPY.explain.missingConditions.map((item) => h('li', { class: 'li' }, item)),
+    ),
+
+    h('h2', {}, COPY.explain.expiryTitle),
+    ...COPY.explain.expiryBody.map((para) => h('p', {}, para)),
 
     h('h2', {}, COPY.firstRun.disagreementTitle),
     h('p', {}, COPY.firstRun.disagreementBody),

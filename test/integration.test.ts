@@ -25,6 +25,11 @@ import { DATABASE_NAME } from '../src/storage/schema.js';
 // step 3 response RENDERS, which is what was missing. The words themselves are
 // a clinical-review matter and must stay free to change without going red.
 import { COPY } from '../src/ui/copy.js';
+import {
+  RESULT_EXPIRY_MINUTES,
+  STACK_ADVISE_HOURS,
+  STACK_SUPPRESS_HOURS,
+} from '../src/config.js';
 
 const KARACHI = 'Asia/Karachi';
 /** 6 Sep 2026, 7:00 PM in Karachi. Fixed: nothing here reads a real clock. */
@@ -348,6 +353,69 @@ describe('§15 — the five rounding modes are explained somewhere findable', ()
     expect(page).toContain('always in the direction of low blood sugar');
     expect(page).toContain('cannot draw 4.37');
   });
+});
+
+describe('§10.6 the five terms the app used and never explained', () => {
+  it('defines stacking, the word seven user-facing strings already use', async () => {
+    await setUpAsHisBrother();
+    await tap('Settings');
+    await tap('How this works');
+    const page = text();
+
+    expect(page).toContain('What "stacking" means');
+    // The definition itself, not just the heading.
+    expect(page).toContain('the two add together');
+    // The exception that is NOT stacking, and gets it backwards if omitted.
+    expect(page).toContain('holding that one back would give you more insulin, not less');
+    // And the refusal. §7.4 declines to model insulin-on-board on purpose.
+    expect(page).toContain('refuses to draw that curve');
+  });
+
+  it('says what a carbohydrate is, the one input the app takes on trust', async () => {
+    await setUpAsHisBrother();
+    await tap('Settings');
+    await tap('How this works');
+    const page = text();
+
+    expect(page).toContain('What counts as carbohydrate');
+    expect(page).toContain('never the weight of what is on the plate');
+    // Fibre is stated and the instruction REFUSED — net-carb practice varies and
+    // the app has no authority to pick.
+    expect(page).toContain('Ask yours which they want');
+  });
+
+  it('names ISF and ICR, reusing the settings definitions rather than copying them', async () => {
+    await setUpAsHisBrother();
+    await tap('Settings');
+    const settings = text();
+    await tap('How this works');
+    const page = text();
+
+    expect(page).toContain('The names your doctor uses');
+    // The SAME strings, so the two screens cannot drift apart.
+    expect(page).toContain(COPY.settings.isfClinical);
+    expect(page).toContain(COPY.settings.icrClinical);
+    expect(settings).toContain(COPY.settings.isfClinical);
+  });
+
+  it('explains expiry and the missing-history caveat, with windows read from config', async () => {
+    await setUpAsHisBrother();
+    await tap('Settings');
+    await tap('How this works');
+    const page = text();
+
+    expect(page).toContain('No recent dose recorded');
+    // BOTH halves of the condition. v4 dropped provenance and the caveat fired
+    // after every overnight gap; copy naming only one half describes that bug.
+    expect(page).toContain('a row was dropped as unreadable when the app opened');
+    expect(page).toContain('It does not mean you have no insulin on board');
+
+    // The windows are interpolated, so these read from config rather than prose.
+    expect(page).toContain(`after ${String(RESULT_EXPIRY_MINUTES)} minutes`);
+    expect(page).toContain(`first ${String(STACK_SUPPRESS_HOURS)} hours`);
+    expect(page).toContain(`After ${String(STACK_ADVISE_HOURS)} hours it says nothing`);
+  });
+
 });
 
 describe('§10.6 back from "How this works" returns where you came from', () => {
