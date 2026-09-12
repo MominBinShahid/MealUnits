@@ -273,11 +273,14 @@ RETIRED = [
     # is a trap: a later reader finds the losing sentence, sees the code
     # disagree, and corrects the code. BUILD-NOTES note 2.
     #
-    # The count is 2, not 0: §4.5 and note 2 each QUOTE the retired phrase to
-    # explain that it was retired. Quoting a dead rule to record its death is
-    # not the rule living on — but it is indistinguishable to a substring
-    # search, so the count is what separates them. A third occurrence is the
-    # phrase coming back as live spec.
+    # The count is 1, not 0: §4.5 QUOTES the retired phrase to explain that it
+    # was retired. Quoting a dead rule to record its death is not the rule
+    # living on — but it is indistinguishable to a substring search, so the
+    # count is what separates them. A second occurrence is the phrase coming
+    # back as live spec.
+    #
+    # Was 2 until the 2026-09-13 prune: note 2 carried the second quotation and
+    # no longer restates the losing sentence.
     # Ruled 2026-09-11. §7.2's pending-save copy claimed TWO things that were
     # false — "retrying" when nothing retried, and "still counted" when the
     # snapshot took `lastDose` from the database a failed write never reached.
@@ -285,12 +288,15 @@ RETIRED = [
     # SAFETY claim on the screen a person reads while deciding whether to inject
     # again. BUILD-NOTES note 61.
     #
-    # The count is 4, not 0: §7.2's correction paragraph quotes it once and note
-    # 61 quotes it three times, all to record its death. A fifth occurrence is
-    # the phrase coming back as live spec — which is exactly how it survived in
-    # `design/step-flow.html` until this pin was written.
-    ("Couldn't save this yet", 4),
-    ("above-range to band E wording", 2),
+    # The count is 1, not 0: §7.2's correction paragraph quotes it to record its
+    # death. A second occurrence is the phrase coming back as live spec — which
+    # is exactly how it survived in `design/step-flow.html` until this pin was
+    # written.
+    #
+    # Was 4 until the 2026-09-13 prune: note 61 quoted the dead string three
+    # times and now states the defect without reprinting it.
+    ("Couldn't save this yet", 1),
+    ("above-range to band E wording", 1),
     ("last backup: N days ago", 2),
     ("the same mechanism `logRevision` already uses", 2),
     ("the log cannot record it", 1),
@@ -789,6 +795,53 @@ def check_retired_in_source(_plan):
                        " — a doc-retired rule in a docstring is the rule living on; quote it"
                        " to explain the retirement and pin the count, or delete it"
                        % (phrase, allowed, total, ", ".join(where) or "none"))
+    return out
+
+
+def check_note_references(corpus):
+    """2c. A "note N" pointing at a build note that does not exist — ADDED 2026-09-13.
+
+    Written in the same edit as the prune that made the class possible. The notes
+    are cited from 24 places across source, tests and the other documents — the
+    sigil means a PLAN.md section everywhere, so BUILD-NOTES entries are cited as
+    "note N" instead — and the prune deleted 1,566 lines from that file. Every
+    number survived as a heading on purpose; this is what keeps it that way.
+
+    Reads the source tree directly as well as the corpus, because most of the
+    citations are in TypeScript, where nothing else would see them. Shown to fail
+    by execution: seeding a citation of an out-of-range number into src/ui/app.ts
+    produces the finding and removing it returns the checker to clean. Its first
+    run reported one — this docstring's own example, written as a literal — which
+    is why the example is described rather than printed. SELF_TESTS carries the
+    document-side version: deleting note 48's heading, which CLAUDE.md cites.
+    """
+    notes = corpus.get("BUILD-NOTES.md", "")
+    if not notes:
+        return []
+    defined = set(re.findall(r"^## (\d+)\.", notes, re.M))
+    files = dict(corpus)
+    for sub in ("src", "test", "tools"):
+        root = os.path.join(HERE, sub)
+        if not os.path.isdir(root):
+            continue
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+            for name in sorted(filenames):
+                if not name.endswith((".ts", ".mjs", ".css", ".js")):
+                    continue
+                path = os.path.join(dirpath, name)
+                rel = os.path.relpath(path, HERE).replace(os.sep, "/")
+                with io.open(path, encoding="utf-8") as handle:
+                    files[rel] = handle.read()
+    out = []
+    for rel, text in sorted(files.items()):
+        if rel == "BUILD-NOTES.md":
+            continue
+        for m in re.finditer(r"\bnotes? (\d+)", text):
+            if m.group(1) in defined:
+                continue
+            out.append("%s:%d: note %s cited but BUILD-NOTES.md has no such entry"
+                       % (rel, line_of(text, m.start()), m.group(1)))
     return out
 
 
@@ -2224,6 +2277,7 @@ CHECKS = [
     ("retired phrases living in src/**/*.ts", check_retired_in_source, "plan"),
     ("dangling section references", check_references, "plan"),
     ("dangling section references in companions", check_references_corpus, "corpus"),
+    ("dangling build-note references", check_note_references, "corpus"),
     ("unverifiable removal claims", check_removal_claims, "plan"),
     ("schema field with no snapshot home", check_schema_snapshot, "plan"),
     ("near-miss identifiers", check_near_miss, "plan"),
@@ -2267,6 +2321,12 @@ SELF_TESTS = [
      lambda t: t.replace("        {},", "", 1)),
     ("canonical: threshold drift seeded in BACKLOG.md [R2]", "BACKLOG.md",
      lambda t: t + "\n\nDEFAULT_THRESHOLD = 25;\n"),
+    # The 2026-09-13 prune cut BUILD-NOTES.md from 2,035 lines to 469 and kept
+    # every note NUMBER as a heading, because 24 of them are cited from source,
+    # tests and the other documents. This is the mutation that proves the keeping
+    # is checked: note 48 is cited by CLAUDE.md, vite.config.ts and smoke.mjs.
+    ("notes: note 48's heading deleted by a prune", "BUILD-NOTES.md",
+     lambda t: t.replace("## 48. `crypto.randomUUID`", "## Secure contexts and `crypto.randomUUID`")),
     ("canonical: target ceiling reverted to 300 (table)", "PLAN.md",
      lambda t: t.replace("Target blood sugar | 70–**200** mg/dL",
                          "Target blood sugar | 70–**300** mg/dL")),

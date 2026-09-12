@@ -4579,7 +4579,7 @@ should have gone on design.** `check-plan.py` catches that class.
 
 **And since 2026-09-12 it runs in CI, which is the half that was missing for eight months
 [R26].** Until then this section said "runs before every dispatch" and nothing made that true:
-`check-plan.py` appeared nowhere in `.github/`, so twenty-four checks and a 103-mutation self-test
+`check-plan.py` appeared nowhere in `.github/`, so every check and every seeded mutation in it
 fired only when somebody remembered to type them. Found the day a new rule was added under this
 section's own maintenance obligation — and the rule could not have caught a regression on anybody's
 pull request. A guarantee enforced by memory is the shape T1 warns about: it goes quiet rather than
