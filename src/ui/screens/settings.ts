@@ -285,6 +285,25 @@ export function settingsScreen(
           { class: 'flag mint' },
           h('b', {}, COPY.settings.prefilledTitle),
           COPY.settings.prefilledBody,
+          // §10.6 — until now the ONE moment the app asks for ISF and ICR was
+          // the one moment the explanation was unreachable: the button list
+          // below is gated on `!firstRun`, so "How this works" did not exist
+          // during setup.
+          //
+          // One link, inside the flag that already names all three numbers and
+          // already asks the reader to check them. NOT one per field: two
+          // controls sharing an accessible name is the defect the export
+          // buttons were renamed to fix.
+          //
+          // It is only safe because `view.screenBefore` now exists. Back from
+          // that page used to dispatch a hardcoded 'calculator', which mid-setup
+          // exposes a foot nav whose Settings renders `firstRun: false` — §10.6's
+          // inescapable gate walked around rather than broken.
+          h(
+            'div',
+            { class: 'sheet' },
+            button(COPY.explain.whatDoTheseMean, handlers.onOpenHowItWorks, { class: 'go quiet' }),
+          ),
         )
       : null,
 
