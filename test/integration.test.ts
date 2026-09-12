@@ -350,6 +350,33 @@ describe('§15 — the five rounding modes are explained somewhere findable', ()
   });
 });
 
+describe('§10.6 back from "How this works" returns where you came from', () => {
+  it('goes back to Settings, not to a hardcoded calculator', async () => {
+    await setUpAsHisBrother();
+    await tap('Settings');
+    await tap('How this works');
+    expect(text()).toContain('Rounding, and why there are five choices');
+
+    await tap('Back');
+    // Settings, because that is where the trip started. Until 2026-09-12 the
+    // back path dispatched a hardcoded 'calculator', and `view.screenBefore`
+    // was declared and initialised but read nowhere.
+    const after = text();
+    expect(after).toContain('What can your syringe measure?');
+    expect(after).not.toContain('Rounding, and why there are five choices');
+  });
+
+  it('and the same door works from the settings-as-text view', async () => {
+    await setUpAsHisBrother();
+    await tap('Settings');
+    await tap('Show my settings as text');
+    expect(text()).toContain('meant to be photographed');
+
+    await tap('Back');
+    expect(text()).toContain('What can your syringe measure?');
+  });
+});
+
 describe('the name, which changes nothing the app calculates', () => {
   it('greets him on the reading screen and NOWHERE a dose is shown', async () => {
     await boot();
