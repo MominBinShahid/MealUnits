@@ -4694,6 +4694,16 @@ MealUnits/
   docs/BLOG-FIX.md           <- the separate blog service-worker change (§11.6)
   docs/BUILD-NOTES.md        <- decisions the BUILD had to make that this document
                                 does not state, each awaiting a ruling (§20.1)
+  docs/CARBS.md              <- the carbohydrate reference: what Pakistani food
+                                contains, per real portion, with every value's
+                                source, confidence and licence. DATA of record;
+                                this document governs what the app DOES with it.
+                                Does not use the § marker, because § means a
+                                section of this file everywhere in the repository
+  docs/carb-exchange-handout.jpg
+                             <- the exchange sheet Hasham's doctor gave him, kept
+                                as the provenance of the 15 g model CARBS.md
+                                translates away from. Reference only, not shipped
   docs/CLINICAL.md           <- §15 item 3: one section per clinical decision,
                                 with its source and its reversals
   docs/design/screens.html   <- 8 screens, Card design, annotated
