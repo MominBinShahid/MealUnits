@@ -355,6 +355,78 @@ describe('§15 — the five rounding modes are explained somewhere findable', ()
   });
 });
 
+describe('§11.8 the food list — read-only by design', () => {
+  it('is offered on the carbohydrate step, and nowhere else', async () => {
+    await setUpAsHisBrother();
+    // Not on the reading step: it answers a question that has not been asked yet.
+    expect(text()).not.toContain('Food list');
+
+    await keys('180');
+    await tap('Next');
+    expect(text()).toContain('Food list');
+  });
+
+  it('opens, searches by Roman Urdu, and says how much of the table is showing', async () => {
+    await setUpAsHisBrother();
+    await keys('180');
+    await tap('Next');
+    await tap('Food list');
+
+    const opened = text();
+    expect(opened).toContain('How much carbohydrate is in it');
+    // The caveat is BEFORE the numbers, so someone who reads one row and leaves
+    // has still met it.
+    expect(opened).toContain('Estimates, not measurements of your plate');
+    expect(opened).toContain('Tandoor naan, small tier');
+
+    const field = root.querySelector('#food-search');
+    if (!(field instanceof HTMLInputElement)) throw new Error('no search field');
+    field.value = 'qeema';
+    field.dispatchEvent(new (root.ownerDocument.defaultView as Window & typeof globalThis).Event('input'));
+
+    const filtered = text();
+    expect(filtered).toContain('Qeema samosa');
+    expect(filtered).not.toContain('Tandoor naan, small tier');
+  });
+
+  it('carries every value\'s confidence and source, which is what §11.8 exempted it on', async () => {
+    await setUpAsHisBrother();
+    await keys('180');
+    await tap('Next');
+    await tap('Food list');
+    const page = text();
+
+    // A value whose confidence is hidden is presented with the authority of a
+    // lab measurement, and the gap between those is what this table is built on.
+    expect(page).toContain('Source: LFAC');
+    expect(page).toContain('varies');
+    // The single most useful line on the screen: one weighing settles the whole
+    // bread family for that household.
+    expect(page).toContain('times 0.46');
+  });
+
+  it('NEVER writes into the carbohydrate field — the whole safety argument', async () => {
+    await setUpAsHisBrother();
+    await keys('180');
+    await tap('Next');
+    await keys('50');
+
+    await tap('Food list');
+    await tap('Back');
+
+    // Two things at once. The typed value survived the trip, so the list is not
+    // a dead end that costs you your entry; and nothing the list showed has
+    // replaced it. A wrong row can mislead a reader and can never silently
+    // drive a dose, which is the property §7.8 gives readings, applied to food.
+    const back = text();
+    expect(back).toContain('50');
+    expect(back).not.toContain('How much carbohydrate is in it');
+    await tap('Work out the dose');
+    // 180 mg/dL, 50 g, ISF 30, ICR 10, target 150 -> 1 + 5 = 6 units.
+    expect(text()).toContain('6');
+  });
+});
+
 describe('§10.6 the five terms the app used and never explained', () => {
   it('defines stacking, the word seven user-facing strings already use', async () => {
     await setUpAsHisBrother();

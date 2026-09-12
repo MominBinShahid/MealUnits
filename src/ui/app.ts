@@ -46,6 +46,7 @@ import { initialState, reduce } from '../state/machine.js';
 import type { Action, AppState, FrozenLogPayload, RecordContext } from '../state/machine.js';
 import { localDayKey } from '../core/calendar.js';
 import { newId } from '../core/ids.js';
+import { foodListScreen } from './screens/foods.js';
 import { COPY, units } from './copy.js';
 import { button, captureFocus, replaceChildren, restoreFocus, h } from './dom.js';
 import { calculatorScreen } from './screens/calculator.js';
@@ -94,6 +95,11 @@ interface ViewState {
   dosingDraft: string;
   decliningDosing: boolean;
   screenBefore: AppState['screen'];
+  /**
+   * The food-list search box. Outside the reducer with the rest of ViewState
+   * because it changes no dose, band or gate — only which rows are on screen.
+   */
+  foodQuery: string;
   /**
    * §7.9 v23 — another tab deleted the record, so this one is re-booting into
    * the first-run gate. Outside the reducer with the rest of ViewState: it
@@ -195,6 +201,7 @@ export async function start(host: Host): Promise<void> {
     dosingDraft: '',
     decliningDosing: false,
     screenBefore: 'calculator',
+    foodQuery: '',
     recordDeletedElsewhere: false,
   };
 
@@ -747,6 +754,15 @@ export async function start(host: Host): Promise<void> {
               },
             });
 
+      case 'food_list':
+        return foodListScreen({
+          query: view.foodQuery,
+          onQuery: (value: string): void => {
+            view.foodQuery = value;
+            render();
+          },
+        });
+
       case 'how_it_works':
         return showAsText && state.settings !== null
           ? settingsAsTextScreen(state.settings)
@@ -890,6 +906,9 @@ export async function start(host: Host): Promise<void> {
         return showClear
           ? (): void => { showClear = false; dispatch({ type: 'go', screen: 'settings' }); }
           : (): void => { dispatch({ type: 'go', screen: 'calculator' }); };
+      case 'food_list':
+        return (): void => { dispatch({ type: 'go', screen: 'calculator' }); };
+
       case 'how_it_works':
         // Back goes where you CAME from, not to a fixed screen. The two entry
         // points both sit in settings today, so this reads as "settings" either
@@ -916,6 +935,12 @@ export async function start(host: Host): Promise<void> {
     if (state.screen === 'calculator' && state.step === 'reading') {
       items.push(button('Settings', () => { dispatch({ type: 'go', screen: 'settings' }); }, { class: 'link' }));
       items.push(button('History', () => { dispatch({ type: 'go', screen: 'history' }); }, { class: 'link' }));
+    }
+    // §10.7 — on the carbohydrate step ONLY. The list answers the question being
+    // asked at that exact moment and is noise on every other screen, which is
+    // why it is gated the same way History is gated to the reading step.
+    if (state.screen === 'calculator' && state.step === 'carbs') {
+      items.push(button(COPY.foods.navLabel, () => { dispatch({ type: 'go', screen: 'food_list' }); }, { class: 'link' }));
     }
     if (state.screen === 'history') {
       items.push(button('Save a copy', () => { showClear = false; dispatch({ type: 'go', screen: 'export' }); }, { class: 'link mark' }));
