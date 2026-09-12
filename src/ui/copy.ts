@@ -105,6 +105,45 @@ export const COPY = {
     whatDoTheseMean: 'What do these mean?',
   },
 
+  /**
+   * The carbohydrate reference, as a screen. Phase 1 is READ-ONLY: it never
+   * writes into the carbohydrate field. That is the whole safety argument —
+   * a wrong row can mislead someone, and can never silently drive a dose,
+   * which is the property §7.8 gives readings applied to food.
+   */
+  foods: {
+    navLabel: 'Food list',
+    title: 'How much carbohydrate is in it',
+    /**
+     * Said before the list, not after. Someone who reads one number and leaves
+     * should have met the caveat, and the caveat is the honest one: these are
+     * estimates of a plate nobody weighed.
+     */
+    intro:
+      'Estimates, not measurements of your plate. Read the number, then type it yourself — nothing here fills the box in for you.',
+    searchLabel: 'Search food',
+    searchHint: 'English or Roman Urdu — roti, chawal, qeema, biryani.',
+    empty: (query: string): string =>
+      `Nothing matches "${query}". Try the Urdu name, or a simpler word — "naan" rather than "tandoori naan".`,
+    /**
+     * §11.8's second condition made visible. A value whose confidence is hidden
+     * is presented with the same authority as a lab measurement, and the
+     * difference between those is the difference this table is built on.
+     */
+    confidenceLabel: { high: 'well established', medium: 'varies', low: 'poorly measured' } as const,
+    variesPrefix: 'Varies: ',
+    sourcePrefix: 'Source: ',
+    /**
+     * The single highest-value thing on the screen. One kitchen-scale reading
+     * settles every bread row for that household, which no amount of table
+     * detail can do.
+     */
+    weighOnce:
+      'Weigh one of your own rotis once. Carbohydrate is about its cooked weight times 0.46, and every bread row below becomes yours rather than an average.',
+    countNote: (shown: number, total: number): string =>
+      shown === total ? `${String(total)} foods` : `${String(shown)} of ${String(total)} foods`,
+  },
+
   // ── §3's bands ────────────────────────────────────────────────────────────
   bandC: {
     title: 'Treat this first. Do not inject.',

@@ -42,7 +42,13 @@ export type Screen =
   | 'settings'
   | 'history'
   | 'export'
-  | 'how_it_works';
+  | 'how_it_works'
+  /**
+   * §11.8's reference data, as a screen. Read-only by design: it never writes
+   * into the carbohydrate field, so a wrong row can mislead but can never
+   * silently drive a dose — the property §7.8 gives readings, applied to food.
+   */
+  | 'food_list';
 
 /**
  * §18.14's wizard, as positions. The everyday path is
