@@ -79,6 +79,8 @@ const SITE_URL = 'https://mominbinshahid.github.io';
  *
  * ONE url, and that is not an oversight. Every screen is reached by tapping,
  * not by navigating; per-screen routes are BACKLOG entry 24, blocked on T3.
+ * **When they land, each one belongs here with its own lastmod** — the build
+ * date is right for all of them only while they ship as one build.
  *
  * The file sits under /MealUnits/ rather than at the domain root, which is
  * legitimate — a sitemap may list URLs at or below its own path — and has to be
