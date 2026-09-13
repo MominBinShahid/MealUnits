@@ -412,6 +412,7 @@ CONSTANTS = {
     "THRESHOLD_HIGH_READING": "250",
     "THRESHOLD_MULTIPLE": "1.5",
     "BAND_E_FULL_CARD_WINDOW_HOURS": "12",
+    "GRAMMAR_INTEGER_DIGIT_SLACK": "1",
     "BAND_B_CORRECTION_UNITS": "-1.5",
     "INCREMENT": "{ nearest: 1, half: 0.5, ceil: 1, floor: 1, off: 0.01 }",
     "HUNDREDTHS_SCALE": "100",
@@ -1168,19 +1169,56 @@ def check_constants(corpus):
     # So the same completeness is asserted the other way round, against the file
     # that actually compiles. §11.8's rule is that every number lives in
     # config.ts; this makes config.ts the thing that has to be complete.
-    config_src = corpus.get("src/config.ts", "")
+    # Read THROUGH `load`, not with io.open, and deliberately. `live_files()`
+    # sweeps documents only — `src/` is not in the corpus at all — so an earlier
+    # version of this check read `corpus["src/config.ts"]`, got an empty string
+    # and silently verified nothing. Going through `load` also means the
+    # self-test can substitute a mutated config, which is what makes the seeds
+    # below real instead of decorative.
+    try:
+        config_src = load(os.path.join(HERE, "src", "config.ts"))
+    except (IOError, OSError):
+        config_src = ""
     if config_src:
         shipped = set(re.findall(r"^export const\s+([A-Z_][A-Z0-9_]*)",
                                  config_src, re.M))
+
+        # NOT every export — that would be 34 findings and the wrong rule.
+        # §11.8's rule is that numbers LIVE in config.ts, not that every one is
+        # documented; plenty are plumbing (UUID_VERSION_BYTE, WIZARD_STEPS) that
+        # §11.8 has never claimed to govern.
+        #
+        # The class that matters is narrower and exact: a constant the DOCUMENTS
+        # DISCUSS BY NAME is a decision someone argued for, and a decision whose
+        # value nothing pins is one that can drift away from the prose arguing
+        # for it. BAND_E_FULL_CARD_WINDOW_HOURS was written into §10.5's prose on
+        # 2026-09-13 and pinned nowhere, which is what this catches.
+        prose = "\n".join(text for rel, text in sorted(corpus.items())
+                          if rel.endswith(".md"))
         for name in sorted(shipped - declared):
-            out.append("src/config.ts exports %s, which is in neither §11.8 nor "
-                       "check-plan.py's CONSTANTS — a constant that never reaches "
-                       "PLAN.md is one this checker cannot pin, and that is how "
-                       "BAND_E_FULL_CARD_WINDOW_HOURS shipped unpinned" % name)
-        for name in sorted(declared - shipped - {"DELETE_CONFIRM_WINDOW_HOURS"}):
-            if name in CONSTANTS or name in STRUCTURED_CONSTANTS:
-                out.append("check-plan.py pins %s but src/config.ts does not "
-                           "export it — the pin outlived the constant" % name)
+            # In CODE CONTEXT — backticked, or written as a declaration. A bare
+            # word match reported `SHIPPED` on the strength of the English word
+            # in a backlog heading, and a check that cries wolf gets switched
+            # off. Every real reference to a decision constant in these
+            # documents is already backticked or inside a fenced block.
+            quoted = re.search(r"`%s`|export const\s+%s\b"
+                               % (re.escape(name), re.escape(name)), prose)
+            if quoted:
+                out.append("src/config.ts exports %s and the documents discuss it "
+                           "by name, but it is in neither §11.8's block nor "
+                           "check-plan.py's CONSTANTS — a constant the prose "
+                           "argues for and nothing pins is one that can drift "
+                           "away from its own argument, which is how "
+                           "BAND_E_FULL_CARD_WINDOW_HOURS shipped unpinned" % name)
+
+        # The other direction: a pin that outlived the constant it pinned. This
+        # is the state the file was in when DEFAULT_THRESHOLD was deleted and CI
+        # caught the stale seed rather than the stale pin.
+        # DELETE_CONFIRM_WINDOW_HOURS is pinned to an alias, not a literal, and
+        # is exported — it is excluded only from the ALIAS spelling check above.
+        for name in sorted(declared - shipped):
+            out.append("check-plan.py pins %s but src/config.ts does not export "
+                       "it — the pin outlived the constant" % name)
     for name in sorted(STRUCTURED_CONSTANTS - set(names)):
         out.append("check-plan.py lists %s as a structured constant but PLAN.md no "
                    "longer declares it" % name)
@@ -2437,8 +2475,29 @@ SELF_TESTS = [
      lambda t: t.replace(r"(?!.*\/MealUnits", r"(?:.*\/MealUnits")),
     ("blogfix: load-bearing {} placeholder deleted [R1]", "BLOG-FIX.md",
      lambda t: t.replace("        {},", "", 1)),
+    # Was DEFAULT_THRESHOLD until 2026-09-13, when the audience change deleted
+    # that constant and this seeded mutation kept pointing at it — so it stopped
+    # proving anything and the self-test reported the escape. Re-aimed at a
+    # constant that exists, and deliberately at one of the NEW ones, so the drift
+    # check is proven over the pins added in the same commit.
     ("canonical: threshold drift seeded in BACKLOG.md [R2]", "BACKLOG.md",
-     lambda t: t + "\n\nDEFAULT_THRESHOLD = 25;\n"),
+     lambda t: t + "\n\nTHRESHOLD_MEAL_GRAMS = 25;\n"),
+    # §20.3 — the check added in the same commit arrives with its own mutation.
+    # A constant exported from src/config.ts and never written into §11.8 used to
+    # be invisible: absent from PLAN.md so nothing reported it, absent from
+    # CONSTANTS so nothing pinned its value. That is how
+    # BAND_E_FULL_CARD_WINDOW_HOURS shipped unpinned.
+    # Seeded on the DOCUMENT side, which is the direction the rule actually
+    # runs in: the trigger is prose starting to argue for a constant that
+    # nothing pins. Seeding a new export into config.ts proves nothing, because
+    # a constant no document discusses is deliberately not a finding — §11.8
+    # governs decisions, not plumbing.
+    ("constants: prose argues for a config constant nothing pins", "BACKLOG.md",
+     lambda t: t + "\n\nThe wizard is `WIZARD_STEPS` long.\n"),
+    # And the other direction: a pin that outlived the constant it pinned, which
+    # is the state this file was in when CI caught it.
+    ("constants: a pin whose constant no longer exists", "src/config.ts",
+     lambda t: t.replace("export const THRESHOLD_MULTIPLE", "export const THRESHOLD_MULTIPLE_RENAMED")),
     # The 2026-09-13 prune cut most of BUILD-NOTES.md's body and kept every note
     # NUMBER as a heading, because many are cited from source, tests and the other
     # documents. This is the mutation that proves the keeping is checked: note 48
@@ -2793,6 +2852,15 @@ def self_test():
         full = os.path.join(HERE, rel)
         if os.path.exists(full):
             base[_corpus_key(rel)] = load(full)
+    # `live_files()` is documents only, and §11.8's completeness check reads
+    # src/config.ts as the authority on which constants exist. A seed cannot
+    # mutate a file the harness does not hold, so it is held here — WITHOUT
+    # joining `live_files()`, which drives §20.3's freeze and the dispatch hash
+    # and is not the thing being changed.
+    config_rel = "src/config.ts"
+    config_full = os.path.join(HERE, "src", "config.ts")
+    if os.path.exists(config_full):
+        base[config_rel] = load(config_full)
 
     def run(overrides):
         files = dict(base)
