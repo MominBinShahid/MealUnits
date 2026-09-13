@@ -109,6 +109,21 @@ export const ADVISORY_HIGH_MULTIPLE = 3;
 // are noise", which then degrades the band B caution — the one that must land.
 export const ADVISORY_BUDGET = 2;
 
+// How long band E's FULL card stays spent before another one may be shown.
+// RULED BY MOMIN 2026-09-13: 12 hours, replacing a calendar-day boundary.
+// §10.5's intent is "do not show the big card twice in quick succession", and
+// quick succession is a DURATION. A date boundary failed it at both ends: a
+// 23:40 reading and a 00:20 reading are one episode and got two full cards,
+// while 03:00 and 21:00 are plainly two and the second got a compact line.
+// Twelve hours fixes both and caps the full card at twice a day — a morning
+// episode and a night episode each get one.
+//
+// NOT DERIVED FROM `STACK_ADVISE_HOURS`, which happens to hold the same value.
+// That one is about insulin still acting; this one is about how often a card
+// may be large. They share a number and nothing else, and §11.8 puts them in
+// different sections for exactly that reason. If one moves, the other does not.
+export const BAND_E_FULL_CARD_WINDOW_HOURS = 12;
+
 // ─── TIMING (§8.2, §11.3) ──────────────────────────────────
 export const RESULT_EXPIRY_MINUTES = 15;
 export const POLL_INTERVAL_MS = 4000;

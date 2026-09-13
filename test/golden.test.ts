@@ -44,7 +44,7 @@ interface GoldenInput {
   carbBaseline?: number | null;
   eligibleEntryCount?: number;
   historyProvenance?: 'trusted' | 'suspect';
-  bandEFullCardShownToday?: boolean;
+  bandEFullCardShownRecently?: boolean;
   excludedTimeRecords?: number;
   blankReadingAcknowledged?: boolean;
   largeDoseConfirmed?: boolean;
@@ -119,7 +119,7 @@ function buildSnapshot(input: GoldenInput, mode: string): Snapshot {
     eligibleEntryCount: input.eligibleEntryCount ?? 0,
     historyProvenance: input.historyProvenance ?? 'trusted',
     lastDose,
-    bandEFullCardShownToday: input.bandEFullCardShownToday ?? false,
+    bandEFullCardShownRecently: input.bandEFullCardShownRecently ?? false,
     excludedTimeRecords: input.excludedTimeRecords ?? 0,
     blankReadingAcknowledged: input.blankReadingAcknowledged ?? false,
     largeDoseConfirmed: input.largeDoseConfirmed ?? false,

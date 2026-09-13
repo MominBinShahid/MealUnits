@@ -100,7 +100,7 @@ export interface RecordContext {
   readonly eligibleEntryCount: number;
   readonly historyProvenance: HistoryProvenance;
   readonly lastDose: LastDose | null;
-  readonly bandEFullCardShownToday: boolean;
+  readonly bandEFullCardShownRecently: boolean;
   readonly excludedTimeRecords: number;
 }
 
@@ -160,7 +160,7 @@ export const EMPTY_RECORD: RecordContext = {
   eligibleEntryCount: 0,
   historyProvenance: 'suspect',
   lastDose: null,
-  bandEFullCardShownToday: false,
+  bandEFullCardShownRecently: false,
   excludedTimeRecords: 0,
 };
 
@@ -200,7 +200,7 @@ export type Action =
    * moved (another tab wrote) and therefore invalidates, while this is the
    * correct reading of unchanged rows at the moment of decision. Without it a
    * calculation can use a record context derived hours earlier — see
-   * `bandEFullCardShownToday` and §13.3's day-rollover case.
+   * `bandEFullCardShownRecently` and §13.3's window-expiry case.
    */
   | { readonly type: 'calculate'; readonly nowMs: number; readonly record?: RecordContext }
   | { readonly type: 'wizard_next' }
@@ -282,7 +282,7 @@ function buildSnapshot(state: AppState, nowMs: number): Snapshot | null {
     eligibleEntryCount: state.record.eligibleEntryCount,
     historyProvenance: state.record.historyProvenance,
     lastDose: gateLastDose(state),
-    bandEFullCardShownToday: state.record.bandEFullCardShownToday,
+    bandEFullCardShownRecently: state.record.bandEFullCardShownRecently,
     excludedTimeRecords: state.record.excludedTimeRecords,
     blankReadingAcknowledged: state.blankReadingAcknowledged,
     largeDoseConfirmed: state.largeDoseConfirmed,
@@ -390,12 +390,15 @@ export function reduce(state: AppState, action: Action): AppState {
       return { ...state, largeDoseConfirmed: true };
 
     case 'calculate': {
-      // §13.3 — "a qualifying result at 11:59 PM then another at 12:01 AM —
-      // both full." `bandEFullCardShownToday` is derived against a DAY KEY, and
-      // the shell derived it when the record last changed, so a session left
-      // open across midnight computed the new day's first result against
-      // yesterday's "today" and rendered COMPACT where the case requires FULL.
-      // The core always passed that case; the shell wiring did not.
+      // §13.3 — band E's full card is spaced by a ROLLING WINDOW, and the
+      // shell derives that flag when the record last changed. A session left
+      // open past the window computed its next result against a spent flag and
+      // rendered COMPACT where the window had reopened and FULL is required.
+      // The core always passed; the shell wiring did not.
+      //
+      // The example used to be midnight — the rolling-window ruling replaced
+      // the date boundary with a duration, which makes this MORE necessary
+      // rather than less: staleness is now continuous, not once a night.
       //
       // `excludedTimeRecords` and `historyProvenance` are derived against `now`
       // too, so this fixes a family rather than one field. It cannot mask

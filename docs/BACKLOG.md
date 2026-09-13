@@ -14,7 +14,7 @@ entry, waiting on something outside this project rather than on a decision of ou
 
 **Numbers are identity, not rank.** The feature entries are ONE sequence partitioned across the
 tiers — 1-24 today — so a number stays stable enough to cite, while **position within a tier**
-carries the priority. That is why 20, 18, 19, 21, 22, 23 and 24 sit above 1, and why 4a and 10a sit above 6. Do not
+carries the priority. That is why 20, 18, 19, 21, 22 and 24 sit above 1, and why 4a and 10a sit above 6. Do not
 renumber to tidy it: reusing a number is how `PLAN.md` v14 came to assert three falsehoods about
 this file, which is why §20.3 says reference an entry by NAME, never by number.
 
@@ -171,54 +171,6 @@ one piece of work.
 
 **The line to hold if it is built:** a recorded ketone value is a record, **never an input to a
 dose**. §7.8's "not an input to anything" governs, for the same reason it governs readings.
-
-### 23. Band E's full card resets on a rolling window, not a calendar day
-**RULED BY MOMIN 2026-09-13. Not yet built** — recorded here rather than written into `PLAN.md`,
-because the plan describes what the code does and the code still does the old thing.
-
-**What §10.5 does today.** The first band E result each **calendar day** shows a full card;
-subsequent ones show a compact line, with the instruction identical in both. The boundary is local
-midnight, via `localDayKey`.
-
-**Why it is wrong at both ends.**
-
-```
-Mon 23:40  320  FULL CARD     Tue 00:20  330  FULL CARD   <- 40 minutes apart, one episode, two cards
-Mon 03:00  300  FULL CARD     Mon 21:00  295  compact     <- 18 hours apart, plainly not one episode
-```
-
-**The ruling: a rolling window.** The intent — *do not show the big card twice in quick succession*
-— is a duration, not a date, and a date boundary produces both failures above.
-
-**What building it actually involves**, because it is larger than swapping a comparison:
-
-1. A new constant in `src/config.ts`. **RULED BY MOMIN 2026-09-13: 12 hours.** It fixes both cases
-   above and caps the full card at twice a day — a morning episode and a night episode each get one,
-   which is what "not twice in quick succession" means when the thing being spaced is an episode
-   rather than a date. 24 hours was the alternative: it preserves today's once-a-day frequency and
-   removes the midnight cliff, but leaves the 3 a.m./9 p.m. case collapsing into one.
-
-   **Not to be confused with `STACK_ADVISE_HOURS`, which is also 12.** Two constants with the same
-   value and no relationship — one is about insulin still acting, this one is about how often a card
-   is allowed to be large. §11.8's file separates them by section for exactly this reason, and
-   neither may be derived from the other.
-2. `deriveBandEFullCardShownToday` in `src/core/history.ts` — under the 100% mutation gate — stops
-   comparing day keys and compares an elapsed duration.
-3. **It stops needing a time zone at all.** The `timeZone` parameter goes, and with it this
-   function's dependence on notes 11 and 21's device-zone ruling. A rolling window is zone-free by
-   construction, which is a simplification rather than a loss.
-4. **The name stops being true.** "ShownToday" means nothing under a rolling window; rename in the
-   same change, per the rule that a symbol named for what it used to do is how the next reader gets
-   it wrong.
-5. **An existing test asserts the behaviour being removed** — `test/history.test.ts`'s *"rolls over
-   at LOCAL midnight, so 11:59 PM and 12:01 AM are two days"* becomes wrong, not merely redundant.
-   §13.3's case list names the same rollover in two places in `PLAN.md`. Delete and replace in the
-   same change; a suite that still asserts the old rule is worse than no suite.
-6. `CLINICAL.md` section 2.3 describes the calendar boundary and section 14 question 4 asks about
-   it. Both close with this.
-
-**Nothing clinical turns on it** — the advisory's presence and instruction never change, only whether
-the card is full or compact. No guideline addresses it; it is alarm-fatigue design.
 
 ### 24. URL routes for the four screens that are not the calculator
 
@@ -1121,6 +1073,34 @@ is its own decision, not part of any version bump.
 ---
 
 ## DECIDED — not pending, kept as the record
+
+### D2. Band E's full card resets on a rolling window, not a calendar day — SHIPPED 2026-09-13
+**Was entry 23. The number is retired, not reused** — the numbering rule at the top of this file
+says why.
+
+**RULED BY MOMIN 2026-09-13: a 12-hour rolling window**, replacing local midnight. §10.5's intent
+is *"do not show the big card twice in quick succession"*, and quick succession is a duration. The
+date boundary failed at both ends: 23:40 and 00:20 are one episode and got two full cards, while
+03:00 and 21:00 are two and the second got a compact line. Twelve hours caps the full card at
+twice a day — one for a morning episode, one for a night episode.
+
+**The reasoning now lives where it belongs** and is not repeated here: `PLAN.md` §10.5 for the
+boundary and the constant, `CLINICAL.md` §2.3 for why nothing clinical turns on it, and
+`src/config.ts` for the value.
+
+**Three things shipped with it that are worth knowing:**
+
+1. **`BAND_E_FULL_CARD_WINDOW_HOURS` is not derived from `STACK_ADVISE_HOURS`** despite holding the
+   same 12. One is about insulin still acting, the other about how often a card may be large.
+2. **The derivation lost its `timeZone` parameter.** A duration is zone-free, so it no longer
+   depends on notes 11 and 21's device-zone ruling — and §18.8's physician question about the reset
+   boundary lost its subject entirely.
+3. **Two passing tests were DELETED, not adapted** — `history.test.ts`'s *"rolls over at LOCAL
+   midnight"* and `integration.test.ts`'s *"a session left open across midnight still gets the FULL
+   band E card"*. Both asserted the behaviour the ruling removes. The second was also guarding a
+   real shell-wiring bug, so its guard was kept with a scenario the window actually produces.
+
+---
 
 ### D1. Dedicated GitHub organisation / clean origin — DECLINED
 `MealUnits.github.io` would give an isolated origin, root scope, and remove §11.7's

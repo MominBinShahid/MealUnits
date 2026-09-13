@@ -578,7 +578,7 @@ with no stated resolution order, leaving many cells contradictory. This is the o
     routine path and be dead before the one 200→20 firing that matters.
 
 11b. **Select band E's form** (§10.5) — full card or compact line — from
-     `bandEFullCardShownToday` in the committed snapshot. **ADDED IN v9.** The *instruction* is
+     `bandEFullCardShownRecently` in the committed snapshot. **ADDED IN v9.** The *instruction* is
      identical either way; only the presentation differs, so this step can never change what the
      user is told to do. It is here rather than in the shell because §11.2 twice forbids
      safety-display logic outside the tested core, and because v8 ruled the behaviour without
@@ -2636,9 +2636,9 @@ silently re-renders in the new zone — the record keeps absolute time and loses
 was lived in. **A third option was considered and not taken:** stamping each row with its UTC
 offset at write time, which makes the record travel-proof while the live UI stays device-zone.
 Deferred rather than rejected, because it grows §7.1's stored shape, and that shape does not grow
-for a cost this speculative. What this ruling does *not* settle is where §10.5's calendar-day
-boundary should fall at all; that half stays with §18.8's existing physician question, exactly
-where note 21 routed it.
+for a cost this speculative. What this ruling did *not* settle was where §10.5's reset boundary
+should fall at all — and that half is now moot: §10.5 moved to a rolling window on 2026-09-13,
+and a duration needs no zone, so the question note 21 routed to §18.8 no longer has a subject.
 
 ### 10.5 Warning budget
 
@@ -2674,8 +2674,8 @@ the form.**
 
 | Firing | Form |
 |---|---|
-| First qualifying result of the calendar day | **Full card.** Rank 2, as now |
-| Every subsequent qualifying result that day | **Compact single line.** Still rank 2, still on screen, never behind "more", never absent |
+| First qualifying result in `BAND_E_FULL_CARD_WINDOW_HOURS` | **Full card.** Rank 2, as now |
+| Every subsequent qualifying result inside that window | **Compact single line.** Still rank 2, still on screen, never behind "more", never absent |
 
 **The instruction never changes — CORRECTED IN v9** [R2]. v8's compact copy read *"Above 250
 again — if this is new, or you feel unwell, check ketones."* **For a repeated high reading in
@@ -2690,9 +2690,9 @@ makes a reading at or above 250 **or** illness a reason to test; novelty is not 
 Identical instruction, identical escalation, compact presentation. **Only the typography
 de-escalates.**
 
-#### Where "first firing today" lives — SPECIFIED IN v9 [R1, blocking]
+#### Where "first firing in the window" lives — SPECIFIED IN v9 [R1, blocking]
 
-"First qualifying result of the calendar day" is **state**. v8 ruled the behaviour and gave the
+"First qualifying result inside the window" is **state**. v8 ruled the behaviour and gave the
 state no home — no snapshot field, no store, no schema representation, no cases. Left there, the
 full-versus-compact choice happens in the shell, which is safety-display logic outside the tested
 core, the exact repair §11.2 twice warns against.
@@ -2701,22 +2701,22 @@ core, the exact repair §11.2 twice warns against.
 predicate below spans both stores — corrected in v11 [R1, R2].)
 
 ```
-firstToday = no record exists today, in EITHER the log or the readings store
-             (§7.8), with bloodSugar >= KETONE_ADVISORY
+firstInWindow = no record inside BAND_E_FULL_CARD_WINDOW_HOURS, in EITHER the
+                log or the readings store (§7.8), with bloodSugar >= KETONE_ADVISORY
 ```
 
 **Both stores, not the log alone — CONTRADICTION RESOLVED IN v10** [R1, blocking]. v9 specified
 this twice and incompatibly: §10.5's formula said log-only, while §7.8, §4.3 step 1 and two §13.3
 cases said both stores. **That is contradictory oracles for the same required test** — a
-standalone 280 reading at breakfast followed by the day's first calculated result at lunch demands
+standalone 280 reading at breakfast followed by the window's first calculated result at lunch demands
 *full* under one and *compact* under the other — and it is §13.7's wrong-oracle class in the one
 warning this plan calls capable of catching ketoacidosis. Both new sentences were written in v9;
 the defect lived entirely in that revision's own additions (§19).
 
 **Both stores wins, and it forces a second ruling that v9 left open** [R1]: **recording a reading
-at or above 250 shows the band E advisory itself.** Otherwise the day's first *calculated* result
-could render compact on a day when no full card was ever shown, and
-`bandEFullCardShownToday` would assert something false. The coherent rule is simple: **whenever
+at or above 250 shows the band E advisory itself.** Otherwise the window's first *calculated*
+result could render compact when no full card was ever shown, and
+`bandEFullCardShownRecently` would assert something false. The coherent rule is simple: **whenever
 this app sees a number at or above 250, it says check ketones** — whether a dose follows or not.
 A 280 reading deserves that advice on its own.
 
@@ -2727,25 +2727,37 @@ direction — an extra full warning, never a missing one — and it is why the c
 "Above 250" rather than v8's "Above 250 **again**", which would have asserted a repetition the derivation never
 witnessed.
 
-- **§11.2 snapshot:** carried as `bandEFullCardShownToday`, computed from **the log and the
+- **§11.2 snapshot:** carried as `bandEFullCardShownRecently`, computed from **the log and the
   readings store** at `logRevision`
   alongside `carbBaseline` — same mechanism, same reason. The core decides the form; the shell
   renders it.
-- **§13.2 schema:** the input carries `bandEFullCardShownToday`; `advisories` distinguishes
+- **§13.2 schema:** the input carries `bandEFullCardShownRecently`; `advisories` distinguishes
   `band_e_full` from `band_e_compact`. Without both, the distinguishing case is inexpressible —
   the recurring schema defect this plan has now hit five times.
-- **§13.3 cases:** first firing; subsequent firing same day; **day rollover** (a qualifying result
-  at 11:59 PM then another at 12:01 AM — both full); restart mid-day (still compact, because the log
-  survives); two tabs (eventual consistency accepted, extra full card is the safe direction).
-- **Ordering — STATED IN v11** [R1]: `firstToday` is evaluated **excluding the row being
+- **§13.3 cases:** first firing; subsequent firing inside the window; **the window edge** (11:40 PM
+  then 12:20 AM — the second COMPACT, since they are forty minutes apart; 3 AM then 9 PM — the
+  second FULL, since they are eighteen hours apart); restart inside the window (still compact,
+  because the log survives); two tabs (eventual consistency accepted, extra full card is the safe
+  direction).
+- **Ordering — STATED IN v11** [R1]: `firstInWindow` is evaluated **excluding the row being
   committed**, or the breakfast 280 renders compact for itself. §13.3's case would fail a wrong
   ordering, but the ordering is written here rather than left to be inferred from a test.
-- **Boundary:** **local calendar day.** v10 cited "§7.6's existing local-time rule"; §7.6 contains
-  no such rule and the pointer is removed [R1]. A clock-skew future-stamped row can demote the
-  next day's first card to compact — the instruction is identical either way by this section's own
-  rule, so no protection is lost. **The physician question
-  under §18.8 is whether a calendar boundary is the right one at all** — a 3 a.m. reading and a
-  9 a.m. reading are arguably one episode.
+- **Boundary: a 12-hour ROLLING WINDOW. RULED BY MOMIN 2026-09-13**, replacing the local calendar
+  day. `BACKLOG.md`'s "Band E's full card resets on a rolling window, not a calendar day" carries the full
+  argument; the short version is that *"do not show the big
+  card twice in quick succession"* describes a DURATION, and a date boundary failed it at both
+  ends — 23:40 and 00:20 are one episode and got two full cards, while 03:00 and 21:00 are two
+  episodes and the second got a compact line. Twelve hours caps the full card at twice a day, one
+  for a morning episode and one for a night episode.
+
+  **The constant is `BAND_E_FULL_CARD_WINDOW_HOURS`, and it is not derived from
+  `STACK_ADVISE_HOURS` despite holding the same value.** One is about insulin still acting, the
+  other about how often a card may be large; §11.8 files them in different sections for that
+  reason.
+
+  **It needs no time zone**, which is the simplification worth naming: a duration is zone-free, so
+  this derivation no longer depends on notes 11 and 21's device-zone ruling. A clock-skew
+  future-stamped row is bounded by §7.6's existing tolerance rather than incidentally by a day key.
 
 **Why presence is never conditional** [R1]: suppressing the warning on the day of an actual
 episode because it has already shown today is indefensible, and any frequency rule converts a
@@ -2755,8 +2767,10 @@ symptoms — which the app cannot see — not the repetition of a number he live
 This is the standard alarm-fatigue resolution, and it is consistent with §10.5's existing rule
 that band E is safety information and never collapsed: **the compact line is still band E.**
 
-**The daily-reset boundary goes to the physician under §18.8** [R1] — one question, and it
-discharges §18.11's "clinical judgement, not an engineering call" properly.
+**The reset boundary was routed to the physician under §18.8** [R1] and came back as an
+engineering call: **nothing clinical turns on it.** The advisory's presence and instruction are
+identical in both forms, so the only thing at stake is alarm fatigue, and no guideline addresses
+it. Momin ruled it directly on 2026-09-13.
 
 Gates do not count against the budget and always show: the §6.2 confirmation, the §4.6
 blank-reading acknowledgement.
@@ -2881,7 +2895,7 @@ any screen is built.
 { inputs, settings (including settings.revision — §11.3's ROW STAMP),
   logRevision, decisionTime, stackingOverride,
   carbBaseline, eligibleEntryCount, historyProvenance, lastDose,
-  bandEFullCardShownToday, excludedTimeRecords,
+  bandEFullCardShownRecently, excludedTimeRecords,
   blankReadingAcknowledged, largeDoseConfirmed }
 ```
 
@@ -3616,7 +3630,7 @@ deleting the band C block would have passed CI.
 - the ceiling comparison and bound check (§6)
 - the stacking-window decision (§7.4)
 - **the divergence predicate** (§7.1) — **ADDED IN v11** [R1]
-- **the `firstToday` / `bandEFullCardShownToday` derivation** over log **and** readings rows
+- **the `firstInWindow` / `bandEFullCardShownRecently` derivation** over log **and** readings rows
   (§10.5) — **ADDED IN v11** [R1]
 - **the `excludedTimeRecords` count** (§7.6, §11.2) — **ADDED IN v11** [R1]
 - **the ELIGIBLE-set filter and median derivation** (§6.5) — a named pure function taking log
@@ -3651,7 +3665,7 @@ outcome at all.
              "carbBaseline": 50, "eligibleEntryCount": 24,
              "historyProvenance": "trusted | suspect",
              "threshold": 20,
-             "bandEFullCardShownToday": false,   // §10.5
+             "bandEFullCardShownRecently": false,   // §10.5
              "excludedTimeRecords": 0,           // §7.6 — ADDED IN v10
              "blankReadingAcknowledged": false,  // §4.6 — ADDED 2026-09-11: note 4's
                                        // v27 amendment fixed §11.2's list and
@@ -3759,10 +3773,11 @@ not, and JSON serialization erases the distinction. [R2]
   hard range; every default **that exists** inside its **hard** range; fixed clinical constants
   ordered `54 < 70 < 250` with the configurable target excluded; stacking windows ordered;
   `DELETE_CONFIRM_WINDOW_HOURS == STACK_ADVISE_HOURS`
-- **Band E form selection — ADDED IN v9** (§10.5): first qualifying result of the day renders the
-  full card; a subsequent one renders compact; **day rollover** at 11:59 PM then 12:01 AM renders two
-  full cards; restart mid-day still renders compact; two tabs may both render full (accepted, safe
-  direction). The instruction text is **identical** in both forms — assert it, since v8's compact
+- **Band E form selection — ADDED IN v9, BOUNDARY RE-RULED 2026-09-13** (§10.5): the first
+  qualifying result in `BAND_E_FULL_CARD_WINDOW_HOURS` renders the full card; a subsequent one
+  renders compact; **the window edge** is inclusive at exactly 12 hours and excludes a millisecond
+  past it; 11:40 PM then 12:20 AM renders full then compact; restart inside the window still
+  renders compact; two tabs may both render full (accepted, safe direction). The instruction text is **identical** in both forms — assert it, since v8's compact
   copy silently weakened it
 - **`injectedUnits` as an input — ADDED IN v9** (§7.1): §4.2 grammar rejections (`25g`, `2,5`,
   Unicode digits); non-finite; zero and negative rejected; 100-unit hard cap; soft confirm above
@@ -4095,7 +4110,9 @@ the result-screen line; both reviewers found the upper branch unreachable, and t
 made the anchor itself unsafe.
 
 11. ~~Does band E need a repetition rule?~~ **RULED** (§10.5): presence never suppressed, form
-de-escalates after the first firing each day. The reset boundary is the residual under §18.8.
+de-escalates after the first firing in the window. ~~The reset boundary is the residual under
+§18.8.~~ **CLOSED 2026-09-13** — a 12-hour rolling window, ruled by Momin. Nothing clinical turns
+on it, so it was never a physician question.
 
 12. ~~Should a divergence between `injectedUnits` and `units` affect §6.5 eligibility?~~
 **SETTLED** [R2]: no. The carbohydrate figure remains a true record of what was eaten, and that is
