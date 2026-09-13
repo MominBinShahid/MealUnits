@@ -67,6 +67,12 @@ npm run build      # production build, including the service worker
 npm run smoke      # real-browser checks against a served build (see tools/smoke.mjs)
 ```
 
+**`npm run mutate` leaves `.stryker-tmp/sandbox-<random>` behind when a run fails**, and that is
+deliberate — the sandbox is a full copy of the instrumented source, and it is the only thing you can
+debug a runner failure from. Successful runs clean up after themselves. But a lingering sandbox also
+stops them removing the parent directory, so failures compound quietly in a gitignored folder:
+`rm -rf .stryker-tmp` when you are done with one. CI never needs this — every job is a fresh runner.
+
 Everything is on its latest release except two, both deliberate:
 
 - **Vitest is held at 4.x.** Stryker's runner silently fails to activate mutants under Vitest 5 — the
@@ -144,6 +150,7 @@ no backend, no accounts, no sync, no analytics.
 | [CARBS.md](docs/CARBS.md) | The carbohydrate reference for Pakistani food, every value with its source, confidence and licence. |
 | [BACKLOG.md](docs/BACKLOG.md) | Everything deliberately left out, with reasons. |
 | [BLOG-FIX.md](docs/BLOG-FIX.md) | A separate repository's service-worker fix, which had to ship first. |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | What will get a change rejected, and the four jobs that gate a pull request. |
 
 ---
 

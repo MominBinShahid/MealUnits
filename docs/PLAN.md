@@ -4335,6 +4335,11 @@ MealUnits/
   CLAUDE.md                  <- the project's standing instructions for an LLM
                                 working in this repository. At the root because
                                 that is where the tooling looks for it
+  CONTRIBUTING.md            <- the same rules, for a HUMAN who has never read
+                                this document. Added 2026-09-13: the load-bearing
+                                ones lived only in CLAUDE.md, addressed to an
+                                assistant, while `check-plan.py` gated every pull
+                                request and appeared nowhere a contributor looks
   check-plan.py              <- consistency checker; run before every dispatch (§20.3)
   index.html                 <- the app's document shell (§11.5)
   docs/PLAN.md               <- this document, the single source of truth
