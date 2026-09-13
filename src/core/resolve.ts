@@ -149,11 +149,12 @@ function lowReadingBands(parsed: ParsedField): Band[] | null {
 }
 
 /**
- * There is deliberately no time-zone argument. §10.5's band E form is decided
- * from `bandEFullCardShownToday`, which §11.2 carries IN the snapshot — derived
- * once, from both stores, at `logRevision`. A resolver that recomputed the
- * calendar day would be a second place the day boundary is decided, and §10.5
- * already lost a round to having two.
+ * There is deliberately no time-zone argument, and since band E's full card
+ * moved to a rolling window there is no zone left to pass anywhere. §10.5's
+ * band E form is decided from `bandEFullCardShownRecently`, which §11.2 carries
+ * IN the snapshot — derived once, from both stores, at `logRevision`. A
+ * resolver that recomputed the window would be a second place the boundary is
+ * decided, and §10.5 already lost a round to having two.
  */
 export function resolve(snapshot: Snapshot): Outcome {
   const { inputs, settings } = snapshot;
@@ -318,7 +319,7 @@ export function resolve(snapshot: Snapshot): Outcome {
   // makes the mutant equivalent by design.
   const found: Advisory[] = [];
   if (bands.includes('E')) {
-    found.push(snapshot.bandEFullCardShownToday ? 'band_e_compact' : 'band_e_full');
+    found.push(snapshot.bandEFullCardShownRecently ? 'band_e_compact' : 'band_e_full');
   }
   if (bands.includes('B')) found.push('band_b_caution');
   if (stacking.suppressPositiveCorrection) found.push('stacking_suppressed');

@@ -66,7 +66,7 @@ function snapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     eligibleEntryCount: 0,
     historyProvenance: 'trusted',
     lastDose: null,
-    bandEFullCardShownToday: false,
+    bandEFullCardShownRecently: false,
     excludedTimeRecords: 0,
     blankReadingAcknowledged: true,
     largeDoseConfirmed: true,

@@ -116,7 +116,7 @@ export interface Snapshot {
   readonly eligibleEntryCount: number;
   readonly historyProvenance: HistoryProvenance;
   readonly lastDose: LastDose | null;
-  readonly bandEFullCardShownToday: boolean;
+  readonly bandEFullCardShownRecently: boolean;
   /** §7.6 — how many rows were dropped for an implausible timestamp. */
   readonly excludedTimeRecords: number;
   /** §4.6's per-calculation acknowledgement. Never persisted. */

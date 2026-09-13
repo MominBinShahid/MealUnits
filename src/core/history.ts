@@ -10,11 +10,11 @@
  */
 
 import {
+  BAND_E_FULL_CARD_WINDOW_HOURS,
   CLOCK_SKEW_TOLERANCE_HOURS,
   KETONE_ADVISORY,
   MS_PER_HOUR,
 } from '../config.js';
-import { localDayKey } from './calendar.js';
 import { deriveCarbBaseline } from './baseline.js';
 import { isInjection } from './types.js';
 import type { HistoryProvenance, Injection, LastDose, LogRow, Reading } from './types.js';
@@ -36,17 +36,36 @@ export function isImplausiblyFutureDated(timestamp: number, nowMs: number): bool
  * FULL under one and COMPACT under the other — in the one warning this plan
  * calls capable of catching ketoacidosis.
  *
- * @param excludeId §10.5 v11 — `firstToday` is evaluated EXCLUDING the row
- *   being committed, or the breakfast 280 renders compact for itself.
+ * A ROLLING WINDOW, not a calendar day. Ruled by Momin 2026-09-13, and
+ * `BACKLOG.md`'s "Band E's full card resets on a rolling window, not a
+ * calendar day" carries the argument. The old boundary was local midnight and
+ * it failed at both ends — 23:40 and 00:20 are one episode and got two full
+ * cards, 03:00 and 21:00 are two episodes and the second got a compact line.
+ *
+ * The rename came with the ruling: this used to be `...ShownToday`, which
+ * stopped being true the moment the boundary stopped being a date.
+ *
+ * **It no longer takes a time zone.** A duration is zone-free by construction,
+ * so this function's dependence on notes 11 and 21's device-zone ruling is
+ * gone — one fewer thing that can be wrong on a travelling phone.
+ *
+ * @param excludeId §10.5 v11 — the window is evaluated EXCLUDING the row being
+ *   committed, or the breakfast 280 renders compact for itself.
  */
-export function deriveBandEFullCardShownToday(
+export function deriveBandEFullCardShownRecently(
   rows: readonly LogRow[],
   readings: readonly Reading[],
   nowMs: number,
-  timeZone: string,
   excludeId?: string,
 ): boolean {
-  const today = localDayKey(nowMs, timeZone);
+  // Inclusive at the edge and skew-bounded above, matching `hasRowInsideWindow`
+  // exactly. The future bound is not decoration: the old day-key test excluded
+  // a row dated three days ahead for free, and `elapsed < window` alone would
+  // admit one dated any distance into the future. §7.6 already owns that
+  // judgement, so it is reused rather than restated.
+  const cutoff = nowMs - BAND_E_FULL_CARD_WINDOW_HOURS * MS_PER_HOUR;
+  const insideWindow = (timestamp: number): boolean =>
+    timestamp >= cutoff && !isImplausiblyFutureDated(timestamp, nowMs);
 
   // Stryker disable next-line MethodExpression: removing `.filter(isInjection)`
   // changes no result. `LogRow` is `Injection | Tombstone`, a tombstone carries
@@ -77,19 +96,19 @@ export function deriveBandEFullCardShownToday(
       // disable wearing a one-mutant justification is how a real gap would hide.
       row.bloodSugar !== null &&
       row.bloodSugar >= KETONE_ADVISORY &&
-      localDayKey(row.timestamp, timeZone) === today,
+      insideWindow(row.timestamp),
   );
   if (qualifyingInLog) return true;
 
   // §10.5's second ruling, forced by "both stores": recording a reading at or
-  // above 250 shows the band E advisory ITSELF. Otherwise the day's first
-  // calculated result could render compact on a day when no full card was ever
+  // above 250 shows the band E advisory ITSELF. Otherwise the first calculated
+  // result inside the window could render compact when no full card was ever
   // shown, and this flag would assert something false.
   return readings.some(
     (reading) =>
       reading.id !== excludeId &&
       reading.bloodSugar >= KETONE_ADVISORY &&
-      localDayKey(reading.timestamp, timeZone) === today,
+      insideWindow(reading.timestamp),
   );
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   countDisplayableRows,
-  deriveBandEFullCardShownToday,
+  deriveBandEFullCardShownRecently,
   deriveHistory,
   hasRowInsideWindow,
   isImplausiblyFutureDated,
@@ -9,7 +9,6 @@ import {
 import type { HistoryContext } from '../src/core/history.js';
 import type { Injection, LogRow, Reading, Tombstone } from '../src/core/types.js';
 
-const KARACHI = 'Asia/Karachi';
 const HOUR = 3_600_000;
 /** 6 Sep 2026, 14:00 in Karachi. */
 const NOW = Date.parse('2026-09-06T09:00:00Z');
@@ -211,7 +210,7 @@ describe('§7.5 the conditions that make provenance suspect', () => {
 describe('§10.5 the band E derivation reads BOTH stores', () => {
   it('finds a qualifying dose row from today', () => {
     const rows = [injection({ bloodSugar: 280 })];
-    expect(deriveBandEFullCardShownToday(rows, [], NOW, KARACHI)).toBe(true);
+    expect(deriveBandEFullCardShownRecently(rows, [], NOW)).toBe(true);
   });
 
   it('finds a standalone reading from today, with no dose at all', () => {
@@ -219,53 +218,98 @@ describe('§10.5 the band E derivation reads BOTH stores', () => {
     // CONSUMES THE DAY, so the first calculated result at lunch renders
     // compact. v9 specified log-only in one place and both stores in three.
     const readings = [reading({ bloodSugar: 280, timestamp: NOW - 6 * HOUR })];
-    expect(deriveBandEFullCardShownToday([], readings, NOW, KARACHI)).toBe(true);
+    expect(deriveBandEFullCardShownRecently([], readings, NOW)).toBe(true);
   });
 
-  it('ignores a qualifying record from yesterday', () => {
+  it('ignores a qualifying record from 24 hours ago', () => {
     const yesterday = NOW - 24 * HOUR;
     expect(
-      deriveBandEFullCardShownToday([injection({ bloodSugar: 280, timestamp: yesterday })], [], NOW, KARACHI),
+      deriveBandEFullCardShownRecently([injection({ bloodSugar: 280, timestamp: yesterday })], [], NOW),
     ).toBe(false);
     expect(
-      deriveBandEFullCardShownToday([], [reading({ bloodSugar: 280, timestamp: yesterday })], NOW, KARACHI),
+      deriveBandEFullCardShownRecently([], [reading({ bloodSugar: 280, timestamp: yesterday })], NOW),
     ).toBe(false);
   });
 
   it('is exact at 250, in the log AND in the readings store', () => {
-    expect(deriveBandEFullCardShownToday([injection({ bloodSugar: 250 })], [], NOW, KARACHI)).toBe(true);
-    expect(deriveBandEFullCardShownToday([injection({ bloodSugar: 249.99 })], [], NOW, KARACHI)).toBe(false);
-    expect(deriveBandEFullCardShownToday([], [reading({ bloodSugar: 250 })], NOW, KARACHI)).toBe(true);
-    expect(deriveBandEFullCardShownToday([], [reading({ bloodSugar: 249.99 })], NOW, KARACHI)).toBe(false);
+    expect(deriveBandEFullCardShownRecently([injection({ bloodSugar: 250 })], [], NOW)).toBe(true);
+    expect(deriveBandEFullCardShownRecently([injection({ bloodSugar: 249.99 })], [], NOW)).toBe(false);
+    expect(deriveBandEFullCardShownRecently([], [reading({ bloodSugar: 250 })], NOW)).toBe(true);
+    expect(deriveBandEFullCardShownRecently([], [reading({ bloodSugar: 249.99 })], NOW)).toBe(false);
   });
 
   it('ignores a row with no reading at all', () => {
-    expect(deriveBandEFullCardShownToday([injection({ bloodSugar: null })], [], NOW, KARACHI)).toBe(false);
+    expect(deriveBandEFullCardShownRecently([injection({ bloodSugar: null })], [], NOW)).toBe(false);
   });
 
   it('EXCLUDES the row being committed, or the breakfast 280 renders compact for itself', () => {
     // §10.5, stated in v11. §13.3's case would fail a wrong ordering, but the
     // ordering is written down rather than left to be inferred from a test.
     const row = injection({ bloodSugar: 280 });
-    expect(deriveBandEFullCardShownToday([row], [], NOW, KARACHI, row.id)).toBe(false);
-    expect(deriveBandEFullCardShownToday([row], [], NOW, KARACHI)).toBe(true);
+    expect(deriveBandEFullCardShownRecently([row], [], NOW, row.id)).toBe(false);
+    expect(deriveBandEFullCardShownRecently([row], [], NOW)).toBe(true);
   });
 
   it('excludes a reading being committed too', () => {
     const row = reading({ bloodSugar: 280 });
-    expect(deriveBandEFullCardShownToday([], [row], NOW, KARACHI, row.id)).toBe(false);
+    expect(deriveBandEFullCardShownRecently([], [row], NOW, row.id)).toBe(false);
   });
 
-  it('rolls over at LOCAL midnight, so 11:59 PM and 12:01 AM are two days', () => {
-    const late = Date.parse('2026-09-05T18:59:00Z'); // 23:59 Karachi, 5 Sep
-    const early = Date.parse('2026-09-05T19:01:00Z'); // 00:01 Karachi, 6 Sep
-    const rows = [injection({ bloodSugar: 280, timestamp: late })];
-    expect(deriveBandEFullCardShownToday(rows, [], late, KARACHI)).toBe(true);
-    expect(deriveBandEFullCardShownToday(rows, [], early, KARACHI)).toBe(false);
+  // DELETED 2026-09-13: "rolls over at LOCAL midnight, so 11:59 PM and 12:01 AM
+  // are two days". It asserted the behaviour the rolling-window ruling removes,
+  // so it
+  // became WRONG rather than redundant, and the two cases below replace it with
+  // the ones the ruling turns on. Kept as a note because a reader who
+  // remembers the old test should find out what happened to it.
+
+  it('is inclusive at exactly 12 hours and excludes a millisecond past it', () => {
+    // The literal 12 is deliberate. Deriving it from
+    // `BAND_E_FULL_CARD_WINDOW_HOURS` would make this test move WITH a mutation
+    // of the constant instead of killing it, which is the whole point of the
+    // gate. Same convention as `stacking.test.ts`.
+    const atEdge = [injection({ bloodSugar: 280, timestamp: NOW - 12 * HOUR })];
+    const pastEdge = [injection({ bloodSugar: 280, timestamp: NOW - 12 * HOUR - 1 })];
+    expect(deriveBandEFullCardShownRecently(atEdge, [], NOW)).toBe(true);
+    expect(deriveBandEFullCardShownRecently(pastEdge, [], NOW)).toBe(false);
+  });
+
+  it('the midnight pair is ONE episode: 23:40 then 00:20 renders the second compact', () => {
+    // Entry 23's first failing case, and the reason the boundary moved. Under
+    // the old day key these two got a full card EACH, forty minutes apart.
+    const late = Date.parse('2026-09-05T18:40:00Z'); // 23:40 Karachi, 5 Sep
+    const afterMidnight = Date.parse('2026-09-05T19:20:00Z'); // 00:20 Karachi, 6 Sep
+    const rows = [injection({ bloodSugar: 320, timestamp: late })];
+    expect(deriveBandEFullCardShownRecently(rows, [], afterMidnight)).toBe(true);
+  });
+
+  it('the same-day pair is TWO episodes: 03:00 then 21:00 renders the second full', () => {
+    // Entry 23's second failing case. Eighteen hours apart, plainly not one
+    // episode, and the old day key collapsed them into one.
+    const earlyMorning = Date.parse('2026-09-05T22:00:00Z'); // 03:00 Karachi, 6 Sep
+    const night = Date.parse('2026-09-06T16:00:00Z'); // 21:00 Karachi, 6 Sep
+    const rows = [injection({ bloodSugar: 300, timestamp: earlyMorning })];
+    expect(deriveBandEFullCardShownRecently(rows, [], night)).toBe(false);
+  });
+
+  it('§7.6 — a row dated beyond the skew tolerance cannot consume the window', () => {
+    // The day key used to exclude a far-future row for free. An elapsed
+    // comparison alone would admit one dated any distance ahead, so the bound
+    // is explicit and reuses §7.6 rather than inventing a second rule.
+    const withinSkew = [injection({ bloodSugar: 280, timestamp: NOW + 1 * HOUR })];
+    const beyondSkew = [injection({ bloodSugar: 280, timestamp: NOW + 1 * HOUR + 1 })];
+    expect(deriveBandEFullCardShownRecently(withinSkew, [], NOW)).toBe(true);
+    expect(deriveBandEFullCardShownRecently(beyondSkew, [], NOW)).toBe(false);
+  });
+
+  it('a reading obeys the same window as a dose row', () => {
+    const stale = [reading({ bloodSugar: 280, timestamp: NOW - 12 * HOUR - 1 })];
+    const fresh = [reading({ bloodSugar: 280, timestamp: NOW - 12 * HOUR })];
+    expect(deriveBandEFullCardShownRecently([], stale, NOW)).toBe(false);
+    expect(deriveBandEFullCardShownRecently([], fresh, NOW)).toBe(true);
   });
 
   it('§7.3 — a tombstone can never qualify, having no reading', () => {
-    expect(deriveBandEFullCardShownToday([tombstone()], [], NOW, KARACHI)).toBe(false);
+    expect(deriveBandEFullCardShownRecently([tombstone()], [], NOW)).toBe(false);
   });
 });
 

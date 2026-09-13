@@ -1257,20 +1257,29 @@ describe('§4.5 the HI/LO meter guidance is reachable, not merely written', () =
   });
 });
 
-describe('§13.3 a session left open across midnight still gets the FULL band E card', () => {
+describe('§10.5 the band E full card is spaced by a rolling window, not a date', () => {
   /**
-   * §13.3: *"a qualifying result at 11:59 PM then another at 12:01 AM — both
-   * full."* The core always passed that case; the SHELL did not, because it
-   * derived `bandEFullCardShownToday` when the RECORD last changed rather than
-   * when a calculation happens. A session left open across midnight computed
-   * the new day's first result against yesterday's day key and rendered the
-   * compact line where the case requires the full card.
+   * `BACKLOG.md`'s "Band E's full card resets on a rolling window, not a calendar day",
+   * ruled by Momin 2026-09-13. The boundary used to be local
+   * midnight and failed at both ends; it is now 12 hours.
    *
-   * §10.5 rules the class lossless — the instruction is identical either way —
-   * but it is a specified behaviour the integrated app did not honour, and the
-   * same staleness reached `excludedTimeRecords` and `historyProvenance`.
+   * REPLACES *"a session left open across midnight still gets the FULL band E
+   * card"*, which asserted the behaviour the ruling removes. That test was also
+   * guarding something separate and still real — the SHELL derives
+   * `bandEFullCardShownRecently` when the RECORD last changes, so a session left
+   * open long enough computes against a stale value — and the second test below
+   * keeps that guard with a scenario the window actually produces.
+   *
+   * §10.5 makes the WORDS identical between the two forms — "only the
+   * typography de-escalates" — so the class is the only thing that can tell
+   * them apart, and here typography IS the assertion.
    */
-  it('rather than the compact line meant for a repeat', async () => {
+  const bandECard = (): Element | undefined =>
+    [...root.querySelectorAll('.flag')].find((node) =>
+      (node.textContent ?? '').includes('check ketones'),
+    );
+
+  it('23:40 then 00:20 is ONE episode, so the second renders compact', async () => {
     await setUpAsHisBrother();
     // 11:40 PM Karachi: a qualifying 280 gets the full card and logs it.
     clock = Date.parse('2026-09-06T18:40:00Z');
@@ -1282,22 +1291,41 @@ describe('§13.3 a session left open across midnight still gets the FULL band E 
     await tap('I injected this');
     await tap('Log this injection');
 
-    // 12:10 AM, the NEXT day, same session, no record change in between.
-    clock = Date.parse('2026-09-06T19:10:00Z');
+    // 12:20 AM, the next DATE, forty minutes later. Under the old day key this
+    // rendered a second full card — the failure the ruling names first.
+    clock = Date.parse('2026-09-06T19:20:00Z');
     await tap('Done');
     await keys('280');
     await tap('Next');
     await keys('40');
     await tap('Work out the dose');
 
-    // §10.5 makes the WORDS identical between the two forms — "only the
-    // typography de-escalates" — so the class is the only thing that can tell
-    // them apart, and here typography IS the assertion.
-    const bandE = [...root.querySelectorAll('.flag')].find((node) =>
-      (node.textContent ?? '').includes('check ketones'),
-    );
-    expect(bandE).toBeDefined();
-    expect(bandE?.className).toBe('flag');
+    expect(bandECard()).toBeDefined();
+    expect(bandECard()?.className).toBe('flag compact');
+  });
+
+  it('once the window has passed IN an open session, the full card returns', async () => {
+    await setUpAsHisBrother();
+    clock = Date.parse('2026-09-06T18:40:00Z');
+    await keys('280');
+    await tap('Next');
+    await keys('40');
+    await tap('Work out the dose');
+    await tap('I injected this');
+    await tap('Log this injection');
+
+    // Thirteen hours on, same session, NO record change in between. The shell
+    // derived the flag at log time; only re-deriving at calculate time gets
+    // this right, which is the wiring this test exists to hold.
+    clock = Date.parse('2026-09-07T07:40:00Z');
+    await tap('Done');
+    await keys('280');
+    await tap('Next');
+    await keys('40');
+    await tap('Work out the dose');
+
+    expect(bandECard()).toBeDefined();
+    expect(bandECard()?.className).toBe('flag');
   });
 });
 

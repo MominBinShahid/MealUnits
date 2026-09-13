@@ -87,9 +87,9 @@ the band correctly vanishes.
 This user's readings are frequently above 250, so the advisory would appear at nearly every meal — and
 a warning that always fires stops being read.
 
-**The fact is never suppressed; only the form de-escalates.** The first qualifying result each
-calendar day shows a full card; subsequent ones show a compact line. **The instruction is identical in
-both**, and the compact form is never hidden behind a disclosure.
+**The fact is never suppressed; only the form de-escalates.** The first qualifying result in any
+**12-hour window** shows a full card; subsequent ones inside that window show a compact line. **The
+instruction is identical in both**, and the compact form is never hidden behind a disclosure.
 
 An earlier version's compact copy read "Above 250 again — if this is new, or you feel unwell, check
 ketones." For a repeated high reading in someone who feels well, both of those conditions are false,
@@ -97,8 +97,12 @@ so the warning stayed visible while the action quietly became optional. **CDC gu
 at or above 250 *or* illness a reason to test; novelty is not a prerequisite.** The wording was
 corrected.
 
-**Open question for the prescriber:** whether the calendar day is the right reset boundary at all. A
-3 a.m. reading and a 9 a.m. reading are arguably one episode.
+**The reset boundary was a calendar day until 2026-09-13** and was carried here as a prescriber
+question. It came back as an engineering one: nothing clinical turns on it, because the advisory's
+presence and its instruction are the same in both forms. A date boundary was wrong at both ends —
+23:40 and 00:20 are one episode and produced two full cards, while 03:00 and 21:00 are two episodes
+and the second was compacted. A 12-hour rolling window caps the full card at twice a day, which is
+one per episode rather than one per date.
 
 ### 2.4 What the ketone advisory is for, and what it cannot see
 
@@ -485,8 +489,8 @@ NICE and Diabetes UK material is quoted with citation here and **must not be cop
 4. ~~**Should the ketone advisory reset on a calendar day?**~~ **RULED BY MOMIN 2026-09-13: a rolling
    window, not a calendar day.** Not a prescriber question after all — the advisory's presence and
    instruction never change, only whether the card is full or compact, so nothing clinical turns on
-   it. `BACKLOG.md` entry 23 carries the ruling and what building it involves; the window length is
-   still unruled.
+   it. **The window is 12 hours, ruled the same day, and shipped 2026-09-13.** `BACKLOG.md`'s
+   "Band E's full card resets on a rolling window, not a calendar day" carries the argument.
 5. **Should the ketone advisory move from 250 to 200 mg/dL?** Section 2.4 has the evidence on all
    sides. What it turns on: the 200-249-with-ketones gap now meets the adult diagnostic definition,
    against alarm fatigue in a man who is above 250 most days.

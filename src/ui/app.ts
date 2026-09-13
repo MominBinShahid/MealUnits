@@ -15,7 +15,7 @@ import {
   MS_PER_MINUTE,
   RANGE,
 } from '../config.js';
-import { deriveBandEFullCardShownToday, deriveHistory } from '../core/history.js';
+import { deriveBandEFullCardShownRecently, deriveHistory } from '../core/history.js';
 import { evaluateCarbAdvisory } from '../core/baseline.js';
 import { divergesFromCalculated } from '../core/divergence.js';
 import { formatHundredths, hundredthsFromGrammarText } from '../core/decimal.js';
@@ -225,11 +225,10 @@ export async function start(host: Host): Promise<void> {
       eligibleEntryCount: derived.eligibleEntryCount,
       historyProvenance: derived.historyProvenance,
       lastDose: derived.lastDose,
-      bandEFullCardShownToday: deriveBandEFullCardShownToday(
+      bandEFullCardShownRecently: deriveBandEFullCardShownRecently(
         source.log,
         source.readings,
         host.now(),
-        host.timeZone,
       ),
       excludedTimeRecords: derived.excludedTimeRecords,
     };
@@ -541,10 +540,11 @@ export async function start(host: Host): Promise<void> {
   };
 
   /**
-   * §13.3's day-rollover case. Every `calculate` re-derives the record context
+   * §13.3's window-expiry case. Every `calculate` re-derives the record context
    * from the rows the shell already holds, against the CURRENT clock, because
-   * three of its fields are time-dependent — `bandEFullCardShownToday` reads a
-   * day key, and `excludedTimeRecords` and `historyProvenance` read `now`.
+   * three of its fields are time-dependent — `bandEFullCardShownRecently` reads
+   * an elapsed window, and `excludedTimeRecords` and `historyProvenance` read
+   * `now`.
    *
    * Deliberately not a `record_changed`: that means the ROWS moved and
    * invalidates, which would wipe the confirmation the user just gave on the

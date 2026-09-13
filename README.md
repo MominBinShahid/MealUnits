@@ -60,7 +60,7 @@ CI reads that file rather than carrying its own copy.
 ```sh
 npm install
 npm run dev        # development server
-npm test           # 647 tests
+npm test           # 654 tests
 npm run check      # typecheck, lint and tests — what CI runs
 npm run mutate     # mutation testing on the core, at a 100% break threshold
 npm run build      # production build, including the service worker
@@ -107,9 +107,9 @@ launder a literal through a local constant.
 
 ### The testing, and what it is worth
 
-- **647 tests**, including 77 golden cases that each carry the hand derivation of their expected
+- **654 tests**, including 77 golden cases that each carry the hand derivation of their expected
   value in the fixture.
-- **100% mutation score** on the core, the state machine and `config.ts` — 1,681 mutants killed, 0
+- **100% mutation score** on the core, the state machine and `config.ts` — 1,687 mutants killed, 0
   survived, 0 uncovered. A further 69 are **disabled by name**, each with its reason written at the
   line it silences; `BUILD-NOTES.md` note 16 tables every one and says why it is disabled rather
   than killed.

@@ -216,8 +216,8 @@
   },
   {
     "name": "§10.5 band E de-escalates to a compact line after the first firing today",
-    "note": "Identical inputs to the 250 case, with bandEFullCardShownToday true. Still rank 2, still on screen, never behind 'more'. Only the typography changes; the instruction is asserted identical in bandE.test.ts.",
-    "input": { "bloodSugar": 250, "carbs": 0, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "bandEFullCardShownToday": true },
+    "note": "Identical inputs to the 250 case, with bandEFullCardShownRecently true. Still rank 2, still on screen, never behind 'more'. Only the typography changes; the instruction is asserted identical in bandE.test.ts.",
+    "input": { "bloodSugar": 250, "carbs": 0, "target": 150, "isf": 30, "icr": 10, "threshold": 20, "bandEFullCardShownRecently": true },
     "mode": "nearest",
     "expected": { "kind": "dose", "hundredths": 300, "bands": ["A", "E"], "correctionHundredths": 333, "suppressed": false, "advisories": ["band_e_compact"] }
   },

@@ -468,7 +468,7 @@ describe('§11.2 the snapshot is what the result came from', () => {
       eligibleEntryCount: 24,
       historyProvenance: 'suspect',
       lastDose: { injectedHundredths: 600, atMs: NOW - 2 * HOUR },
-      bandEFullCardShownToday: true,
+      bandEFullCardShownRecently: true,
       excludedTimeRecords: 2,
     };
     const state = run([
@@ -487,7 +487,7 @@ describe('§11.2 the snapshot is what the result came from', () => {
       eligibleEntryCount: 24,
       historyProvenance: 'suspect',
       lastDose: { injectedHundredths: 600, atMs: NOW - 2 * HOUR },
-      bandEFullCardShownToday: true,
+      bandEFullCardShownRecently: true,
       excludedTimeRecords: 2,
       blankReadingAcknowledged: false,
       largeDoseConfirmed: false,
@@ -568,7 +568,7 @@ describe('§13.4 — the reducer seams the mutation gate now covers', () => {
       eligibleEntryCount: 0,
       historyProvenance: 'suspect',
       lastDose: null,
-      bandEFullCardShownToday: false,
+      bandEFullCardShownRecently: false,
       excludedTimeRecords: 0,
     });
   });
@@ -705,12 +705,12 @@ describe('§13.4 — the reducer seams the mutation gate now covers', () => {
   });
 
   it('§13.3 — `calculate` uses the record it is handed, and keeps it', () => {
-    const fresh: RecordContext = { ...RECORD, bandEFullCardShownToday: true };
+    const fresh: RecordContext = { ...RECORD, bandEFullCardShownRecently: true };
     const state = run([
       ...typed('330', '50'),
       { type: 'calculate', nowMs: NOW, record: fresh },
     ]);
-    expect(state.snapshot?.bandEFullCardShownToday).toBe(true);
+    expect(state.snapshot?.bandEFullCardShownRecently).toBe(true);
     expect(state.record).toEqual(fresh);
     // Without one, the state's own record stands.
     expect(run([...typed('330', '50'), { type: 'calculate', nowMs: NOW }]).record).toEqual(RECORD);
