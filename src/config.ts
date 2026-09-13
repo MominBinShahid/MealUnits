@@ -8,9 +8,14 @@
  */
 
 // ─── CLINICAL CONSTANTS ────────────────────────────────────
-// DO NOT CHANGE WITHOUT CLINICAL REVIEW. ADA/EASD definitions.
-export const HYPO_LEVEL_1 = 70; // §3 band C — treat, do not inject
-export const HYPO_LEVEL_2 = 54; // §3 band D — escalated wording
+// DO NOT CHANGE WITHOUT CLINICAL REVIEW. Sources differ by line and are named
+// per line, because "ADA/EASD definitions" covered this whole block until
+// 2026-09-13 and only the first two are ADA/EASD.
+export const HYPO_LEVEL_1 = 70; // §3 band C — treat, do not inject. ADA/EASD
+export const HYPO_LEVEL_2 = 54; // §3 band D — escalated wording. ADA/EASD
+// CDC, not ADA/EASD, and CLINICAL.md 2.4 records that the self-testing trigger
+// is contested across guidance while the DKA DIAGNOSTIC criterion is now 200.
+// Changing this is a clinical judgement — see CLINICAL.md section 14 question 5.
 export const KETONE_ADVISORY = 250; // §3 band E — check ketones
 export const FAST_CARB_GRAMS = 15; // the 15-15 rule
 export const RECHECK_MINUTES = 15;

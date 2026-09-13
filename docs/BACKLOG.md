@@ -620,6 +620,20 @@ not the score. 1.28 means the mutants are not being activated; 9.05 is the healt
 point at — the pin lived only in a build note and in `package.json`'s caret. Same class as the carbs
 phases: a constraint with no home is a constraint nobody will find.
 
+**What the 2026-09-13 research settled about the defaults, with sources in `CLINICAL.md` section
+2.4 and its source list.** The question Momin raised — *set a standard, then let the user adjust* —
+turns out to have a different answer per number, and one of them inverts:
+
+| Number | Kind | What follows |
+|---|---|---|
+| Target, ISF, ICR | **Individualised.** No citable universal default exists — ISPAD's 500/1800 rules derive from the person's own total daily dose, which this app does not collect | Ship them **empty**. Both the MiniMed 780G and t:slim require a clinician to supply them and prefill nothing. A prefilled 150 is a prescription wearing the clothes of a default |
+| Hypo 70 and 54 | **Universal floor.** ADA Standards of Care 2026 Table 6.4; no guidance individualises them downward | Stay absolute and uneditable. These are the best-supported constants in the app |
+| Ketone advisory | **Universal in character** — no source makes it patient-adjustable — **but the value is contested** | Must NOT become user-configurable, which is the one place "give the user a config" would be the unsafe answer: the person most likely to raise a ketone threshold is the person it exists to catch |
+| Max dose / confirmation threshold | **Hybrid, and the comparators split it the same way** | An absolute ceiling nobody can raise, plus an adjustable check beneath it. The 780G caps the bolus at 25 units and has a clinician-set maximum under that. This is a precedent for T5's "made relative" plan |
+
+**So the T5 plan is supported by published practice on every count**, and the one addition the
+research argues for is that the ketone threshold be explicitly excluded from anything user-editable.
+
 ### T6. Analytics and Search Console, for a public app
 
 **Trigger: alongside item 4a, once the audience change (T5) is ruled on.**
@@ -723,14 +737,29 @@ line §14 draws.
 **It waits on a physician because three things in it are open, and two are about the app being
 wrong rather than incomplete:**
 
-1. **`COPY.meterHi.body` and `CLINICAL.md` §2.1 may now be out of date.** Both say injected insulin
-   alone will not treat ketoacidosis. ADA 2026 §6 and the 2024 ADA/EASD consensus permit home
-   management of MILD ketoacidosis with subcutaneous insulin. The claim is right for the vomiting
-   case and overstates the rest. Neither file was changed — §20.1.1 says ask.
+1. **`COPY.meterHi.body` and `CLINICAL.md` section 2.1 may now be out of date.** Both say injected
+   insulin alone will not treat ketoacidosis. **ADA Standards of Care 2026 section 6** permits home
+   management of MILD ketoacidosis with subcutaneous insulin, hydration and rechecking, for someone
+   alert and able to drink. The claim is right for the vomiting case and overstates the rest. Neither
+   file was changed — §20.1.1 says ask.
+
+   **Corrected 2026-09-13:** this entry previously also credited the 2024 ADA/EASD consensus with
+   permitting home management. It does not — it permits subcutaneous insulin for mild and moderate
+   DKA **in emergency departments and step-down units**, which is not home management. Only the 2026
+   Standards of Care go to the home.
 2. **The 250 mg/dL advisory threshold now sits ABOVE the diagnostic one.** The 2024 consensus and
-   ADA 2026 lowered the glucose criterion to 200, so a reading of 210 with ketones meets it and the
-   app says nothing. Changing `KETONE_ADVISORY` trades that gap against alarm fatigue, which is a
-   clinical judgement, not ours.
+   ADA 2026 lowered the glucose criterion to 200 — **and removed it entirely for anyone with a known
+   diabetes diagnosis** — so a reading of 210 with ketones meets the definition and the app says
+   nothing. Changing `KETONE_ADVISORY` trades that gap against alarm fatigue, which is a clinical
+   judgement, not ours.
+
+   **Researched 2026-09-13, and it split into two questions rather than one.** The *diagnostic*
+   criterion and the *self-testing* trigger are different numbers. The second is genuinely contested:
+   CDC and every shipping device say 250, ADA's narrative says "particularly above 200", NICE gives
+   no number at all, Diabetes UK gives two. `CLINICAL.md` section 2.4 carries the evidence and the
+   citations. **The uncontested part is that illness or symptoms should trigger a test at any
+   glucose, and the app has no such trigger** — that half needs a design decision about the warning
+   budget rather than a clinical ruling.
 3. **No guideline gives a ketone recheck interval for regular human insulin.** ISPAD's "should have
    fallen by two hours" is analogue-derived, and `CLINICAL.md` §4 already refuses two-hour reasoning
    for Humulin R.

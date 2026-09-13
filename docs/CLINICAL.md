@@ -100,6 +100,51 @@ corrected.
 **Open question for the prescriber:** whether the calendar day is the right reset boundary at all. A
 3 a.m. reading and a 9 a.m. reading are arguably one episode.
 
+### 2.4 What the ketone advisory is for, and what it cannot see
+
+**Researched 2026-09-13 against published guidance, because `T5` makes this app's audience strangers
+and a threshold cannot rest on one prescriber's recollection.** Nothing here has been changed in the
+code; the decisions this section sets up are in section 14.
+
+**Two different numbers were being conflated, and separating them is most of the answer.**
+
+| | What it is | Where it stands |
+|---|---|---|
+| **The diagnostic criterion for DKA** | A hospital definition, one of three co-required criteria | Lowered from >250 to **≥200 mg/dL — or a prior history of diabetes at ANY glucose** (ADA/EASD/JBDS/AACE/DTS consensus 2024; adopted in ADA Standards of Care 2026 Table 16.1). For someone with known type 1 there is now **no glucose criterion at all** |
+| **The self-testing trigger** | When a person at home should put a strip in. This is what `KETONE_ADVISORY` actually is | **Contested.** CDC says 250 or illness. ADA 2026 section 6 says test on symptoms and precipitants, "particularly if glucose levels exceed 200". NICE NG17 gives no number and frames it as sick-day rules. Diabetes UK says 13 mmol/L on one page and 14 on another. ISPAD keeps 250 as a *pump-failure* check and requires testing whenever ill, at any glucose |
+
+**So "our 250 fires too late" is true against the diagnostic criterion and against ADA's narrative
+sentence, and false against CDC, Diabetes UK and every shipping device.** A reading of 210 with
+ketones now meets the adult diagnostic definition while this app says nothing. Whether closing that
+gap buys safety or alarm fatigue is a clinical judgement — section 2.3 records that this user is
+above 250 most days, so he is above 200 more often still.
+
+**The uncontested half is the one the app is missing.** Every source that addresses self-testing
+makes **illness or symptoms an unconditional trigger**, independent of any number. Band E's current
+second line gates contacting a clinician on the reading having been high; guidance gates the *test*
+on being unwell whatever the reading says.
+
+**A glucose trigger is structurally blind to about 10% of DKA.** Euglycaemic ketoacidosis — ketosis
+and acidosis at a glucose below 200 — arises from reduced food intake, pregnancy, alcohol, liver
+failure, and above all SGLT2 inhibitor therapy, which accounts for the majority of recent cases. Not
+relevant to this user, who takes Humulin R and a long-acting insulin only; **material to strangers on
+an SGLT2 inhibitor**, which is what `T5` makes this app's audience.
+
+**What comparable tools do.** The Medtronic MiniMed 780G alerts "check ketones" above 250 mg/dL, on a
+sensor value at or above 250 for three hours, and on any suspected delivery failure at any glucose.
+The Tandem t:slim X2 user guide does not contain the word "ketone" at all. Neither Loop nor
+AndroidAPS documents ketones anywhere. **Band E already puts this app ahead of its open-source
+peers**, and the two largest commercial pumps disagree about whether to surface the topic.
+
+**On "injected insulin alone will not treat diabetic ketoacidosis"** (`COPY.meterHi`, and section 2.1
+in different words): **accurate in the context it ships in** — ketones present *or vomiting*, at a
+meter reading past 600 — because vomiting and not-improving are exactly ADA 2026's seek-immediate-care
+criteria. **Overstated as a general claim**, because ADA 2026 section 6 permits self-management of
+*mild* ketoacidosis with subcutaneous insulin, hydration and frequent rechecking, for someone who is
+alert and can drink. The failure mode that matters is a reader concluding insulin is futile and
+withholding it — and the one thing every source states without qualification is **never stop insulin**.
+
+
 ---
 
 ## 3. Insulin stacking
@@ -396,7 +441,23 @@ This is a summary of what the regulators' own documents say. It is not legal adv
 - Schmidt and Nørgaard 2014 — bolus calculators, review.
 - Lyell and Coiera 2017 — automation bias in clinical decision support.
 - ISMP List of Error-Prone Abbreviations, Symbols, and Dose Designations.
-- CDC diabetes guidance — ketone testing at or above 250 mg/dL, or when ill.
+- CDC diabetes guidance — ketone testing at or above 250 mg/dL, or when ill. **Public domain**; the
+  only source here that may be adapted into app copy rather than paraphrased.
+- ADA Standards of Care in Diabetes—2026, sections 6 and 16 — the hypoglycaemia levels, the DKA
+  diagnostic criteria in Table 16.1, and the conditional home management of mild ketoacidosis.
+- Umpierrez GE et al., *Hyperglycemic Crises in Adults With Diabetes: A Consensus Report*
+  (ADA/EASD/JBDS/AACE/DTS), Diabetes Care 2024;47(8):1257-1275 — the diagnostic glucose criterion
+  moving to 200 mg/dL or any glucose with a prior diabetes history, and euglycaemic DKA.
+- ISPAD Clinical Practice Consensus Guidelines 2022 — DKA and hyperglycaemic hyperosmolar state; and
+  the sick-day chapter, which requires ketone testing whenever ill at any glucose.
+- NICE NG17, recommendation 1.10.1 — ketone monitoring as part of sick-day rules, deliberately with
+  no glucose threshold.
+- Medtronic MiniMed 780G user guide (FDA-approved labeling) and Tandem t:slim X2 user guide — what
+  shipping devices actually surface about ketones, which is 250-plus-delivery-failure and nothing
+  respectively.
+
+**Attribution constraint:** apart from CDC, none of the above is openly licensed. ADA, ISPAD (Wiley),
+NICE and Diabetes UK material is quoted with citation here and **must not be copied into app copy**.
 
 ---
 
@@ -405,11 +466,24 @@ This is a summary of what the regulators' own documents say. It is not legal adv
 1. **Is the target of 150 mg/dL deliberate, and what would need to change for it to come down?** It
    is above the ADA's 80–130 preprandial goal, which is defensible given the 65 mg/dL readings — but
    the app treats it as fixed and this file should not pretend to know why it was chosen.
-2. **Have the injection sites been examined?** It is the cheapest explanation on the list in §10 and
-   the only one with a physical sign.
-3. **Where do the lows fall?** The record answers this, and the answer changes which of §10's
+2. **Have the injection sites been examined?** It is the cheapest explanation on the list in
+   section 10 and the only one with a physical sign.
+3. **Where do the lows fall?** The record answers this, and the answer changes which of section 10's
    explanations is live.
-4. **Should the ketone advisory reset on a calendar day, or on something else?**
+4. **Should the ketone advisory reset on a calendar day, or on something else?** A 3 a.m. reading
+   and a 9 a.m. reading are arguably one episode.
+5. **Should the ketone advisory move from 250 to 200 mg/dL, stay at 250, or stay at 250 and gain an
+   unconditional illness trigger?** Section 2.4 has the evidence on all three sides. What it turns
+   on: the 200-249-with-ketones gap now meets the adult diagnostic definition, against alarm fatigue
+   in a man who is above 250 most days. **The illness trigger is the part no source disputes**, and
+   it is currently absent.
+6. **Should `COPY.meterHi` keep "injected insulin alone will not treat diabetic ketoacidosis"?** It is
+   accurate where it ships — ketones or vomiting, at a meter past 600 — and overstated as a general
+   claim. The question is whether to add the never-stop-insulin counterweight, because the way this
+   sentence fails is a reader deciding insulin is pointless.
+7. **Is there a ketone recheck interval that holds for regular human insulin?** ISPAD's "should have
+   fallen by two hours" is derived from analogues, and section 4 already refuses two-hour reasoning
+   for Humulin R.
 5. Long-acting insulin is 36 units of a daily total of 84–111 — **32–43%**, against a commonly cited
    40–50%. That is arithmetic from his own figures, recorded so it reaches you, and not a
    recommendation.
