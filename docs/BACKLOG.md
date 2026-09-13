@@ -865,6 +865,40 @@ in this app has ever sent data anywhere.
 
 ---
 
+### T14. Lighthouse, and what it is actually worth here
+
+**REQUESTED BY MOMIN 2026-09-13, alongside `4a` and `T6`.** Run Lighthouse — or an equivalent — over
+the deployed app and act on what it finds.
+
+**Four categories, and they are not equally useful to this app.**
+
+- **PWA and Best Practices** are the two that pay. They check installability, the manifest, the
+  service worker, HTTPS and console errors — and this app is an installable offline PWA whose update
+  path was measured wrong twice in opposite directions (`T4`). An automated check of the manifest and
+  the worker is exactly the layer that caught nothing then.
+- **SEO** overlaps `4a` almost entirely: title, meta description, crawlability, a valid canonical.
+  Run it AFTER `4a` ships or it will only report what `4a` is already about to fix.
+- **Accessibility** is worth running and worth reading sceptically. It catches contrast ratios and
+  missing labels, which this app has real history with — but `§10.7`'s touch targets and the
+  focus-restoration work in `dom.ts` are the kind of thing it cannot see at all.
+- **Performance** is the one to be careful with. The app is a few hundred kilobytes of hand-written
+  TypeScript with no framework, no images and no third-party origins; it will score well for reasons
+  that have nothing to do with whether it doses correctly. **A green Performance number is not
+  evidence about this app's actual risk**, and it should not be quoted as though it were.
+
+**Where it should run.** Against the DEPLOYED app, not `vite preview` — `T4` is in this document
+precisely because measuring in `vite preview` gave the wrong answer twice. `npm run smoke` already
+drives a served build in real Chrome over two origins, so the harness for "real browser, real build"
+exists; whether Lighthouse joins it as a CI job or stays a hand-run check before a release is the
+open question, and the honest default is hand-run until it has caught something once.
+
+**What it must not become.** A score to optimise. The failure mode is real and common: shaving
+kilobytes or deferring a script to move a number, on an app whose entire value is that the arithmetic
+is right and the warnings fire. Treat every finding as a question, not a defect, and write down the
+ones deliberately not acted on — the same standing as everything else in this file.
+
+---
+
 ### T8. Mutation testing for `src/storage`, behind a runner bug
 
 **Trigger: when Stryker's vitest runner can survive `fake-indexeddb`.** Added 2026-09-11 with

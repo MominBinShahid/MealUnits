@@ -822,6 +822,70 @@ def check_retired_in_source(_plan):
     return out
 
 
+# Quoted fragments that live outside `copy.ts` and are NOT user-facing words:
+# CSS class pieces appended by concatenation, and two separators. Pinned by
+# value rather than counted, so adding a real string fails instead of shifting
+# a number. `' '` appears twice and is listed once — the pin is a membership
+# test, not a tally.
+UI_TEXT_OK = {
+    " compact", " mint", " ", " stale", " \u2014 ", "n empty", "go quiet",
+}
+
+
+def check_ui_text_outside_copy(_plan):
+    """1c. A user-facing string rendered from somewhere other than `copy.ts` —
+    ADDED 2026-09-14.
+
+    `src/ui/copy.ts` opens with "Every user-facing string, in one file", and on
+    2026-09-13 that was FALSE: roughly eighty strings rendered from literals in
+    `screens/*.ts`, `app.ts` and `components.ts`. Two consequences, and the
+    second is the one that matters. The plain-language review (BACKLOG 25) was
+    scoped to `copy.ts`, so none of them were reviewed; and `10a` hands a
+    translator that same file, so every one of them would have stayed English —
+    including "Save and start", the button that ends first-run setup.
+
+    The header's claim is what made this invisible. A file that says it holds
+    everything is not re-checked, so the drift never surfaced.
+
+    **What this cannot see: template literals.** `misc.ts` built a history row
+    as `${reading} · ${carbs} g of carbohydrate`, and prose inside backticks is
+    invisible to a quoted-string sweep. Those four fragments were moved by hand
+    on 2026-09-14; a new one would escape this check, and that limit is written
+    here rather than left for a later reader to discover.
+
+    Shown to fail by execution, the standard §20.3 sets: re-inlining
+    `COPY.settings.saveFirstRun` as its literal produces the finding, and
+    restoring it returns the checker to clean.
+    """
+    out = []
+    for dirpath, dirnames, filenames in os.walk(os.path.join(HERE, "src", "ui")):
+        dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+        for name in sorted(filenames):
+            if not name.endswith(".ts") or name == "copy.ts":
+                continue
+            path = os.path.join(dirpath, name)
+            rel = os.path.relpath(path, HERE).replace(os.sep, "/")
+            with io.open(path, encoding="utf-8") as handle:
+                lines = handle.read().split("\n")
+            for number, line in enumerate(lines, 1):
+                stripped = line.strip()
+                if (stripped.startswith("*") or stripped.startswith("//")
+                        or stripped.startswith("import ") or stripped.startswith("} from")):
+                    continue
+                for match in re.finditer(r"'((?:[^'\\]|\\.)*)'", line):
+                    value = match.group(1)
+                    if " " not in value or value in UI_TEXT_OK:
+                        continue
+                    if re.search(r"(?:class|id|type|role|inputmode|autocomplete|lang"
+                                 r"|data-[\w-]+|aria-[\w-]+)'?\s*:\s*$", line[:match.start()]):
+                        continue
+                    out.append("%s:%d renders %r, but src/ui/copy.ts claims to hold every"
+                               " user-facing string — move it there, or add it to UI_TEXT_OK"
+                               " if it is markup rather than words"
+                               % (rel, number, value))
+    return out
+
+
 def check_note_references(corpus):
     r"""2c. A "note N" pointing at a build note that does not exist — ADDED 2026-09-13.
 
@@ -2454,6 +2518,7 @@ def check_next_steps(plan):
 CHECKS = [
     ("retired phrases living as spec (ALL FILES)", check_retired, "corpus"),
     ("retired phrases living in src/**/*.ts", check_retired_in_source, "plan"),
+    ("user-facing text outside src/ui/copy.ts", check_ui_text_outside_copy, "plan"),
     ("dangling section references", check_references, "plan"),
     ("dangling section references in companions", check_references_corpus, "corpus"),
     ("dangling build-note references", check_note_references, "corpus"),
