@@ -6,3 +6,9 @@ reports/
 *.log
 .DS_Store
 *.tsbuildinfo
+
+# Python bytecode cache. Generated when check-plan.py is IMPORTED (the
+# self-test harness does), never read by a person, and tied to one Python
+# version. One was committed on 2026-09-13 by a `git add -A`.
+__pycache__/
+*.pyc
