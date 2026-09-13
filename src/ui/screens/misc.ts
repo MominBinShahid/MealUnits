@@ -572,7 +572,12 @@ export function howItWorksScreen(advisoryStatus: string): HTMLElement {
     // any of the arithmetic applies to the reader at all. The disclaimer states
     // it as a rule; this is where it is explained.
     h('h2', {}, COPY.explain.audienceTitle),
-    ...COPY.explain.audienceBody.map((line) => h('p', {}, line)),
+    // The condition is bold; a paragraph without one renders as plain prose.
+    ...COPY.explain.audienceBody.map((para) =>
+      para.condition === null
+        ? h('p', {}, para.lead)
+        : h('p', {}, para.lead, h('b', {}, para.condition), para.rest),
+    ),
 
     h('h2', {}, 'The arithmetic, in full'),
     h(
