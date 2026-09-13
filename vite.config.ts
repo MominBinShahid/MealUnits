@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { build as esbuild } from 'esbuild';
 import { defineConfig } from 'vitest/config';
@@ -47,6 +47,12 @@ function contentSecurityPolicy(): Plugin {
 
 const BASE = '/MealUnits/';
 
+// The deployed origin, for the generated sitemap. `index.html` states the same
+// address in its canonical link, its og:url and its JSON-LD, and two files
+// holding one address is two things to keep in step — so `check-plan.py`
+// asserts they agree rather than hoping.
+const SITE_URL = 'https://mominbinshahid.github.io';
+
 /**
  * §11.4 — "build-generated hashed-asset discovery" was the first item on the
  * list version 1's fifteen-line worker omitted. This plugin is that item: after
@@ -58,6 +64,48 @@ const BASE = '/MealUnits/';
  * found by a browser looking for the one it registered, and a nested one has a
  * narrower scope than the app it is meant to serve.
  */
+/**
+ * 4a's sitemap, GENERATED rather than written, for one element: `lastmod`.
+ *
+ * Google's own documentation is explicit that `<priority>` and `<changefreq>`
+ * are ignored, and that `<lastmod>` is used "if it's consistently and
+ * verifiably accurate". The first draft of this file shipped the two inert
+ * elements by hand and omitted the one that works.
+ *
+ * `lastmod` cannot be hand-written, because a date maintained by memory rots on
+ * exactly the change that should update it — the lesson §20.5's listing and the
+ * precache walk above both already carry. It is the build date, which for this
+ * app IS the last modification: every deploy is a new build of the page.
+ *
+ * ONE url, and that is not an oversight. Every screen is reached by tapping,
+ * not by navigating; per-screen routes are BACKLOG entry 24, blocked on T3.
+ *
+ * The file sits under /MealUnits/ rather than at the domain root, which is
+ * legitimate — a sitemap may list URLs at or below its own path — and has to be
+ * submitted directly in Search Console, because the robots.txt crawlers
+ * actually read is the apex one, served by a different repository.
+ */
+function sitemap(outDir: string): Plugin {
+  return {
+    name: 'mealunits-sitemap',
+    apply: 'build',
+    closeBundle() {
+      const day = new Date().toISOString().split('T')[0];
+      const xml = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        '  <url>',
+        `    <loc>${SITE_URL}${BASE}</loc>`,
+        `    <lastmod>${String(day)}</lastmod>`,
+        '  </url>',
+        '</urlset>',
+        '',
+      ].join('\n');
+      writeFileSync(join(outDir, 'sitemap.xml'), xml, 'utf8');
+    },
+  };
+}
+
 function serviceWorker(outDir: string): Plugin {
   return {
     name: 'mealunits-service-worker',
@@ -122,7 +170,7 @@ function serviceWorker(outDir: string): Plugin {
 // absolute for an install to be recognised as the same app.
 export default defineConfig({
   base: BASE,
-  plugins: [contentSecurityPolicy(), serviceWorker('dist')],
+  plugins: [contentSecurityPolicy(), sitemap('dist'), serviceWorker('dist')],
   define: {
     // §10.8: show the running build version. It is the only way to diagnose a
     // report from a phone that is not in front of you.
