@@ -568,6 +568,12 @@ export function howItWorksScreen(advisoryStatus: string): HTMLElement {
     h('h1', {}, COPY.twoInsulins.title),
     h('p', {}, COPY.twoInsulins.body),
 
+    // FIRST, ahead of the arithmetic, because who this is for decides whether
+    // any of the arithmetic applies to the reader at all. The disclaimer states
+    // it as a rule; this is where it is explained.
+    h('h2', {}, COPY.explain.audienceTitle),
+    ...COPY.explain.audienceBody.map((line) => h('p', {}, line)),
+
     h('h2', {}, 'The arithmetic, in full'),
     h(
       'p',

@@ -295,6 +295,23 @@ RETIRED = [
     #
     # Was 4 until the 2026-09-13 prune: note 61 quoted the dead string three
     # times and now states the defect without reprinting it.
+    # Ruled 2026-09-13 with the audience change. "for one person" was TRUE for
+    # the life of the app until T5 emptied the prescription fields, and then it
+    # was a claim about the app that the app had stopped making. It survived in
+    # index.html's `<meta name="description">` — the single line Google and
+    # WhatsApp show — through the whole of T5, because the README, the
+    # disclaimer and the setup copy were all updated and nobody looked at the
+    # page metadata. Momin found it by asking a different question.
+    #
+    # Pinned because the next step, item 4a, is the one that makes the app
+    # findable. A false description is a document nobody reads; a false
+    # description on an indexed page is the first thing a stranger reads.
+    #
+    # Count 2, both in BACKLOG.md: one recording that the meta tag was wrong,
+    # one quoting the prefill's original justification. Both are the phrase
+    # being named as dead, which a substring search cannot tell from the phrase
+    # being alive — so the count is what separates them.
+    ("for one person", 2),
     ("Couldn't save this yet", 1),
     ("above-range to band E wording", 1),
     ("last backup: N days ago", 2),
@@ -367,6 +384,9 @@ RETIRED = [
 # the ALLOWED occurrences inside src/**/*.ts: historical quotations whose whole
 # point is to explain a retirement. A phrase not named here is allowed zero.
 RETIRED_IN_SOURCE_OK = {
+    # config.ts quotes the prefill's original argument where the constants used
+    # to be, to record why they were deleted.
+    "for one person": 1,
     # copy.ts's band E docstring quotes v8's wrong compact copy, twice, to
     # explain why the instruction never changes between forms.
     "Above 250 again": 2,
@@ -2492,6 +2512,11 @@ SELF_TESTS = [
     # nothing pins. Seeding a new export into config.ts proves nothing, because
     # a constant no document discusses is deliberately not a finding — §11.8
     # governs decisions, not plumbing.
+    # §20.3 — the pin added in the same commit arrives with its own mutation.
+    # This is the exact shape the defect had: a live description claiming the
+    # app is for one person, months after it stopped being.
+    ("retired: 'for one person' comes back as live copy", "README.md",
+     lambda t: t + "\n\nAn insulin dose calculator for one person.\n"),
     ("constants: prose argues for a config constant nothing pins", "BACKLOG.md",
      lambda t: t + "\n\nThe wizard is `WIZARD_STEPS` long.\n"),
     # And the other direction: a pin that outlived the constant it pinned, which

@@ -1,6 +1,6 @@
 # MealUnits — working instructions
 
-An insulin bolus calculator for one adult with type 1 diabetes. It takes a blood sugar reading and
+An insulin bolus calculator for people with type 1 diabetes. It takes a blood sugar reading and
 a carbohydrate amount and returns units of short-acting insulin. **A wrong number here is a
 hypoglycaemic event, not a bug report.** Read that sentence before changing anything.
 

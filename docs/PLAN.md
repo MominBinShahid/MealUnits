@@ -31,8 +31,10 @@ is what the build had to decide that this document does not state, cited as *not
 
 ## 1. What this is
 
-A mealtime insulin dose calculator for one adult with Type 1 diabetes, built as an
-installable, offline-capable web app. It takes a blood sugar reading and a carbohydrate
+A mealtime insulin dose calculator **for people with Type 1 diabetes**, built as an
+installable, offline-capable web app. It assumes the regimen Type 1 usually means — a
+long-acting insulin daily, a short-acting one at meals — and Type 2 treatment, or a pump,
+is not what this arithmetic describes. It takes a blood sugar reading and a carbohydrate
 amount and returns the number of units of short-acting insulin to inject.
 
 It is arithmetic the user currently does in their head. It does not diagnose, does not adjust

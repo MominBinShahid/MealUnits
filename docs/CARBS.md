@@ -3,6 +3,10 @@
 **This document is the data of record. Behaviour is specified in `PLAN.md`** — this file says what a
 food contains; the plan says what the app does with it.
 
+These figures exist to be counted into a mealtime bolus, which is what **people with type 1
+diabetes** do at every meal. They are carbohydrate values and nothing more, so they are true
+whoever reads them — but the use they were gathered for is type 1 carbohydrate counting.
+
 **It speaks grams per real portion.** The number you want is "this roti is 18 g", "this plate of
 biryani is 51 g". Never a serving count.
 

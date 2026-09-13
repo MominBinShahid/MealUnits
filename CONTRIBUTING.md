@@ -3,6 +3,11 @@
 **This app returns a number of units of insulin to inject. A wrong number here is a hypoglycaemic
 event, not a bug report.** Everything below follows from that sentence.
 
+**It is for people with type 1 diabetes** — a long-acting insulin daily, plus a short-acting one at
+meals worked out from the person's own target, ISF and ICR. Type 2 treatment is different and this
+arithmetic does not describe it, and neither does a pump. Knowing that is the difference between
+reviewing a change and reviewing it for the right people.
+
 Contributions are welcome, including bug reports from people who just use it. But this repository is
 stricter than its size suggests, and the strictness is not taste — every rule here exists because
 something went wrong once.

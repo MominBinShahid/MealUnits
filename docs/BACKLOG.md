@@ -3,6 +3,10 @@
 Companion to `PLAN.md`. **Everything deliberately excluded from v1, with the reason and what
 would have to change to reconsider.**
 
+Scope, because several entries turn on it: the app is **for people with type 1 diabetes**, on a
+long-acting insulin plus a short-acting one at meals. Type 2 treatment and pump therapy are outside
+it, and an entry that would widen the app to either is a change of what this is, not a feature.
+
 The point of this file is that §9's exclusions are decisions, not oversights. Without a written
 reason each one gets silently reopened in six months by someone — probably us — who assumes it
 was forgotten.
@@ -298,8 +302,10 @@ single-user app.
 **Status: nothing has been done for search, and the recommendation is that the app should NOT be
 discoverable. The REPOSITORY should.**
 
-**What exists** in `index.html`: `<title>`, a `<meta name="description">` that already reads *"An
-insulin dose calculator for one person. Not a medical device."*, `lang="en"`, theme colours, and a
+**What exists** in `index.html`: `<title>`, a `<meta name="description">` that reads *"An insulin
+dose calculator for people with type 1 diabetes. Not a medical device."* — corrected on 2026-09-13,
+because it still said *"for one person"* after `T5` had made that false, and this is the line search
+results and link previews actually show, `lang="en"`, theme colours, and a
 manifest. That is the baseline and it is accurate.
 
 **Why ranking would be a hazard rather than a win.** This app is configured for ONE prescription —
@@ -322,11 +328,13 @@ So: **index, with `T5` settled first.**
 
 **What IS worth adding: link preview, which is not discovery.** Open Graph and Twitter card tags so
 that when the URL is sent to a doctor, a family member, or in a WhatsApp message, the preview shows
-the name and *"for one person, not a medical device"* rather than a bare URL. That is the case where
+the name and *"for people with type 1 diabetes, not a medical device"* rather than a bare URL. That is the case where
 metadata does safety work — it puts the disclaimer in front of someone BEFORE they open it.
 
 **Still worth adding, and now more so:** Open Graph and Twitter card tags, so a shared link previews
-with the name and the "not a medical device" line rather than as a bare URL. For a public app that is
+with the name, **who it is for**, and the "not a medical device" line rather than as a bare URL. The
+preview copy must say type 1: "insulin dose calculator" is searched by people with type 2 just as
+often, and the preview is the last thing they read before deciding whether to open it. For a public app that is
 the first thing most people will see of it. Plus a canonical URL, and a sitemap for `T6`.
 
 ### 10a. Urdu — what it actually requires, since item 10 understates it

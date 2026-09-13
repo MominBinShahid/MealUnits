@@ -1,7 +1,12 @@
 # MealUnits
 
-A mealtime insulin dose calculator for one adult with type 1 diabetes, built as an installable,
+**For people with type 1 diabetes.** A mealtime insulin dose calculator, built as an installable,
 offline-capable web app.
+
+It assumes the regimen type 1 usually means: a long-acting insulin once a day, and a short-acting
+one at meals worked out from your own target, insulin sensitivity factor and carbohydrate ratio.
+**Type 2 treatment is different** — tablets, a fixed dose, a weekly injection, or a mix — and this
+arithmetic does not describe it. Nor does it describe a pump, which works out doses its own way.
 
 It takes a blood sugar reading and a carbohydrate amount and returns the number of units of
 short-acting insulin to inject. It is arithmetic many people with type 1 currently do in their heads,
