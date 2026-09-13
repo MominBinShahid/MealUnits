@@ -326,7 +326,11 @@ RETIRED = [
     ("Depends on §18.6", 0),
     ("a *wider* band", 0),
     ("begin cautioning *closer to target*", 0),
-    ("Above 250 again", 2),
+    # Was 2 until 2026-09-13, when BACKLOG.md's plain-language-pass entry began
+    # quoting it too. That entry warns a copy reviewer that "shorter and
+    # friendlier" is precisely how this string went wrong — so the quotation is
+    # the phrase being named as dead in the one place most likely to revive it.
+    ("Above 250 again", 3),
     # 2 in PLAN.md (§13.2's v6 correction note) + 2 in this script's own
     # near-miss docstring, which is swept as a live file since v19.
     ("logEntryCount", 4),

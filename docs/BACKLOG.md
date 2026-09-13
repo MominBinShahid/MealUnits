@@ -17,8 +17,8 @@ not that it is technically hard. **Technical** is not a priority tier — it is 
 entry, waiting on something outside this project rather than on a decision of ours.
 
 **Numbers are identity, not rank.** The feature entries are ONE sequence partitioned across the
-tiers — 1-24 today — so a number stays stable enough to cite, while **position within a tier**
-carries the priority. That is why 20, 18, 19, 21, 22 and 24 sit above 1, and why 4a and 10a sit above 6. Do not
+tiers — 1-25 today — so a number stays stable enough to cite, while **position within a tier**
+carries the priority. That is why 20, 18, 19, 21, 22, 25 and 24 sit above 1, and why 4a and 10a sit above 6. Do not
 renumber to tidy it: reusing a number is how `PLAN.md` v14 came to assert three falsehoods about
 this file, which is why §20.3 says reference an entry by NAME, never by number.
 
@@ -175,6 +175,58 @@ one piece of work.
 
 **The line to hold if it is built:** a recorded ketone value is a record, **never an input to a
 dose**. §7.8's "not an input to anything" governs, for the same reason it governs readings.
+
+### 25. A plain-language pass over every user-facing string, before Urdu
+
+**AGREED BY MOMIN 2026-09-13.** Review all of `src/ui/copy.ts` — 218 strings, roughly 4,500 words
+— for length, nested clauses and unnecessarily hard terms. **A reviewer proposes; Momin rules; the
+change is implemented afterwards.** Nothing is rewritten in place by the review itself.
+
+**Why before `10a` (Urdu), and this is the whole argument.** `10a` says a mistranslation in this file
+is a dosing error, not a typo, and needs a translator who can be shown `CLINICAL.md` and asked
+whether the Urdu says the same thing. Every sentence simplified now is translated once. Every
+tangled one is translated twice, and the second pass costs a clinician's time.
+
+**Scope is the WHOLE file, not one screen**, because the terms have to be decided once. The ISF and
+ICR definitions on the how-it-works page are the same strings as the Settings hints — §10.2 reuses
+them rather than copying, so "two copies of a clinical definition is two things to keep in step".
+Reviewing them separately means deciding the same word twice and risking two answers. The main
+deliverable is a **glossary** — one word per concept — with per-string suggestions under it.
+
+**Sequence is how-it-works FIRST**, which is what Momin asked for and is also where the length is:
+eleven sections, several of four or five dense paragraphs. It is Tier 1 below, so it is the safest
+place to find out whether the suggestions are any good before anything touches a warning.
+
+**Three tiers, and they do not share rules:**
+
+| Tier | What | Rule |
+|---|---|---|
+| 1 | Explanatory prose — how-it-works, hints that explain | Simplify freely |
+| 2 | Labels, questions, buttons, headings | Careful. §10.1 chose these words deliberately and they are short already |
+| 3 | **Instructions carrying an action** — "Treat this first. Do not inject.", the 15 g rule, band E, the HI/LO cards | Propose only with a strong argument, and Momin rules each one individually |
+
+**The trap, stated so the reviewer cannot walk into it.** Several Tier 3 strings are ALREADY the
+corrected version of a sentence that failed review. v8's compact band E copy read *"Above 250 again
+— if this is new, or you feel unwell, check ketones."* For a repeated high reading in someone who
+feels well both conditions are false, so the warning stayed on screen while the action quietly
+became optional. **That is exactly what a simplification pass produces** — shorter, friendlier, and
+a safety regression. `copy.ts`'s comments record these corrections, and they must be read before
+anything is proposed.
+
+**Terms that stay unless the argument is overwhelming:**
+
+- **"Stacking"** — the app uses the word on the result screen and in Settings, so the explainer
+  teaches it deliberately. Simplifying it here leaves it undefined where it actually appears.
+- **ISF and ICR** — §10.1 keeps the QUESTIONS in plain words and names the clinical terms alongside,
+  so a person can repeat them back at an appointment. That is the design, not jargon creep.
+
+**On removing sections: flag, never cut.** Several exist because a reviewer found them missing —
+§8.5's U-100 assumption went eight months unbuilt. "This seems unnecessary" is frequently "this was
+added after its absence caused harm."
+
+**A second beneficiary worth naming:** the glossary is also what `T5`'s audience change needs going
+forward. The app is now for anyone with type 1, and the reader who has never been told what ISF
+means is the reader it was widened for.
 
 ### 24. URL routes for the four screens that are not the calculator
 
