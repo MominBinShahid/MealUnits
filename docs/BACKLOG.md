@@ -178,6 +178,36 @@ dose**. §7.8's "not an input to anything" governs, for the same reason it gover
 
 ### 25. A plain-language pass over every user-facing string, before Urdu
 
+**SHIPPED 2026-09-14, in two reviews.** The first covered `copy.ts` as it then
+stood; it found the pump contradiction, the imperative-shaped conditionals, and the glossary. The
+second covered the ~85 strings that turned out to be rendering from literals elsewhere — because
+`copy.ts`'s header claim, *"Every user-facing string, in one file"*, was false. `check-plan.py`'s
+`check_ui_text_outside_copy` now holds the claim true, and extending it to read backticks found
+eight more that both a hand sweep and a reviewer had missed.
+
+**Five things were flagged and deliberately NOT changed. They are the residue, and they are here so
+they are not lost:**
+
+1. **`screens.clearNote` says "other sites on this address."** "This address" means the origin, and
+   a reader who does not know what an origin is cannot act on the sentence. No confident rewrite
+   was offered — the accurate version is longer than the screen wants.
+2. **"Save a copy" scent-matches the wrong tile.** It is the nav label on the path toward deletion,
+   and the export screen offers two files with different purposes; a reader heading for "move to
+   another phone" may stop at the first thing that says save.
+3. **"fast-acting carbohydrate" has no anchor** for a first-timer mid-hypo. Naming examples is
+   clinical content, so it is a prescriber question rather than a wording one.
+4. **"Check ketones" is instructed three times and explained nowhere.** A missing explainer, not a
+   cut — and it belongs with `T12`, which is already blocked on the doctor.
+5. **`"away from zero"` in the whole-units mode.** §5's rule is ties half away from zero, which
+   differs from "up" only for negatives the interface never shows. The copy states the engine's
+   actual rule; "up" would be narrower than the code. Declined deliberately, recorded so nobody
+   "fixes" it later.
+
+**What the checker still cannot see:** a sentence assembled by concatenating single-word literals,
+and any string built at runtime from data. Neither has appeared yet.
+
+---
+
 **AGREED BY MOMIN 2026-09-13.** Review all of `src/ui/copy.ts` — 218 strings, roughly 4,500 words
 — for length, nested clauses and unnecessarily hard terms. **A reviewer proposes; Momin rules; the
 change is implemented afterwards.** Nothing is rewritten in place by the review itself.
