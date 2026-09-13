@@ -830,8 +830,8 @@ export async function start(host: Host): Promise<void> {
             view.moreExpanded = !view.moreExpanded;
             render();
           },
-          onShowMeterGuidance: () => {
-            view.meterGuidanceShown = true;
+          onToggleMeterGuidance: () => {
+            view.meterGuidanceShown = !view.meterGuidanceShown;
             render();
           },
           onOpenHistory: () => { dispatch({ type: 'go', screen: 'history' }); },
