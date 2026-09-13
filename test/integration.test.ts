@@ -363,6 +363,26 @@ describe('§10.6 first run', () => {
     expect(fieldLabelled('Double-check my typing').value).toBe('30');
   });
 
+  it('says who Hasham is, because three hints name him and nothing else did', async () => {
+    await boot();
+    await tap('☐  I have read this');
+    await tap('I understand — use at my own risk');
+
+    // Until 2026-09-13 a stranger met an unexplained proper noun three times and
+    // got no answer. Naming him is also the SAFER wording — an unexplained
+    // number beside an empty field reads as a suggestion, while a number with
+    // someone's name on it reads as someone else's.
+    expect(text()).toContain('My brother Hasham has type 1');
+    // The clause that does the explicit work. "are his numbers" implies it;
+    // this says it, and Momin chose the longer line for that reason.
+    expect(text()).toContain('yours will be different');
+
+    // It must come BEFORE the first hint that names him, or it explains
+    // something the reader has already been puzzled by.
+    const body = text();
+    expect(body.indexOf('My brother Hasham')).toBeLessThan(body.indexOf('Hasham’s is 150'));
+  });
+
   it('§10.1 — the rounding question is a question, not the screen’s headline', async () => {
     await boot();
     await tap('☐  I have read this');
