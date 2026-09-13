@@ -484,6 +484,6 @@ NICE and Diabetes UK material is quoted with citation here and **must not be cop
 7. **Is there a ketone recheck interval that holds for regular human insulin?** ISPAD's "should have
    fallen by two hours" is derived from analogues, and section 4 already refuses two-hour reasoning
    for Humulin R.
-5. Long-acting insulin is 36 units of a daily total of 84–111 — **32–43%**, against a commonly cited
+8. Long-acting insulin is 36 units of a daily total of 84–111 — **32–43%**, against a commonly cited
    40–50%. That is arithmetic from his own figures, recorded so it reaches you, and not a
    recommendation.
