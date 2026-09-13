@@ -13,8 +13,8 @@ not that it is technically hard. **Technical** is not a priority tier — it is 
 entry, waiting on something outside this project rather than on a decision of ours.
 
 **Numbers are identity, not rank.** The feature entries are ONE sequence partitioned across the
-tiers — 1-22 today — so a number stays stable enough to cite, while **position within a tier**
-carries the priority. That is why 20, 18, 19, 21 and 22 sit above 1, and why 4a and 10a sit above 6. Do not
+tiers — 1-23 today — so a number stays stable enough to cite, while **position within a tier**
+carries the priority. That is why 20, 18, 19, 21, 22 and 23 sit above 1, and why 4a and 10a sit above 6. Do not
 renumber to tidy it: reusing a number is how `PLAN.md` v14 came to assert three falsehoods about
 this file, which is why §20.3 says reference an entry by NAME, never by number.
 
@@ -171,6 +171,47 @@ one piece of work.
 
 **The line to hold if it is built:** a recorded ketone value is a record, **never an input to a
 dose**. §7.8's "not an input to anything" governs, for the same reason it governs readings.
+
+### 23. Band E's full card resets on a rolling window, not a calendar day
+**RULED BY MOMIN 2026-09-13. Not yet built** — recorded here rather than written into `PLAN.md`,
+because the plan describes what the code does and the code still does the old thing.
+
+**What §10.5 does today.** The first band E result each **calendar day** shows a full card;
+subsequent ones show a compact line, with the instruction identical in both. The boundary is local
+midnight, via `localDayKey`.
+
+**Why it is wrong at both ends.**
+
+```
+Mon 23:40  320  FULL CARD     Tue 00:20  330  FULL CARD   <- 40 minutes apart, one episode, two cards
+Mon 03:00  300  FULL CARD     Mon 21:00  295  compact     <- 18 hours apart, plainly not one episode
+```
+
+**The ruling: a rolling window.** The intent — *do not show the big card twice in quick succession*
+— is a duration, not a date, and a date boundary produces both failures above.
+
+**What building it actually involves**, because it is larger than swapping a comparison:
+
+1. A new constant in `src/config.ts`. **The value is unruled.** 12 hours fixes both cases above and
+   caps the full card at twice a day; 24 preserves today's frequency but leaves the second case
+   broken. Recommend 12 and say so out loud when it lands.
+2. `deriveBandEFullCardShownToday` in `src/core/history.ts` — under the 100% mutation gate — stops
+   comparing day keys and compares an elapsed duration.
+3. **It stops needing a time zone at all.** The `timeZone` parameter goes, and with it this
+   function's dependence on notes 11 and 21's device-zone ruling. A rolling window is zone-free by
+   construction, which is a simplification rather than a loss.
+4. **The name stops being true.** "ShownToday" means nothing under a rolling window; rename in the
+   same change, per the rule that a symbol named for what it used to do is how the next reader gets
+   it wrong.
+5. **An existing test asserts the behaviour being removed** — `test/history.test.ts`'s *"rolls over
+   at LOCAL midnight, so 11:59 PM and 12:01 AM are two days"* becomes wrong, not merely redundant.
+   §13.3's case list names the same rollover in two places in `PLAN.md`. Delete and replace in the
+   same change; a suite that still asserts the old rule is worse than no suite.
+6. `CLINICAL.md` section 2.3 describes the calendar boundary and section 14 question 4 asks about
+   it. Both close with this.
+
+**Nothing clinical turns on it** — the advisory's presence and instruction never change, only whether
+the card is full or compact. No guideline addresses it; it is alarm-fatigue design.
 
 ### 1. Blood-sugar plausibility advisory
 **What:** the mirror of §6.5 for the blood-sugar field — 350 typed as 530, or as 150.

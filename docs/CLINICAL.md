@@ -482,8 +482,11 @@ NICE and Diabetes UK material is quoted with citation here and **must not be cop
    confirmed by Momin 2026-09-13. It is why §7.8 exists. Lows after smaller-than-usual meals support
    the fixed-dose explanation; lows overnight point at the long-acting insulin. It is carried here so
    the export is read with the question in mind, not so anyone is asked it.
-4. **Should the ketone advisory reset on a calendar day, or on something else?** A 3 a.m. reading
-   and a 9 a.m. reading are arguably one episode.
+4. ~~**Should the ketone advisory reset on a calendar day?**~~ **RULED BY MOMIN 2026-09-13: a rolling
+   window, not a calendar day.** Not a prescriber question after all — the advisory's presence and
+   instruction never change, only whether the card is full or compact, so nothing clinical turns on
+   it. `BACKLOG.md` entry 23 carries the ruling and what building it involves; the window length is
+   still unruled.
 5. **Should the ketone advisory move from 250 to 200 mg/dL?** Section 2.4 has the evidence on all
    sides. What it turns on: the 200-249-with-ketones gap now meets the adult diagnostic definition,
    against alarm fatigue in a man who is above 250 most days.
