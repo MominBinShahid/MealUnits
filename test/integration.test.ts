@@ -1302,6 +1302,11 @@ describe('§10.5 the band E full card is spaced by a rolling window, not a date'
 
     expect(bandECard()).toBeDefined();
     expect(bandECard()?.className).toBe('flag compact');
+    // The compact form runs the title inline with the body, so a separator has
+    // to be in the DOM — a CSS margin would be invisible here and the defect
+    // shipped that way from the first commit. Without it this reads
+    // "check ketonesFeeling unwell".
+    expect(bandECard()?.textContent).toContain('check ketones Feeling unwell');
   });
 
   it('once the window has passed IN an open session, the full card returns', async () => {
@@ -1326,6 +1331,9 @@ describe('§10.5 the band E full card is spaced by a rolling window, not a date'
 
     expect(bandECard()).toBeDefined();
     expect(bandECard()?.className).toBe('flag');
+    // And the FULL form must NOT get the separator: its title is a block, so a
+    // space would render as a stray indent at the head of the body line.
+    expect(bandECard()?.textContent).toContain('check ketonesFeeling unwell');
   });
 });
 

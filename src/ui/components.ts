@@ -105,6 +105,18 @@ export function advisories(views: readonly AdvisoryView[], onMore: () => void, e
       'div',
       { class: `flag${view.compact === true ? ' compact' : ''}${view.mint === true ? ' mint' : ''}` },
       view.title === null ? null : h('b', {}, view.title),
+      // The compact form runs the title INLINE with the body (`styles.css`
+      // flips `<b>` to `display: inline`), and without this the two abut:
+      // "Above 250 — check ketonesFeeling unwell is its own reason to test".
+      // Pre-existing since the first commit; found when the rolling-window
+      // ruling made the compact form reachable more often.
+      //
+      // A space in the DOM rather than a CSS margin, deliberately: a margin is
+      // invisible to every test this project has, and §19's rule is that a
+      // guarantee enforced by memory is not enforced. It is also not a copy
+      // change — §10.5 requires the two forms to carry IDENTICAL words, and a
+      // separator is not a word.
+      view.compact === true && view.title !== null ? ' ' : null,
       view.body,
     ),
   );
