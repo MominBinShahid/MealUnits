@@ -70,10 +70,38 @@ export const COPY = {
      * either refusing children or silently claiming the scope.
      */
     audienceTitle: 'Who this is for',
+    /**
+     * The bold part is named `condition` rather than found by position, because
+     * the NAME is the reason it is bold: a reader skimming this page to find
+     * out whether the app is theirs should be able to answer that without
+     * reading a sentence.
+     *
+     * The first attempt was alternating parts — plain, bold, plain — and
+     * §11.8's lint rule rejected the `index % 2` that renders it, correctly:
+     * the 2 was a magic number encoding a convention. Naming the field removes
+     * the arithmetic and says what the emphasis MEANS, which is the better
+     * shape anyway.
+     *
+     * Not a mini-markdown in the copy, deliberately. §10.2's premise is that
+     * the words ARE the specification, and a parser between them and the screen
+     * is one more thing that can disagree with them.
+     */
     audienceBody: [
-      'This app is for people with type 1 diabetes who work out each mealtime dose from two things: how far above target their blood sugar is, and how much carbohydrate they are about to eat. It assumes a long-acting insulin once a day and a short-acting one at meals.',
-      'If you have type 2 diabetes your treatment may be tablets, a fixed insulin dose, a weekly injection, or a mix — and none of those are what this arithmetic describes. The same is true if a pump delivers your insulin, which works out doses its own way from settings this app cannot see.',
-      'It was built for an adult, and nothing in it has been checked against how a child is dosed. If it is a child’s dose you are working out, take the numbers to their clinician before you rely on them.',
+      {
+        lead: 'This app is for ',
+        condition: 'people with type 1 diabetes',
+        rest: ' who work out each mealtime dose from two things: how far above target their blood sugar is, and how much carbohydrate they are about to eat. It assumes a long-acting insulin once a day and a short-acting one at meals.',
+      },
+      {
+        lead: 'If you have ',
+        condition: 'type 2 diabetes',
+        rest: ' your treatment may be tablets, a fixed insulin dose, a weekly injection, or a mix — and none of those are what this arithmetic describes. The same is true if a pump delivers your insulin, which works out doses its own way from settings this app cannot see.',
+      },
+      {
+        lead: 'It was built for an adult, and nothing in it has been checked against how a child is dosed. If it is a child’s dose you are working out, take the numbers to their clinician before you rely on them.',
+        condition: null,
+        rest: '',
+      },
     ] as const,
 
     namesTitle: 'The names your doctor uses',
