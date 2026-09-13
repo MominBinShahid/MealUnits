@@ -477,7 +477,7 @@ describe('§10.6 first run', () => {
     // The REASON travels with it. §8.5 refuses a U-40 setting because a setting
     // that can be set wrong causes the very error it exists to prevent, and a
     // bare assumption with no reason reads as trivia and gets skipped.
-    expect(setup).toContain('2.5x error it was meant to prevent');
+    expect(setup).toContain('2.5-times error it exists to prevent');
 
     // And §8.5's other half stays REFUSED: the dose names the insulin, which a
     // person can check against the vial in their hand, not a concentration they
@@ -603,7 +603,7 @@ describe('§10.6 the five terms the app used and never explained', () => {
     // The definition itself, not just the heading.
     expect(page).toContain('the two add together');
     // The exception that is NOT stacking, and gets it backwards if omitted.
-    expect(page).toContain('holding that one back would give you more insulin, not less');
+    expect(page).toContain('holding it back would give you more insulin, not less');
     // And the refusal. §7.4 declines to model insulin-on-board on purpose.
     expect(page).toContain('refuses to draw that curve');
   });
@@ -644,8 +644,8 @@ describe('§10.6 the five terms the app used and never explained', () => {
     expect(page).toContain('No recent dose recorded');
     // BOTH halves of the condition. v4 dropped provenance and the caveat fired
     // after every overnight gap; copy naming only one half describes that bug.
-    expect(page).toContain('a row was dropped as unreadable when the app opened');
-    expect(page).toContain('It does not mean you have no insulin on board');
+    expect(page).toContain('an entry could not be read when the app opened, and was dropped');
+    expect(page).toContain('It does not mean you have no insulin still working');
 
     // The windows are interpolated, so these read from config rather than prose.
     expect(page).toContain(`after ${String(RESULT_EXPIRY_MINUTES)} minutes`);
@@ -700,6 +700,41 @@ describe('§10.6 back from "How this works" returns where you came from', () => 
     await tap('Back');
     expect(text()).toContain('What can your syringe measure?');
   });
+
+  it('prints the rounding mode by name, not by its key', async () => {
+    // The screen made to be PHOTOGRAPHED for a doctor rendered `settings.mode`
+    // raw until 2026-09-14, so it read "Doses are rounded to — nearest", and on
+    // the two modes that matter most "— ceil" and "— off". The one reader who
+    // most needs the setting to be legible got the enum.
+    await setUpAsHisBrother();
+    await tap('Settings');
+    await tap('Show my settings as text');
+    expect(text()).toContain('Whole units');
+    expect(text()).not.toContain('nearest');
+  });
+
+  it('names the long-acting insulin as not recorded rather than printing a blank', async () => {
+    // "Which insulin" is free text with no validation and an empty default, so
+    // the screen made to be PHOTOGRAPHED for a doctor could hand them a row
+    // with a units figure and no insulin beside it. A blank on that page is
+    // read as "nothing prescribed", not as "the user skipped a field".
+    await boot();
+    await tap('\u2610  I have read this');
+    await tap('I understand \u2014 use at my own risk');
+    await typeInto('What should a correction aim for', '150');
+    await typeInto('How far does one unit lower', '30');
+    await typeInto('How much carbohydrate does one unit cover', '10');
+    await typeInto('Double-check my typing when the dose reaches', '20');
+    // "Which insulin" deliberately left empty.
+    await typeInto('How many units', '36');
+    await typeInto('When', 'early morning');
+    await tap('Save and start');
+
+    await tap('Settings');
+    await tap('Show my settings as text');
+    expect(text()).toContain('Not recorded');
+    expect(text()).toContain('36 units');
+  });
 });
 
 describe('the name, which changes nothing the app calculates', () => {
@@ -724,7 +759,7 @@ describe('the name, which changes nothing the app calculates', () => {
     expect(text()).not.toContain('Hey Ahmed');
     await keys('50');
     await tap('Work out the dose');
-    expect(text()).toContain('units of Humulin R');
+    expect(text()).toContain('units of your mealtime insulin');
     expect(text()).not.toContain('Hey Ahmed');
   });
 
@@ -1069,7 +1104,7 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     await tap('Next');
     await keys('50');
     await tap('Work out the dose');
-    expect(text()).toContain('units of Humulin R');
+    expect(text()).toContain('units of your mealtime insulin');
 
     // Two routes to the same place: the button, then the gesture, must land on
     // the same screen. They read one `backAction`, and this is what pins that.
@@ -1145,7 +1180,7 @@ describe('§13.6 interface-to-core mapping', () => {
     await tap('Work out the dose');
 
     expect(text()).toContain('11');
-    expect(text()).toContain('units of Humulin R');
+    expect(text()).toContain('units of your mealtime insulin');
     // §10.3 — the working, with both components and the total.
     expect(text()).toContain('330 down to 150');
     expect(text()).toContain('50 g of carbohydrate');
@@ -1162,7 +1197,7 @@ describe('§13.6 interface-to-core mapping', () => {
     await keys('330');
     await tap('Work out the dose');
     expect(text()).toContain('This is very low. Treat it now.');
-    expect(text()).not.toContain('units of Humulin R');
+    expect(text()).not.toContain('units of your mealtime insulin');
   });
 });
 
@@ -1189,7 +1224,7 @@ describe('§8.2 — a block goes stale too', () => {
     // The block does NOT go away. Being low is still the likeliest reading of
     // an old low, and §3.3's suppression of every insulin number still holds.
     expect(text()).toContain('Treat this first. Do not inject.');
-    expect(text()).not.toContain('units of Humulin R');
+    expect(text()).not.toContain('units of your mealtime insulin');
   });
 });
 
@@ -1215,7 +1250,7 @@ describe('§8.2 + §6.2 — a confirmation dies with the result it authorised', 
     await tap('Work out the dose');
     expect(text()).toContain('That will be a large dose');
     await tap('Show the dose');
-    expect(text()).toContain('25units of Humulin R');
+    expect(text()).toContain('25units of your mealtime insulin');
     expect(text()).toContain('Correction held back');
 
     // Twenty minutes later the result expires…
@@ -1233,8 +1268,8 @@ describe('§8.2 + §6.2 — a confirmation dies with the result it authorised', 
     clock += 5 * 60 * 60_000;
     await tap('Work out the dose');
     expect(text()).toContain('That will be a large dose');
-    expect(text()).not.toContain('30units of Humulin R');
-    expect(text()).not.toContain('units of Humulin R');
+    expect(text()).not.toContain('30units of your mealtime insulin');
+    expect(text()).not.toContain('units of your mealtime insulin');
   });
 });
 
@@ -1250,7 +1285,7 @@ describe('§13.6 band-to-message pairing', () => {
     // §3.3 — the block suppresses every INSULIN quantity: the main result, the
     // breakdown, the confirmation preview and the announcement.
     expect(screen).toContain('Treat this first. Do not inject.');
-    expect(screen).not.toContain('units of Humulin R');
+    expect(screen).not.toContain('units of your mealtime insulin');
     expect(screen).not.toContain('Total');
     // ...and does NOT suppress the treatment instructions, which necessarily
     // contain 15 grams, 15 minutes and 70 mg/dL. "No insulin dose numbers, not
@@ -1268,7 +1303,7 @@ describe('§13.6 band-to-message pairing', () => {
     await tap('Work out the dose');
     expect(text()).toContain('This is very low');
     expect(text()).toContain('Get help if you cannot treat yourself');
-    expect(text()).not.toContain('units of Humulin R');
+    expect(text()).not.toContain('units of your mealtime insulin');
   });
 
   it('§7.8 — and the reading offer sits AFTER the treat-first instruction', async () => {
@@ -1290,7 +1325,7 @@ describe('§13.6 band-to-message pairing', () => {
     await keys('60');
     await tap('Work out the dose');
     expect(text()).toContain('You are well below target');
-    expect(text()).toContain('units of Humulin R');
+    expect(text()).toContain('units of your mealtime insulin');
     // §8.1 — band B INVERTS the timing instruction.
     expect(text()).toContain('eat first, then inject');
     expect(text()).not.toContain('Inject 20–30 minutes before eating');
@@ -1321,7 +1356,7 @@ describe('§13.6 the confirmation flow', () => {
     expect(screen).toContain('350 mg/dL');
     expect(screen).toContain('250 g');
     // The dose is 31.7 -> 32 units, and none of it may appear yet.
-    expect(screen).not.toContain('units of Humulin R');
+    expect(screen).not.toContain('units of your mealtime insulin');
     expect(screen).not.toContain('32');
   });
 
@@ -1333,7 +1368,7 @@ describe('§13.6 the confirmation flow', () => {
     await tap('Work out the dose');
     await tap('Show the dose');
     expect(text()).toContain('32');
-    expect(text()).toContain('units of Humulin R');
+    expect(text()).toContain('units of your mealtime insulin');
   });
 
   it('§6.2 — a 250 g plate confirms at EVERY blood sugar, even a perfect one', async () => {
@@ -1370,7 +1405,7 @@ describe('§4.3 step 3 — an impossible reading combines with the possible low,
     await tap('Work out the dose');
     expect(text()).toContain('This is very low. Treat it now.');
     expect(text()).toContain(COPY.blockedInvalidReading);
-    expect(text()).not.toContain('units of Humulin R');
+    expect(text()).not.toContain('units of your mealtime insulin');
   });
 
   it('a typed 19 gets the same pair', async () => {
@@ -1530,7 +1565,7 @@ describe('§7.9 a cross-tab delete returns this tab to the first-run gate', () =
     await tap('Next');
     await keys('50');
     await tap('Work out the dose');
-    expect(text()).toContain('units of Humulin R');
+    expect(text()).toContain('units of your mealtime insulin');
 
     // Another tab starts over. `open.ts` closes our connection on
     // `versionchange`, so the delete is not blocked by this one.
@@ -1542,7 +1577,7 @@ describe('§7.9 a cross-tab delete returns this tab to the first-run gate', () =
     await settle();
 
     // The stale result is gone, the tab says why, and setup is running again.
-    expect(text()).not.toContain('units of Humulin R');
+    expect(text()).not.toContain('units of your mealtime insulin');
     expect(text()).not.toContain('Opening your record');
     expect(text()).toContain('I have read this');
   });

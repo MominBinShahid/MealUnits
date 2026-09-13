@@ -12,7 +12,7 @@
  * §10.2's rules apply throughout: the app says **"blood sugar"**, never "blood
  * glucose" or "BG", and there are **no bare abbreviations anywhere in the
  * interface** — the only exception is small secondary text giving the clinical
- * term so he can talk to his doctor.
+ * term so a person can talk to their doctor.
  */
 
 import {
@@ -27,7 +27,7 @@ import {
   STACK_SUPPRESS_HOURS,
 } from '../config.js';
 import { formatHundredths } from '../core/decimal.js';
-import type { LexicalReason } from '../core/types.js';
+import type { LexicalReason, RoundingMode } from '../core/types.js';
 
 const [EAT_MIN, EAT_MAX] = EAT_DELAY_MINUTES;
 const [MIN_BLOOD_SUGAR, MAX_BLOOD_SUGAR] = RANGE.bloodSugar.hard;
@@ -97,12 +97,12 @@ export const COPY = {
         // pair with the type 1 above. Two emphases on one screen split the
         // reader's attention instead of answering one question, and this
         // paragraph already opens with the words a type 2 reader is looking for.
-        lead: 'If you have type 2 diabetes your treatment may be tablets, a fixed insulin dose, a weekly injection, or a mix — and none of those are what this arithmetic describes. The same is true if a pump delivers your insulin, which works out doses its own way from settings this app cannot see.',
+        lead: 'If you have type 2 diabetes your treatment may be tablets, a fixed insulin dose, a weekly injection, or a mix — and none of those are what this arithmetic describes. The same is true if a pump delivers your insulin: a pump works out doses its own way, from settings this app cannot see.',
         condition: null,
         rest: '',
       },
       {
-        lead: 'It was built for an adult, and nothing in it has been checked against how a child is dosed. If it is a child’s dose you are working out, take the numbers to their clinician before you rely on them.',
+        lead: 'It was built for an adult, and nothing in it has been checked against how a child is dosed. If you are working out a child’s dose, take the numbers to their doctor before you rely on them.',
         condition: null,
         rest: '',
       },
@@ -122,20 +122,20 @@ export const COPY = {
     carbTitle: 'What counts as carbohydrate',
     carbBody: [
       'The reading comes off your meter. The grams do not — that number is yours, and it is the one thing here the app takes entirely on trust. What it is counting is the carbohydrate in the food: starch and sugar. Rice, roti, potato, biryani, daal, fruit and the sugar in chai all count. A 250 g plate of biryani is about 50 g of carbohydrate, so this is never the weight of what is on the plate.',
-      'Fibre is carbohydrate as well, but your body does not absorb it, so it does not raise blood sugar the way starch does. Some clinicians subtract it from the total and some do not. Ask yours which they want, then do the same thing every meal — the app cannot tell which rule you used, and a figure you reach the same way each time is worth more to it than one that is right once.',
+      'Fibre is carbohydrate as well, but your body does not absorb it, so it does not raise blood sugar the way starch does. Some doctors subtract it from the total and some do not. Ask yours which they want, then do the same thing every meal — the app cannot tell which rule you used, and counting the same way every time helps it more than being exactly right once.',
       'Protein and fat are not carbohydrate and do not belong in this number. They do move blood sugar, hours later, and that is in "What this app does not know about" below.',
     ] as const,
 
     stackingTitle: 'What "stacking" means',
     stackingBody: [
-      'Fast insulin does not finish when your blood sugar comes down. Humulin R goes on working for hours after you inject it. Take a correction while an earlier dose is still acting and the two add together, so the total can take you lower than either one was meant to. That is stacking, and it is the word the app uses on the result screen and in Settings.',
-      `For the first ${String(STACK_SUPPRESS_HOURS)} hours after a dose you logged, the app holds the correction back and gives you the meal dose alone. It says "Correction held back", and the correction is still there in the working, struck through, with its reason. The meal part is never held back — food needs covering whatever is on board. And a correction that makes the dose smaller, because you are at or below target, is applied in full every time: holding that one back would give you more insulin, not less.`,
-      `Between ${String(STACK_SUPPRESS_HOURS)} and ${String(STACK_ADVISE_HOURS)} hours the correction is applied in full and the app tells you the last dose may still be acting. After ${String(STACK_ADVISE_HOURS)} hours it says nothing. None of this is a model of how much insulin is left in you — how long a dose lasts depends on how large it was, so the app refuses to draw that curve.`,
-      'If you need the correction anyway, because the site did not absorb or the insulin has been in the heat or you are ill, "Why is this smaller?" on the result screen adds it back. It tells you first how far the earlier dose could still take you on its own. Using it is recorded on the row, so the pattern is in your history.',
+      'Fast insulin does not finish when your blood sugar comes down. It goes on working for hours after you inject it. If you take a correction while an earlier dose is still acting, the two add together, so the total can take you lower than either one was meant to. That is stacking, and it is the word the app uses on the result screen and in Settings.',
+      `For the first ${String(STACK_SUPPRESS_HOURS)} hours after a dose you logged, the app holds the correction back and gives you the meal dose alone. It says "Correction held back", and the correction is still there in the working, struck through, with its reason. The meal part is never held back — food needs covering no matter how much insulin is still working. And when you are at or below target the correction makes the dose smaller; that kind is always applied in full, because holding it back would give you more insulin, not less.`,
+      `Between ${String(STACK_SUPPRESS_HOURS)} and ${String(STACK_ADVISE_HOURS)} hours the correction is applied in full and the app tells you the last dose may still be acting. After ${String(STACK_ADVISE_HOURS)} hours it says nothing. None of this is a model of how much insulin is left in you — how long a dose lasts depends on how big it was, so the app refuses to draw that curve.`,
+      'If you need the correction anyway — because the injection site did not absorb it, or the insulin has been in the heat, or you are ill — "Why is this smaller?" on the result screen adds it back. It tells you first how far the earlier dose could still lower you on its own. Using it is recorded on the entry, so the pattern is in your history.',
     ] as const,
 
     missingTitle: '"No recent dose recorded"',
-    missingBody: `The stacking check knows one thing: what you logged. That line appears when the app has no recent dose it can reason from AND no confidence in the record either. It does not mean you have no insulin on board. The app will not tell you that, because it cannot know it. If you injected within the last ${String(STACK_SUPPRESS_HOURS)} hours, nothing has been held back from the dose in front of you — read it as a correction sitting on top of insulin that is still working, and decide from there. Logging every injection is what keeps this check from having to say this at all.`,
+    missingBody: `The stacking check knows one thing: what you logged. That line appears only when two things are both true: the app has no recent dose it can reason from, and it has no confidence in the record either. It does not mean you have no insulin still working. The app will not tell you that, because it cannot know it. If you injected within the last ${String(STACK_SUPPRESS_HOURS)} hours, nothing has been held back from the dose in front of you — read it as a correction sitting on top of insulin that is still working, and decide from there. If you log every injection, this check never has to appear.`,
     /**
      * BOTH halves of the condition are load-bearing and were got wrong once: the
      * caveat fires only when there is no usable record AND provenance is suspect
@@ -145,16 +145,16 @@ export const COPY = {
      */
     missingConditions: [
       'nothing logged at all',
-      'the newest row predates this install',
+      'the newest entry is from before this app was installed',
       'the history was just imported',
-      'a row was set aside for a time the app cannot believe',
-      'a row was dropped as unreadable when the app opened',
+      'an entry has a time the app cannot believe, so it was set aside',
+      'an entry could not be read when the app opened, and was dropped',
     ] as const,
 
     expiryTitle: `Why a result expires after ${String(RESULT_EXPIRY_MINUTES)} minutes`,
     expiryBody: [
-      `A dose is only as good as the reading it came from. ${String(RESULT_EXPIRY_MINUTES)} minutes after it is worked out the result dims, the screen says what time it was from, and "Check again" becomes the first thing on it. Nothing is deleted. The number is still there to read, and if you have already injected you can still log it — the row is stamped at the moment you tap, not at the moment the dose was worked out, and the button says so.`,
-      `What does not survive is a double-check you already tapped through. Work the dose out again and the app asks again, because by then the ${String(STACK_SUPPRESS_HOURS)}-hour window may have passed, a correction that was being held back can come back, and the new total can be larger than the one you confirmed. A low reading goes stale the same way: the block tells you what time that reading was and asks for a fresh one, and it goes on telling you to treat first.`,
+      `A dose is only as good as the reading it came from. ${String(RESULT_EXPIRY_MINUTES)} minutes after it is worked out the result dims, the screen says what time it was from, and "Check again" becomes the first thing on it. Nothing is deleted. The number is still there to read, and if you have already injected you can still log it — the entry records the time you tap, not the time the dose was worked out, and the button says so.`,
+      `A double-check you already tapped through does not carry over. If you work the dose out again, the app asks again, because by then the ${String(STACK_SUPPRESS_HOURS)}-hour window may have passed, a correction that was being held back can come back, and the new total can be larger than the one you confirmed. A low reading goes stale the same way: the screen tells you what time that reading was and asks for a fresh one, and it goes on telling you to treat first.`,
     ] as const,
 
     whatDoTheseMean: 'What do these mean?',
@@ -194,7 +194,7 @@ export const COPY = {
      * detail can do.
      */
     weighOnce:
-      'Weigh one of your own rotis once. Carbohydrate is about its cooked weight times 0.46, and every bread row below becomes yours rather than an average.',
+      'Weigh one of your own rotis once. Carbohydrate is just under half its cooked weight — times 0.46 — and every bread row below becomes yours rather than an average.',
     countNote: (shown: number, total: number): string =>
       shown === total ? `${String(total)} foods` : `${String(shown)} of ${String(total)} foods`,
   },
@@ -232,7 +232,7 @@ export const COPY = {
    */
   bandE: {
     title: `Above ${String(KETONE_ADVISORY)} — check ketones`,
-    body: 'Feeling unwell is its own reason to test, whatever your reading says. If ketones are present, contact your clinician.',
+    body: 'Feeling unwell is its own reason to test, whatever your reading says. If ketones are present, contact your doctor.',
   },
 
   // ── §8.1's timing ─────────────────────────────────────────────────────────
@@ -260,7 +260,7 @@ export const COPY = {
       case 'too_many_decimals':
         return 'Two decimal places at most.';
       case 'too_long':
-        return 'That is more digits than this can be. Check the number.';
+        return 'That is too many digits. Check the number.';
       case 'signed':
         return 'Numbers only, with no plus or minus sign.';
       case 'non_ascii_digits':
@@ -470,9 +470,9 @@ export const COPY = {
     amountHint:
       'Starts at what the app worked out. Change it if you injected something different — the record should say what happened.',
     amountOnlyChance:
-      'Set it now — this is the only moment it can be changed. Afterwards a row can be deleted, but never edited.',
+      'Set it now — this is the only moment it can be changed. Afterwards an entry can be deleted, but never edited.',
     commitIsHere:
-      'Tapping below is the commit. It writes the row and starts the clock, in one transaction.',
+      'Tapping below is what saves it. The entry and the stacking clock both start at that tap.',
     commit: 'Log this injection',
     /** §7.1 — the divergence confirmation, which v9 named and never defined. */
     divergent: (calculated: string, injected: string): string =>
@@ -525,7 +525,7 @@ export const COPY = {
     deleteConsequence:
       'The stacking check is currently using this dose. Delete it only if you did not inject it.',
     deleteAction: 'Delete this entry',
-    noEdit: 'Rows can be deleted, never edited.',
+    noEdit: 'Entries can be deleted, never edited.',
   },
 
   // ── §7.8 — readings without injections ────────────────────────────────────
@@ -597,7 +597,7 @@ export const COPY = {
   // ── §6.7 — the dosing-history note ────────────────────────────────────────
   dosingHistory: {
     question: 'Before you started using this app, how did you decide your mealtime insulin dose?',
-    hint: 'A sentence is more use than a number — what mattered was how the dose was chosen, not just its size.',
+    hint: 'A sentence is more use than a number — what matters is how the dose was chosen, not just its size.',
     skip: 'Skip for now',
     /** §6.7 v19 — declining CONFIRMS FIRST, stating the consequence. */
     declineAction: "Don't ask again",
@@ -643,7 +643,7 @@ export const COPY = {
   /** Neither "basal" nor "bolus" appears in the interface (§10.2). */
   twoInsulins: {
     title: 'What this does and does not cover',
-    body: 'There are two kinds of insulin. Your Lantus is the slow background one you take once a day — this app does not calculate it and never changes it. Your Humulin R is the fast one you take with meals, and that is the only number this app works out.',
+    body: 'There are two kinds of insulin. The slow background one, taken once a day, is the one this app does not calculate and never changes. The fast one you take with meals is the only number this app works out.',
   },
 
   /** §10.6 item 3 — disclosing the gap is the alternative to modelling it (§9). */
@@ -662,7 +662,6 @@ export const COPY = {
   // ── §10.1 — naming the two ratios ─────────────────────────────────────────
   settings: {
     targetQuestion: 'What should a correction aim for?',
-    targetUnit: 'MG/DL',
     /** The target had no explanatory line at all, only the question. */
     targetClinical:
       'The blood sugar your doctor wants you at before a meal. Often between 100 and 150. Hasham\u2019s is 150.',
@@ -683,12 +682,10 @@ export const COPY = {
     icrQuestion: 'How much carbohydrate does one unit cover?',
     icrClinical:
       'Insulin-to-carbohydrate ratio (ICR). Often written "1 to 10" — meaning one unit covers 10 grams of carbohydrate. Hasham\u2019s is 10.',
-    icrUnit: 'GRAMS OF CARBOHYDRATE',
     /** §10.1.6 — the delta confirmation. A ratio fat-fingered 10→40 is inside
      * the accepted range, produces 5 units instead of 20 on a 200 g meal, and
      * passes every other check. */
     deltaTitle: 'Check this change',
-    delta: (was: string, now: string): string => `was: ${was}\nnow: ${now}`,
     softConfirm: 'That is outside the usual range. Is it right?',
     /**
      * §8.5 — "setup states the assumption". It never did: until 2026-09-12 the
@@ -703,10 +700,88 @@ export const COPY = {
      * numbers stop and the word "unit" starts doing the work.
      */
     unitAssumption:
-      'These are units of U-100 insulin — the standard strength, and what Humulin R is. There is no setting for any other strength, deliberately: one that could be set wrong would cause the exact 2.5x error it was meant to prevent. If your insulin is not U-100, these numbers are not right for it.',
-    /** §1.3 — visually separated, and labelled so it cannot read as a dose. */
-    basalTitle: 'Your Lantus dose',
+      'These are units of U-100 insulin — the standard strength, and what Humulin R is. There is deliberately no setting for other strengths: a strength setting chosen wrong would cause the exact 2.5-times error it exists to prevent. If your insulin is not U-100, these numbers are not right for it.',
+    /**
+     * §1.3 — visually separated, and labelled so it cannot read as a dose.
+     *
+     * GENERIC, not the brand. Until 2026-09-13 this said "Your Lantus dose",
+     * which contradicted the app's own data: the name is a setting the user
+     * types into the "Which insulin" field directly below this heading, so
+     * someone on Tresiba read "Your Lantus dose" above their own answer.
+     *
+     * It does not interpolate the typed name either. On Settings the field is
+     * two lines below, so the heading would only repeat it — and it would
+     * re-render on every keystroke, which is what `captureFocus` exists to
+     * survive. On the doctor-facing screen the name is already the first row of
+     * the list underneath.
+     */
+    /**
+     * §8.1 and §3's windows are calibrated for ONE insulin, and until
+     * 2026-09-13 nothing on screen said so — the app named Humulin R in four
+     * places as though it were the reader's, which is a different claim from
+     * the true one.
+     *
+     * `CLINICAL.md` §4: "This is the largest practical difference from a rapid
+     * analog, and advice written for analogs is wrong here." §3: Humulin R
+     * lasts 5-8 hours against 3-5 for an analog, and "that longer tail is why
+     * this table's windows are what they are."
+     *
+     * So BOTH the pre-meal wait and the stacking windows are wrong for a
+     * reader on a rapid analog, and they are the more common reader now that
+     * `T5` widened the audience. This states it rather than adding a setting,
+     * for `unitAssumption`'s reason: a setting that could be wrong causes the
+     * error it was meant to prevent, and here it would change a label while
+     * leaving the advice it implies untouched.
+     *
+     * The arithmetic is NOT disclaimed, and that is deliberate. ISF and ICR are
+     * prescribed for the insulin the reader actually takes, so the dose is
+     * theirs whatever is in the pen. Only the two clocks are not.
+     *
+     * **The wording is not yet signed off by a prescriber.** `CLINICAL.md` §14
+     * carries it as an open question.
+     */
+    insulinAssumption:
+      `The timing here is built around Humulin R — regular human insulin, which starts working slowly and lasts a long time. Two things depend on that: the ${String(EAT_MIN)}\u2013${String(EAT_MAX)} minutes to wait before eating, and the ${String(STACK_SUPPRESS_HOURS)}-hour and ${String(STACK_ADVISE_HOURS)}-hour windows the stacking check uses. If you take a rapid-acting insulin — NovoRapid, Humalog, Apidra — it starts sooner and clears sooner, and both of those timings are wrong for you. The dose itself is still yours, because your ISF and ICR were set for your own insulin. Ask your doctor how long before a meal to inject, and how long to leave between corrections.`,
+    /**
+     * The settings SCREEN's own words, moved here on 2026-09-13. They rendered
+     * from literals in `screens/settings.ts` until then, which made this file's
+     * header claim — "Every user-facing string, in one file" — false, and left
+     * them outside the plain-language review and outside `10a`'s translation
+     * scope. Moved verbatim: not one word changed in the move, so the existing
+     * tests are the proof that nothing on screen moved with them.
+     */
+    fieldRequired: 'This is needed before a dose can be worked out.',
+    outOfHardRange: (lo: string, hi: string): string => `Must be between ${lo} and ${hi}.`,
+    isfSuffix: 'mg/dL per unit',
+    icrSuffix: 'grams of carbohydrate',
+    titleFirstRun: 'Your prescription',
+    title: 'Settings',
+    sectionBloodSugar: 'Blood sugar',
+    sectionFood: 'Food',
+    sectionRounding: 'Rounding',
+    ceilGateTitle: 'Read this before choosing that',
+    save: 'Save',
+    saveFirstRun: 'Save and start',
+    openAsText: 'Show my settings as text',
+    openHowItWorks: 'How this works',
+    openExport: 'Save or move the record',
+    openClear: 'Clear or start over',
+    /** §7.5's change list names the field that moved, in the words it uses. */
+    deltaIcr: 'How much one unit covers',
+    deltaIsf: 'How far one unit lowers you',
+    deltaTarget: 'What a correction aims for',
+    basalNameLabel: 'Which insulin',
+    basalUnitsLabel: 'How many units',
+    basalTimingLabel: 'When',
+    basalRecordNote: 'None of this enters any calculation. It is here so the record is complete.',
+    basalTitle: 'Your long-acting insulin',
     basalNote: 'Set by your doctor, not calculated here.',
+    /**
+     * The name is free text with no validation and an empty default, so the
+     * screen meant to be photographed for a doctor could print a blank row.
+     * Saying it is not recorded is the honest version of a blank.
+     */
+    basalNameMissing: 'Not recorded',
     modeQuestion: 'What can your syringe measure?',
     /**
      * §15 — the MHRA finding that only 30% of 46 audited apps documented their
@@ -780,7 +855,6 @@ export const COPY = {
       'Nothing is filled in, on purpose. Target, ISF and ICR come from your own prescription — another person’s are wrong for you. Then add your long-acting insulin below to finish.',
     thresholdHeading: 'When to double-check',
     thresholdQuestion: 'Double-check my typing when the dose reaches',
-    thresholdUnit: 'UNITS',
     /** §5.1 — `ceil` is gated behind a one-time acknowledgement. */
     ceilGate:
       'Rounding up adds as much as a whole unit to every dose, always in the direction of low blood sugar. On a 1-unit correction that doubles it.',
@@ -792,17 +866,182 @@ export const COPY = {
    * they are NOT neutral peers: `ceil` adds up to a whole unit to every dose,
    * always toward low blood sugar, which is why §5.1 gates it.
    */
+  /**
+   * The calculator's own words, moved here on 2026-09-13 from
+   * `screens/calculator.ts` for the reason given at `settings.fieldRequired`:
+   * a string that lives in a render function is outside review and outside
+   * `10a`'s translation scope. Moved verbatim.
+   *
+   * The two questions are SPLIT around a `<br>` rather than carrying one, and
+   * the halves are named `Lead`/`Rest` so a translator sees that the break is
+   * layout and not punctuation.
+   */
+  calculator: {
+    askReadingLead: "What's your blood sugar ",
+    askReadingRest: 'right now?',
+    askCarbsLead: 'How much carbohydrate ',
+    askCarbsRest: 'is in this meal?',
+    carbsHint:
+      'The carbohydrate in the food — not what the plate weighs. A 250 g plate of biryani is about 50 g of carbohydrate.',
+    /** §10.1 — the field says GRAMS OF CARBOHYDRATE, never "grams" or "carbs". */
+    unitReading: 'MG/DL',
+    unitCarbs: 'GRAMS OF CARBOHYDRATE',
+    unitDose: 'UNITS',
+    /** Read aloud rather than seen, which does not make them less user-facing. */
+    amountDownLabel: 'half a unit less',
+    amountUpLabel: 'half a unit more',
+    meterHiLoHint: (maxReading: string): string =>
+      `Meter showing HI? Enter ${maxReading}. Showing LO? Don't enter a number — treat first.`,
+    eatAround: (at: string): string => `Eat around ${at}.`,
+    /**
+     * The working's own sentences. They were template literals in
+     * `screens/calculator.ts` until 2026-09-14, which is how they survived both
+     * the hand sweep and the first review — prose inside backticks is invisible
+     * to anything looking for quoted strings. `check-plan.py` reads backticks
+     * now, and found these.
+     */
+    correctionRow: (from: string, to: string): string => `${from} down to ${to}`,
+    mealRow: (grams: string): string => `${grams} g of carbohydrate`,
+    exactBeforeRounding: (exact: string): string =>
+      `Worked out exactly: ${exact} units, then rounded.`,
+    decimalPointLabel: 'decimal point',
+    stepCheck: 'Check',
+    stepRecording: 'Recording',
+    stepLogged: 'Logged',
+    rowBloodSugar: 'Blood sugar',
+    rowCarbohydrate: 'Carbohydrate',
+    rowTotal: 'Total',
+    confirmHint:
+      'Read those two back before the dose appears. This catches a mistyped number — it cannot catch a misjudged plate.',
+    blankTimingOff:
+      'And the timing advice is switched off — without a reading the app cannot tell you when to eat.',
+    goBackAndTest: 'Go back and test first',
+    startAgain: 'Start again',
+    whySmaller: 'Why is this smaller?',
+    checkAgain: 'Check again',
+    withheldBoth: 'Both figures are large enough to need a second look, so neither is shown here.',
+    keepSmaller: 'Keep the smaller dose',
+    openHistory: 'History',
+    /** The label under the dose. Not a brand — see `settings.insulinAssumption`. */
+    doseUnit: 'units of your mealtime insulin',
+  },
+
+  /**
+   * The history, export, clear, arithmetic and settings-as-text screens' own
+   * words, moved from `screens/misc.ts` on 2026-09-13. Verbatim, same reason.
+   *
+   * `recordTarget` is one string where `misc.ts` held TWO identical literals —
+   * the export summary and the settings-as-text list both said "A correction
+   * aims for", and changing one would have left the other saying the old thing.
+   */
+  screens: {
+    disclaimerRead: (accepted: boolean): string =>
+      accepted ? '\u2611  I have read this' : '\u2610  I have read this',
+    historyTitle: 'History',
+    historyEmpty: 'Nothing recorded yet.',
+    /**
+     * A history row is ASSEMBLED from fragments, and the fragments are words.
+     * They were built inline in `misc.ts` until 2026-09-13, where a template
+     * literal hides prose from every sweep that looks for quoted strings —
+     * including `check-plan.py`'s new one, which cannot see inside backticks.
+     * Written as functions so the whole sentence is here, in order, for a
+     * translator to move around.
+     */
+    noReading: 'no reading',
+    /**
+     * "the stacking check", not "recent-insulin check" — which appeared exactly
+     * once in the product, here, five lines from `outsideStackingWindow` saying
+     * the other name in the same flow. The explainer commits to the word in
+     * writing: "it is the word the app uses on the result screen and in
+     * Settings." The cost is real: "recent-insulin check" self-explains to a
+     * reader who skipped the explainer, and this loses them that.
+     */
+    stackingOverridden: 'stacking check overridden',
+    historyIntake: (reading: string, carbs: string): string =>
+      `${reading} \u00b7 ${carbs} g of carbohydrate`,
+    readingOnly: (reading: string, note: string): string =>
+      `${reading} mg/dL \u2014 reading only, no dose${note}`,
+    dosingAnsweredAt: (at: string): string =>
+      `Answered ${at}. Editing it replaces the answer and re-dates it.`,
+    mealCheckNeeds: (meals: string): string =>
+      `It needs ${meals} logged meals before it can say anything.`,
+    historyDose: (calculated: string, injected: string): string =>
+      `calculated ${calculated} \u00b7 injected ${injected}`,
+    outsideStackingWindow: 'This entry is older than anything the stacking check looks at.',
+    delete: 'Delete',
+    yourAnswer: 'Your answer',
+    exportTitle: 'Keeping the record',
+    importTitle: 'Bringing a record in',
+    importNote:
+      'Records merge in. Your prescription is only ever proposed — an import can never silently rewrite it.',
+    importAction: 'Load a record',
+    clearTitle: 'Clearing',
+    clearNote:
+      'Uninstalling does not reliably clear anything, and the browser\u2019s own reset would take other sites on this address with it. These two are the ones that know what belongs to this app.',
+    clearEmpty: 'There is nothing recorded yet.',
+    clearRecordTitle: 'Clear the record',
+    clearRecordBody:
+      'Removes every dose and reading. Your prescription and its history stay, and the app is usable straight away.',
+    clearRecordAction: 'Clear',
+    startOverTitle: 'Start over',
+    startOverBody:
+      'Everything goes, including your prescription. Setup runs again. For handing the phone on, or for getting out of a stuck state.',
+    recordTarget: 'A correction aims for',
+    recordIsf: '1 unit lowers blood sugar by',
+    recordIcr: '1 unit covers',
+    arithmeticTitle: 'The arithmetic, in full',
+    arithmeticBody:
+      'A correction is how far you are above your target, divided by how far one unit lowers you. A meal dose is the carbohydrate divided by how much one unit covers. The two are added, and a negative correction is subtracted from the meal dose rather than ignored.',
+    arithmeticFloor: 'If the two together come out below zero, the answer is zero units — never a negative one.',
+    anyOfThese: 'Any one of these is enough:',
+    mealCheckTitle: 'The meal-size check',
+    asTextTitle: 'My settings',
+    asTextRounding: 'Doses are rounded to',
+    /**
+     * NOT "Asks me to re-read at", which this said until 2026-09-14. §10.1
+     * retired "re-read my numbers" because it read as "check your meter again",
+     * a different action — and the as-text screen brought it back on the one
+     * screen built to be photographed and read with no surrounding context.
+     * G14 rules "double-check" as this feature's single user-facing name.
+     */
+    asTextThreshold: 'Double-checks my typing at',
+    asTextFooter: 'This screen is meant to be photographed and shown to your doctor.',
+    foodsMakeYours: 'Make these yours',
+    opening: 'Opening your record\u2026',
+  },
+
+  /** The bottom navigation's labels and its own accessible name. */
+  nav: {
+    settings: 'Settings',
+    history: 'History',
+    saveACopy: 'Save a copy',
+    label: 'Navigation',
+  },
+
   rounding: {
     title: 'Rounding, and why there are five choices',
     intro:
       'A calculation rarely lands on a number your syringe can measure. These decide what happens to the remainder. Only the total is ever rounded — never the correction or the meal dose on their own.',
+    /**
+     * Each mode carries the `RoundingMode` it sets, so Settings renders its
+     * buttons FROM this list rather than holding a second copy of the five
+     * names. Until 2026-09-13 the names existed twice — here and in
+     * `settings.ts` — and a rename in one place left the other disagreeing.
+     *
+     * The key is in the DATA rather than implied by position on purpose. The
+     * obvious fix was for Settings to index this array, and that trades a
+     * visible disagreement for an invisible one: reorder these five and the
+     * button reading "Always round up" would quietly set `floor`. A label that
+     * says the opposite of what the control does is a dosing error, not a copy
+     * defect, so the pairing is written down instead of counted.
+     */
     modes: [
-      ['Whole units', 'To the nearest whole unit, so 4.4 becomes 4 and 4.6 becomes 5. Exactly half rounds away from zero: 4.5 becomes 5. This is right for an ordinary U-100 syringe, which is marked in whole units.'],
-      ['Half units', 'To the nearest half, so 4.37 becomes 4.5. Choose this only if your pen or syringe actually has half-unit markings — a NovoPen Echo or a Humalog Junior KwikPen. On a whole-unit syringe it asks you to measure something you cannot see.'],
-      ['Always round up', 'To the next whole unit, so 4.1 becomes 5. This adds insulin on every single dose, always in the direction of low blood sugar. At a sensitivity of 30 that is up to 30 mg/dL of extra drop you did not intend — on a 1-unit correction it doubles the dose. The app asks you to confirm this one before it will use it.'],
-      ['Always round down', 'To the whole unit below, so 4.9 becomes 4. This gives slightly less insulin every time, which errs toward higher blood sugar. Some clinicians ask for this deliberately.'],
-      ['Show the exact number', 'No rounding — 4.37 stays 4.37. This is for reading the true figure, not for measuring: a syringe cannot draw 4.37. Useful with a pump, or to see what the app really worked out.'],
-    ] as const,
+      { mode: 'nearest', name: 'Whole units', what: 'To the nearest whole unit, so 4.4 becomes 4 and 4.6 becomes 5. Exactly half rounds away from zero: 4.5 becomes 5. This is right for an ordinary U-100 syringe, which is marked in whole units.' },
+      { mode: 'half', name: 'Half units', what: 'To the nearest half, so 4.37 becomes 4.5. Choose this only if your pen or syringe actually has half-unit markings — a NovoPen Echo or a Humalog Junior KwikPen. On a whole-unit syringe it asks you to measure something you cannot see.' },
+      { mode: 'ceil', name: 'Always round up', what: 'To the next whole unit, so 4.1 becomes 5. This adds insulin on every single dose, always in the direction of low blood sugar. If one unit brings you down 30 mg/dL, that is up to 30 mg/dL of extra drop you did not intend — on a 1-unit correction it doubles the dose. The app asks you to confirm this one before it will use it.' },
+      { mode: 'floor', name: 'Always round down', what: 'To the whole unit below, so 4.9 becomes 4. This gives slightly less insulin every time, which errs toward higher blood sugar. Some doctors ask for this deliberately.' },
+      { mode: 'off', name: 'Show the exact number', what: 'No rounding — 4.37 stays 4.37. This is for reading the true figure, not for measuring: a syringe cannot draw 4.37. Use it to see what the app really worked out.' },
+    ] as const satisfies readonly { readonly mode: RoundingMode; readonly name: string; readonly what: string }[],
     closing:
       'If you are not sure, leave it on whole units. It is what an ordinary syringe measures, and it is the app\u2019s default for that reason.',
   },
@@ -827,7 +1066,7 @@ export const COPY = {
   /** §11.3 — the fail-closed screen. */
   failClosed: {
     title: 'This app cannot read your record.',
-    body: 'It was saved by a newer version than the one running here. Nothing has been lost. Opening the newer version will read it normally.',
+    body: 'Your record was saved by a newer version of this app than this one. Nothing has been lost. Opening the newer version will read it normally.',
     settingsHeading: 'Your settings, from the recovery copy',
     copyThemDown: 'Copy these down before you start over — after that, this screen is gone too.',
     escape: 'Start over',
