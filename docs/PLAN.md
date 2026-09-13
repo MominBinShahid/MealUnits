@@ -3497,6 +3497,14 @@ export const ADVISORY_WINDOW        = 30;
 export const ADVISORY_LOW_DIVISOR   = 4;
 export const ADVISORY_HIGH_MULTIPLE = 3;
 
+// ─── §4.2's GRAMMAR ────────────────────────────────────────
+// How many integer digits the grammar accepts beyond what the range
+// allows, so a typed 6000 is answered with "outside the usual range"
+// rather than a grammar rejection. BUILD-NOTES.md carries the case.
+// Pinned 2026-09-13: the note argued for it by name and nothing held
+// its value, which is the gap the config.ts completeness check found.
+export const GRAMMAR_INTEGER_DIGIT_SLACK = 1;
+
 // ─── TIMING (§8.2, §11.3) ──────────────────────────────────
 export const RESULT_EXPIRY_MINUTES = 15;
 export const POLL_INTERVAL_MS      = 4000;
