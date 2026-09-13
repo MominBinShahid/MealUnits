@@ -407,8 +407,10 @@ describe('§10.6 first run', () => {
     // Nothing else in this app bolds mid-sentence, so this is asserted rather
     // than left to a stylesheet nobody checks.
     const bolded = [...root.querySelectorAll('b')].map((n) => n.textContent);
-    expect(bolded).toContain('people with type 1 diabetes');
-    expect(bolded).toContain('type 2 diabetes');
+    expect(bolded).toContain('type 1');
+    // And ONLY that. Type 2 was bold for one revision; two emphases on one
+    // screen split the reader's attention rather than answering one question.
+    expect(bolded).not.toContain('type 2 diabetes');
 
     // Who it is for comes before the arithmetic, because it decides whether the
     // arithmetic applies to the reader at all.

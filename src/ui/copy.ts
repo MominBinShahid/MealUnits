@@ -88,14 +88,18 @@ export const COPY = {
      */
     audienceBody: [
       {
-        lead: 'This app is for ',
-        condition: 'people with type 1 diabetes',
-        rest: ' who work out each mealtime dose from two things: how far above target their blood sugar is, and how much carbohydrate they are about to eat. It assumes a long-acting insulin once a day and a short-acting one at meals.',
+        lead: 'This app is for people with ',
+        condition: 'type 1',
+        rest: ' diabetes who work out each mealtime dose from two things: how far above target their blood sugar is, and how much carbohydrate they are about to eat. It assumes a long-acting insulin once a day and a short-acting one at meals.',
       },
       {
-        lead: 'If you have ',
-        condition: 'type 2 diabetes',
-        rest: ' your treatment may be tablets, a fixed insulin dose, a weekly injection, or a mix — and none of those are what this arithmetic describes. The same is true if a pump delivers your insulin, which works out doses its own way from settings this app cannot see.',
+        // Plain, on Momin's ruling 2026-09-13. It was bold for one revision, to
+        // pair with the type 1 above. Two emphases on one screen split the
+        // reader's attention instead of answering one question, and this
+        // paragraph already opens with the words a type 2 reader is looking for.
+        lead: 'If you have type 2 diabetes your treatment may be tablets, a fixed insulin dose, a weekly injection, or a mix — and none of those are what this arithmetic describes. The same is true if a pump delivers your insulin, which works out doses its own way from settings this app cannot see.',
+        condition: null,
+        rest: '',
       },
       {
         lead: 'It was built for an adult, and nothing in it has been checked against how a child is dosed. If it is a child’s dose you are working out, take the numbers to their clinician before you rely on them.',
