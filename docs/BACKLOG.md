@@ -13,8 +13,8 @@ not that it is technically hard. **Technical** is not a priority tier — it is 
 entry, waiting on something outside this project rather than on a decision of ours.
 
 **Numbers are identity, not rank.** The feature entries are ONE sequence partitioned across the
-tiers — 1-23 today — so a number stays stable enough to cite, while **position within a tier**
-carries the priority. That is why 20, 18, 19, 21, 22 and 23 sit above 1, and why 4a and 10a sit above 6. Do not
+tiers — 1-24 today — so a number stays stable enough to cite, while **position within a tier**
+carries the priority. That is why 20, 18, 19, 21, 22, 23 and 24 sit above 1, and why 4a and 10a sit above 6. Do not
 renumber to tidy it: reusing a number is how `PLAN.md` v14 came to assert three falsehoods about
 this file, which is why §20.3 says reference an entry by NAME, never by number.
 
@@ -219,6 +219,60 @@ Mon 03:00  300  FULL CARD     Mon 21:00  295  compact     <- 18 hours apart, pla
 
 **Nothing clinical turns on it** — the advisory's presence and instruction never change, only whether
 the card is full or compact. No guideline addresses it; it is alarm-fatigue design.
+
+### 24. URL routes for the four screens that are not the calculator
+
+**AGREED BY MOMIN 2026-09-09, in conversation. Recorded 2026-09-13, four days late.** It lived
+only in a session transcript until then, and in the meantime a reader of these documents — including
+me, on 2026-09-13 — would have concluded from §11.5's *"Routing: None"* that the question had been
+settled the other way. **An agreement that exists only in a conversation is not an agreement the
+project has.**
+
+**The problem it solves,** in Momin's words: *"if I wanted to guide someone to history page I
+can't."* There is no way to send anyone a link to anything except the app's front door.
+
+**The four destinations.** Momin named Settings and History; "How this works" was added in the same
+exchange as the one you would most want to send someone; **Food list was added 2026-09-13.**
+
+| Screen | Why it qualifies |
+|---|---|
+| Settings | Shows your prescription. Same thing whenever opened |
+| History | Shows your record. Same thing whenever opened |
+| How this works | Static prose |
+| Food list | A reference table. Reads the same to everyone |
+
+**The test that admitted them, and it is the whole rule:** *a screen that means the same thing
+whenever you open it.* None of the four holds a calculation, and none can be made to.
+
+**What is excluded, and this is a safety exclusion rather than a scoping one.**
+
+- **The calculator.** §8.2 expires a result after `RESULT_EXPIRY_MINUTES` — 15 — because a stale dose
+  on screen is the hazard that rule exists for. A URL that can restore a screen is a URL that can
+  restore a dose, and a link is exactly the artifact that gets opened days later. **No route may
+  reach a calculation.**
+- **Export.** An action, not a place. A URL that performs an action on open is a different and worse
+  idea.
+
+**Blocked on `T3` (Preact).** A router belongs to the component tree; bolting one onto the
+hand-rolled shell means hand-syncing the URL against `machine.ts`, which already owns "where the
+app is" — two sources of truth, the bug class this project keeps refusing. Writing it before `T3`
+also means writing it twice.
+
+**What it would delete, which is the part worth knowing before costing it.** `hardwareBack` in
+`src/main.ts` — a sentinel history entry pushed so the Android back gesture means "back inside the
+app" instead of closing it. It exists *because* there is no routing, it carries a documented defect
+it already caused (`history.back()` on its own bookkeeping navigated the app to `about:blank` while
+a row was being written, about one time in three), and real routes make the browser do its job
+natively. Like entry 23's dropped `timeZone`, this change removes a mechanism rather than adding one.
+
+**Two things that must move with it:**
+
+1. **§11.5's table says `Routing: None`**, and `src/state/machine.ts:32` repeats it in a comment
+   (*"Not a route: §11.5 rules out routing entirely"*). Both become false the day this lands.
+   §11.5's real intent — **no URL state** — survives and should be restated that way, since the
+   §10.7 back-gesture sentinel already lives inside that reading.
+2. **`start_url` stays `/MealUnits/`.** An installed app must open to the calculator. A bookmarkable
+   `/history` is fine; an install that launches into history is not.
 
 ### 1. Blood-sugar plausibility advisory
 **What:** the mirror of §6.5 for the blood-sugar field — 350 typed as 530, or as 150.
