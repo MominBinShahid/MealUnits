@@ -13,8 +13,8 @@ not that it is technically hard. **Technical** is not a priority tier — it is 
 entry, waiting on something outside this project rather than on a decision of ours.
 
 **Numbers are identity, not rank.** The feature entries are ONE sequence partitioned across the
-tiers — 1-20 today — so a number stays stable enough to cite, while **position within a tier**
-carries the priority. That is why 20, 18 and 19 sit above 1, and why 4a and 10a sit above 6. Do not
+tiers — 1-21 today — so a number stays stable enough to cite, while **position within a tier**
+carries the priority. That is why 20, 18, 19 and 21 sit above 1, and why 4a and 10a sit above 6. Do not
 renumber to tidy it: reusing a number is how `PLAN.md` v14 came to assert three falsehoods about
 this file, which is why §20.3 says reference an entry by NAME, never by number.
 
@@ -124,6 +124,27 @@ following **before** any of it exists:
 phase 1 was being built and lived only in a session task list — which is exactly what §20.5's rule
 names: a decision not written down does not exist. Found while auditing the documents for the
 prune, one step before the prune would have made it permanent.
+
+### 21. Injection-site guidance, for people who were not taught at ten
+**Trigger: with `T5`, or whenever the app first says anything to a stranger about technique.**
+
+**Momin's observation, 2026-09-13.** His brother has injected since he was ten and knows where and
+how to rotate. Someone who arrives at this app newly diagnosed — or as a parent injecting a child —
+may not, and the app currently says nothing about it.
+
+**Why it is more than a nicety here.** `CLINICAL.md` section 10 lists impaired absorption from
+repeated injection into one site as a live explanation for needing more insulin while still running
+high — the Humulin R label documents exactly that picture, with the ratios entirely correct. **The
+app cannot see it and will never flag it**, so the only defence is that the user knows to rotate.
+
+**The line to hold.** Naming the usual sites — abdomen, thigh, upper arm, buttock — and saying to
+rotate within and between them is patient education, and is in every insulin label and guideline.
+**It is not dosing advice and it must not become any.** No angle, no needle length, no technique
+instruction, nothing that varies by product. §14's regulatory posture governs.
+
+**Open:** where it would live. It is not a result-screen advisory and must not enter §10.5's budget;
+the how-it-works page is the obvious candidate, and there is an argument for the first-run setup
+since that is when a new user is most likely to be new to injecting.
 
 ### 1. Blood-sugar plausibility advisory
 **What:** the mirror of §6.5 for the blood-sugar field — 350 typed as 530, or as 150.
