@@ -274,6 +274,26 @@ natively. Like entry 23's dropped `timeZone`, this change removes a mechanism ra
 2. **`start_url` stays `/MealUnits/`.** An installed app must open to the calculator. A bookmarkable
    `/history` is fine; an install that launches into history is not.
 
+**How the installed app still opens at the calculator.** The icon and a link are different entry
+paths and they answer different questions.
+
+| Entry path | What decides where it lands |
+|---|---|
+| Home-screen icon | The manifest's `start_url` — `/MealUnits/`, a fixed property of the install. Routes cannot change it |
+| A link to `/MealUnits/history` | The link. That is the whole feature |
+
+So the icon opens the calculator however many routes exist. **And this is precisely why the
+exclusion above is a safety rule:** because a link can drop someone into a screen cold, every
+routable screen has to be safe to arrive at with no context — which is the same test that admitted
+the four.
+
+**One thing to verify before building, not to assume.** iOS Safari's *Add to Home Screen* has
+historically bookmarked the CURRENT page URL rather than honouring `start_url`. If that still holds,
+a person who installs while sitting on `/history` gets an icon that opens history for ever. Android
+bakes `start_url` into the WebAPK and is not affected. **Check this against a current iOS before
+writing any route** — if it is true, the fix is a redirect on load when the app is launched
+standalone at a non-calculator route, and that is design work, not a line.
+
 ### 1. Blood-sugar plausibility advisory
 **What:** the mirror of §6.5 for the blood-sugar field — 350 typed as 530, or as 150.
 
