@@ -407,8 +407,11 @@ CONSTANTS = {
     "KETONE_ADVISORY": "250",
     "FAST_CARB_GRAMS": "15",
     "RECHECK_MINUTES": "15",
-    "DEFAULT_THRESHOLD": "20",
     "DEFAULT_MODE": "'nearest'",
+    "THRESHOLD_MEAL_GRAMS": "100",
+    "THRESHOLD_HIGH_READING": "250",
+    "THRESHOLD_MULTIPLE": "1.5",
+    "BAND_E_FULL_CARD_WINDOW_HOURS": "12",
     "BAND_B_CORRECTION_UNITS": "-1.5",
     "INCREMENT": "{ nearest: 1, half: 0.5, ceil: 1, floor: 1, off: 0.01 }",
     "HUNDREDTHS_SCALE": "100",
@@ -1152,6 +1155,32 @@ def check_constants(corpus):
                    "check-plan.py's CONSTANTS or STRUCTURED_CONSTANTS — an "
                    "unpinned constant is what round 19 found twelve of, and round "
                    "20 found again for every non-numeric value" % name)
+
+    # THE SHIPPING FILE IS THE AUTHORITY ON WHAT EXISTS, not PLAN.md.
+    #
+    # Everything above reads PLAN.md, so the completeness it enforces is
+    # completeness against the DOCUMENT. A constant added to src/config.ts and
+    # never written into §11.8 was invisible to all of it: it is absent from
+    # `names`, so nothing reports it, and absent from CONSTANTS, so nothing pins
+    # its value either. BAND_E_FULL_CARD_WINDOW_HOURS shipped exactly that way on
+    # 2026-09-13 and the checker stayed clean.
+    #
+    # So the same completeness is asserted the other way round, against the file
+    # that actually compiles. §11.8's rule is that every number lives in
+    # config.ts; this makes config.ts the thing that has to be complete.
+    config_src = corpus.get("src/config.ts", "")
+    if config_src:
+        shipped = set(re.findall(r"^export const\s+([A-Z_][A-Z0-9_]*)",
+                                 config_src, re.M))
+        for name in sorted(shipped - declared):
+            out.append("src/config.ts exports %s, which is in neither §11.8 nor "
+                       "check-plan.py's CONSTANTS — a constant that never reaches "
+                       "PLAN.md is one this checker cannot pin, and that is how "
+                       "BAND_E_FULL_CARD_WINDOW_HOURS shipped unpinned" % name)
+        for name in sorted(declared - shipped - {"DELETE_CONFIRM_WINDOW_HOURS"}):
+            if name in CONSTANTS or name in STRUCTURED_CONSTANTS:
+                out.append("check-plan.py pins %s but src/config.ts does not "
+                           "export it — the pin outlived the constant" % name)
     for name in sorted(STRUCTURED_CONSTANTS - set(names)):
         out.append("check-plan.py lists %s as a structured constant but PLAN.md no "
                    "longer declares it" % name)

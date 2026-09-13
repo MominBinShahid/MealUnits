@@ -253,9 +253,20 @@ async function setUpAsHisBrother(indexedDB?: IDBFactory): Promise<void> {
   await boot(indexedDB);
   await tap('☐  I have read this');
   await tap('I understand — use at my own risk');
-  expect(fieldLabelled('What should a correction aim for').value).toBe('150');
-  expect(fieldLabelled('How far does one unit lower').value).toBe('30');
-  expect(fieldLabelled('How much carbohydrate does one unit cover').value).toBe('10');
+  // The three ratios are TYPED now, not tapped past. They used to arrive
+  // prefilled with 150 / 30 / 10, and the 2026-09-13 audience change removed
+  // that: the app is for anyone with type 1, and for anyone else those are
+  // another person's prescription. This helper does what every user now does.
+  expect(fieldLabelled('What should a correction aim for').value).toBe('');
+  expect(fieldLabelled('How far does one unit lower').value).toBe('');
+  expect(fieldLabelled('How much carbohydrate does one unit cover').value).toBe('');
+  expect(fieldLabelled('Double-check my typing').value).toBe('');
+  await typeInto('What should a correction aim for', '150');
+  await typeInto('How far does one unit lower', '30');
+  await typeInto('How much carbohydrate does one unit cover', '10');
+  // §6.2's threshold fills itself in from the three above — see
+  // `deriveThreshold`. Asserted here rather than in its own case because every
+  // test in this file depends on it having happened.
   expect(fieldLabelled('Double-check my typing').value).toBe('20');
   await typeInto('Which insulin', 'Lantus');
   await typeInto('How many units', '36');
@@ -278,25 +289,78 @@ describe('§10.6 first run', () => {
     expect(after?.hasAttribute('disabled')).toBe(false);
   });
 
-  it('prefills the prescription and SHOWS it, rather than applying it silently', async () => {
+  // REPLACES "prefills the prescription and SHOWS it, rather than applying it
+  // silently", deleted 2026-09-13. It asserted the behaviour the audience change
+  // removes, so it became WRONG rather than redundant. Its second half — that
+  // the target's soft-band note renders as a caution and not a blocking error —
+  // was worth keeping and moved into the case below, where a target of 150 is
+  // typed rather than arriving prefilled.
+  it('fills in NOTHING, because another person’s prescription is not a default', async () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-    expect(text()).toContain('Your prescription');
 
-    // §1.2, changed on Momin's ruling. The hazard §1.2 names is a SILENT
-    // revert; these are on screen, and nothing is stored until the save below.
-    expect(fieldLabelled('What should a correction aim for?').value).toBe('150');
-    expect(fieldLabelled('How far does one unit lower your blood sugar?').value).toBe('30');
-    expect(fieldLabelled('How much carbohydrate does one unit cover?').value).toBe('10');
+    // §1.2 as originally written. The prefill was accepted against it on one
+    // argument — this app has one user, and these are his numbers — and Momin
+    // ruled on 2026-09-08 that it does not. Both shipping pumps that were
+    // checked, the MiniMed 780G and the t:slim, prefill nothing for the same
+    // reason.
+    expect(fieldLabelled('What should a correction aim for?').value).toBe('');
+    expect(fieldLabelled('How far does one unit lower your blood sugar?').value).toBe('');
+    expect(fieldLabelled('How much carbohydrate does one unit cover?').value).toBe('');
 
-    // §10.5 — and the target's soft-band acknowledgement fires here BY DESIGN.
-    // 150 sits outside 90-140 on purpose, so a stale value has something on
-    // screen to be noticed by. It must not be styled as a blocking error.
+    // And the screen must not tell them the blanks came from a prescription.
+    expect(text()).not.toContain('already filled in');
+  });
+
+  it('§6.2 — the double-check threshold works itself out from the three ratios', async () => {
+    await boot();
+    await tap('☐  I have read this');
+    await tap('I understand — use at my own risk');
+
+    // Blank until there is something to compute it from. A partial answer stays
+    // blank rather than putting a number in a dosing field on the strength of
+    // an incomplete one.
+    expect(fieldLabelled('Double-check my typing').value).toBe('');
+    await typeInto('What should a correction aim for', '150');
+    expect(fieldLabelled('Double-check my typing').value).toBe('');
+    await typeInto('How far does one unit lower', '30');
+    expect(fieldLabelled('Double-check my typing').value).toBe('');
+
+    // Complete, so it appears. 20 is the number that was calibrated BY HAND for
+    // this prescription before any formula existed.
+    await typeInto('How much carbohydrate does one unit cover', '10');
+    expect(fieldLabelled('Double-check my typing').value).toBe('20');
+
+    // §10.5 — the target's soft-band acknowledgement. 150 sits outside 90-140,
+    // so typing it raises a caution, and it must not be styled as a blocking
+    // error. Inherited from the deleted prefill case above.
     const note = [...root.querySelectorAll('p')].find(
       (n) => (n.textContent ?? '').includes('outside the usual range'),
     );
     expect(note?.className).toBe('caution');
+
+    // A ratio the user goes back and changes moves it, because they have not
+    // claimed the field.
+    await typeInto('How much carbohydrate does one unit cover', '30');
+    expect(fieldLabelled('Double-check my typing').value).toBe('10');
+  });
+
+  it('§6.2 — and a threshold the user typed is never recomputed under them', async () => {
+    await boot();
+    await tap('☐  I have read this');
+    await tap('I understand — use at my own risk');
+    await typeInto('What should a correction aim for', '150');
+    await typeInto('How far does one unit lower', '30');
+    await typeInto('How much carbohydrate does one unit cover', '10');
+    expect(fieldLabelled('Double-check my typing').value).toBe('20');
+
+    // Once they set it themselves the latch is off for good — §7.7's
+    // proposed-not-adopted rule, arriving in a new place. Changing a ratio
+    // afterwards must leave their number alone.
+    await typeInto('Double-check my typing', '30');
+    await typeInto('How much carbohydrate does one unit cover', '30');
+    expect(fieldLabelled('Double-check my typing').value).toBe('30');
   });
 
   it('§8.5 — states the U-100 assumption, which it was specified to do and never did', async () => {
@@ -543,6 +607,9 @@ describe('the name, which changes nothing the app calculates', () => {
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
     await typeInto('What should the app call you', 'Ahmed');
+    await typeInto('What should a correction aim for', '150');
+    await typeInto('How far does one unit lower', '30');
+    await typeInto('How much carbohydrate does one unit cover', '10');
     await typeInto('Which insulin', 'Lantus');
     await typeInto('How many units', '36');
     await typeInto('When', 'early morning');
@@ -570,6 +637,9 @@ describe('the name, which changes nothing the app calculates', () => {
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
     await typeInto('What should the app call you', 'Ahmed');
+    await typeInto('What should a correction aim for', '150');
+    await typeInto('How far does one unit lower', '30');
+    await typeInto('How much carbohydrate does one unit cover', '10');
     await typeInto('Which insulin', 'Lantus');
     await typeInto('How many units', '36');
     await typeInto('When', 'early morning');
@@ -597,6 +667,9 @@ describe('the name, which changes nothing the app calculates', () => {
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
     await typeInto('What should the app call you', 'a/b ../c');
+    await typeInto('What should a correction aim for', '150');
+    await typeInto('How far does one unit lower', '30');
+    await typeInto('How much carbohydrate does one unit cover', '10');
     await typeInto('Which insulin', 'Lantus');
     await typeInto('How many units', '36');
     await typeInto('When', 'early morning');
@@ -949,6 +1022,8 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     // be wrong. **A test can agree with a bug, and this one did.**
     scrollY = 600;
     await typeInto('What should a correction aim for?', '150');
+    await typeInto('How far does one unit lower', '30');
+    await typeInto('How much carbohydrate does one unit cover', '10');
     await typeInto('Which insulin', 'Lantus');
     await typeInto('How many units', '36');
     await typeInto('When', 'early morning, before breakfast');

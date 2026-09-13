@@ -51,14 +51,28 @@ therapy, and does not decide anything a clinician has not already decided.
 
 ### 1.2 Clinician-set parameters
 
-| Parameter | Value | Meaning in the app's own words |
-|---|---|---|
-| Target blood sugar | 150 mg/dL | What corrections aim for |
-| Insulin sensitivity factor (ISF) | 30 | 1 unit lowers blood sugar by 30 mg/dL |
-| Insulin-to-carb ratio (ICR) | 10 | 1 unit covers 10 grams of carbohydrate |
+| Parameter | Meaning in the app's own words |
+|---|---|
+| Target blood sugar | What corrections aim for |
+| Insulin sensitivity factor (ISF) | 1 unit lowers blood sugar by this many mg/dL |
+| Insulin-to-carb ratio (ICR) | 1 unit covers this many grams of carbohydrate |
 
-**These are the current prescription. PREFILLED AND SHOWN at onboarding — CHANGED IN v26 ON
-MOMIN'S RULING.** They still require an explicit save before anything is stored.
+**THE APP SHIPS NO VALUES FOR THESE. Restored 2026-09-13 with the audience change**, which is
+§1.2 as originally written.
+
+The three were briefly PREFILLED with 150 / 30 / 10 — one person's prescription — on an explicit
+ruling that this app had exactly one user who needed zero friction. Momin ruled on 2026-09-08 that
+it is for anyone with type 1 who can enter their own three numbers, and the prefill's entire
+justification was the premise that ruling removed. For a stranger those are not a stale prescription
+but someone else's, and this section's own worked example is the argument against it.
+
+Published practice agrees and was checked first: no citable universal default exists, because
+ISPAD's 500 and 1800 rules derive from the person's own total daily dose, which this app does not
+collect. The MiniMed 780G and the t:slim both require a clinician to supply these and prefill
+nothing.
+
+**The numbers above are gone from this table on purpose.** Writing them here makes them a default
+in the reader's head, which is the same mistake one layer up. `CLINICAL.md` records whose they were.
 
 **The history, because the reversal is partial and the reasoning still binds.** Version 1 called
 them "defaults, all editable," which contradicted §4's rule that empty settings must refuse to
@@ -2804,8 +2818,11 @@ acknowledgement of an unusual-but-intended value, not a warning.
 
    Neither "basal" nor "bolus" appears in the interface; both are explained here in ordinary
    words, per §10.2.
-6. **"Configured for one specific person's prescription"** stated on first run [R1] — the URL
-   is public and anyone on a rapid analog would inherit wrong timing advice.
+6. **"It fills in none of them" stated on first run** [R1], REWORDED 2026-09-13 with the audience
+   change. It used to read *"configured for one specific person's prescription"*, which was true
+   while it was, and became a false statement about the app the day the fields went empty. The
+   reason it is said at all is unchanged: the URL is public, and anyone on a rapid analog would
+   inherit wrong timing advice.
 7. **"If this number looks nothing like what you usually take" — NEW IN v9** [R1]. §6.7 promised
    this disclosure and §10.6 never contained it. Shown once at setup, and reachable afterwards
    from the how-it-works screen:
@@ -3411,10 +3428,22 @@ export const RECHECK_MINUTES = 15;
 
 // ─── APP-SET DEFAULTS ──────────────────────────────────────
 // The ONLY setting this app is entitled to pick a value for.
-// There is deliberately no DEFAULT_TARGET / DEFAULT_ISF / DEFAULT_ICR:
-// see the note below — §1.2 forbids them.
-export const DEFAULT_THRESHOLD = 20;   // §6.2, recalibrated v7
+// There is deliberately no DEFAULT_TARGET / DEFAULT_ISF / DEFAULT_ICR,
+// and since 2026-09-13 no PRESCRIBED_* either: §1.2 forbids them, and
+// the audience change removed the one argument that had overridden it.
+// DEFAULT_THRESHOLD went at the same time — §6.2's threshold is DERIVED
+// from the three ratios now, so on first run there is nothing to default.
 export const DEFAULT_MODE      = 'nearest';   // §5
+
+// ─── §6.2's THRESHOLD, DERIVED ─────────────────────────────
+// One and a half times the dose the largest single portion in this
+// app's own food table would need at a high reading. 100 g is the
+// largest row in src/data/carbs.ts, not a round number picked by hand.
+// THRESHOLD_HIGH_READING is NOT KETONE_ADVISORY, which happens to hold
+// the same 250: one is a clinical trigger, the other sizes a typo catch.
+export const THRESHOLD_MEAL_GRAMS   = 100;
+export const THRESHOLD_HIGH_READING = 250;
+export const THRESHOLD_MULTIPLE     = 1.5;
 
 // ─── BAND B (§3.2) ─────────────────────────────────────────
 export const BAND_B_CORRECTION_UNITS = -1.5;  // at or below: caution copy
@@ -3453,6 +3482,14 @@ export const STACK_ADVISE_HOURS   = 12;
 // Declared after STACK_ADVISE_HOURS deliberately — v9 printed this above it,
 // which is a TDZ ReferenceError if transcribed literally [R1].
 export const DELETE_CONFIRM_WINDOW_HOURS = STACK_ADVISE_HOURS;  // §7.3
+
+// ─── BAND E's FULL CARD (§10.5) ────────────────────────────
+// NOT derived from STACK_ADVISE_HOURS, which holds the same 12: one is
+// about insulin still acting, this is about how often a card may be
+// large. Added 2026-09-13 and listed here from the start, because a
+// constant that never reaches this block is a constant check-plan.py
+// cannot pin.
+export const BAND_E_FULL_CARD_WINDOW_HOURS = 12;
 
 // ─── PLAUSIBILITY ADVISORY (§6.5) ──────────────────────────
 export const ADVISORY_MIN_ELIGIBLE  = 10;

@@ -557,7 +557,7 @@ export const COPY = {
     disclaimerBody: [
       'This is not a medical device and it has no regulatory clearance. It has not been clinically validated.',
       'It does the arithmetic your doctor already prescribed. Check every dose it gives you before you inject.',
-      'It is configured for one specific person’s prescription. If you are not that person, the numbers here are wrong for you.',
+      'It works from three numbers your doctor gives you, and it fills in none of them. Another person’s numbers are wrong for you.',
       'MealUnits is not endorsed by, and has no connection with, the makers of your meter or your insulin.',
     ],
     disclaimerAccept: 'I understand — use at my own risk',
@@ -676,9 +676,19 @@ export const COPY = {
     nameHint: 'Optional. It appears on your record so a doctor can tell whose it is.',
     /** §10.5 — the reading screen only. Never on a screen showing a dose. */
     greeting: (name: string): string => `Hey ${name}`,
-    prefilledTitle: 'Check these three before you start',
-    prefilledBody:
-      'They are already filled in from the prescription — target, ISF and ICR. Change any that your doctor has changed. Then add your Lantus details below to finish.',
+    /**
+     * RENAMED from `prefilled*` on 2026-09-13. The fields are not prefilled any
+     * more, and copy named for what it used to say is how the next reader gets
+     * it wrong — the same rule that renamed `bandEFullCardShownToday`.
+     *
+     * The old body read "They are already filled in from the prescription."
+     * For the person this was built for that was true. For anyone else "the
+     * prescription" is not theirs, and a sentence asserting otherwise is worse
+     * than silence: it lends the numbers an authority they do not have.
+     */
+    setupTitle: 'Three numbers only your doctor can give you',
+    setupBody:
+      'Nothing is filled in, on purpose. Target, ISF and ICR come from your own prescription — another person’s are wrong for you. Then add your long-acting insulin below to finish.',
     thresholdHeading: 'When to double-check',
     thresholdQuestion: 'Double-check my typing when the dose reaches',
     thresholdUnit: 'UNITS',

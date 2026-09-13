@@ -9,10 +9,6 @@
 
 import {
   DEFAULT_MODE,
-  DEFAULT_THRESHOLD,
-  PRESCRIBED_ICR,
-  PRESCRIBED_ISF,
-  PRESCRIBED_TARGET,
   RANGE,
 } from '../../config.js';
 import { parseField, withinHardRange, withinSoftBand } from '../../core/parse.js';
@@ -34,22 +30,27 @@ export interface SettingsDraft {
 }
 
 export function draftFrom(settings: Settings | null): SettingsDraft {
-  // §1.2, CHANGED ON MOMIN'S RULING — the three prescribed values are PREFILLED
-  // into the draft so the person this was built for does not have to type
-  // anything. They are shown on screen and still require the explicit save.
+  // §1.2, RESTORED 2026-09-13 by the audience change. The three ratios start
+  // EMPTY. They used to be prefilled with one person's prescription, and the
+  // justification for overriding §1.2 was that this app had one user; it no
+  // longer does. `src/config.ts` carries the full argument where the constants
+  // used to be.
   //
-  // The refuse-on-empty branch this used to protect is NOT dead code: nothing
-  // is stored until that save, `buildSnapshot` reads the STORE rather than this
-  // draft, and it returns null until then. The threshold and the basal block
-  // stay empty on purpose — the threshold has always had a default (§6.2) and
-  // is filled below, and the basal figures are HIS, not the prescription's.
+  // The threshold starts empty too and is filled in by the shell once the three
+  // ratios are valid — see `deriveThreshold`. It cannot be defaulted here
+  // because it is computed FROM them, and on first run there is nothing yet to
+  // compute it from.
+  //
+  // §4.4's refuse-on-empty-settings branch is live exactly as it always was:
+  // nothing is stored until the explicit save, and `buildSnapshot` reads the
+  // STORE rather than this draft.
   if (settings === null) {
     return {
-      target: String(PRESCRIBED_TARGET),
-      isf: String(PRESCRIBED_ISF),
-      icr: String(PRESCRIBED_ICR),
+      target: '',
+      isf: '',
+      icr: '',
       mode: DEFAULT_MODE,
-      threshold: String(DEFAULT_THRESHOLD),
+      threshold: '',
       basalName: '',
       basalUnits: '',
       basalTiming: '',
@@ -283,8 +284,8 @@ export function settingsScreen(
       ? h(
           'div',
           { class: 'flag mint' },
-          h('b', {}, COPY.settings.prefilledTitle),
-          COPY.settings.prefilledBody,
+          h('b', {}, COPY.settings.setupTitle),
+          COPY.settings.setupBody,
           // §10.6 — until now the ONE moment the app asks for ISF and ICR was
           // the one moment the explanation was unreachable: the button list
           // below is gated on `!firstRun`, so "How this works" did not exist
