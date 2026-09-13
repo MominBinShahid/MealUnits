@@ -593,7 +593,7 @@ export async function start(host: Host): Promise<void> {
               h('h2', {}, COPY.recordDeleted.title),
               h('p', {}, COPY.recordDeleted.body),
             )
-          : h('div', { class: 'screen' }, h('p', {}, 'Opening your record…'));
+          : h('div', { class: 'screen' }, h('p', {}, COPY.screens.opening));
 
       case 'fail_closed':
         return failClosedScreen({
@@ -977,8 +977,8 @@ export async function start(host: Host): Promise<void> {
     const items: HTMLElement[] = [];
     if (goBack !== null) items.push(button(COPY.back, goBack, { class: 'link' }));
     if (state.screen === 'calculator' && state.step === 'reading') {
-      items.push(button('Settings', () => { dispatch({ type: 'go', screen: 'settings' }); }, { class: 'link' }));
-      items.push(button('History', () => { dispatch({ type: 'go', screen: 'history' }); }, { class: 'link' }));
+      items.push(button(COPY.nav.settings, () => { dispatch({ type: 'go', screen: 'settings' }); }, { class: 'link' }));
+      items.push(button(COPY.nav.history, () => { dispatch({ type: 'go', screen: 'history' }); }, { class: 'link' }));
     }
     // §10.7 — on the carbohydrate step ONLY. The list answers the question being
     // asked at that exact moment and is noise on every other screen, which is
@@ -987,10 +987,10 @@ export async function start(host: Host): Promise<void> {
       items.push(button(COPY.foods.navLabel, () => { dispatch({ type: 'go', screen: 'food_list' }); }, { class: 'link' }));
     }
     if (state.screen === 'history') {
-      items.push(button('Save a copy', () => { showClear = false; dispatch({ type: 'go', screen: 'export' }); }, { class: 'link mark' }));
+      items.push(button(COPY.nav.saveACopy, () => { showClear = false; dispatch({ type: 'go', screen: 'export' }); }, { class: 'link mark' }));
     }
     if (items.length === 0) return null;
-    return h('nav', { class: 'foot-nav', 'aria-label': 'Navigation' }, ...items);
+    return h('nav', { class: 'foot-nav', 'aria-label': COPY.nav.label }, ...items);
   }
 
   function render(): void {

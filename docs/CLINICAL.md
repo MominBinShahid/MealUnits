@@ -526,6 +526,20 @@ NICE and Diabetes UK material is quoted with citation here and **must not be cop
    **PARKED BY MOMIN 2026-09-13.** Not withdrawn — it stays on the list for the appointment — but
    nothing waits on it: `BACKLOG.md` entry 22 holds the feature it would govern, and that entry is
    explicitly not to be built before this is answered.
-8. **Not a question — an observation, and it stays one.** Long-acting insulin is 36 units of a daily
+8. **Does the new on-screen wording about which insulin this app is timed for say the right thing?**
+   Added 2026-09-13, and the disclosure itself is not in doubt — sections 3 and 4 have said since the
+   beginning that Humulin R's 5-8 hour tail is why the stacking windows are 4 and 12, and that
+   "advice written for analogs is wrong here". What was missing was that the APP never said it. It
+   named Humulin R in four places as though it were the reader's insulin, which is a different claim
+   from the true one, and `T5` widened the audience to include the analogue user who is now the more
+   common reader.
+
+   `COPY.settings.insulinAssumption` states it on Settings and on the how-it-works page. **The
+   prescriber is asked to amend the sentence, not to decide whether it belongs** — the same standing
+   as the illness half of question 5. Two specifics worth their attention: whether naming NovoRapid,
+   Humalog and Apidra as the analogue examples is the right list for Pakistan, and whether
+   "the dose itself is still yours, because your ISF and ICR were set for your own insulin" is safe
+   to say — it is the one part of the sentence that reassures rather than warns.
+9. **Not a question — an observation, and it stays one.** Long-acting insulin is 36 units of a daily
    total of 84–111 — **32–43%**, against a commonly cited 40–50%. That is arithmetic from his own figures, recorded so it reaches you, and not a
    recommendation.

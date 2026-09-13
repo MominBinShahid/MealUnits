@@ -166,7 +166,7 @@ ${rows}
   const basal =
     input.settings === null
       ? ''
-      : `<p><strong>${escapeHtml(input.settings.basalName)}</strong>, ${escapeHtml(String(input.settings.basalUnits))} units, ${escapeHtml(input.settings.basalTiming)}. Set by his doctor and not calculated by this app.</p>`;
+      : `<p><strong>${escapeHtml(input.settings.basalName)}</strong>, ${escapeHtml(String(input.settings.basalUnits))} units, ${escapeHtml(input.settings.basalTiming)}. Set by the prescribing doctor, not calculated by this app.</p>`;
 
   const note =
     input.dosingNote === null

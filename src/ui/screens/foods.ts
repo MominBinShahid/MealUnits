@@ -93,6 +93,6 @@ export function foodListScreen(handlers: FoodListHandlers): HTMLElement {
     // Last, not first. It is the most useful thing here, and it is also the
     // thing nobody reads before they have looked up one number and seen how
     // wide the ranges are.
-    h('div', { class: 'flag mint' }, h('b', {}, 'Make these yours'), COPY.foods.weighOnce),
+    h('div', { class: 'flag mint' }, h('b', {}, COPY.screens.foodsMakeYours), COPY.foods.weighOnce),
   );
 }

@@ -41,7 +41,7 @@ export function disclaimerScreen(onAccept: () => void, accepted: boolean, onTogg
       { class: 'sheet' },
       // §10.6 — a CHECKBOX PLUS SUBMIT, and "not dismissible by tapping past it".
       button(
-        accepted ? '☑  I have read this' : '☐  I have read this',
+        COPY.screens.disclaimerRead(accepted),
         onToggle,
         { class: 'go quiet', 'aria-pressed': String(accepted) },
       ),
@@ -90,10 +90,10 @@ export function historyScreen(
     'div',
     { class: 'screen' },
     // Back and "Save a copy" both moved to the shell's foot nav (§10.7).
-    h('h1', {}, 'History'),
+    h('h1', {}, COPY.screens.historyTitle),
     h('p', { class: 'hint' }, COPY.log.noEdit),
     rows.length === 0
-      ? h('p', {}, 'Nothing recorded yet.')
+      ? h('p', {}, COPY.screens.historyEmpty)
       : h('ul', { class: 'list' }, ...rows),
   );
 }
@@ -101,7 +101,7 @@ export function historyScreen(
 function doseRow(row: Extract<LogRow, { deleted?: undefined }>, handlers: HistoryHandlers): HTMLElement {
   const asking = handlers.pendingDelete === row.id;
   const inWindow = hasRowInsideWindow([row], handlers.nowMs, DELETE_CONFIRM_WINDOW_HOURS);
-  const reading = row.bloodSugar === null ? 'no reading' : `${String(row.bloodSugar)} mg/dL`;
+  const reading = row.bloodSugar === null ? COPY.screens.noReading : `${String(row.bloodSugar)} mg/dL`;
 
   return h(
     'li',
@@ -110,9 +110,9 @@ function doseRow(row: Extract<LogRow, { deleted?: undefined }>, handlers: Histor
       'div',
       { class: 'k' },
       h('b', {}, `${formatDate(row.timestamp, handlers.timeZone)}, ${formatClockTime(row.timestamp, handlers.timeZone)}`),
-      `${reading} · ${String(row.carbs)} g of carbohydrate`,
-      h('div', {}, `calculated ${units(row.units)} · injected ${units(row.injectedUnits)}`),
-      row.overrodeStacking ? h('div', {}, 'recent-insulin check overridden') : null,
+      COPY.screens.historyIntake(reading, String(row.carbs)),
+      h('div', {}, COPY.screens.historyDose(units(row.units), units(row.injectedUnits))),
+      row.overrodeStacking ? h('div', {}, COPY.screens.stackingOverridden) : null,
       asking
         ? h(
             'div',
@@ -131,7 +131,7 @@ function doseRow(row: Extract<LogRow, { deleted?: undefined }>, handlers: Histor
             // §4.6's argument applies verbatim: users learn the escape route.
             // Delete also legitimately means two things the app cannot
             // distinguish — "I never actually injected this" and "tidying up".
-            inWindow ? COPY.log.deleteConsequence : 'This is older than the stacking check looks at.',
+            inWindow ? COPY.log.deleteConsequence : COPY.screens.outsideStackingWindow,
             h(
               'div',
               { class: 'sheet' },
@@ -141,7 +141,7 @@ function doseRow(row: Extract<LogRow, { deleted?: undefined }>, handlers: Histor
           )
         : null,
     ),
-    asking ? null : button('Delete', () => { handlers.onAskDelete(row.id); }, { class: 'link' }),
+    asking ? null : button(COPY.screens.delete, () => { handlers.onAskDelete(row.id); }, { class: 'link' }),
   );
 }
 
@@ -159,7 +159,7 @@ function readingRow(row: Reading, handlers: HistoryHandlers): HTMLElement {
     // §7.8 — reading rows are deletable with a PLAIN confirmation. §7.3's
     // stacking-consequence wording does not apply: deleting a reading removes a
     // record, never insulin-on-board information.
-    button('Delete', () => { handlers.onDeleteReading(row.id); }, { class: 'link' }),
+    button(COPY.screens.delete, () => { handlers.onDeleteReading(row.id); }, { class: 'link' }),
   );
 }
 
@@ -246,7 +246,7 @@ function dosingQuestion(handlers: ExportHandlers): HTMLElement | null {
     h(
       'div',
       { class: 'field wide' },
-      h('label', {}, 'Your answer'),
+      h('label', {}, COPY.screens.yourAnswer),
       h('input', {
         type: 'text',
         autocomplete: 'off',
@@ -297,7 +297,7 @@ export function exportScreen(handlers: ExportHandlers): HTMLElement {
   return h(
     'div',
     { class: 'screen' },
-    h('h1', {}, 'Keeping the record'),
+    h('h1', {}, COPY.screens.exportTitle),
     counter === null ? null : h('p', { class: 'hint' }, counter),
 
     // §7.7.1 — named by PURPOSE, not by format. "Neither is labelled by its file
@@ -321,16 +321,16 @@ export function exportScreen(handlers: ExportHandlers): HTMLElement {
 
     dosingQuestion(handlers),
 
-    h('h2', {}, 'Bringing a record in'),
+    h('h2', {}, COPY.screens.importTitle),
     h(
       'p',
       { class: 'hint' },
       // §7.7 — "settings are NEVER silently replaced — an import PROPOSES them,
       // and adopting any of them runs §4.5's hard range checks and §10.1.6's
       // delta confirmation exactly as typing would."
-      'Records merge in. Your prescription is only ever proposed — an import can never silently rewrite it.',
+      COPY.screens.importNote,
     ),
-    h('div', { class: 'sheet' }, button('Load a record', handlers.onImport, { class: 'go quiet' })),
+    h('div', { class: 'sheet' }, button(COPY.screens.importAction, handlers.onImport, { class: 'go quiet' })),
   );
 }
 
@@ -383,7 +383,7 @@ export function clearScreen(
   return h(
     'div',
     { class: 'screen' },
-    h('h1', {}, 'Clearing'),
+    h('h1', {}, COPY.screens.clearTitle),
     h(
       'p',
       {},
@@ -391,7 +391,7 @@ export function clearScreen(
       // "also clear data" leaves the IndexedDB intact; accepting it is
       // ORIGIN-WIDE and takes the blog's storage with it (§11.7). Only code
       // inside this app can filter by scope.
-      'Uninstalling does not reliably clear anything, and the browser’s own reset would take other sites on this address with it. These two are the ones that know what belongs to this app.',
+      COPY.screens.clearNote,
     ),
 
     handlers.confirming === 'record'
@@ -400,7 +400,7 @@ export function clearScreen(
           { class: 'flag' },
           h('b', {}, COPY.clear.recordTitle(total)),
           from === null || to === null
-            ? 'There is nothing recorded yet.'
+            ? COPY.screens.clearEmpty
             : COPY.clear.recordBody(from, to, readings.length),
           stackingLine,
           h(
@@ -448,10 +448,10 @@ export function clearScreen(
             h(
               'div',
               { class: 'k' },
-              h('b', {}, 'Clear the record'),
-              'Removes every dose and reading. Your prescription and its history stay, and the app is usable straight away.',
+              h('b', {}, COPY.screens.clearRecordTitle),
+              COPY.screens.clearRecordBody,
             ),
-            button('Clear', () => { handlers.onAsk('record'); }, { class: 'go danger' }),
+            button(COPY.screens.clearRecordAction, () => { handlers.onAsk('record'); }, { class: 'go danger' }),
           ),
           h(
             'li',
@@ -459,10 +459,10 @@ export function clearScreen(
             h(
               'div',
               { class: 'k' },
-              h('b', {}, 'Start over'),
-              'Everything goes, including your prescription. Setup runs again. For handing the phone on, or for getting out of a stuck state.',
+              h('b', {}, COPY.screens.startOverTitle),
+              COPY.screens.startOverBody,
             ),
-            button('Start over', () => { handlers.onAsk('startOver'); }, { class: 'go danger' }),
+            button(COPY.screens.startOverTitle, () => { handlers.onAsk('startOver'); }, { class: 'go danger' }),
           ),
         ),
   );
@@ -505,19 +505,19 @@ export function failClosedScreen(options: {
             h(
               'li',
               { class: 'li' },
-              h('div', { class: 'k' }, 'A correction aims for'),
+              h('div', { class: 'k' }, COPY.screens.recordTarget),
               h('div', { class: 'v' }, `${String(recovery.targetMgDl)} mg/dL`),
             ),
             h(
               'li',
               { class: 'li' },
-              h('div', { class: 'k' }, '1 unit lowers blood sugar by'),
+              h('div', { class: 'k' }, COPY.screens.recordIsf),
               h('div', { class: 'v' }, `${String(recovery.oneUnitLowersMgDl)} mg/dL`),
             ),
             h(
               'li',
               { class: 'li' },
-              h('div', { class: 'k' }, '1 unit covers'),
+              h('div', { class: 'k' }, COPY.screens.recordIcr),
               h('div', { class: 'v' }, `${String(recovery.oneUnitCoversGramsCarbohydrate)} g`),
             ),
             h(
@@ -567,6 +567,10 @@ export function howItWorksScreen(advisoryStatus: string): HTMLElement {
     { class: 'screen' },
     h('h1', {}, COPY.twoInsulins.title),
     h('p', {}, COPY.twoInsulins.body),
+    // Which insulin the two clocks were calibrated for, in the section that
+    // already says what this app does and does not cover. Same string as the
+    // Settings hint (§10.2).
+    h('p', {}, COPY.settings.insulinAssumption),
 
     // FIRST, ahead of the arithmetic, because who this is for decides whether
     // any of the arithmetic applies to the reader at all. The disclaimer states
@@ -579,15 +583,15 @@ export function howItWorksScreen(advisoryStatus: string): HTMLElement {
         : h('p', {}, para.lead, h('b', {}, para.condition), para.rest),
     ),
 
-    h('h2', {}, 'The arithmetic, in full'),
+    h('h2', {}, COPY.screens.arithmeticTitle),
     h(
       'p',
       {},
       // §15 — MHRA: "always provide details of the formula used". Only 30% of
       // the 46 audited apps documented theirs.
-      'A correction is how far you are above your target, divided by how far one unit lowers you. A meal dose is the carbohydrate divided by how much one unit covers. The two are added, and a negative correction is subtracted from the meal dose rather than ignored.',
+      COPY.screens.arithmeticBody,
     ),
-    h('p', {}, 'If the two together come out below zero, the answer is zero units — never a negative one.'),
+    h('p', {}, COPY.screens.arithmeticFloor),
 
     // The two phrases above are what these names NAME, so the section attaches
     // to them rather than opening the page. The clinical definitions are the
@@ -623,7 +627,7 @@ export function howItWorksScreen(advisoryStatus: string): HTMLElement {
     // which fired the caveat after every overnight gap.
     h('h2', {}, COPY.explain.missingTitle),
     h('p', {}, COPY.explain.missingBody),
-    h('p', { class: 'hint' }, 'Any one of these is enough:'),
+    h('p', { class: 'hint' }, COPY.screens.anyOfThese),
     h(
       'ul',
       { class: 'list' },
@@ -641,13 +645,13 @@ export function howItWorksScreen(advisoryStatus: string): HTMLElement {
     h(
       'ul',
       { class: 'list' },
-      ...COPY.rounding.modes.map(([name, what]) =>
+      ...COPY.rounding.modes.map(({ name, what }) =>
         h('li', { class: 'li' }, h('div', { class: 'k' }, h('b', {}, name), what)),
       ),
     ),
     h('p', { class: 'hint' }, COPY.rounding.closing),
 
-    h('h2', {}, 'The meal-size check'),
+    h('h2', {}, COPY.screens.mealCheckTitle),
     h('p', {}, advisoryStatus),
     h('p', { class: 'hint' }, `It needs ${String(ADVISORY_MIN_ELIGIBLE)} logged meals before it can say anything.`),
   );
@@ -658,15 +662,15 @@ export function settingsAsTextScreen(settings: Settings): HTMLElement {
   return h(
     'div',
     { class: 'screen' },
-    h('h1', {}, 'My settings'),
+    h('h1', {}, COPY.screens.asTextTitle),
     h(
       'ul',
       { class: 'list' },
-      h('li', { class: 'li' }, h('div', { class: 'k' }, 'A correction aims for'), h('div', { class: 'v' }, `${String(settings.target)} mg/dL`)),
+      h('li', { class: 'li' }, h('div', { class: 'k' }, COPY.screens.recordTarget), h('div', { class: 'v' }, `${String(settings.target)} mg/dL`)),
       h('li', { class: 'li' }, h('div', { class: 'k' }, COPY.settings.isfSentence(String(settings.isf)))),
       h('li', { class: 'li' }, h('div', { class: 'k' }, COPY.settings.icrSentence(String(settings.icr)))),
-      h('li', { class: 'li' }, h('div', { class: 'k' }, 'Doses are rounded to'), h('div', { class: 'v' }, settings.mode)),
-      h('li', { class: 'li' }, h('div', { class: 'k' }, 'Asks me to re-read at'), h('div', { class: 'v' }, units(settings.threshold * HUNDREDTHS_SCALE))),
+      h('li', { class: 'li' }, h('div', { class: 'k' }, COPY.screens.asTextRounding), h('div', { class: 'v' }, settings.mode)),
+      h('li', { class: 'li' }, h('div', { class: 'k' }, COPY.screens.asTextThreshold), h('div', { class: 'v' }, units(settings.threshold * HUNDREDTHS_SCALE))),
     ),
     h(
       'div',
@@ -676,10 +680,10 @@ export function settingsAsTextScreen(settings: Settings): HTMLElement {
       h(
         'ul',
         { class: 'list' },
-        h('li', { class: 'li' }, h('div', { class: 'k' }, settings.basalName), h('div', { class: 'v' }, `${formatHundredths(settings.basalUnits * HUNDREDTHS_SCALE)} units`)),
+        h('li', { class: 'li' }, h('div', { class: 'k' }, settings.basalName.trim() === '' ? COPY.settings.basalNameMissing : settings.basalName), h('div', { class: 'v' }, `${formatHundredths(settings.basalUnits * HUNDREDTHS_SCALE)} units`)),
         h('li', { class: 'li' }, h('div', { class: 'k' }, settings.basalTiming)),
       ),
     ),
-    h('p', { class: 'hint' }, 'This screen is meant to be photographed and shown to your doctor.'),
+    h('p', { class: 'hint' }, COPY.screens.asTextFooter),
   );
 }

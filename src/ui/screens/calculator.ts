@@ -189,7 +189,7 @@ function working(state: AppState, breakdown: Breakdown, doseHundredths: number):
     h(
       'div',
       { class: 'row total' },
-      h('span', {}, 'Total'),
+      h('span', {}, COPY.calculator.rowTotal),
       h('b', {}, units(doseHundredths)),
     ),
   );
@@ -361,8 +361,8 @@ function entryScreen(
       // question reads "blood sugarright now?" to a screen reader and to every
       // test that asserts on the sentence.
       ...(isReading
-        ? ["What's your blood sugar ", h('br', {}), 'right now?']
-        : ['How much carbohydrate ', h('br', {}), 'is in this meal?']),
+        ? [COPY.calculator.askReadingLead, h('br', {}), COPY.calculator.askReadingRest]
+        : [COPY.calculator.askCarbsLead, h('br', {}), COPY.calculator.askCarbsRest]),
     ),
     h(
       'p',
@@ -372,13 +372,13 @@ function entryScreen(
         : // §10.1 — "the carbohydrate field says GRAMS OF CARBOHYDRATE, never
           // grams or carbs". A 250 g plate of biryani is about 50 g of
           // carbohydrate: two real numbers, both in grams, five-fold apart.
-          'The carbohydrate in the food — not what the plate weighs. A 250 g plate of biryani is about 50 g of carbohydrate.',
+          COPY.calculator.carbsHint,
     ),
     h(
       'div',
       { class: 'entry' },
       h('div', { class: value === '' ? 'n empty' : 'n' }, value === '' ? '—' : value),
-      h('div', { class: 'u' }, isReading ? 'MG/DL' : 'GRAMS OF CARBOHYDRATE'),
+      h('div', { class: 'u' }, isReading ? COPY.calculator.unitReading : COPY.calculator.unitCarbs),
     ),
     // §10.9 — `aria-live` so the explanation is announced when it appears. It
     // arrives in response to a tap, without a screen change, which is the case
@@ -447,16 +447,16 @@ function confirmInputs(state: AppState, handlers: CalculatorHandlers): HTMLEleme
   return h(
     'div',
     { class: 'screen' },
-    stepDots(TOTAL_STEPS, TOTAL_STEPS, 'Check'),
+    stepDots(TOTAL_STEPS, TOTAL_STEPS, COPY.calculator.stepCheck),
     h('div', { class: 'ask' }, COPY.confirm.title),
     h(
       'div',
       { class: 'working' },
-      h('div', { class: 'row' }, h('span', {}, 'Blood sugar'), h('b', {}, reading)),
+      h('div', { class: 'row' }, h('span', {}, COPY.calculator.rowBloodSugar), h('b', {}, reading)),
       h(
         'div',
         { class: 'row' },
-        h('span', {}, 'Carbohydrate'),
+        h('span', {}, COPY.calculator.rowCarbohydrate),
         h('b', {}, `${state.inputs.carbs} g`),
       ),
     ),
@@ -466,7 +466,7 @@ function confirmInputs(state: AppState, handlers: CalculatorHandlers): HTMLEleme
       // §6.3 — claim the narrower thing. It catches TRANSCRIPTION errors, not
       // ESTIMATION ones: read the plate as 250 in good faith and the restatement
       // confirms his own mistake back to him.
-      'Read those two back before the dose appears. This catches a mistyped number — it cannot catch a misjudged plate.',
+      COPY.calculator.confirmHint,
     ),
     h(
       'div',
@@ -492,13 +492,13 @@ function blankReadingAck(handlers: CalculatorHandlers): HTMLElement {
       // FABRICATED in-range reading, which is strictly worse. A fake 150
       // contributes a fake correction of zero, defeats the low-blood-sugar gate
       // entirely, AND corrupts the log §7.4 reads.
-      'And the timing advice is switched off — without a reading the app cannot tell you when to eat.',
+      COPY.calculator.blankTimingOff,
     ),
     h(
       'div',
       { class: 'sheet' },
       button(COPY.blankReading.accept, handlers.onAcknowledgeBlank, { class: 'go' }),
-      button('Go back and test first', handlers.onBack, { class: 'go quiet' }),
+      button(COPY.calculator.goBackAndTest, handlers.onBack, { class: 'go quiet' }),
     ),
   );
 }
@@ -509,7 +509,7 @@ function boundFailure(handlers: CalculatorHandlers): HTMLElement {
     'div',
     { class: 'screen' },
     h('div', { class: 'halt' }, h('h2', {}, COPY.boundFailure.title), h('p', {}, COPY.boundFailure.body)),
-    h('div', { class: 'sheet' }, button('Start again', handlers.onBack, { class: 'go quiet' })),
+    h('div', { class: 'sheet' }, button(COPY.calculator.startAgain, handlers.onBack, { class: 'go quiet' })),
   );
 }
 
@@ -562,7 +562,7 @@ function resultScreen(state: AppState, outcome: Outcome, handlers: CalculatorHan
     h(
       'div',
       { role: 'status' },
-      readout(formatHundredths(outcome.hundredths), 'units of Humulin R', state.expired),
+      readout(formatHundredths(outcome.hundredths), COPY.calculator.doseUnit, state.expired),
       state.expired
         ? h(
             'div',
@@ -579,7 +579,7 @@ function resultScreen(state: AppState, outcome: Outcome, handlers: CalculatorHan
       { class: 'sheet' },
       // §7.4.1 — offered FROM the result, never in place of it.
       outcome.overrideAvailable
-        ? button('Why is this smaller?', handlers.onOpenOverride, { class: 'go quiet' })
+        ? button(COPY.calculator.whySmaller, handlers.onOpenOverride, { class: 'go quiet' })
         : null,
       // §8.2 dims the expired dose and adds its staleness banner — it does not
       // remove either the figure or the log control, which is what this branch
@@ -591,7 +591,7 @@ function resultScreen(state: AppState, outcome: Outcome, handlers: CalculatorHan
       // stamped with its time answers "did I already inject?", and deleting it
       // leaves §7.2's "how many units did you actually inject?" with nothing on
       // screen to answer from.
-      state.expired ? button('Check again', handlers.onNewCalculation, { class: 'go' }) : null,
+      state.expired ? button(COPY.calculator.checkAgain, handlers.onNewCalculation, { class: 'go' }) : null,
       // §7.2 — "Tap after §8.2 expiry is permitted with amended wording … but
       // the recorded timestamp is the tap time and the wording says so."
       // Quiet, because re-checking is the better move for almost everyone; but
@@ -636,7 +636,7 @@ function overrideScreen(state: AppState, outcome: Outcome, handlers: CalculatorH
         )
       : null,
     withheld
-      ? h('p', { class: 'hint' }, 'Both figures are large enough to need a second look, so neither is shown here.')
+      ? h('p', { class: 'hint' }, COPY.calculator.withheldBoth)
       : h(
           'div',
           { class: 'working' },
@@ -657,7 +657,7 @@ function overrideScreen(state: AppState, outcome: Outcome, handlers: CalculatorH
         handlers.onTakeOverride,
         { class: 'go quiet' },
       ),
-      button('Keep the smaller dose', handlers.onBack, { class: 'go' }),
+      button(COPY.calculator.keepSmaller, handlers.onBack, { class: 'go' }),
     ),
   );
 }
@@ -679,14 +679,14 @@ function amountScreen(state: AppState, outcome: Outcome, handlers: CalculatorHan
   return h(
     'div',
     { class: 'screen' },
-    stepDots(TOTAL_STEPS, TOTAL_STEPS, 'Recording'),
+    stepDots(TOTAL_STEPS, TOTAL_STEPS, COPY.calculator.stepRecording),
     h('div', { class: 'ask' }, COPY.log.amountQuestion),
     h('p', { class: 'hint' }, COPY.log.amountHint),
     h(
       'div',
       { class: 'entry' },
       h('div', { class: 'n' }, formatHundredths(Number.isFinite(draft) ? draft : 0)),
-      h('div', { class: 'u' }, 'UNITS'),
+      h('div', { class: 'u' }, COPY.calculator.unitDose),
     ),
     h(
       'div',
@@ -733,7 +733,7 @@ function loggedScreen(state: AppState, handlers: CalculatorHandlers): HTMLElemen
   return h(
     'div',
     { class: 'screen' },
-    stepDots(TOTAL_STEPS, TOTAL_STEPS, 'Logged'),
+    stepDots(TOTAL_STEPS, TOTAL_STEPS, COPY.calculator.stepLogged),
     payload === null
       ? null
       : h(
@@ -756,7 +756,7 @@ function loggedScreen(state: AppState, handlers: CalculatorHandlers): HTMLElemen
     h(
       'div',
       { class: 'sheet' },
-      button('History', handlers.onOpenHistory, { class: 'go quiet' }),
+      button(COPY.calculator.openHistory, handlers.onOpenHistory, { class: 'go quiet' }),
       button(COPY.done, handlers.onNewCalculation, { class: 'go' }),
     ),
   );
@@ -775,7 +775,7 @@ function recordReadingScreen(state: AppState, handlers: CalculatorHandlers): HTM
       // §7.8 — the offer PRE-FILLS the blocked reading. He already typed it, and
       // retyping invites a transcription error.
       h('div', { class: 'n' }, state.inputs.bloodSugar || '—'),
-      h('div', { class: 'u' }, 'MG/DL'),
+      h('div', { class: 'u' }, COPY.calculator.unitReading),
     ),
     Number(state.inputs.bloodSugar) >= KETONE_ADVISORY
       ? // §10.5 v10 — recording a reading at or above 250 shows band E ITSELF.

@@ -95,7 +95,7 @@ export function checkDraft(draft: SettingsDraft): FieldProblem[] {
       // the app is worse than a shorter one that does not.
       problems.push({
         field,
-        message: 'This is needed before a dose can be worked out.',
+        message: COPY.settings.fieldRequired,
         confirmable: false,
       });
       continue;
@@ -140,21 +140,21 @@ export function deltasFor(settings: Settings | null, draft: SettingsDraft): Delt
   // toward ketoacidosis over days. Only showing the delta catches it.
   if (draft.icr !== String(settings.icr)) {
     deltas.push({
-      label: 'How much one unit covers',
+      label: COPY.settings.deltaIcr,
       was: COPY.settings.icrSentence(String(settings.icr)),
       now: COPY.settings.icrSentence(draft.icr),
     });
   }
   if (draft.isf !== String(settings.isf)) {
     deltas.push({
-      label: 'How far one unit lowers you',
+      label: COPY.settings.deltaIsf,
       was: COPY.settings.isfSentence(String(settings.isf)),
       now: COPY.settings.isfSentence(draft.isf),
     });
   }
   if (draft.target !== String(settings.target)) {
     deltas.push({
-      label: 'What a correction aims for',
+      label: COPY.settings.deltaTarget,
       was: `${String(settings.target)} mg/dL`,
       now: `${draft.target} mg/dL`,
     });
@@ -252,13 +252,13 @@ function numberField(
   );
 }
 
-const MODES: readonly { readonly mode: RoundingMode; readonly label: string }[] = [
-  { mode: 'nearest', label: 'Whole units' },
-  { mode: 'half', label: 'Half units' },
-  { mode: 'ceil', label: 'Always round up' },
-  { mode: 'floor', label: 'Always round down' },
-  { mode: 'off', label: 'Show the exact number' },
-];
+/**
+ * The buttons ARE `COPY.rounding.modes` — the same list the how-it-works page
+ * explains, each entry carrying the mode it sets. Until 2026-09-13 the five
+ * names existed twice, here and there, so renaming one left the other
+ * disagreeing about what the button is called (§10.2).
+ */
+const MODES = COPY.rounding.modes;
 
 export function settingsScreen(
   draft: SettingsDraft,
@@ -275,7 +275,7 @@ export function settingsScreen(
   return h(
     'div',
     { class: 'screen' },
-    h('h1', {}, handlers.firstRun ? 'Your prescription' : 'Settings'),
+    h('h1', {}, handlers.firstRun ? COPY.settings.titleFirstRun : COPY.settings.title),
     // §1.2 as ruled — the three prescribed values arrive PREFILLED, and a
     // prefill that does not announce itself is the silent default §1.2 refused.
     // This flag is what makes it visible, and it says what is still outstanding
@@ -338,7 +338,7 @@ export function settingsScreen(
     // §10.1 item 5 — GROUP BY SUBJECT. "Two identical number rows stacked is the
     // layout that invites transposition." Blood-sugar settings in one group,
     // food in another, distinguished by heading — never colour alone.
-    h('h2', {}, 'Blood sugar'),
+    h('h2', {}, COPY.settings.sectionBloodSugar),
     numberField('target', COPY.settings.targetQuestion, draft.target, problemFor('target'), handlers, {
       decimal: false,
       suffix: 'mg/dL',
@@ -352,17 +352,17 @@ export function settingsScreen(
       decimal: true,
       tag: 'ISF',
       icon: '\u{1FA78}',
-      suffix: 'mg/dL per unit',
+      suffix: COPY.settings.isfSuffix,
       clinical: COPY.settings.isfClinical,
     }),
     draft.isf === ''
       ? null
       : h('p', { class: 'hint' }, COPY.settings.isfSentence(draft.isf)),
 
-    h('h2', {}, 'Food'),
+    h('h2', {}, COPY.settings.sectionFood),
     numberField('icr', COPY.settings.icrQuestion, draft.icr, problemFor('icr'), handlers, {
       decimal: true,
-      suffix: 'grams of carbohydrate',
+      suffix: COPY.settings.icrSuffix,
       clinical: COPY.settings.icrClinical,
       tag: 'ICR',
       icon: '\u{1F35A}',
@@ -375,8 +375,10 @@ export function settingsScreen(
     // it closes the ratios rather than opening the rounding question: the modes
     // decide how many units, this decides what a unit IS.
     h('p', { class: 'hint' }, COPY.settings.unitAssumption),
+    // §10.2 — the SAME string the how-it-works page renders, not a copy of it.
+    h('p', { class: 'hint' }, COPY.settings.insulinAssumption),
 
-    h('h2', {}, 'Rounding'),
+    h('h2', {}, COPY.settings.sectionRounding),
     h('div', { class: 'group-label', id: 'label-mode' }, COPY.settings.modeQuestion),
     // §15 — five modes were selectable with nothing explaining any of them, and
     // one of them is unsafe by default. This points at the explanation rather
@@ -385,9 +387,9 @@ export function settingsScreen(
     h(
       'div',
       { class: 'list', role: 'group', 'aria-labelledby': 'label-mode' },
-      ...MODES.map(({ mode, label }) =>
+      ...MODES.map(({ mode, name }) =>
         button(
-          label,
+          name,
           () => { handlers.onChange('mode', mode); },
           { class: draft.mode === mode ? 'go' : 'go quiet', 'aria-pressed': String(draft.mode === mode) },
         ),
@@ -402,7 +404,7 @@ export function settingsScreen(
       ? h(
           'div',
           { class: 'flag' },
-          h('b', {}, 'Read this before choosing that'),
+          h('b', {}, COPY.settings.ceilGateTitle),
           COPY.settings.ceilGate,
           h('div', { class: 'sheet' }, button(COPY.settings.ceilAccept, handlers.onAcknowledgeCeil, { class: 'go quiet' })),
         )
@@ -425,7 +427,7 @@ export function settingsScreen(
       h(
         'div',
         { class: 'field wide' },
-        h('label', {}, 'Which insulin'),
+        h('label', {}, COPY.settings.basalNameLabel),
         h('input', {
           type: 'text',
           autocomplete: 'off',
@@ -434,14 +436,14 @@ export function settingsScreen(
           oninput: (event) => { handlers.onChange('basalName', (event.target as HTMLInputElement).value); },
         }),
       ),
-      numberField('basalUnits', 'How many units', draft.basalUnits, problemFor('basalUnits'), handlers, {
+      numberField('basalUnits', COPY.settings.basalUnitsLabel, draft.basalUnits, problemFor('basalUnits'), handlers, {
         decimal: true,
         suffix: 'units',
       }),
       h(
         'div',
         { class: 'field wide' },
-        h('label', {}, 'When'),
+        h('label', {}, COPY.settings.basalTimingLabel),
         h('input', {
           type: 'text',
           autocomplete: 'off',
@@ -450,7 +452,7 @@ export function settingsScreen(
           oninput: (event) => { handlers.onChange('basalTiming', (event.target as HTMLInputElement).value); },
         }),
       ),
-      h('p', { class: 'hint' }, 'None of this enters any calculation. It is here so the record is complete.'),
+      h('p', { class: 'hint' }, COPY.settings.basalRecordNote),
     ),
 
     // §10.1.6 — the delta, shown before it is saved.
@@ -474,7 +476,7 @@ export function settingsScreen(
     h(
       'div',
       { class: 'sheet' },
-      button(handlers.firstRun ? 'Save and start' : 'Save', handlers.onSave, {
+      button(handlers.firstRun ? COPY.settings.saveFirstRun : COPY.settings.save, handlers.onSave, {
         class: 'go',
         disabled: blocking.length > 0 || needsCeilAck,
       }),
@@ -485,12 +487,12 @@ export function settingsScreen(
       : h(
           'div',
           { class: 'list' },
-          button('Show my settings as text', handlers.onOpenSettingsAsText, { class: 'go quiet' }),
-          button('How this works', handlers.onOpenHowItWorks, { class: 'go quiet' }),
-          button('Save or move the record', handlers.onOpenExport, { class: 'go quiet' }),
+          button(COPY.settings.openAsText, handlers.onOpenSettingsAsText, { class: 'go quiet' }),
+          button(COPY.settings.openHowItWorks, handlers.onOpenHowItWorks, { class: 'go quiet' }),
+          button(COPY.settings.openExport, handlers.onOpenExport, { class: 'go quiet' }),
           // §10.7 — destructive controls OUT of the primary thumb arc. Last on
           // the screen, visually distinct, and never beside a commit button.
-          button('Clear or start over', handlers.onOpenClear, { class: 'go danger' }),
+          button(COPY.settings.openClear, handlers.onOpenClear, { class: 'go danger' }),
         ),
   );
 }
