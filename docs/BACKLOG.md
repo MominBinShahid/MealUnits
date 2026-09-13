@@ -192,9 +192,16 @@ Mon 03:00  300  FULL CARD     Mon 21:00  295  compact     <- 18 hours apart, pla
 
 **What building it actually involves**, because it is larger than swapping a comparison:
 
-1. A new constant in `src/config.ts`. **The value is unruled.** 12 hours fixes both cases above and
-   caps the full card at twice a day; 24 preserves today's frequency but leaves the second case
-   broken. Recommend 12 and say so out loud when it lands.
+1. A new constant in `src/config.ts`. **RULED BY MOMIN 2026-09-13: 12 hours.** It fixes both cases
+   above and caps the full card at twice a day — a morning episode and a night episode each get one,
+   which is what "not twice in quick succession" means when the thing being spaced is an episode
+   rather than a date. 24 hours was the alternative: it preserves today's once-a-day frequency and
+   removes the midnight cliff, but leaves the 3 a.m./9 p.m. case collapsing into one.
+
+   **Not to be confused with `STACK_ADVISE_HOURS`, which is also 12.** Two constants with the same
+   value and no relationship — one is about insulin still acting, this one is about how often a card
+   is allowed to be large. §11.8's file separates them by section for exactly this reason, and
+   neither may be derived from the other.
 2. `deriveBandEFullCardShownToday` in `src/core/history.ts` — under the 100% mutation gate — stops
    comparing day keys and compares an elapsed duration.
 3. **It stops needing a time zone at all.** The `timeZone` parameter goes, and with it this
