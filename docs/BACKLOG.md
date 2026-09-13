@@ -726,10 +726,33 @@ covers; it just does not cover this.
 
 ---
 
-### T9. §7.8's home-screen reading entry, and the note control
+### T9. Log a reading, any time — not only after a blocked low
 
-**Trigger: whenever readings matter more than they do today.** Deferred 2026-09-11 with §7.8's
-amendment; recorded here because §7.8 stopped promising it and something has to carry it.
+**Momin, 2026-09-13: "the recording on blocked low is something else entirely."** He is right, and
+this entry was filed under the wrong idea. Two different features have been sharing one number:
+
+| | What it is |
+|---|---|
+| **What shipped** | After a band C or D block, the app offers to save the reading it just refused to dose on. That offer exists because the refusals were the rows going missing — it is a by-product of a refusal |
+| **What people actually want** | Open the app, type the number you just measured, save it. No dose, no refusal, no occasion. **A log.** Someone checking every two hours during an illness has nowhere to put those readings today unless each one happens to be a blocked low |
+
+**Trigger: Momin's own framing — people want it, so it goes in.** Not "whenever readings matter more
+than they do today", which is what this entry said while the feature was the point of §7.8 all along.
+
+§7.8 specified reading entry as *"One field, one button, available from the home screen and offered
+automatically after any band C or band D block"*, with an optional `note` from a fixed list — *before
+bed*, *overnight*, *felt low*, *after exercise*. **Only the post-block half shipped.**
+`COPY.reading.noteQuestion` has no consumer, and `ViewState.readingNote` is never set by any control,
+so the fixed list renders only for rows that arrived by import.
+
+**The line that governs it: these entries are RECORD ONLY.** §7.8's *"not an input to anything"* —
+a reading never clears suspect provenance, never enters a dose, never moves a gate. That property is
+what makes the feature safe to add freely, and note 62 is what happens when it is weakened by
+accident. Entry 22's ketone field wants the same entry point and the same rule.
+
+**Miscategorised, deliberately not moved.** This sits under TECHNICAL, whose charter is work waiting
+on something outside this project. This waits on nothing — it is a feature request. It keeps the
+number because `T9` is cited from entry 22 and renumbering is how pointers rot (§20.3).
 
 §7.8 specified a reading as *"One field, one button, available from the home screen and offered
 automatically after any band C or band D block"*, with an optional `note` from a fixed list —

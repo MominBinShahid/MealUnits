@@ -505,8 +505,14 @@ NICE and Diabetes UK material is quoted with citation here and **must not be cop
    claim. The question is whether to add the never-stop-insulin counterweight, because the way this
    sentence fails is a reader deciding insulin is pointless.
 7. **Is there a ketone recheck interval that holds for regular human insulin?** ISPAD's "should have
-   fallen by two hours" is derived from analogues, and section 4 already refuses two-hour reasoning
-   for Humulin R.
+   fallen by two hours" is derived from analogues, which peak at 1-2 hours; Humulin R peaks at 2-4,
+   so at the two-hour mark it has not finished working. Applying the analogue interval risks a false
+   escalation, and worse, a second dose on top of insulin still climbing — which is the stacking
+   event §7.4 exists to prevent. Section 4 already refuses two-hour reasoning for Humulin R.
+
+   **PARKED BY MOMIN 2026-09-13.** Not withdrawn — it stays on the list for the appointment — but
+   nothing waits on it: `BACKLOG.md` entry 22 holds the feature it would govern, and that entry is
+   explicitly not to be built before this is answered.
 8. **Not a question — an observation, and it stays one.** Long-acting insulin is 36 units of a daily
    total of 84–111 — **32–43%**, against a commonly cited 40–50%. That is arithmetic from his own figures, recorded so it reaches you, and not a
    recommendation.
