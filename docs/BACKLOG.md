@@ -48,7 +48,7 @@ these steps have a dependency that is not obvious from reading them.
 | 3 | **Rule on the `[CONFIRM]` build notes**, one at a time | **DONE 2026-09-13.** No entry carries the tag any more. 52 and 59 ruled keep; 16 rewritten to stop hand-carrying counts; 60 split, its open half now entry 20 | Moved AHEAD of `T5` on Momin's instruction. Each recorded a decision already implemented; the question was whether it was right |
 | 3a | **Prune every Markdown document** | **DONE 2026-09-13.** `BUILD-NOTES.md` lost most of its body, `PLAN.md` its revision history, `BLOG-FIX.md` its investigation; `CLINICAL.md` and `CARBS.md` untouched. `git log` has the figures — they rot if written here | **After step 3**, because the `[CONFIRM]` rulings decided what the notes still had to carry. *"We can't keep everything for ever, so we will only keep things that earn their place."* Every build-note NUMBER survived even where its body did not — many are cited from source and tests |
 | 4 | **`T5` — the audience change.** Empty prescription fields with the strengthened hints, and the confirmation threshold made relative | | **This gates step 5.** Ranking an app that prefills a stranger's dosing ratios is the version of this that goes wrong |
-| 5 | **`4a` + `T6` — search and measurement.** Open Graph, canonical, sitemap, Search Console | | After `T5`, never before |
+| 5 | **`4a` + `T6` — search and measurement.** Open Graph, canonical, sitemap, Search Console | **DONE 2026-09-14, to the scope written in this row.** `4a` shipped whole; `T6`'s Search Console half is verified on both properties and the sitemap submitted. **Analytics was never in this row** — it is the other half of `T6`, it moved to item 12, and Momin deferred it the day this closed | After `T5`, never before |
 | 6 | **`T3` — Preact** | | Kills the whole render-teardown defect class by construction |
 | 7 | **`10a` — Urdu** | | **Depends on `T3`**: the current render destroys IME composition state, which is how Urdu is typed |
 
@@ -420,8 +420,11 @@ is — and short enough that nothing truncates, since the clause a preview cuts 
    dependency it cannot see.
 3. **The apex sitemap lists five URLs and none is MealUnits.** The sitemap here covers this app's own
    path — legitimate, since a sitemap may list URLs at or below its own location — and has to be
-   submitted directly in Search Console. The app was added to the apex sitemap separately, in the
-   other repository.
+   submitted directly in Search Console. **It was NOT added to the apex sitemap** — that file still
+   lists the same five URLs. The other repository names this one as a second `Sitemap:` directive in
+   the apex `robots.txt` instead, which is the file a crawler reads from the host root. An earlier
+   version of this paragraph claimed the sitemap, contradicting its own first sentence; corrected
+   2026-09-14 against the live files.
 
 **A fourth thing was got WRONG first, and the correction is the interesting part.** The first draft
 wrote `<changefreq>` and `<priority>` by hand. Google's own documentation says plainly that it
@@ -458,7 +461,8 @@ maps, "for a developer at a desk, not a phone on mobile data". `check-plan.py`'s
 `check_public_assets_classified` now pins every `public/` entry as precached or crawler-only, and
 checks both that the classification is complete and that `vite.config.ts` still honours it.
 
-**Still open, and it needs Momin:** `T6`'s Search Console verification token.
+**That was the last thing needing Momin, and it is closed.** The verification tag is live on both
+properties and the sitemap is submitted — see `T6`, which now records the Search Console half only.
 
 **What exists** in `index.html`: `<title>`, a `<meta name="description">` that reads *"An insulin
 dose calculator for people with type 1 diabetes. Not a medical device."* — corrected on 2026-09-13,
@@ -599,6 +603,19 @@ no script at all.
 **A limit no analytics escapes here:** offline sessions do not report, and offline is when this
 app matters most. Any number will undercount, and undercount exactly the usage worth knowing
 about.
+
+**What §11.5 does to the shortlist above — folded in from `T6`, 2026-09-14.** Cookieless and
+same-origin are different properties, and only the second one matters to the policy. Plausible is
+cookieless and still **blocked**, because its script loads from a third-party origin, as does every
+other drop-in tag; the policy refuses them rather than merely discouraging them. Loosening
+`default-src 'self'` to admit one analytics origin admits everything else at that origin — which is
+the read access to the dose log described above. *Three shapes survive:* a self-hosted collector
+behind this same origin, script-free server-side measurement, or GitHub's repo traffic stats, which
+survive trivially by not being in the page at all.
+
+**And what may be measured is bounded by the same reasoning as the export.** This app holds blood
+sugar readings and insulin doses. Counting page views is fine; anything that could carry a reading or
+a dose off the device is not, and nothing in this app has ever sent data anywhere.
 
 ### 13. AI carbohydrate estimation — MOVED HERE FROM "NEVER", 2026-09-06
 **Momin asked for this in v2 and it was misfiled.** The old entry sat under NEVER while
@@ -949,25 +966,20 @@ turns out to have a different answer per number, and one of them inverts:
 **So the T5 plan is supported by published practice on every count**, and the one addition the
 research argues for is that the ketone threshold be explicitly excluded from anything user-editable.
 
-### T6. Analytics and Search Console, for a public app
+### T6. Search Console — DONE 2026-09-14. Its analytics half moved to item 12
 
-**Trigger: alongside item 4a, once the audience change (T5) is ruled on.**
+**Trigger: alongside item 4a, once the audience change (T5) is ruled on.** Both happened.
 
-**Search Console** — verify the property, submit a sitemap, and read what people actually search to
-land on it. Verification is a meta tag or a DNS record; neither costs anything at runtime.
+**Search Console — DONE.** Both properties are verified twice over: auto-verified through the parent
+property, then independently by a `google-site-verification` tag, so this app's ownership does not
+rest on the blog's. `/MealUnits/sitemap.xml` is submitted. Reading what people search to land on it
+is not a task — it is what the verification exists to make possible, months from now.
 
-**Analytics is not a free choice here, and item 12 already ruled on it.** `BACKLOG.md` item 12 moved
-usage analytics out of "NEVER" on 2026-09-06 — read that entry before implementing, because the
-constraint it records still binds: §11.5's content security policy is `default-src 'self'` **with no
-third-party origins**, so Google Analytics, Plausible's hosted script and every other drop-in tag are
-**blocked by the policy**, not merely discouraged. Loosening the policy to admit an analytics origin
-also admits everything else at that origin.
-
-*Which leaves two honest options:* a self-hosted collector behind the same origin, or Cloudflare Web
-Analytics-style server-side measurement that needs no script. **And what may be measured is bounded
-by the same reasoning as the export:** this app holds blood sugar readings and insulin doses. Counting
-page views is fine; anything that could carry a reading or a dose off the device is not, and nothing
-in this app has ever sent data anywhere.
+**Analytics was the other half of this entry and never shipped.** Its reasoning is folded into item
+12, where usage analytics already lived, and **Momin deferred it on 2026-09-14** when step 5 closed:
+*"can we discuss analytics after other task?"* This heading used to claim both halves, which is how
+a step could look finished while half its entry had not started — splitting them is why it no longer
+does.
 
 ---
 
@@ -975,6 +987,10 @@ in this app has ever sent data anywhere.
 
 **REQUESTED BY MOMIN 2026-09-13, alongside `4a` and `T6`.** Run Lighthouse — or an equivalent — over
 the deployed app and act on what it finds.
+
+**UNBLOCKED 2026-09-14, and deliberately queued behind the other work on Momin's ruling.** The SEO
+category's precondition below — run it after `4a` ships — is now met, so nothing is waiting on this
+entry except a decision about when.
 
 **Four categories, and they are not equally useful to this app.**
 
