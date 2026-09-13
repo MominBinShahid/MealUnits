@@ -463,13 +463,25 @@ NICE and Diabetes UK material is quoted with citation here and **must not be cop
 
 ## 14. Questions worth putting to the prescriber
 
-1. **Is the target of 150 mg/dL deliberate, and what would need to change for it to come down?** It
-   is above the ADA's 80–130 preprandial goal, which is defensible given the 65 mg/dL readings — but
-   the app treats it as fixed and this file should not pretend to know why it was chosen.
-2. **Have the injection sites been examined?** It is the cheapest explanation on the list in
-   section 10 and the only one with a physical sign.
-3. **Where do the lows fall?** The record answers this, and the answer changes which of section 10's
-   explanations is live.
+1. ~~**Is the target of 150 mg/dL deliberate?**~~ **ANSWERED BY MOMIN, 2026-09-13: yes, and it is
+   temporary.** It is deliberate on two grounds — the 65 mg/dL readings, and that his brother runs
+   high habitually, so the prescriber did not want to pull the target down fast and manufacture
+   hypoglycaemia on the way. **It is the current recommendation, not a settled one**, and Momin
+   expects it to come down toward 120 and then a normal range over the next few months.
+
+   **Two consequences.** The app already treats the target as a setting rather than a constant, which
+   is the correct shape for a number expected to move — nothing needs changing. And this is the
+   clearest possible case for `T5`: **150 is one man's prescription at one moment in his treatment**,
+   which is not a thing to prefill for a stranger.
+2. **Have the injection sites been EXAMINED?** Still open, and narrowed by Momin on 2026-09-13:
+   his brother uses the usual sites — abdomen and thigh — and has been injecting since he was ten,
+   so he is not naive about rotation. **That lowers the prior; it does not answer the question.**
+   Lipohypertrophy develops under correct rotation too, and only a physical examination finds it.
+   Still the cheapest item on section 10's list and the only one with a physical sign.
+3. ~~**Where do the lows fall?**~~ **NOT A QUESTION FOR THE PRESCRIBER — the record answers it**,
+   confirmed by Momin 2026-09-13. It is why §7.8 exists. Lows after smaller-than-usual meals support
+   the fixed-dose explanation; lows overnight point at the long-acting insulin. It is carried here so
+   the export is read with the question in mind, not so anyone is asked it.
 4. **Should the ketone advisory reset on a calendar day, or on something else?** A 3 a.m. reading
    and a 9 a.m. reading are arguably one episode.
 5. **Should the ketone advisory move from 250 to 200 mg/dL, stay at 250, or stay at 250 and gain an
@@ -484,6 +496,6 @@ NICE and Diabetes UK material is quoted with citation here and **must not be cop
 7. **Is there a ketone recheck interval that holds for regular human insulin?** ISPAD's "should have
    fallen by two hours" is derived from analogues, and section 4 already refuses two-hour reasoning
    for Humulin R.
-8. Long-acting insulin is 36 units of a daily total of 84–111 — **32–43%**, against a commonly cited
-   40–50%. That is arithmetic from his own figures, recorded so it reaches you, and not a
+8. **Not a question — an observation, and it stays one.** Long-acting insulin is 36 units of a daily
+   total of 84–111 — **32–43%**, against a commonly cited 40–50%. That is arithmetic from his own figures, recorded so it reaches you, and not a
    recommendation.
