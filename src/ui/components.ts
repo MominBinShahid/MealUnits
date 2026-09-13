@@ -40,7 +40,7 @@ export function keypad(options: {
   );
 
   const dot = options.decimal
-    ? button('.', () => { options.onDigit('.'); }, { class: 'key dim', 'aria-label': 'decimal point' })
+    ? button('.', () => { options.onDigit('.'); }, { class: 'key dim', 'aria-label': COPY.calculator.decimalPointLabel })
     : h('button', { class: 'key dim', type: 'button', disabled: true, 'aria-hidden': 'true' });
 
   const primary = button(options.action.label, options.action.onPress, {

@@ -847,11 +847,21 @@ def check_ui_text_outside_copy(_plan):
     The header's claim is what made this invisible. A file that says it holds
     everything is not re-checked, so the drift never surfaced.
 
-    **What this cannot see: template literals.** `misc.ts` built a history row
-    as `${reading} · ${carbs} g of carbohydrate`, and prose inside backticks is
-    invisible to a quoted-string sweep. Those four fragments were moved by hand
-    on 2026-09-14; a new one would escape this check, and that limit is written
-    here rather than left for a later reader to discover.
+    **Template literals were the first blind spot, and are now covered.**
+    `misc.ts` built a history row as `${reading} · ${carbs} g of carbohydrate`,
+    and prose inside backticks is invisible to a quoted-string sweep. The second
+    review found three more the same way — the HI/LO hint and "Eat around
+    {time}" — so backticks are scanned too, with the `${...}` holes removed
+    first and two consecutive words required before anything is reported.
+
+    **`aria-label` is text, and is NOT exempt.** Two stepper buttons carried
+    "half a unit less" and "half a unit more" as attribute literals. A string
+    read aloud to a blind user is user-facing; `aria-labelledby` and
+    `aria-describedby` stay exempt because they hold element ids, not words.
+
+    **What it still cannot see:** a sentence assembled by concatenating
+    single-word literals, and any string built at runtime from data. Neither has
+    appeared here yet.
 
     Shown to fail by execution, the standard §20.3 sets: re-inlining
     `COPY.settings.saveFirstRun` as its literal produces the finding, and
@@ -877,12 +887,25 @@ def check_ui_text_outside_copy(_plan):
                     if " " not in value or value in UI_TEXT_OK:
                         continue
                     if re.search(r"(?:class|id|type|role|inputmode|autocomplete|lang"
-                                 r"|data-[\w-]+|aria-[\w-]+)'?\s*:\s*$", line[:match.start()]):
+                                 r"|data-[\w-]+|aria-(?:labelledby|describedby|hidden"
+                                 r"|live|pressed|expanded))'?\s*:\s*$", line[:match.start()]):
                         continue
                     out.append("%s:%d renders %r, but src/ui/copy.ts claims to hold every"
                                " user-facing string — move it there, or add it to UI_TEXT_OK"
                                " if it is markup rather than words"
                                % (rel, number, value))
+                for match in re.finditer(r"`((?:[^`\\]|\\.)*)`", line):
+                    # The `${...}` holes are values, not words. What is left is
+                    # the prose the template wraps around them.
+                    prose = re.sub(r"\$\{[^}]*\}", " ", match.group(1))
+                    if not re.search(r"[A-Za-z]{2,}\s+[A-Za-z]{2,}", prose):
+                        continue
+                    if prose.strip() in UI_TEXT_OK:
+                        continue
+                    out.append("%s:%d builds %r inside a template literal, but src/ui/copy.ts"
+                               " claims to hold every user-facing string — move the sentence"
+                               " there as a function taking the values"
+                               % (rel, number, prose.strip()))
     return out
 
 

@@ -154,7 +154,7 @@ function readingRow(row: Reading, handlers: HistoryHandlers): HTMLElement {
       'div',
       { class: 'k' },
       h('b', {}, `${formatDate(row.timestamp, handlers.timeZone)}, ${formatClockTime(row.timestamp, handlers.timeZone)}`),
-      `${String(row.bloodSugar)} mg/dL — reading only, no dose${note}`,
+      COPY.screens.readingOnly(String(row.bloodSugar), note),
     ),
     // §7.8 — reading rows are deletable with a PLAIN confirmation. §7.3's
     // stacking-consequence wording does not apply: deleting a reading removes a
@@ -240,7 +240,7 @@ function dosingQuestion(handlers: ExportHandlers): HTMLElement | null {
           { class: 'hint' },
           handlers.dosingAnsweredAtMs === null
             ? ''
-            : `Answered ${formatDate(handlers.dosingAnsweredAtMs, handlers.timeZone)}. Editing it replaces the answer and re-dates it.`,
+            : COPY.screens.dosingAnsweredAt(formatDate(handlers.dosingAnsweredAtMs, handlers.timeZone)),
         )
       : h('p', { class: 'hint' }, COPY.dosingHistory.hint),
     h(
@@ -653,8 +653,19 @@ export function howItWorksScreen(advisoryStatus: string): HTMLElement {
 
     h('h2', {}, COPY.screens.mealCheckTitle),
     h('p', {}, advisoryStatus),
-    h('p', { class: 'hint' }, `It needs ${String(ADVISORY_MIN_ELIGIBLE)} logged meals before it can say anything.`),
+    h('p', { class: 'hint' }, COPY.screens.mealCheckNeeds(String(ADVISORY_MIN_ELIGIBLE))),
   );
+}
+
+/**
+ * The mode's DISPLAY name, not its key. Until 2026-09-14 this screen rendered
+ * `settings.mode` raw, so the page built to be photographed and handed to a
+ * doctor read "Doses are rounded to — ceil". The one reader who most needs the
+ * setting to be legible got the enum.
+ */
+function roundingName(mode: Settings['mode']): string {
+  const found = COPY.rounding.modes.find((entry) => entry.mode === mode);
+  return found === undefined ? mode : found.name;
 }
 
 /** §10.6 item 4 — "show my settings as text", made to be photographed. */
@@ -669,7 +680,7 @@ export function settingsAsTextScreen(settings: Settings): HTMLElement {
       h('li', { class: 'li' }, h('div', { class: 'k' }, COPY.screens.recordTarget), h('div', { class: 'v' }, `${String(settings.target)} mg/dL`)),
       h('li', { class: 'li' }, h('div', { class: 'k' }, COPY.settings.isfSentence(String(settings.isf)))),
       h('li', { class: 'li' }, h('div', { class: 'k' }, COPY.settings.icrSentence(String(settings.icr)))),
-      h('li', { class: 'li' }, h('div', { class: 'k' }, COPY.screens.asTextRounding), h('div', { class: 'v' }, settings.mode)),
+      h('li', { class: 'li' }, h('div', { class: 'k' }, COPY.screens.asTextRounding), h('div', { class: 'v' }, roundingName(settings.mode))),
       h('li', { class: 'li' }, h('div', { class: 'k' }, COPY.screens.asTextThreshold), h('div', { class: 'v' }, units(settings.threshold * HUNDREDTHS_SCALE))),
     ),
     h(

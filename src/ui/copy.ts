@@ -662,7 +662,6 @@ export const COPY = {
   // ── §10.1 — naming the two ratios ─────────────────────────────────────────
   settings: {
     targetQuestion: 'What should a correction aim for?',
-    targetUnit: 'MG/DL',
     /** The target had no explanatory line at all, only the question. */
     targetClinical:
       'The blood sugar your doctor wants you at before a meal. Often between 100 and 150. Hasham\u2019s is 150.',
@@ -683,12 +682,10 @@ export const COPY = {
     icrQuestion: 'How much carbohydrate does one unit cover?',
     icrClinical:
       'Insulin-to-carbohydrate ratio (ICR). Often written "1 to 10" — meaning one unit covers 10 grams of carbohydrate. Hasham\u2019s is 10.',
-    icrUnit: 'GRAMS OF CARBOHYDRATE',
     /** §10.1.6 — the delta confirmation. A ratio fat-fingered 10→40 is inside
      * the accepted range, produces 5 units instead of 20 on a 200 g meal, and
      * passes every other check. */
     deltaTitle: 'Check this change',
-    delta: (was: string, now: string): string => `was: ${was}\nnow: ${now}`,
     softConfirm: 'That is outside the usual range. Is it right?',
     /**
      * §8.5 — "setup states the assumption". It never did: until 2026-09-12 the
@@ -744,7 +741,7 @@ export const COPY = {
      * carries it as an open question.
      */
     insulinAssumption:
-      `The timing here is built around Humulin R — regular human insulin, which starts working slowly and lasts a long time. Two things depend on that: the ${String(EAT_MIN)}\u2013${String(EAT_MAX)} minutes to wait before eating, and the ${String(STACK_SUPPRESS_HOURS)} and ${String(STACK_ADVISE_HOURS)} hour windows the stacking check uses. If you take a rapid-acting insulin — NovoRapid, Humalog, Apidra — it starts sooner and clears sooner, and both of those are wrong for you. The dose itself is still yours, because your ISF and ICR were set for your own insulin. Ask your doctor how long before a meal to inject, and how long to leave between corrections.`,
+      `The timing here is built around Humulin R — regular human insulin, which starts working slowly and lasts a long time. Two things depend on that: the ${String(EAT_MIN)}\u2013${String(EAT_MAX)} minutes to wait before eating, and the ${String(STACK_SUPPRESS_HOURS)}-hour and ${String(STACK_ADVISE_HOURS)}-hour windows the stacking check uses. If you take a rapid-acting insulin — NovoRapid, Humalog, Apidra — it starts sooner and clears sooner, and both of those timings are wrong for you. The dose itself is still yours, because your ISF and ICR were set for your own insulin. Ask your doctor how long before a meal to inject, and how long to leave between corrections.`,
     /**
      * The settings SCREEN's own words, moved here on 2026-09-13. They rendered
      * from literals in `screens/settings.ts` until then, which made this file's
@@ -754,6 +751,7 @@ export const COPY = {
      * tests are the proof that nothing on screen moved with them.
      */
     fieldRequired: 'This is needed before a dose can be worked out.',
+    outOfHardRange: (lo: string, hi: string): string => `Must be between ${lo} and ${hi}.`,
     isfSuffix: 'mg/dL per unit',
     icrSuffix: 'grams of carbohydrate',
     titleFirstRun: 'Your prescription',
@@ -857,7 +855,6 @@ export const COPY = {
       'Nothing is filled in, on purpose. Target, ISF and ICR come from your own prescription — another person’s are wrong for you. Then add your long-acting insulin below to finish.',
     thresholdHeading: 'When to double-check',
     thresholdQuestion: 'Double-check my typing when the dose reaches',
-    thresholdUnit: 'UNITS',
     /** §5.1 — `ceil` is gated behind a one-time acknowledgement. */
     ceilGate:
       'Rounding up adds as much as a whole unit to every dose, always in the direction of low blood sugar. On a 1-unit correction that doubles it.',
@@ -890,6 +887,24 @@ export const COPY = {
     unitReading: 'MG/DL',
     unitCarbs: 'GRAMS OF CARBOHYDRATE',
     unitDose: 'UNITS',
+    /** Read aloud rather than seen, which does not make them less user-facing. */
+    amountDownLabel: 'half a unit less',
+    amountUpLabel: 'half a unit more',
+    meterHiLoHint: (maxReading: string): string =>
+      `Meter showing HI? Enter ${maxReading}. Showing LO? Don't enter a number — treat first.`,
+    eatAround: (at: string): string => `Eat around ${at}.`,
+    /**
+     * The working's own sentences. They were template literals in
+     * `screens/calculator.ts` until 2026-09-14, which is how they survived both
+     * the hand sweep and the first review — prose inside backticks is invisible
+     * to anything looking for quoted strings. `check-plan.py` reads backticks
+     * now, and found these.
+     */
+    correctionRow: (from: string, to: string): string => `${from} down to ${to}`,
+    mealRow: (grams: string): string => `${grams} g of carbohydrate`,
+    exactBeforeRounding: (exact: string): string =>
+      `Worked out exactly: ${exact} units, then rounded.`,
+    decimalPointLabel: 'decimal point',
     stepCheck: 'Check',
     stepRecording: 'Recording',
     stepLogged: 'Logged',
@@ -933,12 +948,26 @@ export const COPY = {
      * translator to move around.
      */
     noReading: 'no reading',
-    stackingOverridden: 'recent-insulin check overridden',
+    /**
+     * "the stacking check", not "recent-insulin check" — which appeared exactly
+     * once in the product, here, five lines from `outsideStackingWindow` saying
+     * the other name in the same flow. The explainer commits to the word in
+     * writing: "it is the word the app uses on the result screen and in
+     * Settings." The cost is real: "recent-insulin check" self-explains to a
+     * reader who skipped the explainer, and this loses them that.
+     */
+    stackingOverridden: 'stacking check overridden',
     historyIntake: (reading: string, carbs: string): string =>
       `${reading} \u00b7 ${carbs} g of carbohydrate`,
+    readingOnly: (reading: string, note: string): string =>
+      `${reading} mg/dL \u2014 reading only, no dose${note}`,
+    dosingAnsweredAt: (at: string): string =>
+      `Answered ${at}. Editing it replaces the answer and re-dates it.`,
+    mealCheckNeeds: (meals: string): string =>
+      `It needs ${meals} logged meals before it can say anything.`,
     historyDose: (calculated: string, injected: string): string =>
       `calculated ${calculated} \u00b7 injected ${injected}`,
-    outsideStackingWindow: 'This is older than the stacking check looks at.',
+    outsideStackingWindow: 'This entry is older than anything the stacking check looks at.',
     delete: 'Delete',
     yourAnswer: 'Your answer',
     exportTitle: 'Keeping the record',
@@ -968,7 +997,14 @@ export const COPY = {
     mealCheckTitle: 'The meal-size check',
     asTextTitle: 'My settings',
     asTextRounding: 'Doses are rounded to',
-    asTextThreshold: 'Asks me to re-read at',
+    /**
+     * NOT "Asks me to re-read at", which this said until 2026-09-14. §10.1
+     * retired "re-read my numbers" because it read as "check your meter again",
+     * a different action — and the as-text screen brought it back on the one
+     * screen built to be photographed and read with no surrounding context.
+     * G14 rules "double-check" as this feature's single user-facing name.
+     */
+    asTextThreshold: 'Double-checks my typing at',
     asTextFooter: 'This screen is meant to be photographed and shown to your doctor.',
     foodsMakeYours: 'Make these yours',
     opening: 'Opening your record\u2026',

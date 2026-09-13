@@ -536,10 +536,27 @@ NICE and Diabetes UK material is quoted with citation here and **must not be cop
 
    `COPY.settings.insulinAssumption` states it on Settings and on the how-it-works page. **The
    prescriber is asked to amend the sentence, not to decide whether it belongs** — the same standing
-   as the illness half of question 5. Two specifics worth their attention: whether naming NovoRapid,
-   Humalog and Apidra as the analogue examples is the right list for Pakistan, and whether
-   "the dose itself is still yours, because your ISF and ICR were set for your own insulin" is safe
-   to say — it is the one part of the sentence that reassures rather than warns.
+   as the illness half of question 5.
+
+   **Four specifics, sharpened by a second review on 2026-09-14.**
+
+   1. **The reassuring clause asserts something the app cannot know.** *"The dose itself is still
+      yours, because your ISF and ICR were set for your own insulin"* is false for a reader who
+      switched insulins and kept stale ratios. The clause earns its place — without it *"both of
+      those timings are wrong for you"* reads as *"this app is wrong for you"*, and an analogue user
+      who distrusts arithmetic that is correct for them is the worse outcome. But it may want
+      hedging. One candidate, entirely the prescriber's call: *"The dose itself can still be yours —
+      ISF and ICR come from your own prescription, for the insulin you actually take."*
+   2. **The analogue list, and two populations it does not name.** Is NovoRapid / Humalog / Apidra
+      the right list for Pakistan? The class words cover **ultra-rapid** analogues (Fiasp, Lyumjev)
+      but the examples do not name them, and **premixed** insulins fall in neither bucket.
+   3. **Should the action displace the app's own wait line?** *"Ask your doctor how long before a
+      meal to inject"* gets the reader the right number — but the app goes on rendering the
+      Humulin R wait after every dose. Ending *"…and follow their answer rather than the wait this
+      app shows"* would be a real strengthening, and it tells a reader to disregard part of the
+      interface, which is not a change to make without a prescriber's approval.
+   4. **The lay gloss.** Is *"starts working slowly and lasts a long time"* an acceptable numberless
+      rendering of onset ~30 minutes and duration 5-8 hours?
 9. **Not a question — an observation, and it stays one.** Long-acting insulin is 36 units of a daily
    total of 84–111 — **32–43%**, against a commonly cited 40–50%. That is arithmetic from his own figures, recorded so it reaches you, and not a
    recommendation.

@@ -109,7 +109,7 @@ export function checkDraft(draft: SettingsDraft): FieldProblem[] {
       const [lo, hi] = RANGE[field].hard;
       problems.push({
         field,
-        message: `Must be between ${String(lo)} and ${String(hi)}.`,
+        message: COPY.settings.outOfHardRange(String(lo), String(hi)),
         confirmable: false,
       });
       continue;

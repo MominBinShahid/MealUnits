@@ -158,7 +158,7 @@ function working(state: AppState, breakdown: Breakdown, doseHundredths: number):
   const rows: HTMLElement[] = [];
 
   if (settings !== null && state.inputs.bloodSugar !== '') {
-    const label = `${state.inputs.bloodSugar} down to ${String(settings.target)}`;
+    const label = COPY.calculator.correctionRow(state.inputs.bloodSugar, String(settings.target));
     const value = formatHundredths(breakdown.correctionHundredths);
     rows.push(
       breakdown.correctionSuppressed
@@ -179,7 +179,7 @@ function working(state: AppState, breakdown: Breakdown, doseHundredths: number):
       h(
         'div',
         { class: 'row' },
-        h('span', {}, `${state.inputs.carbs} g of carbohydrate`),
+        h('span', {}, COPY.calculator.mealRow(state.inputs.carbs)),
         h('b', {}, formatHundredths(breakdown.mealHundredths)),
       ),
     );
@@ -199,7 +199,7 @@ function working(state: AppState, breakdown: Breakdown, doseHundredths: number):
       h(
         'div',
         { class: 'exact' },
-        `Worked out exactly: ${formatHundredths(breakdown.exactTotalHundredths)} units, then rounded.`,
+        COPY.calculator.exactBeforeRounding(formatHundredths(breakdown.exactTotalHundredths)),
       ),
     );
   }
@@ -368,7 +368,7 @@ function entryScreen(
       'p',
       { class: 'hint' },
       isReading
-        ? `Meter showing HI? Enter ${String(maxReading)}. Showing LO? Don't enter a number — treat first.`
+        ? COPY.calculator.meterHiLoHint(String(maxReading))
         : // §10.1 — "the carbohydrate field says GRAMS OF CARBOHYDRATE, never
           // grams or carbs". A 250 g plate of biryani is about 50 g of
           // carbohydrate: two real numbers, both in grams, five-fold apart.
@@ -693,8 +693,8 @@ function amountScreen(state: AppState, outcome: Outcome, handlers: CalculatorHan
       // No `bar`, and no spacer: the spacer is what pushed these to opposite
       // edges and let them collapse to 28px wide. See `.stepper` in styles.css.
       { class: 'stepper' },
-      button('−', () => { handlers.onAdjustAmount(-AMOUNT_STEP_HUNDREDTHS); }, { class: 'key', 'aria-label': 'half a unit less' }),
-      button('+', () => { handlers.onAdjustAmount(AMOUNT_STEP_HUNDREDTHS); }, { class: 'key', 'aria-label': 'half a unit more' }),
+      button('−', () => { handlers.onAdjustAmount(-AMOUNT_STEP_HUNDREDTHS); }, { class: 'key', 'aria-label': COPY.calculator.amountDownLabel }),
+      button('+', () => { handlers.onAdjustAmount(AMOUNT_STEP_HUNDREDTHS); }, { class: 'key', 'aria-label': COPY.calculator.amountUpLabel }),
     ),
     // §7.1 — the commit gate's answers, beside the stepper that fixes them.
     // The hard cap and the zero are refusals with no way through (§4.5: hard
@@ -746,7 +746,7 @@ function loggedScreen(state: AppState, handlers: CalculatorHandlers): HTMLElemen
             ? h(
                 'div',
                 { class: 'flag mint' },
-                h('b', {}, `Eat around ${formatClockTime(window.toMs, handlers.timeZone)}.`),
+                h('b', {}, COPY.calculator.eatAround(formatClockTime(window.toMs, handlers.timeZone))),
               )
             : null,
           state.save.kind === 'pending'

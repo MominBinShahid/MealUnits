@@ -701,6 +701,18 @@ describe('§10.6 back from "How this works" returns where you came from', () => 
     expect(text()).toContain('What can your syringe measure?');
   });
 
+  it('prints the rounding mode by name, not by its key', async () => {
+    // The screen made to be PHOTOGRAPHED for a doctor rendered `settings.mode`
+    // raw until 2026-09-14, so it read "Doses are rounded to — nearest", and on
+    // the two modes that matter most "— ceil" and "— off". The one reader who
+    // most needs the setting to be legible got the enum.
+    await setUpAsHisBrother();
+    await tap('Settings');
+    await tap('Show my settings as text');
+    expect(text()).toContain('Whole units');
+    expect(text()).not.toContain('nearest');
+  });
+
   it('names the long-acting insulin as not recorded rather than printing a blank', async () => {
     // "Which insulin" is free text with no validation and an empty default, so
     // the screen made to be PHOTOGRAPHED for a doctor could hand them a row
