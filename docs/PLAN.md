@@ -4426,6 +4426,12 @@ MealUnits/
   docs/design/screens.html   <- 8 screens, Card design, annotated
   docs/design/looks.html     <- three interfaces compared: Card / Band / Step
   docs/design/step-flow.html <- 44 screens, the Step design in full
+  tools/social-card.html     <- 4a's 1200x630 link-preview card, kept as SOURCE
+                                so it can be regenerated rather than existing
+                                only as a screenshot nobody can edit. Uses the
+                                app's own dark tokens and its two faces, so the
+                                card cannot drift from the interface it
+                                advertises. Its header says how to re-render it
   src/                       <- the app. Not enumerated here, deliberately: a
                                 per-file listing of an implementation rots on
                                 every refactor, which is the failure this block
