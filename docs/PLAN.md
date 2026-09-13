@@ -90,6 +90,13 @@ current design has to answer to:
 > unintended drop**, taking a normal post-meal 180 to about 30. **Nothing on screen would look
 > different.**
 
+**Everything from here to the end of this section describes the PREFILL design, in that design's
+own present tense. `T5` reversed it on 2026-09-13 — see the top of this section — and it is kept for
+the reasoning, not as a description of the app.** The fields ship empty, so the tapping-past hazard
+below and the one-value-per-screen mitigation that answers it both describe something that no longer
+exists. Read from the top of §1.2 that is clear; arrived at by a cross-reference into the middle it
+reads as current specification, and it has been misread that way once.
+
 **The load-bearing word is SILENT, and that is what v26 changes rather than accepts.** The values
 are prefilled into the DRAFT and rendered on screen; they are never applied behind the user:
 
