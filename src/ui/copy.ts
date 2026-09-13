@@ -686,6 +686,28 @@ export const COPY = {
      * prescription" is not theirs, and a sentence asserting otherwise is worse
      * than silence: it lends the numbers an authority they do not have.
      */
+    /**
+     * The app's ONE first-person sentence, and it is deliberate rather than a
+     * slip of voice. Everything else here is second person — "your doctor",
+     * "you inject" — so there is no narrator anywhere else, and introducing one
+     * is a decision, not a wording tweak.
+     *
+     * It exists because three hints below say "Hasham's is 150", "Hasham's is
+     * 30" and "Hasham's is 10", and until 2026-09-13 the app never said who
+     * that was. A stranger met an unexplained proper noun three times and got
+     * no answer.
+     *
+     * Naming him is also the SAFER wording, which is why it survived the
+     * audience change rather than being cut with the prefill: an unexplained
+     * number beside an empty field reads as a suggestion, and a number with
+     * someone's name on it reads as someone else's. The name is doing the work
+     * the prefill used to do wrong.
+     *
+     * Outside the mint card on purpose. That card carries "nothing is filled
+     * in, on purpose", which is the safety sentence on this screen, and origin
+     * story inside it would compete with the one line that must land.
+     */
+    builtFor: 'My brother Hasham has type 1. I built this for him, and the examples below are his numbers — yours will be different.',
     setupTitle: 'Three numbers only your doctor can give you',
     setupBody:
       'Nothing is filled in, on purpose. Target, ISF and ICR come from your own prescription — another person’s are wrong for you. Then add your long-acting insulin below to finish.',

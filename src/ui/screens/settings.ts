@@ -308,6 +308,11 @@ export function settingsScreen(
         )
       : null,
 
+    // Who Hasham is, said once, in the app's only first-person sentence. The
+    // three ratio hints name him and nothing else ever did. Outside the card
+    // above so it does not compete with "nothing is filled in, on purpose".
+    handlers.firstRun ? h('p', { class: 'hint' }, COPY.settings.builtFor) : null,
+
     // Optional, and first, because it is the only question here that is not
     // clinical — asking it among the ratios would imply it carries the same
     // weight. It changes nothing the app calculates.
