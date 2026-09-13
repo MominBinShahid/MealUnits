@@ -260,6 +260,19 @@ means is the reader it was widened for.
 
 ### 24. URL routes for the four screens that are not the calculator
 
+**WHEN THIS LANDS, THE SITEMAP AND THE SERVICE WORKER BOTH NEED IT.** Flagged by Momin 2026-09-14,
+before the work starts, so it is not discovered afterwards.
+
+- **`vite.config.ts`'s `sitemap()` generates ONE url**, because today every screen is reached by
+  tapping. Each new route is a new `<loc>`, and each needs its own `lastmod` — the build date is
+  correct for all of them only while they ship together.
+- **`src/sw.ts`'s navigation branch answers the shell for every path in scope**, which is exactly
+  what real routes want — but `NOT_THE_APP` must stay accurate, or a new route named like a file
+  breaks, and a new file named like a route silently becomes the app. That pairing is checked by
+  `check_worker_knows_non_app_files`.
+- **`index.html`'s canonical is a single URL.** Per-screen routes need per-screen canonicals, or
+  every route reports itself as the front door and they compete.
+
 **AGREED BY MOMIN 2026-09-09, in conversation. Recorded 2026-09-13, four days late.** It lived
 only in a session transcript until then, and in the meantime a reader of these documents — including
 me, on 2026-09-13 — would have concluded from §11.5's *"Routing: None"* that the question had been
@@ -426,6 +439,17 @@ canonical, `og:url` and JSON-LD. **A canonical that disagrees with the sitemap i
 failure that makes a search engine pick its own preferred URL and ignore both**, and nothing else
 catches it: the build succeeds, the page renders, and the disagreement is visible only to a crawler,
 weeks later.
+
+**A second defect was shipped and found by Momin, not by any check.** Opening
+`/MealUnits/sitemap.xml` in a browser rendered the CALCULATOR. Every path under this app's scope used
+to BE the app — there is no routing — so the worker's navigation branch could answer any of them with
+the shell. `4a` put three files inside that scope and did not teach it otherwise.
+
+**It hid well, and the way it hid is the lesson.** `curl` returns the real file, because curl has no
+service worker; Googlebot does not run service workers either. So the command line and the crawler
+both saw the truth while the person checking the URL did not — and every verification in this entry
+was done with `curl`. `check_worker_knows_non_app_files` now pins `sw.ts`'s exclusions against the
+crawler-only classification, so a file cannot be one without being the other.
 
 **One regression was introduced and caught before merge.** `vite.config.ts` walks the whole build to
 build the precache, so adding a 105 KB preview card put it on the install path of every phone — for a

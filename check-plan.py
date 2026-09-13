@@ -1002,6 +1002,49 @@ def check_site_url_agrees(_plan):
     return out
 
 
+def check_worker_knows_non_app_files(_plan):
+    """1f. The service worker answering the app for a file that is not the app —
+    ADDED 2026-09-14.
+
+    Every path under the scope used to BE the app: there is no routing, so the
+    worker's navigation branch could answer any of them with the shell. `4a` put
+    a sitemap, a robots.txt and a preview card inside that scope without
+    teaching the worker they are different, and opening
+    /MealUnits/sitemap.xml in a browser rendered the CALCULATOR.
+
+    It hid well. `curl` returns the real file, because curl has no service
+    worker, and Googlebot does not run service workers either — so both the
+    command line and the crawler saw the truth while the person checking the URL
+    did not.
+
+    The set is the same one `vite.config.ts` keeps out of the precache, for the
+    same reason, so the two are pinned against each other: a file classified as
+    crawler-only must also be excluded from the shell fallback.
+    """
+    out = []
+    with io.open(os.path.join(HERE, "src", "sw.ts"), encoding="utf-8") as handle:
+        worker = handle.read()
+    m = re.search(r"const NOT_THE_APP = \[(.*?)\];", worker, re.S)
+    if not m:
+        return ["src/sw.ts no longer declares NOT_THE_APP, so a navigation to any path"
+                " under the scope is answered with the app shell"]
+    listed = set(re.findall(r"__SCOPE_PATH__\}([^`]+)`", m.group(1)))
+
+    expected = {name if name != "social" else "social/" for name in PUBLIC_CRAWLER_ONLY}
+    # The sitemap is generated into the build rather than living in public/, so
+    # it is not in the public pin but is just as much not-the-app.
+    expected.add("sitemap.xml")
+
+    for name in sorted(expected - listed):
+        out.append("%s is served from this app's scope but src/sw.ts's NOT_THE_APP does not"
+                   " list it, so opening it in a browser renders the calculator instead"
+                   % name)
+    for name in sorted(listed - expected):
+        out.append("src/sw.ts excludes %r from the shell fallback but nothing classifies it as"
+                   " crawler-only — add it to PUBLIC_CRAWLER_ONLY or drop it" % name)
+    return out
+
+
 def check_note_references(corpus):
     r"""2c. A "note N" pointing at a build note that does not exist — ADDED 2026-09-13.
 
@@ -2637,6 +2680,7 @@ CHECKS = [
     ("user-facing text outside src/ui/copy.ts", check_ui_text_outside_copy, "plan"),
     ("unclassified public/ asset", check_public_assets_classified, "plan"),
     ("deployed address disagrees between index.html and vite.config.ts", check_site_url_agrees, "plan"),
+    ("service worker answers the app for a non-app file", check_worker_knows_non_app_files, "plan"),
     ("dangling section references", check_references, "plan"),
     ("dangling section references in companions", check_references_corpus, "corpus"),
     ("dangling build-note references", check_note_references, "corpus"),

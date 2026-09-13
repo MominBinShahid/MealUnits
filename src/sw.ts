@@ -123,6 +123,33 @@ sw.addEventListener('fetch', (event) => {
   if (!url.pathname.startsWith(__SCOPE_PATH__)) return;
 
   /**
+   * Files inside the scope that are NOT the app, added by `4a`.
+   *
+   * Every path under this scope used to BE the app — there is no routing, so the
+   * navigation branch below could answer any of them with the shell. `4a` put a
+   * sitemap, a robots.txt and a link-preview card inside the scope and did not
+   * teach the worker they are different, so opening
+   * `/MealUnits/sitemap.xml` in a browser rendered the CALCULATOR. `curl` saw
+   * the real file, because curl has no service worker; the person checking the
+   * URL did not.
+   *
+   * Googlebot does not run service workers, so crawling was never affected —
+   * which is exactly why this could sit there looking fine.
+   *
+   * These are the same paths `vite.config.ts` keeps out of the precache, and for
+   * the same reason: they are not part of the application. Returning without
+   * calling `respondWith` lets the browser fetch them normally.
+   */
+  const NOT_THE_APP = [
+    `${__SCOPE_PATH__}sitemap.xml`,
+    `${__SCOPE_PATH__}robots.txt`,
+    `${__SCOPE_PATH__}social/`,
+  ];
+  if (NOT_THE_APP.some((path) => url.pathname === path || url.pathname.startsWith(path))) {
+    return;
+  }
+
+  /**
    * §11.4's UPDATE COHERENCE, and the reason navigations are cache-first.
    *
    * "Network-first HTML defeats prompt-controlled releases — worker v1 stays
