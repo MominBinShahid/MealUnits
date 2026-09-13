@@ -30,6 +30,10 @@ export interface Attrs {
   // second tap as closing rather than as a second way to open (§10.9).
   readonly 'aria-expanded'?: string;
   readonly 'aria-describedby'?: string;
+  // A group of buttons acting as one choice — the rounding modes — points at
+  // the question naming it. Not a `<label>`: there is no single control for a
+  // `for` to name, and a label pointing at nothing is worse than none.
+  readonly 'aria-labelledby'?: string;
   readonly 'data-step'?: string;
   // The stable identity a text field keeps across a rebuild of the tree.
   // Without it a re-rendered input is a DIFFERENT element and focus has nowhere

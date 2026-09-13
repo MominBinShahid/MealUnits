@@ -372,14 +372,14 @@ export function settingsScreen(
     h('p', { class: 'hint' }, COPY.settings.unitAssumption),
 
     h('h2', {}, 'Rounding'),
-    h('div', { class: 'ask' }, COPY.settings.modeQuestion),
+    h('div', { class: 'group-label', id: 'label-mode' }, COPY.settings.modeQuestion),
     // §15 — five modes were selectable with nothing explaining any of them, and
     // one of them is unsafe by default. This points at the explanation rather
     // than repeating it: §10.5's budget does not allow five paragraphs here.
     h('p', { class: 'hint' }, COPY.settings.modeHint),
     h(
       'div',
-      { class: 'list' },
+      { class: 'list', role: 'group', 'aria-labelledby': 'label-mode' },
       ...MODES.map(({ mode, label }) =>
         button(
           label,

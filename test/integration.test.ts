@@ -363,6 +363,31 @@ describe('§10.6 first run', () => {
     expect(fieldLabelled('Double-check my typing').value).toBe('30');
   });
 
+  it('§10.1 — the rounding question is a question, not the screen’s headline', async () => {
+    await boot();
+    await tap('☐  I have read this');
+    await tap('I understand — use at my own risk');
+
+    // `.ask` is the DISPLAY size for a screen's single question — right on the
+    // calculator and the food list, where there is exactly one. Settings has
+    // eight, and this one alone wore it, so the rounding section towered over
+    // its neighbours. Reported by Momin 2026-09-13 off a screenshot; unchanged
+    // since the first commit and argued for nowhere, so it was a reused class
+    // rather than a decision.
+    const asks = [...root.querySelectorAll('.ask')];
+    expect(asks).toHaveLength(0);
+
+    // And the modes still say what they are FOR. They are a button group with
+    // no single control, so the question cannot be a `<label for>`; it is named
+    // through aria-labelledby instead, and a group that lost its name would be
+    // five unexplained buttons to a screen reader.
+    const group = root.querySelector('[role="group"]');
+    expect(group?.getAttribute('aria-labelledby')).toBe('label-mode');
+    expect(root.querySelector('#label-mode')?.textContent).toBe(
+      'What can your syringe measure?',
+    );
+  });
+
   it('§8.5 — states the U-100 assumption, which it was specified to do and never did', async () => {
     await boot();
     await tap('\u2610  I have read this');
