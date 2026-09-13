@@ -914,7 +914,7 @@ def check_ui_text_outside_copy(_plan):
 # downloaded to every phone on install unless it is excluded there. Pinned by
 # name so a new file forces the decision rather than defaulting to "ship it".
 PUBLIC_PRECACHED = {"fonts", "icons", "manifest.webmanifest"}
-PUBLIC_CRAWLER_ONLY = {"social", "sitemap.xml", "robots.txt"}
+PUBLIC_CRAWLER_ONLY = {"social", "robots.txt"}
 
 
 def check_public_assets_classified(_plan):
@@ -960,6 +960,45 @@ def check_public_assets_classified(_plan):
         if "'%s'" % name not in text:
             out.append("public/%s is pinned as crawler-only but vite.config.ts never names it,"
                        " so the precache walk still ships it to every phone" % name)
+    return out
+
+
+def check_site_url_agrees(_plan):
+    """1e. The deployed address stated twice, drifting — ADDED 2026-09-14.
+
+    `vite.config.ts` holds `SITE_URL` because the sitemap is generated and has
+    to write an absolute `<loc>`. `index.html` states the same address three
+    times: the canonical link, `og:url`, and the JSON-LD `url`. A canonical that
+    disagrees with the sitemap is the specific failure that makes a search
+    engine pick its own preferred URL and ignore both.
+
+    Nothing else can catch it: the build succeeds, the page renders, and the
+    disagreement is only visible to a crawler weeks later.
+    """
+    out = []
+    with io.open(os.path.join(HERE, "vite.config.ts"), encoding="utf-8") as handle:
+        config = handle.read()
+    m = re.search(r"const SITE_URL = '([^']+)';", config)
+    if not m:
+        return ["vite.config.ts no longer declares SITE_URL, which the sitemap writes into <loc>"]
+    site = m.group(1)
+
+    with io.open(os.path.join(HERE, "index.html"), encoding="utf-8") as handle:
+        page = handle.read()
+    for label, pattern in (
+        ("canonical", r'rel="canonical" href="([^"]+)"'),
+        ("og:url", r'property="og:url" content="([^"]+)"'),
+        ("JSON-LD url", r'"url": "([^"]+)"'),
+    ):
+        found = re.search(pattern, page)
+        if not found:
+            out.append("index.html no longer states its %s, which 4a shipped" % label)
+            continue
+        if not found.group(1).startswith(site):
+            out.append("index.html's %s is %r but vite.config.ts writes %r into the sitemap"
+                       " — a canonical that disagrees with the sitemap lets a search engine"
+                       " pick its own preferred URL and ignore both"
+                       % (label, found.group(1), site))
     return out
 
 
@@ -2597,6 +2636,7 @@ CHECKS = [
     ("retired phrases living in src/**/*.ts", check_retired_in_source, "plan"),
     ("user-facing text outside src/ui/copy.ts", check_ui_text_outside_copy, "plan"),
     ("unclassified public/ asset", check_public_assets_classified, "plan"),
+    ("deployed address disagrees between index.html and vite.config.ts", check_site_url_agrees, "plan"),
     ("dangling section references", check_references, "plan"),
     ("dangling section references in companions", check_references_corpus, "corpus"),
     ("dangling build-note references", check_note_references, "corpus"),

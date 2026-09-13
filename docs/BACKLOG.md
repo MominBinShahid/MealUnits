@@ -405,10 +405,27 @@ is — and short enough that nothing truncates, since the clause a preview cuts 
    file is already right, whereas leaving it out means the move silently drops a directive nobody
    remembers was being inherited. A project that depends on a file in another repository has a
    dependency it cannot see.
-3. **The apex sitemap lists five URLs and none is MealUnits.** `public/sitemap.xml` covers this app's
-   own path — legitimate, since a sitemap may list URLs at or below its own location — and has to be
-   submitted directly in Search Console. **Adding the app to the apex sitemap is a change in the
-   OTHER repository and is Momin's to make.**
+3. **The apex sitemap lists five URLs and none is MealUnits.** The sitemap here covers this app's own
+   path — legitimate, since a sitemap may list URLs at or below its own location — and has to be
+   submitted directly in Search Console. The app was added to the apex sitemap separately, in the
+   other repository.
+
+**A fourth thing was got WRONG first, and the correction is the interesting part.** The first draft
+wrote `<changefreq>` and `<priority>` by hand. Google's own documentation says plainly that it
+*"ignores `<priority>` and `<changefreq>` values"* and that it uses `<lastmod>` *"if it's consistently
+and verifiably accurate"* — so the draft shipped the two inert elements and omitted the only one that
+works. `priority` is the one most often misread as ranking weight; it never was, and Google dropped
+even its within-site meaning.
+
+**`lastmod` is therefore GENERATED, not written.** A date maintained by memory rots on exactly the
+change that should update it — §20.5's listing and the precache walk are both in this document for
+that reason. It is the build date, which for this app *is* the last modification: every deploy is a
+new build of the page. That moved the file out of `public/` and into `vite.config.ts`, which then
+needed the deployed origin as a constant — so `check_site_url_agrees` pins it against `index.html`'s
+canonical, `og:url` and JSON-LD. **A canonical that disagrees with the sitemap is the specific
+failure that makes a search engine pick its own preferred URL and ignore both**, and nothing else
+catches it: the build succeeds, the page renders, and the disagreement is visible only to a crawler,
+weeks later.
 
 **One regression was introduced and caught before merge.** `vite.config.ts` walks the whole build to
 build the precache, so adding a 105 KB preview card put it on the install path of every phone — for a

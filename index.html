@@ -25,7 +25,7 @@
          in front of someone BEFORE they open it." -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="MealUnits" />
-    <meta property="og:title" content="MealUnits — a mealtime insulin calculator" />
+    <meta property="og:title" content="MealUnits — mealtime insulin calculator for type 1 diabetes" />
     <meta property="og:description" content="A mealtime insulin calculator for type 1 diabetes. Your own numbers, not anyone else's. Not a medical device." />
     <meta property="og:url" content="https://mominbinshahid.github.io/MealUnits/" />
     <meta property="og:locale" content="en" />
@@ -37,7 +37,7 @@
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="MealUnits — a mealtime insulin calculator for type 1 diabetes. Not a medical device." />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="MealUnits — a mealtime insulin calculator" />
+    <meta name="twitter:title" content="MealUnits — mealtime insulin calculator for type 1 diabetes" />
     <meta name="twitter:description" content="A mealtime insulin calculator for type 1 diabetes. Your own numbers, not anyone else's. Not a medical device." />
     <meta name="twitter:image" content="https://mominbinshahid.github.io/MealUnits/social/card.png" />
     <meta name="twitter:image:alt" content="MealUnits — a mealtime insulin calculator for type 1 diabetes. Not a medical device." />
@@ -45,11 +45,24 @@
     <link rel="manifest" href="/MealUnits/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/MealUnits/icons/apple-touch-icon.png" />
     <link rel="icon" href="/MealUnits/icons/icon-192.png" />
-    <!-- Longer than the app's own name on purpose: this is the search result's
-         headline and a browser tab, never the installed app's label — an
-         installed PWA takes its name from the manifest, which stays
-         "MealUnits". -->
-    <title>MealUnits — insulin dose calculator for type 1 diabetes</title>
+    <!--
+      ONE title, used here and by og:title, for the same reason there is one
+      description: two of them is two things to keep in step. It is longer than
+      the app's own name on purpose — this is the search headline and a browser
+      tab, never the installed app's label, which comes from the manifest and
+      stays "MealUnits".
+
+      "Mealtime" is the scope boundary, not decoration. This app works out the
+      SHORT-acting dose and refuses to touch the long-acting one; a title saying
+      "insulin dose calculator" over-claims what it does. 59 characters against
+      Google's roughly 60 — and Google truncates on pixel width, so the worst
+      case clips "diabetes", by which point "type 1" has already landed.
+
+      It also matters on iMessage, which renders og:title and NO description at
+      all. Until 2026-09-14 og:title never said "type 1", so the one surface
+      with no room for the description was the one that never named the reader.
+    -->
+    <title>MealUnits — mealtime insulin calculator for type 1 diabetes</title>
 
     <!--
       Structured data. NOT blocked by §11.5's `script-src 'self'`, which was
