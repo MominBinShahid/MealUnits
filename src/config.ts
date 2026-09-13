@@ -28,34 +28,73 @@ export const FAST_CARB_GRAMS = 15; // the 15-15 rule
 export const RECHECK_MINUTES = 15;
 
 // ─── APP-SET DEFAULTS ──────────────────────────────────────
-export const DEFAULT_THRESHOLD = 20; // §6.2, recalibrated v7
+// DEFAULT_THRESHOLD is GONE, removed 2026-09-13. It was 20, and its only
+// consumer was the first-run draft. §6.2's threshold is now worked out from the
+// three ratios by `deriveThreshold`, so on first run there is nothing to
+// default: the field is blank until the ratios it is computed from exist.
 export const DEFAULT_MODE = 'nearest'; // §5
 
 // ─── THE PRESCRIPTION, PREFILLED (§1.2, CHANGED ON MOMIN'S RULING) ──────────
 // v8 shipped these as "seed values" and both reviewers rejected it. §1.2's
-// hazard is precise and still stands: "the day the clinician moves the
-// insulin-to-carb ratio to 15 — inside the soft range, no confirmation — a
-// SILENT revert to 10 makes a 150 g meal dose 15 units instead of 10... Nothing
-// on screen would look different."
+// §1.2 — THE PRESCRIBED VALUES ARE GONE. Removed 2026-09-13 with the audience
+// change (`BACKLOG.md`'s "AUDIENCE CHANGE — the app is for anyone, and three
+// things assume it is not"). `PRESCRIBED_TARGET` 150, `PRESCRIBED_ISF` 30 and
+// `PRESCRIBED_ICR` 10 used to prefill the first-run draft.
 //
-// The word doing the work in that sentence is SILENT. These values are
-// PREFILLED AND SHOWN, never applied behind the user's back:
+// The prefill was accepted against §1.2's explicit refusal on ONE argument:
+// this is for one person who needs zero friction, and the values ARE his
+// prescription. Momin ruled on 2026-09-08 that the app is for anyone with type
+// 1 who can enter their own three numbers, and that premise is the whole of
+// what the argument rested on. For a stranger, 150 / 30 / 10 is not a stale
+// prescription — it is SOMEONE ELSE'S, and §1.2's worked example applies with
+// more force: an ICR of 10 against a real 15 doses a 150 g meal at 15 units
+// instead of 10, roughly 150 mg/dL of unintended drop.
 //
-//   * They populate the first-run DRAFT only. Nothing is stored until the
-//     explicit save, so §4.4's refuse-on-empty-settings branch is still live —
-//     `buildSnapshot` reads the STORE, not the draft, and returns null until the
-//     save has happened.
-//   * The target is 150, which sits outside its own 90-140 soft band, so the
-//     acknowledgement of §10.5 fires on first run BY DESIGN. That is the
-//     mechanism that makes a stale value noticeable rather than invisible.
+// Published practice says the same thing and was checked before the change:
+// no citable universal default exists for these three, because ISPAD's 500 and
+// 1800 rules derive from the person's own total daily dose, which this app does
+// not collect. The MiniMed 780G and the t:slim both require a clinician to
+// supply them and PREFILL NOTHING. A prefilled 150 is a prescription wearing
+// the clothes of a default.
 //
-// What was traded away, stated plainly: someone who taps through without
-// reading gets the old prescription. That is a weaker guarantee than typing it
-// out, and it is the reason each value is on its own screen rather than in a
-// list. See docs/CLINICAL.md.
-export const PRESCRIBED_TARGET = 150; // §1.2 — mg/dL
-export const PRESCRIBED_ISF = 30; // §1.2 — 1 unit lowers blood sugar by 30
-export const PRESCRIBED_ICR = 10; // §1.2 — 1 unit covers 10 g of carbohydrate
+// WHAT WENT WITH THEM: the first-run acknowledgement used to fire BY DESIGN,
+// because 150 sits outside its own 90-140 soft band and that made the prefilled
+// value conspicuous. With the fields empty there is no prefilled value to make
+// conspicuous. The acknowledgement still fires for anyone who genuinely enters
+// 150; it has simply stopped being a first-run tripwire, and nothing else
+// depended on it.
+
+// ─── §6.2's CONFIRMATION THRESHOLD, DERIVED ────────────────
+// The default was a flat 20 units, which is one person's number: at ISF 50 /
+// ICR 30 the same tenfold typo doses 16.7 units and sails past it. `deriveThreshold`
+// in `src/core/threshold.ts` works it out from the ratios instead.
+//
+// Read the formula aloud: one and a half times the dose that the largest single
+// portion in this app's own food table would need at a high reading.
+//
+// 100 g is not a guess. It is the largest single portion in `src/data/carbs.ts`
+// — a tandoor kulcha — measured against that table on 2026-09-13, where the
+// median portion is 37 g. Grounding it in the project's own data beats picking
+// a round number, and if the table grows a bigger dish this number is the one
+// to revisit.
+export const THRESHOLD_MEAL_GRAMS = 100;
+
+// NOT `KETONE_ADVISORY`, which also holds 250. That one is a clinical trigger
+// for testing ketones; this one is a reference point for sizing a typo catch,
+// and the two have no relationship beyond the coincidence of their value.
+// Neither is derived from the other, for the same reason
+// `BAND_E_FULL_CARD_WINDOW_HOURS` is not derived from `STACK_ADVISE_HOURS`.
+export const THRESHOLD_HIGH_READING = 250;
+
+// The headroom over that reference dose. §6.2's history warns in both
+// directions — a threshold set too high is a dead tier, one set too low "fires
+// always, trains tap-through" — so this is the knob that matters most.
+//
+// 1.5 reproduces the hand-calibrated 20 EXACTLY for target 150 / ISF 30 /
+// ICR 10: 100/10 = 10, (250-150)/30 = 3.33, and 1.5 x 13.33 = 20. That a
+// formula built from published reasoning lands on the number a person tuned by
+// hand is the best evidence available that neither is arbitrary.
+export const THRESHOLD_MULTIPLE = 1.5;
 
 // ─── BAND B (§3.2) ─────────────────────────────────────────
 export const BAND_B_CORRECTION_UNITS = -1.5; // at or below: caution copy
@@ -246,7 +285,9 @@ export type RangeTable = Readonly<Record<keyof typeof RANGE, RangeSpec>>;
 
 export interface ConfigValues {
   readonly range: RangeTable;
-  readonly defaultThreshold: number;
+  readonly thresholdMealGrams: number;
+  readonly thresholdHighReading: number;
+  readonly thresholdMultiple: number;
   readonly defaultMode: string;
   readonly hypoLevel1: number;
   readonly hypoLevel2: number;
@@ -267,7 +308,9 @@ export interface ConfigValues {
 /** The values this build actually ships. */
 export const SHIPPED: ConfigValues = {
   range: RANGE,
-  defaultThreshold: DEFAULT_THRESHOLD,
+  thresholdMealGrams: THRESHOLD_MEAL_GRAMS,
+  thresholdHighReading: THRESHOLD_HIGH_READING,
+  thresholdMultiple: THRESHOLD_MULTIPLE,
   defaultMode: DEFAULT_MODE,
   hypoLevel1: HYPO_LEVEL_1,
   hypoLevel2: HYPO_LEVEL_2,
@@ -318,14 +361,28 @@ export function checkConfig(values: ConfigValues): string[] {
     }
   }
 
-  // Every default THAT EXISTS lies inside its HARD range. Note "hard", not
-  // "soft": the target of 150 is outside its soft band on purpose and confirms
-  // once, correctly (§4.5).
-  const [thresholdLo, thresholdHi] = values.range.threshold.hard;
-  if (values.defaultThreshold < thresholdLo || values.defaultThreshold > thresholdHi) {
+  // §6.2's derivation, checked at its premises rather than at its output.
+  // `deriveThreshold` clamps into the hard range, so the output cannot be
+  // wrong; what CAN go wrong is an input that makes the formula meaningless.
+  //
+  // The reference high must sit above every acceptable target. `deriveThreshold`
+  // floors the correction term at zero so a target above it cannot produce a
+  // threshold BELOW what the meal alone needs — this makes that guard's premise
+  // checkable instead of leaving it as a sentence in a comment two files away.
+  const [, targetHi] = values.range.target.hard;
+  if (values.thresholdHighReading <= targetHi) {
     problems.push(
-      `DEFAULT_THRESHOLD ${values.defaultThreshold} is outside its hard range [${thresholdLo}, ${thresholdHi}]`,
+      `THRESHOLD_HIGH_READING ${values.thresholdHighReading} must be above the highest acceptable target (${targetHi})`,
     );
+  }
+  // Headroom, not parity. At a multiple of 1 the threshold equals an ordinary
+  // large meal's dose and §6.2's "fires always, trains tap-through" failure
+  // arrives; below 1 it fires on doses smaller than a normal meal.
+  if (values.thresholdMultiple <= 1) {
+    problems.push(`THRESHOLD_MULTIPLE ${values.thresholdMultiple} must be greater than 1`);
+  }
+  if (values.thresholdMealGrams <= 0) {
+    problems.push(`THRESHOLD_MEAL_GRAMS ${values.thresholdMealGrams} must be above zero`);
   }
   if (!(values.defaultMode in INCREMENT)) {
     problems.push(`DEFAULT_MODE "${values.defaultMode}" is not a rounding mode`);

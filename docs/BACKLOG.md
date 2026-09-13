@@ -652,6 +652,34 @@ that could not produce the behaviour under test.** The measurements were real; t
 check a week later (`BLOG-FIX.md` section 6).
 
 ### T5. AUDIENCE CHANGE — the app is for anyone, and three things assume it is not
+**SHIPPED 2026-09-13.** Parts 1 and 2 are built; part 3 is a standing consideration, not a task.
+What landed, and where the reasoning now lives:
+
+| | What shipped | Where it is recorded |
+|---|---|---|
+| 1 | The three ratios ship **empty**. `PRESCRIBED_TARGET/ISF/ICR` are deleted | `PLAN.md` §1.2, `src/config.ts` |
+| 2 | §6.2's threshold is **derived** from the ratios — `deriveThreshold` | `PLAN.md` §11.8, `src/core/threshold.ts` |
+| 3 | §14's regulatory posture — **unchanged, and still a decision to take with eyes open** before promotion | §14 |
+
+**Two things the build turned up that this entry did not predict:**
+
+- **A test forbade prescription defaults and the prefill shipped anyway**, because the test named
+  `DEFAULT_TARGET`, `DEFAULT_ISF` and `DEFAULT_ICR` as three literals and the constants were spelled
+  `PRESCRIBED_*`. Naming a hazard by one exact identifier is not checking for the hazard. The test
+  now matches the SHAPE of the name.
+- **`check-plan.py` could not see a constant that never reached `PLAN.md`.** Its completeness check
+  read the document, so `BAND_E_FULL_CARD_WINDOW_HOURS` shipped unpinned the day before and the
+  checker stayed clean. It now reads `src/config.ts` as the authority on what exists.
+
+**Still open, and it needs Momin:** the ISF and ICR hints say *"Hasham's is 30"* and *"Hasham's is
+10"*. Beside a PREFILLED field that was an illustration of a value already there. Beside an EMPTY
+field it is the only concrete number on screen, which makes it the path of least resistance for
+exactly the stranger this change exists to protect. Left as it was, deliberately — a comment records
+that naming him was a decision taken with his permission, and §20.1.1 says ask rather than correct.
+
+---
+
+
 
 **Momin's ruling, 2026-09-08:** *"this app is created for anyone to use for free... if they can
 change these ratios any Type 1 can use it."* The prefill exists for his brother; the app is not

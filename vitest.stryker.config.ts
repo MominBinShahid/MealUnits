@@ -39,6 +39,7 @@ export default defineConfig({
       'test/resolve.test.ts',
       'test/round.test.ts',
       'test/stacking.test.ts',
+      'test/threshold.test.ts',
       'test/sweep.test.ts',
       'test/timing.test.ts',
       'test/types.test.ts',

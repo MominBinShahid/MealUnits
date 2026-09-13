@@ -50,6 +50,7 @@ import { foodListScreen } from './screens/foods.js';
 import { COPY, units } from './copy.js';
 import { button, captureFocus, replaceChildren, restoreFocus, h } from './dom.js';
 import { calculatorScreen } from './screens/calculator.js';
+import { deriveThreshold } from '../core/threshold.js';
 import { draftFrom, settingsScreen } from './screens/settings.js';
 import type { SettingsDraft } from './screens/settings.js';
 import {
@@ -74,6 +75,12 @@ import {
  */
 interface ViewState {
   draft: SettingsDraft;
+  /**
+   * True while §6.2's threshold is still the one `deriveThreshold` worked out.
+   * Goes false for good the first time the user edits that field, so their own
+   * number is never recomputed out from under them.
+   */
+  thresholdIsDerived: boolean;
   disclaimerChecked: boolean;
   moreExpanded: boolean;
   /** §4.5 — the HI/LO guidance disclosure on the reading screen. */
@@ -188,6 +195,7 @@ export async function start(host: Host): Promise<void> {
 
   const view: ViewState = {
     draft: draftFrom(null),
+    thresholdIsDerived: true,
     disclaimerChecked: false,
     moreExpanded: false,
     meterGuidanceShown: false,
@@ -254,6 +262,20 @@ export async function start(host: Host): Promise<void> {
   });
 
   // ── effects ──────────────────────────────────────────────────────────────
+
+  /**
+   * §6.2's threshold, worked out from whatever the three ratio fields currently
+   * hold. A field that does not parse reads as NaN, and `deriveThreshold`
+   * answers null for that — so a half-typed ICR blanks the box rather than
+   * putting a number in a dosing field on the strength of an incomplete one.
+   */
+  const derivedThresholdFor = (draft: SettingsDraft): number | null => {
+    const read = (field: 'target' | 'isf' | 'icr'): number => {
+      const parsed = parseField(draft[field], field);
+      return parsed.state === 'valid' ? parsed.value : Number.NaN;
+    };
+    return deriveThreshold(read('target'), read('isf'), read('icr'));
+  };
 
   const saveSettings = async (): Promise<void> => {
     if (db === null) return;
@@ -522,6 +544,7 @@ export async function start(host: Host): Promise<void> {
     }
     state = initialState();
     view.draft = draftFrom(null);
+    view.thresholdIsDerived = true;
     view.disclaimerChecked = false;
     view.clearConfirming = null;
     view.failClosedConfirming = false;
@@ -608,6 +631,24 @@ export async function start(host: Host): Promise<void> {
           advisoryStatus: advisoryStatus(),
           onChange: (field, value) => {
             view.draft = { ...view.draft, [field]: field === 'mode' ? (value as RoundingMode) : value };
+            // §6.2's threshold is DERIVED from the three ratios rather than
+            // shipped as one person's 20 — see `deriveThreshold`. It fills in as
+            // soon as the three are readable, and stops doing so the moment the
+            // user types in the field themselves.
+            //
+            // The latch is one-way on purpose. Recomputing over a number a
+            // person chose would be the app overruling them silently, which is
+            // §7.7's rule about proposed-not-adopted settings arriving in a new
+            // place. Once it is theirs it stays theirs, even if they go back and
+            // change a ratio.
+            if (field === 'threshold') view.thresholdIsDerived = false;
+            else if (view.thresholdIsDerived && field !== 'mode') {
+              const derived = derivedThresholdFor(view.draft);
+              view.draft = {
+                ...view.draft,
+                threshold: derived === null ? '' : String(derived),
+              };
+            }
             render();
           },
           onSave: () => { void saveSettings(); },
@@ -837,6 +878,9 @@ export async function start(host: Host): Promise<void> {
           onOpenHistory: () => { dispatch({ type: 'go', screen: 'history' }); },
           onOpenSettings: () => {
             view.draft = draftFrom(state.settings);
+            // Same rule as on boot: a stored threshold is theirs, so editing a
+            // ratio from the settings screen must not silently rewrite it.
+            view.thresholdIsDerived = state.settings === null;
             dispatch({ type: 'go', screen: 'settings' });
           },
           onStartOver: () => { void startOver(); },
@@ -1067,6 +1111,10 @@ export async function start(host: Host): Promise<void> {
       db = outcome.db;
       stored = await readAll(db, host.now());
       view.draft = draftFrom(stored.settings);
+      // Derived only while there is nothing stored. A STORED threshold is the
+      // user's — whether they typed it or accepted what first run worked out —
+      // and must never be recomputed under them.
+      view.thresholdIsDerived = stored.settings === null;
       dispatch({
         type: 'loaded',
         settings: stored.settings,

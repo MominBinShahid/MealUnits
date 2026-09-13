@@ -4,12 +4,15 @@ A mealtime insulin dose calculator for one adult with type 1 diabetes, built as 
 offline-capable web app.
 
 It takes a blood sugar reading and a carbohydrate amount and returns the number of units of
-short-acting insulin to inject. It is arithmetic its user currently does in his head.
+short-acting insulin to inject. It is arithmetic many people with type 1 currently do in their heads,
+and it was built for one of them.
 
 **It is not a medical device, it has no regulatory clearance, and it has not been clinically
 validated.** It does not diagnose, does not adjust therapy, and does not decide anything a clinician
-has not already decided. It is configured for one specific person's prescription; if you are not that
-person, the numbers in it are wrong for you.
+has not already decided. It works from three numbers your own prescriber gives you — a target, an
+insulin sensitivity factor and an insulin-to-carbohydrate ratio — and **it ships with none of them
+filled in.** There is no example prescription to tap past, because another person's ratios are not a
+default; they are another person's prescription.
 
 ---
 
@@ -60,7 +63,7 @@ CI reads that file rather than carrying its own copy.
 ```sh
 npm install
 npm run dev        # development server
-npm test           # 654 tests
+npm test           # 664 tests
 npm run check      # typecheck, lint and tests — what CI runs
 npm run mutate     # mutation testing on the core, at a 100% break threshold
 npm run build      # production build, including the service worker
@@ -107,9 +110,9 @@ launder a literal through a local constant.
 
 ### The testing, and what it is worth
 
-- **654 tests**, including 77 golden cases that each carry the hand derivation of their expected
+- **664 tests**, including 77 golden cases that each carry the hand derivation of their expected
   value in the fixture.
-- **100% mutation score** on the core, the state machine and `config.ts` — 1,687 mutants killed, 0
+- **100% mutation score** on the core, the state machine and `config.ts` — 1,720 mutants killed, 0
   survived, 0 uncovered. A further 69 are **disabled by name**, each with its reason written at the
   line it silences; `BUILD-NOTES.md` note 16 tables every one and says why it is disabled rather
   than killed.

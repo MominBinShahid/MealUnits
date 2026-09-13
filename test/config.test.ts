@@ -16,7 +16,6 @@ import { describe, expect, it } from 'vitest';
 import type { ConfigValues } from '../src/config.js';
 import {
   DEFAULT_MODE,
-  DEFAULT_THRESHOLD,
   DELETE_CONFIRM_WINDOW_HOURS,
   HYPO_LEVEL_1,
   HYPO_LEVEL_2,
@@ -79,10 +78,10 @@ describe('§11.8 the config self-check', () => {
     expect(DELETE_CONFIRM_WINDOW_HOURS).toBe(STACK_ADVISE_HOURS);
   });
 
-  it('keeps the app-set defaults inside their hard ranges', () => {
-    const [lo, hi] = RANGE.threshold.hard;
-    expect(DEFAULT_THRESHOLD).toBeGreaterThanOrEqual(lo);
-    expect(DEFAULT_THRESHOLD).toBeLessThanOrEqual(hi);
+  it('keeps the one app-set default it still has inside its own domain', () => {
+    // The threshold default was dropped in the 2026-09-13 audience change: §6.2
+    // derives it from the three ratios now, and on first run there is nothing
+    // to derive it from, so the field is simply blank.
     expect(DEFAULT_MODE in INCREMENT).toBe(true);
   });
 });
@@ -99,10 +98,26 @@ describe('§1.2 there are no prescription defaults, and that is the point', () =
     expect(Object.keys(config)).not.toContain('DEFAULT_TARGET');
     expect(Object.keys(config)).not.toContain('DEFAULT_ISF');
     expect(Object.keys(config)).not.toContain('DEFAULT_ICR');
+
+    // WIDENED 2026-09-13, because the check was passable while the thing it
+    // forbids shipped anyway. A prefilled prescription DID land in this file
+    // under PRESCRIBED_TARGET / PRESCRIBED_ISF / PRESCRIBED_ICR, and every
+    // assertion above stayed green because it was spelled differently. Naming a
+    // hazard by one exact identifier is not checking for the hazard.
+    //
+    // So the rule is now about the SHAPE of the name, not three literals: this
+    // file may not export a constant for any of the three prescription values
+    // under any prefix at all.
+    const prescriptionish = Object.keys(config).filter((name) =>
+      /(^|_)(TARGET|ISF|ICR)$/.test(name),
+    );
+    expect(prescriptionish).toEqual([]);
   });
 
-  it('and the two defaults that DO exist are the two §5 and §6.2 grant', () => {
-    expect(DEFAULT_THRESHOLD).toBeDefined();
+  it('and the ONE default that still exists is the one §5 grants', () => {
+    // Two, until 2026-09-13. §6.2's threshold default went with the audience
+    // change — it is derived from the three ratios now, so on first run there is
+    // nothing to default it from and the field stays blank.
     expect(DEFAULT_MODE).toBeDefined();
   });
 
@@ -148,9 +163,19 @@ describe('§11.8 the self-check catches what it claims to catch', () => {
       /soft band is not ordered/,
     ],
     [
-      'a default threshold outside its hard range',
-      { ...SHIPPED, defaultThreshold: 100 },
-      /DEFAULT_THRESHOLD 100 is outside its hard range/,
+      'a reference high that is not above every acceptable target',
+      { ...SHIPPED, thresholdHighReading: 200 },
+      /must be above the highest acceptable target/,
+    ],
+    [
+      'a threshold multiple with no headroom over an ordinary meal',
+      { ...SHIPPED, thresholdMultiple: 1 },
+      /must be greater than 1/,
+    ],
+    [
+      'a reference meal of zero grams',
+      { ...SHIPPED, thresholdMealGrams: 0 },
+      /must be above zero/,
     ],
     [
       'a default mode that is not a rounding mode',
@@ -271,11 +296,17 @@ describe('§11.8 the self-check is exact at every boundary it compares on', () =
     expect(checkConfig(oneAbove).join(' ')).toMatch(/escapes hard range/);
   });
 
-  it('a default sitting exactly ON a hard end is inside the range', () => {
-    expect(checkConfig({ ...SHIPPED, defaultThreshold: 10 })).toEqual([]);
-    expect(checkConfig({ ...SHIPPED, defaultThreshold: 45 })).toEqual([]);
-    expect(checkConfig({ ...SHIPPED, defaultThreshold: 9 }).join(' ')).toMatch(/outside its hard range/);
-    expect(checkConfig({ ...SHIPPED, defaultThreshold: 46 }).join(' ')).toMatch(/outside its hard range/);
+  it('the threshold premises are exact at the boundary they compare on', () => {
+    const [, targetHi] = SHIPPED.range.target.hard;
+    // Strictly above, not at: a reference high EQUAL to the highest acceptable
+    // target makes the correction term exactly zero for that user, which is the
+    // degenerate case the comparison exists to keep out.
+    expect(checkConfig({ ...SHIPPED, thresholdHighReading: targetHi + 1 })).toEqual([]);
+    expect(checkConfig({ ...SHIPPED, thresholdHighReading: targetHi }).join(' '))
+      .toMatch(/must be above the highest acceptable target/);
+    // Same shape for the multiple: 1 is refused, just over 1 is not.
+    expect(checkConfig({ ...SHIPPED, thresholdMultiple: 1.01 })).toEqual([]);
+    expect(checkConfig({ ...SHIPPED, thresholdMultiple: 1 }).join(' ')).toMatch(/greater than 1/);
   });
 
   it('two clinical constants that are EQUAL are out of order', () => {
