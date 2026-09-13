@@ -177,7 +177,7 @@ export const COPY = {
    */
   bandE: {
     title: `Above ${String(KETONE_ADVISORY)} — check ketones`,
-    body: 'If ketones are present or you feel unwell, contact your clinician.',
+    body: 'Feeling unwell is its own reason to test, whatever your reading says. If ketones are present, contact your clinician.',
   },
 
   // ── §8.1's timing ─────────────────────────────────────────────────────────

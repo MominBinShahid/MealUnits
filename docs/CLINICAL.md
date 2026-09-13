@@ -37,7 +37,7 @@ insulin. `src/core/calculate.ts` carries the worked example.
 
 **Source:** ISPAD Clinical Practice Consensus Guidelines 2024, insulin treatment chapter. The
 "1500 rule" for regular human insulin is the origin of sensitivity factors of this magnitude; the app
-does not compute one, because §5.4 leaves ratios to the prescriber.
+does not compute one, because §1.2 leaves ratios to the prescriber.
 
 ---
 
@@ -484,11 +484,22 @@ NICE and Diabetes UK material is quoted with citation here and **must not be cop
    the export is read with the question in mind, not so anyone is asked it.
 4. **Should the ketone advisory reset on a calendar day, or on something else?** A 3 a.m. reading
    and a 9 a.m. reading are arguably one episode.
-5. **Should the ketone advisory move from 250 to 200 mg/dL, stay at 250, or stay at 250 and gain an
-   unconditional illness trigger?** Section 2.4 has the evidence on all three sides. What it turns
-   on: the 200-249-with-ketones gap now meets the adult diagnostic definition, against alarm fatigue
-   in a man who is above 250 most days. **The illness trigger is the part no source disputes**, and
-   it is currently absent.
+5. **Should the ketone advisory move from 250 to 200 mg/dL?** Section 2.4 has the evidence on all
+   sides. What it turns on: the 200-249-with-ketones gap now meets the adult diagnostic definition,
+   against alarm fatigue in a man who is above 250 most days.
+
+   **HELD AT 250 BY MOMIN, 2026-09-13, as an interim value** — it is the majority position (CDC and
+   every shipping device), it is what the app has always used, and moving it on a reading of the
+   literature rather than a clinician's judgement is the thing §20.1.1 forbids. **The question stays
+   open for the prescriber**, and `src/config.ts` carries the spread at the line so nobody later
+   mistakes 250 for a settled figure.
+
+   **The illness half is no longer open, and it was never a threshold question.** The app cannot
+   sense illness, so it could never have been a trigger — it is a standing fact, and band E now
+   states it: *"Feeling unwell is its own reason to test, whatever your reading says."* Drafted on
+   Momin's instruction from the CDC wording, which is public domain and the only source here that may
+   be adapted rather than paraphrased. **The prescriber is asked to amend the sentence, not to decide
+   whether it belongs.**
 6. **Should `COPY.meterHi` keep "injected insulin alone will not treat diabetic ketoacidosis"?** It is
    accurate where it ships — ketones or vomiting, at a meter past 600 — and overstated as a general
    claim. The question is whether to add the never-stop-insulin counterweight, because the way this

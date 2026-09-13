@@ -59,6 +59,12 @@ export function foodListScreen(handlers: FoodListHandlers): HTMLElement {
     type: 'search',
     class: 'field',
     id: 'food-search',
+    // `data-field` is what `captureFocus` keys on (note 25). Without it this
+    // input loses focus and caret on EVERY keystroke, because `render()` rebuilds
+    // the tree and the restore cannot find the node again. Every other text input
+    // in the app carries one; this screen was added without it and shipped that
+    // way. The name is the ViewState key it drives, so the two cannot drift.
+    'data-field': 'foodQuery',
     value: handlers.query,
     autocomplete: 'off',
     // Labelled by the visible heading above it rather than by a placeholder:

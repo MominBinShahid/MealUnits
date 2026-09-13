@@ -781,6 +781,38 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     expect(field.selectionEnd).toBe(3);
   });
 
+  it('keeps focus and caret in the FOOD SEARCH field, which shipped without them', async () => {
+    // The food list was added in carbs phase 1 with an `id` and no `data-field`,
+    // so `captureFocus` returned {field: null} and every keystroke dropped the
+    // caret — note 25's defect, reintroduced by a new screen rather than by a
+    // regression. 647 tests and a 100% mutation score passed over it: the
+    // assertions check what the DOM CONTAINS, and the defect is in node IDENTITY.
+    await setUpAsHisBrother();
+    await keys('120');
+    await tap('Next');
+    await tap('Food list');
+
+    const search = (): HTMLInputElement => {
+      const node = root.querySelector('[data-field="foodQuery"]');
+      if (!(node instanceof dom.window.HTMLInputElement)) throw new Error('no food search field');
+      return node;
+    };
+
+    for (const character of 'rot') {
+      const field = search();
+      field.focus();
+      field.value += character;
+      field.setSelectionRange(field.value.length, field.value.length);
+      field.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+      await settle();
+      // Re-found every iteration: the element typed into no longer exists.
+      const now = search();
+      expect(dom.window.document.activeElement).toBe(now);
+      expect(now.selectionStart).toBe(now.value.length);
+    }
+    expect(search().value).toBe('rot');
+  });
+
   it('buzzes once when the row is committed, and at no other moment', async () => {
     await setUpAsHisBrother();
     await keys('120');

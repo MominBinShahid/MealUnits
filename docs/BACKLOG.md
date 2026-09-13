@@ -13,8 +13,8 @@ not that it is technically hard. **Technical** is not a priority tier — it is 
 entry, waiting on something outside this project rather than on a decision of ours.
 
 **Numbers are identity, not rank.** The feature entries are ONE sequence partitioned across the
-tiers — 1-21 today — so a number stays stable enough to cite, while **position within a tier**
-carries the priority. That is why 20, 18, 19 and 21 sit above 1, and why 4a and 10a sit above 6. Do not
+tiers — 1-22 today — so a number stays stable enough to cite, while **position within a tier**
+carries the priority. That is why 20, 18, 19, 21 and 22 sit above 1, and why 4a and 10a sit above 6. Do not
 renumber to tidy it: reusing a number is how `PLAN.md` v14 came to assert three falsehoods about
 this file, which is why §20.3 says reference an entry by NAME, never by number.
 
@@ -145,6 +145,32 @@ instruction, nothing that varies by product. §14's regulatory posture governs.
 **Open:** where it would live. It is not a result-screen advisory and must not enter §10.5's budget;
 the how-it-works page is the obvious candidate, and there is an argument for the first-run setup
 since that is when a new user is most likely to be new to injecting.
+
+### 22. Nowhere to record a ketone result
+**Trigger: a prescriber answering `CLINICAL.md` section 14 question 7.** Recorded 2026-09-13; do not
+build it before that answer, because the answer decides whether it needs a recheck clock as well as
+a field.
+
+**The gap.** Band E tells the reader to check ketones. **Nothing in the app can record what they
+found** — the word does not appear in `src/storage/` or in `Reading` at all. So the export the
+prescriber reads, which §10 calls the clinical purpose of this whole project, shows every blood
+sugar and no ketone.
+
+**Why it is downstream of question 7 rather than independent.** The guidance pattern is *ketones →
+extra insulin → recheck in N hours → escalate if they have not fallen*. ISPAD's N is about 2 hours
+and is derived from rapid-acting analogues; Humulin R peaks at 2-4 hours, and section 4 already
+refuses two-hour reasoning for it. **A recheck rule with nowhere to record the recheck is advice
+with no memory** — but a field built before the interval is known may be the wrong field.
+
+**Related, and separately deferred:** `T9`. §7.8 specified reading entry "available from the home
+screen and offered automatically after any band C or band D block" and **only the second half
+shipped**, so a reading can be recorded from exactly one screen — `calculator.ts`'s blocked-low
+offer. Someone checking every two hours during an illness has nowhere to put those readings unless
+each one happens to be a blocked low. Any ketone field wants the same entry point, so the two are
+one piece of work.
+
+**The line to hold if it is built:** a recorded ketone value is a record, **never an input to a
+dose**. §7.8's "not an input to anything" governs, for the same reason it governs readings.
 
 ### 1. Blood-sugar plausibility advisory
 **What:** the mirror of §6.5 for the blood-sugar field — 350 typed as 530, or as 150.

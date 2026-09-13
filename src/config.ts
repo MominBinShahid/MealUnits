@@ -13,9 +13,16 @@
 // 2026-09-13 and only the first two are ADA/EASD.
 export const HYPO_LEVEL_1 = 70; // §3 band C — treat, do not inject. ADA/EASD
 export const HYPO_LEVEL_2 = 54; // §3 band D — escalated wording. ADA/EASD
-// CDC, not ADA/EASD, and CLINICAL.md 2.4 records that the self-testing trigger
-// is contested across guidance while the DKA DIAGNOSTIC criterion is now 200.
-// Changing this is a clinical judgement — see CLINICAL.md section 14 question 5.
+// CDC, not ADA/EASD. The SELF-TESTING trigger is contested and the guidance
+// does not converge — CDC and every shipping device say 250, ADA's 2026
+// narrative says "particularly above 200", NICE gives no number at all, and
+// Diabetes UK gives 13 mmol/L on one page and 14 on another. Separately, the
+// DKA DIAGNOSTIC criterion moved to 200, and vanishes entirely for anyone with
+// a known diagnosis.
+//
+// HELD AT 250 BY MOMIN, 2026-09-13, as an interim value pending the prescriber
+// (CLINICAL.md section 14 question 5). It is the majority position and the one
+// this app has always shipped; moving it is a clinical judgement, not ours.
 export const KETONE_ADVISORY = 250; // §3 band E — check ketones
 export const FAST_CARB_GRAMS = 15; // the 15-15 rule
 export const RECHECK_MINUTES = 15;

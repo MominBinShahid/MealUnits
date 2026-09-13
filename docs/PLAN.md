@@ -399,7 +399,7 @@ The structural consequence: **"below target" is the normal case, not an edge cas
 | **B. Caution** | blood sugar >= 70 and correction <= −1.5 units | Calculate **and** show a non-blocking caution: "You are well below target. Consider eating before injecting, and re-check." |
 | **C. Low (Level 1)** | 54 <= blood sugar < 70 | **No insulin number.** "Treat first — 15 grams of fast-acting carbohydrate, re-check in 15 minutes. Do not inject until above 70 mg/dL." Offer re-check-and-recalculate. |
 | **D. Very low (Level 2)** | blood sugar < 54 | Same block, escalated: "Repeat treatment if not recovered in 15 minutes. Get help if you cannot treat yourself." |
-| **E. High — advisory** | blood sugar >= 250 | Calculate and show the dose **normally**, plus: "Above 250 — check ketones. If ketones are present or you feel unwell, contact your clinician." |
+| **E. High — advisory** | blood sugar >= 250 | Calculate and show the dose **normally**, plus: "Above 250 — check ketones. Feeling unwell is its own reason to test, whatever your reading says. If ketones are present, contact your clinician." |
 
 70 and 54 are the ADA/EASD international consensus levels. **They are absolute and never
 derived from any setting.**
