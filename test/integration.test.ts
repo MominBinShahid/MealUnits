@@ -813,6 +813,24 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     expect(search().value).toBe('rot');
   });
 
+  it('the meter HI/LO disclosure closes again, which it could not until 2026-09-13', async () => {
+    // It set a flag that only `new_calculation` cleared, so both cards sat on the
+    // reading screen until a whole dose cycle finished. Opening something with no
+    // way to close it is the dead-end family of notes 38, 47 and 51.
+    await setUpAsHisBrother();
+    expect(text()).not.toContain('This dose treats 600 and is probably too little');
+
+    await tap('Meter showing HI or LO?');
+    expect(text()).toContain('This dose treats 600 and is probably too little');
+
+    await tap('Hide this');
+    expect(text()).not.toContain('This dose treats 600 and is probably too little');
+
+    // And it reopens — a toggle, not a one-shot that burned itself out.
+    await tap('Meter showing HI or LO?');
+    expect(text()).toContain('This dose treats 600 and is probably too little');
+  });
+
   it('buzzes once when the row is committed, and at no other moment', async () => {
     await setUpAsHisBrother();
     await keys('120');

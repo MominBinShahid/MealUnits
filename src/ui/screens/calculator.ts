@@ -56,7 +56,7 @@ export interface CalculatorHandlers {
   readonly onSaveReading: () => void;
   readonly onToggleMore: () => void;
   /** §4.5 — opens the HI/LO meter guidance on the reading screen. */
-  readonly onShowMeterGuidance: () => void;
+  readonly onToggleMeterGuidance: () => void;
   readonly onOpenHistory: () => void;
   readonly onOpenSettings: () => void;
   readonly onStartOver: () => void;
@@ -414,7 +414,14 @@ function entryScreen(
  */
 function meterGuidance(handlers: CalculatorHandlers): HTMLElement {
   if (!handlers.meterGuidanceShown) {
-    return h('div', {}, button(COPY.meterGuidance, handlers.onShowMeterGuidance, { class: 'more' }));
+    return h(
+      'div',
+      {},
+      button(COPY.meterGuidance, handlers.onToggleMeterGuidance, {
+        class: 'more',
+        'aria-expanded': 'false',
+      }),
+    );
   }
   return h(
     'div',
@@ -423,6 +430,11 @@ function meterGuidance(handlers: CalculatorHandlers): HTMLElement {
     { 'aria-live': 'polite' },
     h('div', { class: 'flag' }, h('b', {}, COPY.meterHi.title), COPY.meterHi.body),
     h('div', { class: 'flag' }, h('b', {}, COPY.meterLo.title), COPY.meterLo.body),
+    // The way back. Without it the only exit was finishing a calculation.
+    button(COPY.meterGuidanceHide, handlers.onToggleMeterGuidance, {
+      class: 'more',
+      'aria-expanded': 'true',
+    }),
   );
 }
 

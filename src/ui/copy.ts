@@ -286,6 +286,13 @@ export const COPY = {
    * stands beside a hint, not a list it is visibly truncating.
    */
   meterGuidance: 'Meter showing HI or LO?',
+  /**
+   * The disclosure was one-way until 2026-09-13: tapping it set a flag that only
+   * `new_calculation` cleared, so both cards stayed on the reading screen until a
+   * whole dose cycle finished. Opening something with no way to close it is a
+   * dead end of the same family as notes 38, 47 and 51.
+   */
+  meterGuidanceHide: 'Hide this',
 
   // ── §4.6's blank reading ──────────────────────────────────────────────────
   blankReading: {

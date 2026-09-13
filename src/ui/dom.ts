@@ -26,6 +26,9 @@ export interface Attrs {
   readonly 'aria-live'?: string;
   readonly 'aria-hidden'?: string;
   readonly 'aria-pressed'?: string;
+  // A disclosure states whether it is open, so a screen reader announces the
+  // second tap as closing rather than as a second way to open (§10.9).
+  readonly 'aria-expanded'?: string;
   readonly 'aria-describedby'?: string;
   readonly 'data-step'?: string;
   // The stable identity a text field keeps across a rebuild of the tree.
