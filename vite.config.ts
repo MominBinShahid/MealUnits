@@ -77,12 +77,24 @@ function serviceWorker(outDir: string): Plugin {
       // stale copy from cache and can never be replaced; `index.html` because it
       // is added as SHELL by the worker; and source maps because they are for a
       // developer at a desk, not a phone on mobile data.
+      //
+      // `social/` and `sitemap.xml` are excluded on that SAME argument, and it
+      // took adding them to notice. 4a's link-preview card is 105 KB that no
+      // running app ever requests — only a crawler or a chat client fetching a
+      // preview does, from the network, once. Walking the whole directory put it
+      // on the install path of every phone, which is the shape the source-map
+      // exclusion above already rejected. An offline-first app pays for its
+      // precache in someone's mobile data.
       const walk = (dir: string, prefix: string): string[] =>
         readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
           const at = `${prefix}${entry.name}`;
-          if (entry.isDirectory()) return walk(join(dir, entry.name), `${at}/`);
+          if (entry.isDirectory()) {
+            if (at === 'social') return [];
+            return walk(join(dir, entry.name), `${at}/`);
+          }
           if (entry.name.endsWith('.map')) return [];
           if (at === 'sw.js' || at === 'index.html') return [];
+          if (at === 'sitemap.xml' || at === 'robots.txt') return [];
           return [`${BASE}${at}`];
         });
       const precache = walk(outDir, '');

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  4a. ONE url, and that is not an oversight.
+
+  Every screen in this app is reached by tapping, not by navigating — there is
+  no /history or /how-it-works to list. Per-screen routes are BACKLOG entry 24,
+  blocked on T3. When they land, they belong here.
+
+  This file sits under /MealUnits/ rather than at the domain root, which is
+  legitimate: a sitemap may only list URLs at or below its own path, and every
+  URL here is. It has to be submitted directly in Search Console, because the
+  robots.txt that crawlers actually read is the apex one at
+  mominbinshahid.github.io/robots.txt — served by a different repository, and
+  already saying "Allow: /". The robots.txt beside this file is inert for the
+  same reason and ships anyway, for portability; its own comment says why.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://mominbinshahid.github.io/MealUnits/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>

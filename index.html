@@ -9,11 +9,77 @@
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)" />
-    <meta name="description" content="An insulin dose calculator for people with type 1 diabetes. Not a medical device." />
+    <!-- 4a. ONE description, used verbatim by the meta tag, Open Graph and the
+         Twitter card, so search, WhatsApp and a doctor's link preview cannot
+         disagree about what this is. 110 characters, chosen so nothing
+         truncates: WhatsApp shows about two lines and Twitter about 125
+         characters, and the clause that gets cut is always the last one.
+         "type 1" lands at character 36, ahead of every cut. -->
+    <meta name="description" content="A mealtime insulin calculator for type 1 diabetes. Your own numbers, not anyone else's. Not a medical device." />
+    <link rel="canonical" href="https://mominbinshahid.github.io/MealUnits/" />
+
+    <!-- 4a's actual safety argument, and it is not ranking: "when the URL is
+         sent to a doctor, a family member, or in a WhatsApp message, the
+         preview shows the name and who it is for rather than a bare URL. That
+         is the case where metadata does safety work — it puts the disclaimer
+         in front of someone BEFORE they open it." -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MealUnits" />
+    <meta property="og:title" content="MealUnits — a mealtime insulin calculator" />
+    <meta property="og:description" content="A mealtime insulin calculator for type 1 diabetes. Your own numbers, not anyone else's. Not a medical device." />
+    <meta property="og:url" content="https://mominbinshahid.github.io/MealUnits/" />
+    <meta property="og:locale" content="en" />
+    <!-- Absolute, because a preview crawler resolves this from its own host and
+         a relative path would resolve against nothing. -->
+    <meta property="og:image" content="https://mominbinshahid.github.io/MealUnits/social/card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="MealUnits — a mealtime insulin calculator for type 1 diabetes. Not a medical device." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MealUnits — a mealtime insulin calculator" />
+    <meta name="twitter:description" content="A mealtime insulin calculator for type 1 diabetes. Your own numbers, not anyone else's. Not a medical device." />
+    <meta name="twitter:image" content="https://mominbinshahid.github.io/MealUnits/social/card.png" />
+    <meta name="twitter:image:alt" content="MealUnits — a mealtime insulin calculator for type 1 diabetes. Not a medical device." />
+
     <link rel="manifest" href="/MealUnits/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/MealUnits/icons/apple-touch-icon.png" />
     <link rel="icon" href="/MealUnits/icons/icon-192.png" />
-    <title>MealUnits</title>
+    <!-- Longer than the app's own name on purpose: this is the search result's
+         headline and a browser tab, never the installed app's label — an
+         installed PWA takes its name from the manifest, which stays
+         "MealUnits". -->
+    <title>MealUnits — insulin dose calculator for type 1 diabetes</title>
+
+    <!--
+      Structured data. NOT blocked by §11.5's `script-src 'self'`, which was
+      verified in Chrome against the exact policy string rather than assumed:
+      a script element whose type is not a JavaScript type is a data block, is
+      never executed, and so is never subject to script-src.
+
+      `WebApplication` with a health CATEGORY, deliberately, and not
+      `MedicalWebPage` or any `MedicalEntity` type. Those assert in
+      machine-readable form that this is medical content, which is the opposite
+      of what §14's regulatory posture says: not a medical device, no clearance,
+      decides nothing a clinician has not already decided. The category is
+      accurate; the medical types would be a claim.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "MealUnits",
+        "url": "https://mominbinshahid.github.io/MealUnits/",
+        "description": "A mealtime insulin calculator for type 1 diabetes. Your own numbers, not anyone else's. Not a medical device.",
+        "applicationCategory": "HealthApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires a modern browser. Works offline once installed.",
+        "isAccessibleForFree": true,
+        "inLanguage": "en",
+        "license": "https://opensource.org/licenses/MIT",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
   </head>
   <body>
     <div id="app" role="main"></div>

@@ -379,10 +379,45 @@ single-user app.
 
 ## LATER — real, but not soon
 
-### 4a. Search visibility — RULED: index it (see T5 first)
+### 4a. Search visibility — SHIPPED 2026-09-14
 
-**Status: nothing has been done for search, and the recommendation is that the app should NOT be
-discoverable. The REPOSITORY should.**
+**Its old status line said "nothing has been done for search, and the recommendation is that the app
+should NOT be discoverable" — directly contradicting this entry's own heading, and resting on an
+argument `T5` had already removed.** Both are corrected here; the reasoning below is kept as the
+record, which is what it was always for.
+
+**What shipped:** Open Graph and Twitter card tags, a canonical URL, a `WebApplication` JSON-LD
+block, a 1200x630 preview card, and a sitemap. One description string, 110 characters, used verbatim
+by all three surfaces so search, WhatsApp and a doctor's link preview cannot disagree about what this
+is — and short enough that nothing truncates, since the clause a preview cuts is always the last one.
+
+**Three things were verified rather than assumed, and two of them changed the plan.**
+
+1. **JSON-LD is NOT blocked by §11.5's `script-src 'self'`.** Checked in Chrome against the exact
+   policy string: a script element whose type is not a JavaScript type is a data block, never
+   executed, never subject to `script-src`. It is `WebApplication` with a health CATEGORY and
+   deliberately not `MedicalWebPage` or any `MedicalEntity` type — those assert in machine-readable
+   form that this is medical content, which is the opposite of §14's posture.
+2. **The `robots.txt` here is inert, and ships anyway.** Only the apex file is read, and
+   `mominbinshahid.github.io/robots.txt` is served by a different repository — it already says
+   `Allow: /`, so this app has been crawlable all along. **RULED BY MOMIN 2026-09-14: ship one
+   regardless**, for portability rather than crawling: move this repository to its own domain and the
+   file is already right, whereas leaving it out means the move silently drops a directive nobody
+   remembers was being inherited. A project that depends on a file in another repository has a
+   dependency it cannot see.
+3. **The apex sitemap lists five URLs and none is MealUnits.** `public/sitemap.xml` covers this app's
+   own path — legitimate, since a sitemap may list URLs at or below its own location — and has to be
+   submitted directly in Search Console. **Adding the app to the apex sitemap is a change in the
+   OTHER repository and is Momin's to make.**
+
+**One regression was introduced and caught before merge.** `vite.config.ts` walks the whole build to
+build the precache, so adding a 105 KB preview card put it on the install path of every phone — for a
+file only a crawler ever fetches. That is the shape the walk's own comment already rejects for source
+maps, "for a developer at a desk, not a phone on mobile data". `check-plan.py`'s
+`check_public_assets_classified` now pins every `public/` entry as precached or crawler-only, and
+checks both that the classification is complete and that `vite.config.ts` still honours it.
+
+**Still open, and it needs Momin:** `T6`'s Search Console verification token.
 
 **What exists** in `index.html`: `<title>`, a `<meta name="description">` that reads *"An insulin
 dose calculator for people with type 1 diabetes. Not a medical device."* — corrected on 2026-09-13,

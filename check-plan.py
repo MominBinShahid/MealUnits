@@ -909,6 +909,60 @@ def check_ui_text_outside_copy(_plan):
     return out
 
 
+# Everything in `public/` is copied into the build, and `vite.config.ts` walks
+# the build to make the service worker's precache — so anything added here is
+# downloaded to every phone on install unless it is excluded there. Pinned by
+# name so a new file forces the decision rather than defaulting to "ship it".
+PUBLIC_PRECACHED = {"fonts", "icons", "manifest.webmanifest"}
+PUBLIC_CRAWLER_ONLY = {"social", "sitemap.xml", "robots.txt"}
+
+
+def check_public_assets_classified(_plan):
+    """1d. A new `public/` file silently added to every phone's install — ADDED
+    2026-09-14.
+
+    4a's link-preview card is 105 KB that no running app ever requests: a
+    crawler or a chat client fetches it once, from the network, to build a
+    preview. Adding it to `public/` put it straight into the precache, because
+    the walk in `vite.config.ts` takes the whole directory — the same shape the
+    walk's own comment already rejects for source maps, "for a developer at a
+    desk, not a phone on mobile data". It was caught by reading the built
+    `sw.js`, which is not a thing anyone does routinely.
+
+    The failure is quiet in the direction that matters: an offline-first app
+    pays for its precache in someone's mobile data, and nothing on screen says
+    the install got bigger.
+
+    So the classification is pinned rather than the size. A file that belongs on
+    the phone goes in PUBLIC_PRECACHED; one only a crawler reads goes in
+    PUBLIC_CRAWLER_ONLY **and** must be excluded in `vite.config.ts`. Both
+    halves are checked, because the pin alone would pass while the exclusion was
+    deleted.
+    """
+    out = []
+    public = os.path.join(HERE, "public")
+    if not os.path.isdir(public):
+        return ["public/ is missing, and the build copies it verbatim"]
+
+    found = {name for name in os.listdir(public) if not name.startswith(".")}
+    classified = PUBLIC_PRECACHED | PUBLIC_CRAWLER_ONLY
+    for name in sorted(found - classified):
+        out.append("public/%s is not classified — add it to PUBLIC_PRECACHED if it belongs"
+                   " on every phone, or to PUBLIC_CRAWLER_ONLY (and exclude it in"
+                   " vite.config.ts) if only a crawler reads it" % name)
+    for name in sorted(classified - found):
+        out.append("public/%s is pinned but no longer exists — drop it from the pin" % name)
+
+    config = os.path.join(HERE, "vite.config.ts")
+    with io.open(config, encoding="utf-8") as handle:
+        text = handle.read()
+    for name in sorted(PUBLIC_CRAWLER_ONLY & found):
+        if "'%s'" % name not in text:
+            out.append("public/%s is pinned as crawler-only but vite.config.ts never names it,"
+                       " so the precache walk still ships it to every phone" % name)
+    return out
+
+
 def check_note_references(corpus):
     r"""2c. A "note N" pointing at a build note that does not exist — ADDED 2026-09-13.
 
@@ -2542,6 +2596,7 @@ CHECKS = [
     ("retired phrases living as spec (ALL FILES)", check_retired, "corpus"),
     ("retired phrases living in src/**/*.ts", check_retired_in_source, "plan"),
     ("user-facing text outside src/ui/copy.ts", check_ui_text_outside_copy, "plan"),
+    ("unclassified public/ asset", check_public_assets_classified, "plan"),
     ("dangling section references", check_references, "plan"),
     ("dangling section references in companions", check_references_corpus, "corpus"),
     ("dangling build-note references", check_note_references, "corpus"),
