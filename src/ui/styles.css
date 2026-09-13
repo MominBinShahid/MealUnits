@@ -764,9 +764,25 @@ body {
   margin-top: 1rem;
 }
 
-.field label {
+.field label,
+.group-label {
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+/* The rounding question, which is a question like every other on the settings
+   screen and must read like one. It wore `.ask` — the DISPLAY size meant for a
+   screen's single question, correct on the calculator and the food list where
+   there is exactly one. Settings has eight, and this was the only one set as an
+   h1, which made the section tower over its neighbours. Reported by Momin
+   2026-09-13; unchanged since the first commit and argued for nowhere, so it
+   was a reused class rather than a decision.
+
+   Not a `<label>`: the modes are a button group with no single control to point
+   at, and a label whose `for` names nothing is worse than no label. The group
+   carries `aria-labelledby` instead. */
+.group-label {
+  margin: 1rem 0 0;
 }
 
 /* §10.7 — `type="text"` with `inputmode`, NEVER `type="number"`, whose invalid
