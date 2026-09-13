@@ -477,7 +477,7 @@ describe('§10.6 first run', () => {
     // The REASON travels with it. §8.5 refuses a U-40 setting because a setting
     // that can be set wrong causes the very error it exists to prevent, and a
     // bare assumption with no reason reads as trivia and gets skipped.
-    expect(setup).toContain('2.5x error it was meant to prevent');
+    expect(setup).toContain('2.5-times error it exists to prevent');
 
     // And §8.5's other half stays REFUSED: the dose names the insulin, which a
     // person can check against the vial in their hand, not a concentration they
@@ -603,7 +603,7 @@ describe('§10.6 the five terms the app used and never explained', () => {
     // The definition itself, not just the heading.
     expect(page).toContain('the two add together');
     // The exception that is NOT stacking, and gets it backwards if omitted.
-    expect(page).toContain('holding that one back would give you more insulin, not less');
+    expect(page).toContain('holding it back would give you more insulin, not less');
     // And the refusal. §7.4 declines to model insulin-on-board on purpose.
     expect(page).toContain('refuses to draw that curve');
   });
@@ -644,7 +644,7 @@ describe('§10.6 the five terms the app used and never explained', () => {
     expect(page).toContain('No recent dose recorded');
     // BOTH halves of the condition. v4 dropped provenance and the caveat fired
     // after every overnight gap; copy naming only one half describes that bug.
-    expect(page).toContain('an entry was dropped as unreadable when the app opened');
+    expect(page).toContain('an entry could not be read when the app opened, and was dropped');
     expect(page).toContain('It does not mean you have no insulin still working');
 
     // The windows are interpolated, so these read from config rather than prose.

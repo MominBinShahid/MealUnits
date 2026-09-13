@@ -97,12 +97,12 @@ export const COPY = {
         // pair with the type 1 above. Two emphases on one screen split the
         // reader's attention instead of answering one question, and this
         // paragraph already opens with the words a type 2 reader is looking for.
-        lead: 'If you have type 2 diabetes your treatment may be tablets, a fixed insulin dose, a weekly injection, or a mix — and none of those are what this arithmetic describes. The same is true if a pump delivers your insulin, which works out doses its own way from settings this app cannot see.',
+        lead: 'If you have type 2 diabetes your treatment may be tablets, a fixed insulin dose, a weekly injection, or a mix — and none of those are what this arithmetic describes. The same is true if a pump delivers your insulin: a pump works out doses its own way, from settings this app cannot see.',
         condition: null,
         rest: '',
       },
       {
-        lead: 'It was built for an adult, and nothing in it has been checked against how a child is dosed. If it is a child’s dose you are working out, take the numbers to their doctor before you rely on them.',
+        lead: 'It was built for an adult, and nothing in it has been checked against how a child is dosed. If you are working out a child’s dose, take the numbers to their doctor before you rely on them.',
         condition: null,
         rest: '',
       },
@@ -122,20 +122,20 @@ export const COPY = {
     carbTitle: 'What counts as carbohydrate',
     carbBody: [
       'The reading comes off your meter. The grams do not — that number is yours, and it is the one thing here the app takes entirely on trust. What it is counting is the carbohydrate in the food: starch and sugar. Rice, roti, potato, biryani, daal, fruit and the sugar in chai all count. A 250 g plate of biryani is about 50 g of carbohydrate, so this is never the weight of what is on the plate.',
-      'Fibre is carbohydrate as well, but your body does not absorb it, so it does not raise blood sugar the way starch does. Some doctors subtract it from the total and some do not. Ask yours which they want, then do the same thing every meal — the app cannot tell which rule you used, and a figure you reach the same way each time is worth more to it than one that is right once.',
+      'Fibre is carbohydrate as well, but your body does not absorb it, so it does not raise blood sugar the way starch does. Some doctors subtract it from the total and some do not. Ask yours which they want, then do the same thing every meal — the app cannot tell which rule you used, and counting the same way every time helps it more than being exactly right once.',
       'Protein and fat are not carbohydrate and do not belong in this number. They do move blood sugar, hours later, and that is in "What this app does not know about" below.',
     ] as const,
 
     stackingTitle: 'What "stacking" means',
     stackingBody: [
       'Fast insulin does not finish when your blood sugar comes down. It goes on working for hours after you inject it. If you take a correction while an earlier dose is still acting, the two add together, so the total can take you lower than either one was meant to. That is stacking, and it is the word the app uses on the result screen and in Settings.',
-      `For the first ${String(STACK_SUPPRESS_HOURS)} hours after a dose you logged, the app holds the correction back and gives you the meal dose alone. It says "Correction held back", and the correction is still there in the working, struck through, with its reason. The meal part is never held back — food needs covering whatever is still working. And a correction that makes the dose smaller, because you are at or below target, is applied in full every time: holding that one back would give you more insulin, not less.`,
-      `Between ${String(STACK_SUPPRESS_HOURS)} and ${String(STACK_ADVISE_HOURS)} hours the correction is applied in full and the app tells you the last dose may still be acting. After ${String(STACK_ADVISE_HOURS)} hours it says nothing. None of this is a model of how much insulin is left in you — how long a dose lasts depends on how large it was, so the app refuses to draw that curve.`,
-      'If you need the correction anyway, because the site did not absorb or the insulin has been in the heat or you are ill, "Why is this smaller?" on the result screen adds it back. It tells you first how far the earlier dose could still take you on its own. Using it is recorded on the entry, so the pattern is in your history.',
+      `For the first ${String(STACK_SUPPRESS_HOURS)} hours after a dose you logged, the app holds the correction back and gives you the meal dose alone. It says "Correction held back", and the correction is still there in the working, struck through, with its reason. The meal part is never held back — food needs covering no matter how much insulin is still working. And when you are at or below target the correction makes the dose smaller; that kind is always applied in full, because holding it back would give you more insulin, not less.`,
+      `Between ${String(STACK_SUPPRESS_HOURS)} and ${String(STACK_ADVISE_HOURS)} hours the correction is applied in full and the app tells you the last dose may still be acting. After ${String(STACK_ADVISE_HOURS)} hours it says nothing. None of this is a model of how much insulin is left in you — how long a dose lasts depends on how big it was, so the app refuses to draw that curve.`,
+      'If you need the correction anyway — because the injection site did not absorb it, or the insulin has been in the heat, or you are ill — "Why is this smaller?" on the result screen adds it back. It tells you first how far the earlier dose could still lower you on its own. Using it is recorded on the entry, so the pattern is in your history.',
     ] as const,
 
     missingTitle: '"No recent dose recorded"',
-    missingBody: `The stacking check knows one thing: what you logged. That line appears when the app has no recent dose it can reason from AND no confidence in the record either. It does not mean you have no insulin still working. The app will not tell you that, because it cannot know it. If you injected within the last ${String(STACK_SUPPRESS_HOURS)} hours, nothing has been held back from the dose in front of you — read it as a correction sitting on top of insulin that is still working, and decide from there. Logging every injection is what keeps this check from having to say this at all.`,
+    missingBody: `The stacking check knows one thing: what you logged. That line appears only when two things are both true: the app has no recent dose it can reason from, and it has no confidence in the record either. It does not mean you have no insulin still working. The app will not tell you that, because it cannot know it. If you injected within the last ${String(STACK_SUPPRESS_HOURS)} hours, nothing has been held back from the dose in front of you — read it as a correction sitting on top of insulin that is still working, and decide from there. If you log every injection, this check never has to appear.`,
     /**
      * BOTH halves of the condition are load-bearing and were got wrong once: the
      * caveat fires only when there is no usable record AND provenance is suspect
@@ -145,16 +145,16 @@ export const COPY = {
      */
     missingConditions: [
       'nothing logged at all',
-      'the newest entry predates this install',
+      'the newest entry is from before this app was installed',
       'the history was just imported',
-      'an entry was set aside for a time the app cannot believe',
-      'an entry was dropped as unreadable when the app opened',
+      'an entry has a time the app cannot believe, so it was set aside',
+      'an entry could not be read when the app opened, and was dropped',
     ] as const,
 
     expiryTitle: `Why a result expires after ${String(RESULT_EXPIRY_MINUTES)} minutes`,
     expiryBody: [
-      `A dose is only as good as the reading it came from. ${String(RESULT_EXPIRY_MINUTES)} minutes after it is worked out the result dims, the screen says what time it was from, and "Check again" becomes the first thing on it. Nothing is deleted. The number is still there to read, and if you have already injected you can still log it — the row is stamped at the moment you tap, not at the moment the dose was worked out, and the button says so.`,
-      `What does not survive is a double-check you already tapped through. Work the dose out again and the app asks again, because by then the ${String(STACK_SUPPRESS_HOURS)}-hour window may have passed, a correction that was being held back can come back, and the new total can be larger than the one you confirmed. A low reading goes stale the same way: the block tells you what time that reading was and asks for a fresh one, and it goes on telling you to treat first.`,
+      `A dose is only as good as the reading it came from. ${String(RESULT_EXPIRY_MINUTES)} minutes after it is worked out the result dims, the screen says what time it was from, and "Check again" becomes the first thing on it. Nothing is deleted. The number is still there to read, and if you have already injected you can still log it — the entry records the time you tap, not the time the dose was worked out, and the button says so.`,
+      `A double-check you already tapped through does not carry over. If you work the dose out again, the app asks again, because by then the ${String(STACK_SUPPRESS_HOURS)}-hour window may have passed, a correction that was being held back can come back, and the new total can be larger than the one you confirmed. A low reading goes stale the same way: the screen tells you what time that reading was and asks for a fresh one, and it goes on telling you to treat first.`,
     ] as const,
 
     whatDoTheseMean: 'What do these mean?',
@@ -194,7 +194,7 @@ export const COPY = {
      * detail can do.
      */
     weighOnce:
-      'Weigh one of your own rotis once. Carbohydrate is about its cooked weight times 0.46, and every bread row below becomes yours rather than an average.',
+      'Weigh one of your own rotis once. Carbohydrate is just under half its cooked weight — times 0.46 — and every bread row below becomes yours rather than an average.',
     countNote: (shown: number, total: number): string =>
       shown === total ? `${String(total)} foods` : `${String(shown)} of ${String(total)} foods`,
   },
@@ -260,7 +260,7 @@ export const COPY = {
       case 'too_many_decimals':
         return 'Two decimal places at most.';
       case 'too_long':
-        return 'That is more digits than this can be. Check the number.';
+        return 'That is too many digits. Check the number.';
       case 'signed':
         return 'Numbers only, with no plus or minus sign.';
       case 'non_ascii_digits':
@@ -597,7 +597,7 @@ export const COPY = {
   // ── §6.7 — the dosing-history note ────────────────────────────────────────
   dosingHistory: {
     question: 'Before you started using this app, how did you decide your mealtime insulin dose?',
-    hint: 'A sentence is more use than a number — what mattered was how the dose was chosen, not just its size.',
+    hint: 'A sentence is more use than a number — what matters is how the dose was chosen, not just its size.',
     skip: 'Skip for now',
     /** §6.7 v19 — declining CONFIRMS FIRST, stating the consequence. */
     declineAction: "Don't ask again",
@@ -703,7 +703,7 @@ export const COPY = {
      * numbers stop and the word "unit" starts doing the work.
      */
     unitAssumption:
-      'These are units of U-100 insulin — the standard strength, and what Humulin R is. There is no setting for any other strength, deliberately: one that could be set wrong would cause the exact 2.5x error it was meant to prevent. If your insulin is not U-100, these numbers are not right for it.',
+      'These are units of U-100 insulin — the standard strength, and what Humulin R is. There is deliberately no setting for other strengths: a strength setting chosen wrong would cause the exact 2.5-times error it exists to prevent. If your insulin is not U-100, these numbers are not right for it.',
     /**
      * §1.3 — visually separated, and labelled so it cannot read as a dose.
      *
@@ -1030,7 +1030,7 @@ export const COPY = {
   /** §11.3 — the fail-closed screen. */
   failClosed: {
     title: 'This app cannot read your record.',
-    body: 'It was saved by a newer version than the one running here. Nothing has been lost. Opening the newer version will read it normally.',
+    body: 'Your record was saved by a newer version of this app than this one. Nothing has been lost. Opening the newer version will read it normally.',
     settingsHeading: 'Your settings, from the recovery copy',
     copyThemDown: 'Copy these down before you start over — after that, this screen is gone too.',
     escape: 'Start over',
