@@ -427,6 +427,17 @@ failure that makes a search engine pick its own preferred URL and ignore both**,
 catches it: the build succeeds, the page renders, and the disagreement is visible only to a crawler,
 weeks later.
 
+**A second defect was shipped and found by Momin, not by any check.** Opening
+`/MealUnits/sitemap.xml` in a browser rendered the CALCULATOR. Every path under this app's scope used
+to BE the app — there is no routing — so the worker's navigation branch could answer any of them with
+the shell. `4a` put three files inside that scope and did not teach it otherwise.
+
+**It hid well, and the way it hid is the lesson.** `curl` returns the real file, because curl has no
+service worker; Googlebot does not run service workers either. So the command line and the crawler
+both saw the truth while the person checking the URL did not — and every verification in this entry
+was done with `curl`. `check_worker_knows_non_app_files` now pins `sw.ts`'s exclusions against the
+crawler-only classification, so a file cannot be one without being the other.
+
 **One regression was introduced and caught before merge.** `vite.config.ts` walks the whole build to
 build the precache, so adding a 105 KB preview card put it on the install path of every phone — for a
 file only a crawler ever fetches. That is the shape the walk's own comment already rejects for source
