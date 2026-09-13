@@ -363,6 +363,52 @@ describe('§10.6 first run', () => {
     expect(fieldLabelled('Double-check my typing').value).toBe('30');
   });
 
+  it('says which diabetes it is for, at the gate nobody can skip', async () => {
+    await boot();
+
+    // Until 2026-09-13 the app never said this ANYWHERE. The only mention of
+    // the condition at all was "diabetic ketoacidosis", inside band E's
+    // emergency wording — which a reader only meets above 250.
+    //
+    // It belongs on the disclaimer and not only in the reference, because §10.6
+    // makes this screen inescapable and note 59 keeps the acknowledgement in
+    // memory, so it is read on every launch. "insulin dose calculator" is
+    // searched by people with type 2 just as often, and item 4a is the step
+    // that puts this app in front of them.
+    expect(text()).toContain('This is for type 1 diabetes');
+    expect(text()).toContain('A type 2 regimen works differently');
+
+    // Before the accept, not after it.
+    const body = text();
+    expect(body.indexOf('type 1 diabetes')).toBeLessThan(
+      body.indexOf('I understand — use at my own risk'),
+    );
+  });
+
+  it('explains who it is for FIRST in how-it-works, before any arithmetic', async () => {
+    await setUpAsHisBrother();
+    await tap('Settings');
+    await tap('How this works');
+
+    const body = text();
+    expect(body).toContain('Who this is for');
+    expect(body).toContain('people with type 1 diabetes');
+    // Pumps are named alongside type 2 deliberately: someone with type 1 on a
+    // pump IS in the population and is still the wrong reader, because their
+    // device doses from settings this app cannot see.
+    expect(body).toContain('pump delivers your insulin');
+    // Honest about children rather than refusing them or silently claiming the
+    // scope — the app has no age handling and none of it was checked for a
+    // child's dosing.
+    expect(body).toContain('checked against how a child is dosed');
+
+    // Who it is for comes before the arithmetic, because it decides whether the
+    // arithmetic applies to the reader at all.
+    expect(body.indexOf('Who this is for')).toBeLessThan(
+      body.indexOf('The arithmetic, in full'),
+    );
+  });
+
   it('says who Hasham is, because three hints name him and nothing else did', async () => {
     await boot();
     await tap('☐  I have read this');

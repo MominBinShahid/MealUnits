@@ -53,6 +53,29 @@ export const COPY = {
    * away. `check-plan.py` now catches that class.
    */
   explain: {
+    /**
+     * The FIRST section of "How this works", added 2026-09-13. The disclaimer
+     * states the condition as a rule; this explains it, which is the division
+     * this project uses everywhere — the gate says what, the reference says why.
+     *
+     * Pumps are named alongside type 2 deliberately. Someone with type 1 on a
+     * pump is in the population this app is for and is still the wrong reader:
+     * their device works out doses its own way, from settings this app does not
+     * hold, and a second opinion from different arithmetic is a hazard rather
+     * than a cross-check.
+     *
+     * The age line is honest rather than restrictive. The app has no age
+     * handling at all, ISPAD's paediatric guidance is cited in CLINICAL.md, and
+     * nothing here was checked for a child's dosing. Saying so is truer than
+     * either refusing children or silently claiming the scope.
+     */
+    audienceTitle: 'Who this is for',
+    audienceBody: [
+      'This app is for people with type 1 diabetes who work out each mealtime dose from two things: how far above target their blood sugar is, and how much carbohydrate they are about to eat. It assumes a long-acting insulin once a day and a short-acting one at meals.',
+      'If you have type 2 diabetes your treatment may be tablets, a fixed insulin dose, a weekly injection, or a mix — and none of those are what this arithmetic describes. The same is true if a pump delivers your insulin, which works out doses its own way from settings this app cannot see.',
+      'It was built for an adult, and nothing in it has been checked against how a child is dosed. If it is a child’s dose you are working out, take the numbers to their clinician before you rely on them.',
+    ] as const,
+
     namesTitle: 'The names your doctor uses',
     namesLead: 'Those two numbers have clinical names, and your doctor will use them.',
     /**
@@ -557,6 +580,18 @@ export const COPY = {
     disclaimerBody: [
       'This is not a medical device and it has no regulatory clearance. It has not been clinically validated.',
       'It does the arithmetic your doctor already prescribed. Check every dose it gives you before you inject.',
+      // ADDED 2026-09-13. Until then the app never said which diabetes it was
+      // for, anywhere — the only mention of the condition at all was "diabetic
+      // ketoacidosis" inside the band E emergency wording. That was tolerable
+      // while one person used it. It is not tolerable for an app about to be
+      // made findable, because "insulin dose calculator" is searched by people
+      // with type 2 just as often, and their regimen is not what this
+      // arithmetic describes.
+      //
+      // Stated at the GATE rather than only in the reference, because §10.6
+      // makes this screen inescapable and note 59 keeps the acknowledgement in
+      // memory only — so it is read on every launch, before anything else.
+      'This is for type 1 diabetes. It assumes you take a long-acting insulin every day and count carbohydrate at meals. A type 2 regimen works differently, and these numbers are not right for it.',
       'It works from three numbers your doctor gives you, and it fills in none of them. Another person’s numbers are wrong for you.',
       'MealUnits is not endorsed by, and has no connection with, the makers of your meter or your insulin.',
     ],

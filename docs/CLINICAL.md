@@ -1,5 +1,11 @@
 # CLINICAL.md — every clinical decision, and where it came from
 
+**Population: people with type 1 diabetes** on multiple daily injections — one long-acting insulin,
+one short-acting at meals, dosed from an individual target, insulin sensitivity factor and
+insulin-to-carbohydrate ratio. **Nothing here is validated for type 2 diabetes or for pump therapy**,
+and although paediatric sources are cited where they are the best available evidence, the app was
+built for an adult and no part of it has been checked against how a child is dosed.
+
 **MealUnits is not a medical device and has no regulatory clearance.** It has not been clinically
 validated. This file exists because the MHRA's guidance says a calculator should "always provide
 details of the formula used and details of the source research", and because only 30% of the 46 apps
