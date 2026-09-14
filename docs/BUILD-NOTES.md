@@ -785,3 +785,77 @@ whose range already admits eslint 10 is reported as unnecessary, one naming an a
 package is reported as describing nothing, and a `>=3 <10` range is reported as
 unreadable.
 
+## 72. Smoke now types like a person, asserts its own setup, and refuses a stale browser
+
+Three changes to `tools/smoke.mjs`, 2026-09-14, all from the same root: **the only
+layer that is a real browser could not see the class of defect it exists for, and
+could not tell you when it had stopped testing anything at all.**
+
+**It types one character at a time, through real key events.** It used to assign
+`i.value = '150'` and fire one `input`, which is ONE render — and the defect class
+this file exists to reach lives between renders. `Input.dispatchKeyEvent` per
+character is what a person does. jsdom's `typeInto` already typed per character and
+caught the desktop case; what jsdom cannot do is be a browser, and composition,
+predictive text and the soft keyboard live only here.
+
+It focuses once and types into whatever currently HAS focus, rather than re-finding
+the field per character — the same rule `typeInto` follows, for the same reason:
+re-finding the element each keystroke is a workaround for the defect being guarded,
+and it lets the suite stay green while the app is unusable by hand.
+
+**It asserts that setup succeeded.** Every check in the file depends on it, and
+nothing checked. When `88f3394` stopped prefilling the three ratios without updating
+this helper, "Save and start" stayed disabled and seventeen checks failed against
+the first-run screen — reporting the consequence seventeen times and the cause not
+once (note 67). There is now one assertion before the tap, plus a per-field check
+that each value survived being typed, so a dropped keystroke names the field it was
+dropped in.
+
+**It refuses to attach to a browser left behind by an earlier run.** Every session
+wipes its profile directory, and the food-list session's comment already explains
+why at length. Wiping the directory does nothing if a browser that was using it is
+still ALIVE: it holds its state in memory, it keeps answering on that port, and the
+next run attaches to it and tests whatever screen the dead run left behind.
+
+That is not hypothetical — it happened while this note's own changes were being
+written. Two interrupted runs left their Chromes up, and the next run reported the
+app skipping its own first-run gate on a freshly wiped profile. A completely
+convincing bug that did not exist, and twenty minutes spent on it.
+
+`session` kills its child in `finally`, which covers a clean exit and not a crash
+— and a crash is precisely when something is already wrong and the next run's output
+matters most. It now refuses the port rather than killing the stray silently,
+because a leftover browser means a previous run died, and that is worth being told
+once rather than tidied away every time.
+
+**A fast-typing guard, and the first version of it was worthless.** Momin reported
+that typing FAST dropped a character and typing slowly did not, so the symptom is a
+function of the gap between keys — and every other typing check here leaves 20ms in
+that gap. The new one leaves none, and asserts both the value and that focus stayed
+in the field.
+
+Then both assertions were run against the PRE-PORT build, and **both passed.** Of
+course they did: the old code restored focus after every render,
+`document.activeElement === document.querySelector(...)` re-queries and so compares
+the REPLACEMENT element against itself, and headless key events are awaited one at a
+time so the restore always finished first. **A check that passes on the broken build
+is not a regression test, it is decoration** — and it would have been committed as
+one if it had not been run against the defect it names.
+
+What the two builds actually disagree about is IDENTITY. The node is stashed before
+typing and compared after: `replaceChildren` yields a different object, Preact yields
+the same one. That version fails pre-port and passes now, which is the property a
+regression test has to have. It is the real-browser twin of the identity case in
+`test/integration.test.ts`.
+
+None of it reaches the phone. The original was mobile-only and the leading theory is
+the soft keyboard's composition; headless Chrome sending key events is not a soft
+keyboard, and jsdom is not a browser. The evidence the defect is gone remains Momin
+on his own device.
+
+**Waits became conditions.** The fixed `wait(400)` calls around setup worked until a
+session did something beforehand that shifted the timing — `Page.resetNavigation
+History` in the back-gesture session — and setup began typing into a screen that had
+not rendered. `until(expr, what)` polls, and its timeout reports WHAT WAS ON SCREEN
+instead of only what it wanted. That message is what identified the stale browser in
+one run, after guessing had failed twice.
