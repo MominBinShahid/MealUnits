@@ -644,3 +644,52 @@ about content, and in all three the fix was to find the structural invariant the
 rendering depends on and assert that instead. **When CSS positions something, the
 selector it uses is part of the contract** — a component that changes the tree is
 changing the stylesheet's input, whether or not it touches the stylesheet.
+
+## 69. §5.3's toFixed ban had never fired, and the linter now has a self-test
+
+Found 2026-09-14 by `test/lint-config.test.ts` on its first run, which is the whole
+argument for that file.
+
+`no-restricted-properties` was configured `{ object: '*', property: 'toFixed' }`.
+**ESLint's `no-restricted-properties` has no wildcard.** An `object` key matches an
+object of that LITERAL NAME, so `'*'` matched an identifier called `*`, which does
+not exist, and the rule never reported once. Omitting `object` entirely is what
+means "any object" — verified both ways against the rule directly:
+
+    { object: '*', property: 'toFixed' }   ->  0 findings
+    { property: 'toFixed' }                ->  1 finding
+
+Nothing had exploited it. There is no `toFixed` anywhere in the tree, so §5.3's
+rule — "toFixed rounds the binary value and returns a string" — held the whole time
+by discipline rather than by the rule that claimed to hold it. That is luck, and
+this note exists because luck is not a control.
+
+**The general problem, which this is the third instance of in two days.** A lint
+rule's healthy output is silence, and so is the output of a rule that has stopped
+running. The other two:
+
+  * `eslint-plugin-react-hooks` crashed eslint 10 on load, because its top-level
+    configs are still eslintrc-shaped. A crash, whose output does not read as a
+    lint failure.
+  * Flat config REPLACES a rule's options rather than merging them, so a second
+    config object setting `no-restricted-syntax` switched off four selectors while
+    `npx eslint .` printed nothing — walked into by the person who had written the
+    warning about it, hours earlier (note 66).
+
+**`test/lint-config.test.ts` is the answer, and it mirrors `check-plan.py --self-test`.**
+A fixture carrying one deliberate violation per pinned rule, linted through ESLint's
+Node API with ignoring switched off, asserting that each rule reports. Two details
+carry the weight:
+
+  * **It asserts on the MESSAGE, not only the rule id.** Four unrelated bans share
+    the id `no-restricted-syntax` — §11.8's literals, §11.5's `style`, §7.7.1's
+    `dangerouslySetInnerHTML`, §11.1's scheduled hook state. An id-level assertion
+    passes while three of the four are gone. The `§` prefix distinguishes them.
+  * **The fixture lives under `src/`, not `test/`.** §11.8's selectors are scoped to
+    `src/**`, and the `test/**` block turns `no-magic-numbers` off — a fixture in
+    `test/` would exercise a different configuration from the one protecting the app.
+
+Shown to fail on both real defects, not hypothetical ones: re-introducing the
+duplicate `no-restricted-syntax` block fails exactly the four §-prefixed cases, and
+restoring `object: '*'` fails exactly the §5.3 case. Nothing is imported from the
+fixture, so the production bundle is byte-identical with it present.

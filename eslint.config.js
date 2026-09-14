@@ -13,7 +13,15 @@ import tseslint from 'typescript-eslint';
 const ALLOWED_LITERALS = [0, 1, -1, 100];
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'coverage/**', 'reports/**', '.stryker-tmp/**', 'design/**'] },
+  {
+    ignores: [
+      'dist/**', 'coverage/**', 'reports/**', '.stryker-tmp/**', 'design/**',
+      // Deliberate violations, one per pinned rule. `npm run lint` must not see
+      // them; `test/lint-config.test.ts` lints them anyway with ignoring off,
+      // and fails if any rule has stopped reporting. See that file.
+      'src/__lint-fixtures/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
@@ -47,8 +55,19 @@ export default tseslint.config(
       // §5.3 bans toFixed in the dosing path. The ban is enforced everywhere
       // rather than in one directory, because "the dosing path" is not a
       // location a linter can see.
+      //
+      // **`object` is OMITTED, and that is the fix rather than the style.** This
+      // read `object: '*'` from the day it was written until 2026-09-14, and
+      // `no-restricted-properties` HAS NO WILDCARD: an `object` key matches an
+      // object of that literal name, so `'*'` matched an identifier called `*`
+      // and the rule never fired once. Omitting `object` is what means "any
+      // object", and it is the only form that bans `.toFixed` everywhere.
+      //
+      // Nothing exploited it — there is no `toFixed` anywhere in the tree — so
+      // this cost nothing, which is luck and not design. Found by the lint
+      // self-test in `test/lint-config.test.ts`, on its first run, which is the
+      // entire argument for that file existing.
       'no-restricted-properties': ['error', {
-        object: '*',
         property: 'toFixed',
         message: '§5.3: toFixed rounds the binary value and returns a string. Format from the authoritative integer hundredths instead.',
       }],
