@@ -124,7 +124,26 @@ async function session(profile, port, width, body) {
 const setUp = async ({ ev }) => {
   const tap = async (re) => { await ev(`[...document.querySelectorAll('button')].find(b=>${re}.test(b.textContent))?.click()`); await wait(400); };
   await tap('/I have read this/i'); await tap('/own risk/i'); await wait(400);
-  for (const [label, value] of [['Which insulin', 'Lantus'], ['How many units', '36'], ['When', 'early']]) {
+  // The THREE RATIOS, added 2026-09-14. They used to arrive prefilled, and this
+  // helper typed only the basal block because that was the only thing left to
+  // fill in. `88f3394` removed the prefill on 2026-09-13 — the app fills in
+  // nobody's prescription now — and did not touch this file, so "Save and start"
+  // stayed disabled and EVERY check after this point ran against the first-run
+  // screen. Seventeen of them, failing the same way on every run since.
+  //
+  // The failures were loud, which is the only reason this was survivable: the
+  // suite reported 17 FAILURES rather than passing. What it could not say is
+  // that they all had one cause, three screens earlier.
+  //
+  // The threshold field fills itself in from these three (§6.2), so it is not
+  // typed here — typing it would latch `thresholdIsDerived` false and test a
+  // path the user does not take on first run.
+  for (const [label, value] of [
+    ['What should a correction aim for', '150'],
+    ['How far does one unit lower', '30'],
+    ['How much carbohydrate does one unit cover', '10'],
+    ['Which insulin', 'Lantus'], ['How many units', '36'], ['When', 'early'],
+  ]) {
     await ev(`(()=>{const q=[...document.querySelectorAll('label')].find(n=>n.textContent.includes(${JSON.stringify(label)}));const i=q.parentElement.querySelector('input');i.focus();i.value=${JSON.stringify(value)};i.dispatchEvent(new Event('input',{bubbles:true}));})()`);
     await wait(120);
   }
