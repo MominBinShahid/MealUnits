@@ -4433,6 +4433,15 @@ MealUnits/
   docs/design/screens.html   <- 8 screens, Card design, annotated
   docs/design/looks.html     <- three interfaces compared: Card / Band / Step
   docs/design/step-flow.html <- 44 screens, the Step design in full
+  docs/design/link-preview.html
+                             <- 4a's link preview as it actually lands: Twitter,
+                                WhatsApp, iMessage, Slack, and the truncation
+                                budget each one imposes on the title and the
+                                description. It references public/social/card.png
+                                rather than embedding it -- the published version
+                                carried four base64 copies of the same image, 560
+                                KB, which would also have let the design drift
+                                from the card the app actually ships
   tools/social-card.html     <- 4a's 1200x630 link-preview card, kept as SOURCE
                                 so it can be regenerated rather than existing
                                 only as a screenshot nobody can edit. Uses the
@@ -4479,6 +4488,7 @@ them would remove the evidence that the choice was made rather than defaulted.
 | MealUnits Screens — 8 screens, Card design | `design/screens.html` | https://claude.ai/code/artifact/8baa7341-1b02-44c5-8176-f2a5b4173cce |
 | Three Interfaces — Card / Band / Step | `design/looks.html` | https://claude.ai/code/artifact/67caeeec-045e-4e85-930d-d556c8786364 |
 | MealUnits Step Flow — 44 screens | `design/step-flow.html` | https://claude.ai/code/artifact/37b782b2-233c-4b35-b0f6-26dc1ea73a71 |
+| Link Preview Proof — how the URL lands on each platform | `design/link-preview.html` | Added 2026-09-14 with `4a`. Not an interface comparison: it records what the shared link looks like, which is the thing `4a` was for |
 
 `PLAN.md` is written to be self-sufficient: if the conversation that produced it is lost, this
 document alone should be enough to build from. Anything decided in conversation and not written

@@ -1002,6 +1002,68 @@ def check_site_url_agrees(_plan):
     return out
 
 
+def check_structural_query_count(_plan):
+    """1g. `BACKLOG.md` T3's count of structure-dependent test queries — ADDED
+    2026-09-14.
+
+    T3 claimed `test/integration.test.ts` had "66 assertions on rendered text and
+    **0** on DOM structure", and used that zero as the argument that the suite is
+    framework-agnostic and therefore a safe net for the Preact migration. It was
+    wrong: there were nine selectors depending on markup shape plus one
+    `parentElement` traversal.
+
+    **It did not start wrong, it DRIFTED.** `62bf677` added
+    `[data-field="foodQuery"]` on 2026-09-13 and nobody recounted, because a
+    number written in prose has nothing watching it. That is the same failure
+    §20.5's listing and the precache walk are in this repository to prevent.
+
+    The count matters to the migration specifically: these are the assertions that
+    constrain what the port may change. Class names, element ids and the
+    `.entry .n` nesting have to survive it, and a reader deciding how safe the
+    rewrite is should be told the true number.
+
+    Queries by element type alone — `button`, `label`, `p` — are deliberately NOT
+    counted. They depend on nothing a faithful port would alter.
+
+    Shown to fail by execution, the standard §20.3 sets: changing T3's stated
+    figure produces the finding, and restoring it returns the checker to clean.
+    """
+    out = []
+    test_path = os.path.join(HERE, "test", "integration.test.ts")
+    if not os.path.exists(test_path):
+        return ["test/integration.test.ts is missing, so T3's structural-query"
+                " count cannot be verified"]
+    # `load`, not a direct read: --self-test swaps this function out to serve
+    # mutated text in memory, and a check that opens the file itself sees the
+    # real one and reports clean against a seeded defect. That is a check which
+    # certifies nothing, and it is the exact failure this harness exists to
+    # catch -- it caught this one, on the day the check was written.
+    source = load(test_path)
+
+    selectors = [m.group(2) for m in
+                 re.finditer(r"querySelector(?:All)?\(\s*(['\"`])(.*?)\1", source)]
+    structural = [sel for sel in selectors if any(c in sel for c in ".#[ ")]
+    actual = len(structural) + len(re.findall(r"parentElement", source))
+
+    backlog = load(os.path.join(HERE, "docs", "BACKLOG.md"))
+
+    stated = re.search(r"There are \*\*(\d+) structural\n?queries\*\*", backlog)
+    if stated is None:
+        return ["docs/BACKLOG.md T3 no longer states a structural-query count;"
+                " this check reads it from the phrase 'There are **N structural"
+                " queries**' and cannot verify a figure that is not written down"]
+    if int(stated.group(1)) != actual:
+        out.append("docs/BACKLOG.md T3 says %s structure-dependent queries in"
+                   " test/integration.test.ts, but there are %d (%d selectors"
+                   " using a class, id, attribute or descendant combinator, plus"
+                   " %d parentElement traversal). T3 uses this number to argue"
+                   " the suite is a safe net for the Preact port, so it has to be"
+                   " the real one."
+                   % (stated.group(1), actual, len(structural),
+                      len(re.findall(r"parentElement", source))))
+    return out
+
+
 def check_worker_knows_non_app_files(_plan):
     """1f. The service worker answering the app for a file that is not the app —
     ADDED 2026-09-14.
@@ -2681,6 +2743,7 @@ CHECKS = [
     ("unclassified public/ asset", check_public_assets_classified, "plan"),
     ("deployed address disagrees between index.html and vite.config.ts", check_site_url_agrees, "plan"),
     ("service worker answers the app for a non-app file", check_worker_knows_non_app_files, "plan"),
+    ("T3's structural-query count vs the test file", check_structural_query_count, "plan"),
     ("dangling section references", check_references, "plan"),
     ("dangling section references in companions", check_references_corpus, "corpus"),
     ("dangling build-note references", check_note_references, "corpus"),
@@ -2733,6 +2796,13 @@ SELF_TESTS = [
     # check is proven over the pins added in the same commit.
     ("canonical: threshold drift seeded in BACKLOG.md [R2]", "BACKLOG.md",
      lambda t: t + "\n\nTHRESHOLD_MEAL_GRAMS = 25;\n"),
+    # §20.3 — the check added in the same commit arrives with its own mutation.
+    # This is the ORIGINAL defect, replayed: T3 asserted "0 assertions on DOM
+    # structure" and used that zero to argue the integration suite is a safe net
+    # for the Preact port. There were ten. The number did not start wrong, it
+    # drifted when 62bf677 added a tenth and nobody recounted.
+    ("T3's structural-query count reverted to the wrong 0", "BACKLOG.md",
+     lambda t: t.replace("There are **10 structural", "There are **0 structural")),
     # §20.3 — the check added in the same commit arrives with its own mutation.
     # A constant exported from src/config.ts and never written into §11.8 used to
     # be invisible: absent from PLAN.md so nothing reported it, absent from

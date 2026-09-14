@@ -111,8 +111,17 @@ export function quantity(text: string): HTMLElement {
  * defect rather than a cosmetic one: typing `150` into a settings field
  * produced `1`, because the element being typed into was destroyed after the
  * first character and focus fell to `<body>`, where keystrokes 2 and 3 went
- * nowhere. A field below the fold additionally threw the page back to the top —
- * `scrollY` measured 600 before one keystroke and 27 after.
+ * nowhere. The page was additionally thrown back to the top — `scrollY` measured
+ * **982 before one keystroke and 27 after**, with the field centred in the
+ * viewport.
+ *
+ * CORRECTED 2026-09-14. This said "a field below the fold" and "600 before one
+ * keystroke and 27 after" — a measurement build note 25 had already RETRACTED in
+ * the same commit that wrote this comment, because it was taken against a field
+ * ABOVE the viewport where the browser was legitimately scrolling it into view.
+ * `BACKLOG.md` T3 carried the correction; this file never received it, and after
+ * note 25's body was pruned this became the most-read description of the defect
+ * in the repository. It was the wrong one, on both the number and the geometry.
  *
  * THIS IS A PATCH, AND IT IS THE WEAK KIND OF FIX. It holds only while every
  * render path remembers to capture and restore — which is exactly the shape

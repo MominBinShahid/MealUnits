@@ -256,6 +256,17 @@ was in the identity of the nodes, which nothing asserted. **This is T3's whole j
 framework with keyed reconciliation makes the class impossible by construction rather than by
 remembering to patch instead of replace.
 
+**IT HAPPENED AGAIN SIX DAYS LATER, and this note did not say so until 2026-09-14.** `62bf677` fixed
+the same defect in the food search: the screen shipped with an `id` and no `data-field`, which is
+what `captureFocus` keys on, so the restore could not find the node. **647 tests and a 100% mutation
+score passed straight over it**, for the same reason they missed the first one. No note was written
+at the time, so every document described this as a single historical bug.
+
+**The recurrence is the argument, not a footnote.** `captureFocus`'s own comment predicted it — *"it
+holds only while every render path remembers"* — and a new screen forgot, on schedule, without any
+regression in the patched code. A second data point for §11.3's rule that correctness by discipline
+fails silently at the first path that does not participate.
+
 ## 26. The mockup's atmosphere was missing, and that was an omission rather than a decision
 
 A design detail dropped in translation is not a design decision. Restored.
