@@ -192,11 +192,7 @@ export function Keypad({ decimal, onDigit, onBackspace, action }: KeypadProps): 
         <button class="key dim" type="button" disabled aria-hidden="true" />
       )}
       <Button class="key" onPress={() => { onDigit('0'); }}>0</Button>
-      {/* The literal is what `dom.ts` carried, kept as-is: a port is not the
-          place to add a copy key. It IS a screen-reader label outside copy.ts,
-          and check 1c cannot see it because the rule needs two words. Noted as
-          its own task rather than smuggled in here. */}
-      <Button class="key dim" aria-label="delete" onPress={onBackspace}>
+      <Button class="key dim" aria-label={COPY.calculator.deleteLabel} onPress={onBackspace}>
         ⌫
       </Button>
       {/* The sheet lives in the stylesheet, not in a `style` attribute: §11.5's

@@ -859,3 +859,34 @@ History` in the back-gesture session — and setup began typing into a screen th
 not rendered. `until(expr, what)` polls, and its timeout reports WHAT WAS ON SCREEN
 instead of only what it wanted. That message is what identified the stale browser in
 one run, after guessing had failed twice.
+
+## 73. A one-word sentence is still a sentence, and check 1c could not see one
+
+Closed 2026-09-14, the last of the gaps T3's review opened in check 1c.
+
+The check requires TWO WORDS before it reports a string, and that rule is what makes
+it usable: `key dim`, `flag mint` and `go quiet` are class names, not prose, and a
+check reporting every one-word string would report every class, id and enum value in
+the tree and be switched off within a day.
+
+The cost is that a ONE-WORD SENTENCE escapes. The live instance was
+`aria-label="delete"` on the keypad's backspace key — a string spoken aloud to a
+blind user, sitting outside `copy.ts`, invisible to the translator `10a` will hand
+that file to. It had been there since the first commit, and the port carried it
+across faithfully; a note was written at the time saying a port is not the place to
+add a copy key, which was right, and this is that place.
+
+**The fix is narrowing by POSITION, not by loosening the rule.** Inside an attribute
+that is read to a person — `aria-label`, `title`, `alt`, `placeholder` — there is no
+markup to confuse with prose: the value is text or it is a mistake. One word is
+enough there and the two-word rule stands everywhere else.
+
+`aria-labelledby` and `aria-describedby` are deliberately absent from that set and
+always will be. They hold element ids, which are exactly the one-word tokens the
+two-word rule exists to ignore.
+
+What is still uncovered, and now the only known hole: a sentence assembled by
+concatenating single-word literals, and any string built at runtime from data.
+Neither has appeared here yet.
+
+Seeded: a one-word `aria-label` is caught, 118/118.
