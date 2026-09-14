@@ -197,6 +197,13 @@ export default tseslint.config(
      * `$eslint`, the root's own version, so the relaxation is scoped to the two
      * packages it is true of and the next person can see which two.
      *
+     * **Both overrides are self-retiring.** An override silences npm's peer
+     * check permanently, and nothing would otherwise announce the day upstream
+     * publishes a range that admits eslint 10 — the override would simply go on
+     * suppressing a check that now passes. `check-plan.py`'s
+     * `check_stale_overrides` fails on that day, so the fix is deleting two
+     * lines rather than remembering to look.
+     *
      * **`eslint-config-preact` is still not here, and on its merits.** It
      * bundles `eslint-plugin-react-hooks` at `^5.2.0` against the `^7.1.1`
      * below, and pins `@eslint/js` to `^9` — so adopting it would downgrade the

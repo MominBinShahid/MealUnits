@@ -742,3 +742,46 @@ both src walks, breaking the citation suffixes reports the sweep, breaking
 `src/data`'s reports that. `_INPUT_SETS` is cleared at the start of every run,
 because `--self-test` calls `main` once per seeded mutation and a stale count from
 the previous iteration would mask a walk that stopped running in this one.
+
+## 71. Two `overrides` silence npm permanently, so the checker retires them
+
+Added 2026-09-14 with the lint plugins that needed them.
+
+`eslint-plugin-jsx-a11y` declares the eslint peer "^3 .. ^9" and
+`eslint-plugin-react` declares "^3 .. ^9.7"; this repository runs eslint 10, so
+npm refuses both. Both were then MEASURED to run correctly on eslint 10 — seeded
+probes produced real findings — so the ranges are stale rather than accurate, and
+`package.json` relaxes them per package rather than through a blanket
+`--legacy-peer-deps`.
+
+**The cost of that is an off switch with no timer.** An override suppresses npm's
+peer check for good. The day upstream publishes a range admitting eslint 10, nothing
+says so: the override goes on silencing a check that would now pass, and the
+`package.json` goes on carrying a workaround for a problem that no longer exists.
+`package-lock.json` pins the current versions, so it cannot happen on its own — it
+happens the first time someone bumps them, which is exactly when nobody is thinking
+about it.
+
+`check_stale_overrides` fails on that day. It also fails when an override names a
+package the lockfile does not resolve, or one that declares no `eslint` peer at all,
+because an override describing something that does not exist is decoration rather
+than protection.
+
+**It reads `package-lock.json`, not `node_modules`, and that is structural.** The
+`plan` CI job installs nothing on purpose — its own comment says "No npm step: the
+checker reads the documents and the TypeScript as text". A check reaching into
+`node_modules` would find an empty directory there and pass silently, which is note
+70's failure arriving through a new door. The lockfile is committed, is what npm
+actually resolved, and is present wherever this runs.
+
+**An unreadable range REPORTS rather than passing.** The semver test understands the
+caret form, which is what both plugins use, and says so when it meets anything else
+instead of assuming the override is still needed. A check that cannot judge its input
+and stays quiet is a check that has stopped being able to fail — which is the thing
+notes 66, 69 and 70 are all about.
+
+Shown to fail by execution against each branch: an override pointed at a package
+whose range already admits eslint 10 is reported as unnecessary, one naming an absent
+package is reported as describing nothing, and a `>=3 <10` range is reported as
+unreadable.
+

@@ -922,6 +922,109 @@ def source_files(label, roots, suffixes):
     return paths
 
 
+def _caret_admits(clause, major):
+    """Does a single `^X[.Y[.Z]]` clause admit this MAJOR version?
+
+    Deliberately narrow. It answers for the caret form and says so when it meets
+    anything else, because the alternative — treating an unparseable range as
+    "still needed" — is how a check quietly stops being able to fail.
+
+    Only the major is compared. An override exists because a range excludes our
+    major entirely; a clause that admits the major at all is a clause the
+    override has stopped being needed for, and the exact minor is npm's business
+    rather than this check's.
+    """
+    clause = clause.strip()
+    if not clause.startswith("^"):
+        return None
+    head = clause[1:].split(".")[0]
+    if not head.isdigit():
+        return None
+    return int(head) == major
+
+
+def check_stale_overrides(_plan):
+    """22. A `package.json` override that upstream has made unnecessary — ADDED 2026-09-14.
+
+    `overrides` relaxes a peer range npm would otherwise refuse. Two are live,
+    both mapping a lint plugin's `eslint` peer to `$eslint`: `eslint-plugin-jsx-a11y`
+    declares "^3 .. ^9" and `eslint-plugin-react` declares "^3 .. ^9.7", while
+    this repository runs eslint 10. Both were MEASURED to work correctly on
+    eslint 10 — seeded probes produced real findings — so the ranges are stale
+    rather than accurate, and the override says so per package instead of a
+    blanket `--legacy-peer-deps`.
+
+    **An override silences npm permanently, which is the problem.** The day
+    upstream publishes a range that admits eslint 10, nothing announces it; the
+    override simply goes on suppressing a check that would now pass. This fails
+    on that day, so the fix is deleting two lines rather than remembering.
+
+    It also fails when an override names a package that is not in the lockfile,
+    or one with no `eslint` peer at all — an override describing something that
+    no longer exists is not protection, it is decoration.
+
+    **Read from `package-lock.json`, not `node_modules`, and that is not a
+    convenience.** The `plan` CI job installs nothing on purpose — "No npm step:
+    the checker reads the documents and the TypeScript as text" — so a check
+    reaching into `node_modules` would find nothing there and pass silently.
+    The lockfile is committed, is what npm actually resolved, and is present
+    wherever this runs.
+
+    Shown to fail by execution against each branch: an override pointed at a
+    package whose range already admits eslint 10 reports as unnecessary, and one
+    naming an absent package reports as describing nothing.
+    """
+    out = []
+    try:
+        manifest = json.loads(load(os.path.join(HERE, "package.json")))
+        lock = json.loads(load(os.path.join(HERE, "package-lock.json")))
+    except (IOError, ValueError) as problem:
+        return ["package.json or package-lock.json could not be read (%s), so the"
+                " overrides cannot be checked" % problem]
+
+    overrides = manifest.get("overrides") or {}
+    if not overrides:
+        return []
+
+    packages = lock.get("packages") or {}
+    root_range = ((packages.get("") or {}).get("devDependencies") or {}).get("eslint")
+    installed = (packages.get("node_modules/eslint") or {}).get("version")
+    if installed is None:
+        return ["package-lock.json does not resolve eslint, so no override can be"
+                " judged against it"]
+    major = int(installed.split(".")[0])
+
+    for name, mapping in sorted(overrides.items()):
+        if not isinstance(mapping, dict) or "eslint" not in mapping:
+            continue
+        entry = packages.get("node_modules/" + name)
+        if entry is None:
+            out.append("package.json overrides %s but package-lock.json does not"
+                       " resolve it — the override describes a package that is not"
+                       " installed" % name)
+            continue
+        peer = (entry.get("peerDependencies") or {}).get("eslint")
+        if peer is None:
+            out.append("package.json relaxes %s's eslint peer, but %s@%s declares no"
+                       " eslint peer at all — the override protects nothing"
+                       % (name, name, entry.get("version", "?")))
+            continue
+        verdicts = [_caret_admits(clause, major) for clause in peer.split("||")]
+        if None in verdicts:
+            out.append("%s@%s declares the eslint peer %r, which this check cannot"
+                       " read — it understands the caret form only. Widen"
+                       " `_caret_admits` rather than leaving the range unjudged"
+                       % (name, entry.get("version", "?"), peer))
+            continue
+        if any(verdicts):
+            out.append("%s@%s now declares the eslint peer %r, which admits the"
+                       " installed eslint %s (root asks %s) — the override in"
+                       " package.json is no longer needed. Upgrade the plugin and"
+                       " delete it."
+                       % (name, entry.get("version", "?"), peer, installed, root_range))
+    return out
+
+
 def check_input_sets(_plan):
     """0. A discovering walk that has stopped finding anything — ADDED 2026-09-14.
 
@@ -3016,6 +3119,7 @@ CHECKS = [
     ("prose restating §11.8's numbers", check_prose_numbers, "corpus"),
     ("a mock history row that cannot be produced", check_mock_doses, "corpus"),
     ("a mockup's self-derived numbers", check_design_numbers, "corpus"),
+    ("a package.json override upstream has made unnecessary", check_stale_overrides, "plan"),
     # LAST, and it has to be: `_INPUT_SETS` is filled in by the walks above as
     # they run, so this reads what actually happened rather than what the file
     # says should happen.
