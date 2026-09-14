@@ -907,6 +907,17 @@ export const COPY = {
     exactBeforeRounding: (exact: string): string =>
       `Worked out exactly: ${exact} units, then rounded.`,
     decimalPointLabel: 'decimal point',
+    /**
+     * The backspace key's accessible name. A single word, which is why it sat
+     * in `components.tsx` as a literal until 2026-09-14 — check 1c needed two
+     * words before it would report anything, so a one-word SENTENCE escaped it.
+     *
+     * It is spoken aloud to a screen-reader user, which is the whole test for
+     * whether a string belongs here. The keypad's other two labels were always
+     * in this file; this one was not, and the difference was that it happened
+     * to be short.
+     */
+    deleteLabel: 'delete',
     stepCheck: 'Check',
     stepRecording: 'Recording',
     stepLogged: 'Logged',

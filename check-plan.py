@@ -862,6 +862,22 @@ JSX_ATTRIBUTES_NOT_TEXT = {
     "aria-pressed", "aria-expanded", "key", "name", "rel", "href", "charset",
 }
 
+# Attributes whose value is READ TO A PERSON, where even a single word counts.
+#
+# The two-word rule everywhere else is what separates prose from markup: `key
+# dim`, `flag mint` and `go quiet` are class names, and a check reporting every
+# one-word string would report every class, id and enum value in the tree and be
+# switched off within a day. The cost of that rule is that a one-word SENTENCE
+# escapes — and `aria-label="delete"` on the keypad's backspace key is exactly
+# that: a string spoken aloud to a blind user, sitting outside `copy.ts` and
+# invisible to the translator `10a` will hand that file to.
+#
+# Narrowing by POSITION is what makes the relaxation safe. Inside these
+# attributes there is no markup to confuse with prose — the value is text or it
+# is a mistake. `aria-labelledby` and `aria-describedby` are deliberately NOT
+# here and never will be: they hold element ids.
+JSX_ATTRIBUTES_SPOKEN = {"aria-label", "title", "alt", "placeholder"}
+
 # What each DISCOVERING WALK found on this run, filled in by `source_files`
 # and read by `check_input_sets`. Cleared per run so `--self-test`, which calls
 # `main` once per seeded mutation, does not accumulate across them.
@@ -1055,6 +1071,16 @@ def check_input_sets(_plan):
 SOURCE_SUFFIXES = (".ts", ".tsx")
 
 
+def one_word(text):
+    """A single run of letters, in any script — the weakest thing still prose.
+
+    Used only where POSITION already guarantees the value is text: an attribute
+    read aloud to a screen-reader user. Applied generally it would report every
+    class name and enum value in the tree.
+    """
+    return re.search(r"[^\W\d_]{2,}", text) is not None
+
+
 def two_words(text):
     """Two runs of letters with whitespace between them — prose, not a token.
 
@@ -1204,7 +1230,11 @@ def check_ui_text_outside_copy(_plan):
                 attribute, value = match.group(1), match.group(2)
                 if attribute in JSX_ATTRIBUTES_NOT_TEXT:
                     continue
-                if not two_words(value) or value in UI_TEXT_OK:
+                # One word is enough in an attribute that is read aloud.
+                # Everywhere else the two-word rule holds, because the thing it
+                # separates prose FROM is markup.
+                words = one_word if attribute in JSX_ATTRIBUTES_SPOKEN else two_words
+                if not words(value) or value in UI_TEXT_OK:
                     continue
                 out.append("%s:%d renders %r in the %s attribute, but src/ui/copy.ts"
                            " claims to hold every user-facing string — move it there, or"
@@ -3187,6 +3217,11 @@ SELF_TESTS = [
      "src/ui/screens/settings.tsx",
      lambda t: t.replace('aria-describedby={`label-${id}`}',
                          'aria-label="how far one unit lowers you"')),
+    # ONE WORD in an aria-label. The two-word rule let this whole shape through
+    # until 2026-09-14, and `aria-label="delete"` was the live instance.
+    ("a ONE-WORD aria-label, which the two-word rule used to let through",
+     "src/ui/screens/settings.tsx",
+     lambda t: t.replace('aria-describedby={`label-${id}`}', 'aria-label="dosage"')),
     ("T3's structural-query count reverted to the wrong 0", "BACKLOG.md",
      lambda t: t.replace("There are **14 structural", "There are **0 structural")),
     # §20.3 — the check added in the same commit arrives with its own mutation.
