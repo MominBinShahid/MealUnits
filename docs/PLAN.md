@@ -2888,9 +2888,21 @@ acknowledgement of an unusual-but-intended value, not a warning.
 
 ### 11.1 Stack
 
-**Vite + vanilla TypeScript. No framework, no router, no state library.** Measured production
-bundles for the same two-input app: vanilla TypeScript 629 B gzipped (16 packages), Preact
-5.8 kB (17), Svelte 10.5 kB (49), React 59.3 kB (27).
+**Vite + Preact. No router, no state library.** AMENDED 2026-09-14 by `BACKLOG.md` T3, which is
+where the reasoning lives; the paragraph below is the ruling it overturned and is kept because the
+measurement in it is still the honest statement of what the framework costs.
+
+> **Vite + vanilla TypeScript. No framework, no router, no state library.** Measured production
+> bundles for the same two-input app: vanilla TypeScript 629 B gzipped (16 packages), Preact
+> 5.8 kB (17), Svelte 10.5 kB (49), React 59.3 kB (27).
+
+It was overturned on a correctness argument, not a convenience one. The hand-rolled render rebuilt
+the whole tree on every state change, and everything the browser attaches to a DOM node's IDENTITY
+died with it — focus, caret, scroll, text selection, a running transition, an open IME composition.
+The save-and-restore patch that answered it was the Web Locks shape §11.3 had already rejected:
+it held only while every render path remembered, and the one that forgot failed silently. It did
+forget, twice. Measured on this app rather than on the two-input sample above, the move cost
+**5.5 kB gzipped** — 36.86 kB to 42.38 kB.
 
 **Two v1 claims withdrawn** [R2]:
 
@@ -2902,6 +2914,31 @@ bundles for the same two-input app: vanilla TypeScript 629 B gzipped (16 package
   separators differently, read stale settings, or bypass a gate entirely, all with `dose.ts`
   untouched. The pure core enables isolated testing; it does not remove the need for
   integration tests.
+
+### 11.1.1 The view layer preserves DOM identity across renders
+
+So focus, caret, scroll and composition survive a state change. This is a requirement on the
+layer, not on its call sites: what makes it hold is that no render site is in a position to opt
+out.
+
+### 11.1.2 Never write back to a controlled input's value while a composition is in flight
+
+**This is NOT implied by §11.1.1.** Keyed reconciliation is necessary and not sufficient: an input
+whose `value` is reassigned mid-composition loses the session on a node that was never destroyed.
+Renders
+arrive in that window without the user doing anything — §8.2's expiry tick fires one every minute
+and on every return to visibility. One shared component carries the rule; every text field goes
+through it.
+
+### 11.1.3 No inline `style` attribute and no `dangerouslySetInnerHTML`
+
+Both were guaranteed by construction while the DOM helper was hand-written — it had no `style` key
+and never touched `innerHTML` — and JSX accepts every attribute, so both guarantees ended with the
+helper. They are
+lint rules now. Neither is cosmetic: `style` produces an element that is correct in development and
+silently unstyled in the deployment, because §11.5's policy is `style-src 'self'`; and rendering
+free text as markup reopens the escaping question §7.7.1 had to answer for the readable export, over
+§6.7's dosing note and §1.3's `basalName` and `basalTiming`, which reach these screens too.
 
 ### 11.2 One explicit application state
 
@@ -3992,6 +4029,27 @@ negative** — so "larger sensitivity means smaller dose" would itself be a wron
 The pure core cannot guarantee the interface maps fields correctly, parses separators
 consistently, uses current settings, or honours a gate (§11.1). Interface-to-core mapping,
 band-to-message pairing, and the confirmation flow each get tests.
+
+### 13.6.1 Interaction continuity — ADDED 2026-09-14
+
+**§13 named nothing about focus, caret, keystrokes or scroll, and that omission is why the
+focus-destroying defect survived 541 tests and a 100% mutation score.** Neither number was lying.
+Nothing was ever pointed at them, and a second instance of the same defect shipped six days after
+the first was patched and passed 647 tests on the way out. So:
+
+1. **A text field keeps its identity across a state change.** Not "focus returns to an input with
+   the same name" — the SAME element object, still connected. Everything a restore cannot carry
+   hangs off identity, and enumerating what to carry is how the first patch came to handle focus,
+   caret and scroll and miss composition, selection and transitions.
+2. **A composition survives a render, and a render does not rewrite the field it is running in.**
+   The second half is separate because keyed reconciliation does not give it (§11.1.2).
+3. **Typing is one character at a time, into whatever currently has focus.** Re-finding the field
+   per character is a workaround for the defect being guarded, and it lets the suite stay green
+   while the app is unusable by hand — which is exactly what happened.
+
+The last one is a constraint on the HARNESS, and it is the reason `tools/smoke.mjs` — the only
+layer that is a real browser — does not yet satisfy this section: it still types in one shot. That
+is a BACKLOG item, and until it closes, the only layer that types like a person is not a browser.
 
 ### 13.7 What tests cannot catch — recorded
 

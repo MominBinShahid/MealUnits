@@ -90,6 +90,7 @@ function install(): void {
   scope.HTMLInputElement = dom.window.HTMLInputElement;
   scope.Event = dom.window.Event;
   scope.MouseEvent = dom.window.MouseEvent;
+  scope.CompositionEvent = dom.window.CompositionEvent;
   root = dom.window.document.querySelector('#app') as HTMLElement;
 }
 
@@ -949,9 +950,16 @@ describe('interaction continuity — the class of defect §13 does not cover', (
    * number was lying: §13 has no requirement about focus, caret or scroll
    * anywhere, so nothing was ever pointed at them.
    *
-   * These four tests fail without the patch in `dom.ts`. That was verified by
-   * removing it and watching them go red, because a regression test nobody has
-   * seen fail is a guess.
+   * These four were written against the focus/caret/scroll patch in `dom.ts`
+   * and verified by removing it and watching them go red, because a regression
+   * test nobody has seen fail is a guess.
+   *
+   * **That patch is gone — T3 deleted `dom.ts` on 2026-09-14 — and these four
+   * are kept, unchanged in what they assert.** They now pass for a different
+   * reason: nothing restores focus because nothing destroys the field. Keeping
+   * them is the point. They state what the user experiences, and a test that
+   * survives the replacement of the mechanism it was written against is the one
+   * worth having.
    */
   async function reachSettings(): Promise<void> {
     await boot();
@@ -967,9 +975,9 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     field.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
     await settle();
 
-    // The element itself is gone — `replaceChildren` destroyed it — so the
-    // assertion has to be made against the CURRENT field, which is the whole
-    // point of `data-field`.
+    // Re-found rather than reused. Under `replaceChildren` this was mandatory —
+    // the element typed into no longer existed — and after T3 it is merely
+    // harmless. The identity case below is what pins the difference.
     const now = fieldLabelled('What should a correction aim for?');
     expect(dom.window.document.activeElement).toBe(now);
   });
@@ -985,7 +993,8 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     await typeInto('What should a correction aim for?', '150');
     const field = fieldLabelled('What should a correction aim for?');
     // Caret at the END of the text, which is where typing leaves it. A restore
-    // that drops it to 0 sends the next character to the front.
+    // that drops it to 0 sends the next character to the front — and after T3
+    // there is no restore, so this asserts the browser was simply left alone.
     expect(field.selectionStart).toBe(3);
     expect(field.selectionEnd).toBe(3);
   });
@@ -996,6 +1005,10 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     // caret — note 25's defect, reintroduced by a new screen rather than by a
     // regression. 647 tests and a 100% mutation score passed over it: the
     // assertions check what the DOM CONTAINS, and the defect is in node IDENTITY.
+    //
+    // T3 removed the way this happens: a screen can no longer forget to opt in,
+    // because there is nothing to opt in to. The case stays as the record of
+    // what a per-screen guarantee costs.
     await setUpAsHisBrother();
     await keys('120');
     await tap('Next');
@@ -1020,6 +1033,104 @@ describe('interaction continuity — the class of defect §13 does not cover', (
       expect(now.selectionStart).toBe(now.value.length);
     }
     expect(search().value).toBe('rot');
+  });
+
+  /**
+   * T3's three, added 2026-09-14 with the Preact port and RED before it.
+   *
+   * The four above assert that focus, caret and value come BACK after the tree
+   * is rebuilt. That is the patch's contract, and the patch met it. These three
+   * assert the stronger property the patch cannot offer at all — that the
+   * element is never destroyed in the first place — because everything the
+   * restore cannot carry hangs off node identity: an open IME composition, a
+   * running CSS transition, a text selection, the soft keyboard's own state.
+   *
+   * `captureFocus` said so itself: "it only works if every writer takes the
+   * lock, and a single path that forgets restores the race with no error." The
+   * food-search field WAS that path — it shipped with no `data-field` and the
+   * suite stayed green. Identity is what a test can check without knowing which
+   * screens exist.
+   */
+  it('keeps the SAME element across a keystroke, rather than restoring a new one', async () => {
+    await reachSettings();
+    const before = fieldLabelled('What should a correction aim for?');
+    before.focus();
+    before.value = '1';
+    before.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    await settle();
+
+    // Not "an input with the same data-field" — the same object. Under
+    // `replaceChildren` this was a different element made to look like the old
+    // one, and everything the browser had attached to the old one was gone.
+    expect(fieldLabelled('What should a correction aim for?')).toBe(before);
+    expect(before.isConnected).toBe(true);
+  });
+
+  it('does not destroy the element an IME composition is running against', async () => {
+    // §10.9 and 10a: Urdu is composed, not typed. `compositionstart` binds to an
+    // ELEMENT, and a composition whose element leaves the document is cancelled
+    // by the browser — the half-formed word is dropped with no event the app can
+    // see. It is also the leading theory for the mobile dropped keystroke
+    // reported 2026-09-14, which predictive text puts on the same machinery for
+    // English (task 40).
+    await reachSettings();
+    const field = fieldLabelled('Which insulin');
+    field.focus();
+    field.dispatchEvent(new dom.window.CompositionEvent('compositionstart', { bubbles: true }));
+
+    field.value = 'La';
+    field.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    await settle();
+
+    expect(field.isConnected).toBe(true);
+    expect(fieldLabelled('Which insulin')).toBe(field);
+
+    field.dispatchEvent(new dom.window.CompositionEvent('compositionend', { bubbles: true, data: 'La' }));
+    await settle();
+    expect(fieldLabelled('Which insulin').value).toBe('La');
+  });
+
+  it('does not rewrite a field\'s value while a composition is in flight', async () => {
+    // The rule keyed reconciliation does NOT give for free, and the one Preact
+    // issue #4008 was about. A surviving element is necessary and not
+    // sufficient: a controlled input whose `value` is reassigned mid-composition
+    // loses the session on a node that was never destroyed.
+    //
+    // The divergence here is the real one. Between `compositionstart` and the
+    // first `input` event the DOM holds the IME's preview text and the app
+    // holds the last committed value, so ANY render in that window has a
+    // different value to write — and §8.2's expiry tick fires one every minute,
+    // and on every return to visibility, without the user touching anything.
+    await setUpAsHisBrother();
+    await keys('120');
+    await tap('Next');
+    await tap('Food list');
+
+    const search = (): HTMLInputElement => {
+      const node = root.querySelector('[data-field="foodQuery"]');
+      if (!(node instanceof dom.window.HTMLInputElement)) throw new Error('no food search field');
+      return node;
+    };
+
+    const field = search();
+    field.focus();
+    field.value = 'rot';
+    field.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    await settle();
+
+    // Composition opens, and the IME writes its preview straight into the
+    // element. No `input` event yet, so the app still holds 'rot'.
+    field.dispatchEvent(new dom.window.CompositionEvent('compositionstart', { bubbles: true }));
+    field.value = 'roti';
+
+    // §8.2's tick, arriving from outside the field entirely.
+    dom.window.document.dispatchEvent(new dom.window.Event('visibilitychange'));
+    await settle();
+
+    expect(search()).toBe(field);
+    // Clobbered back to 'rot' means the render wrote state over the preview,
+    // which is the composition dying silently.
+    expect(search().value).toBe('roti');
   });
 
   it('the meter HI/LO disclosure closes again, which it could not until 2026-09-13', async () => {
@@ -1165,6 +1276,58 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     await typeInto('When', 'early morning, before breakfast');
     await tap('Save and start');
     expect(scrollY).toBe(0);
+  });
+});
+
+describe('the DOM shapes the stylesheet depends on', () => {
+  /**
+   * ADDED 2026-09-14, because the Preact port broke one and nothing went red.
+   *
+   * `styles.css` gives `.field` `display: grid` and never sets an input's
+   * width. A field is full width because its input is a GRID ITEM and
+   * stretches; `.field.wide input` only lifts the 9rem cap that would otherwise
+   * hold it back. So the WIDTH IS A CONSEQUENCE OF THE TREE SHAPE, and a
+   * refactor that wraps the input in a tidy `<div>` halves it — measured in
+   * Chrome, 440px to 223px on both basal fields — with every assertion in this
+   * file still passing, because they all read what the DOM CONTAINS.
+   *
+   * This is the third time that sentence has been written here. Note 25 was
+   * node identity, note 56 was a card bursting its width, and this is layout
+   * coupled to nesting depth. jsdom cannot measure any of them; it CAN see the
+   * relationship the measurement depends on, which is what this asserts.
+   *
+   * Deliberately about the SHAPE and not the pixels. A pixel assertion belongs
+   * in `tools/smoke.mjs`, needs a real browser, and would fail for reasons that
+   * have nothing to do with this rule — a font, a viewport, a padding change.
+   * The rule is: if CSS positions it, CSS has to be able to reach it.
+   */
+  it('a wide field\'s input is a direct grid item, which is what makes it full width', async () => {
+    await boot();
+    await tap('☐  I have read this');
+    await tap('I understand — use at my own risk');
+
+    const wide = [...root.querySelectorAll('.field.wide')];
+    // Guards the guard: if the class is renamed, this case must fail rather
+    // than pass over an empty list — the check-that-stopped-looking shape.
+    expect(wide.length).toBeGreaterThan(0);
+
+    for (const field of wide) {
+      const input = field.querySelector('input');
+      expect(input).not.toBeNull();
+      expect(input?.parentElement).toBe(field);
+    }
+  });
+
+  it('and every settings input still sits inside a .field, wide or not', async () => {
+    await boot();
+    await tap('☐  I have read this');
+    await tap('I understand — use at my own risk');
+
+    const inputs = [...root.querySelectorAll('input[data-field]')];
+    expect(inputs.length).toBeGreaterThan(0);
+    for (const input of inputs) {
+      expect(input.closest('.field')).not.toBeNull();
+    }
   });
 });
 

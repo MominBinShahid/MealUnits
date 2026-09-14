@@ -245,10 +245,15 @@ A list of what is built rots the day after it is written. `git log` is the recor
 A pinned toolchain goes quiet rather than failing loudly. `BACKLOG.md`'s technical entries carry the
 live version constraints; this note is the observation, not the record.
 
-## 25. The render loop destroyed focus, caret and scroll on every keystroke `[RULE]`
+## 25. The render loop destroyed focus, caret and scroll on every keystroke `[RULED 2026-09-14: fixed by T3]`
 
-`src/ui/app.ts`: `render()` calls `replaceChildren`, which destroys and rebuilds every node, so the
-focused input is a different element after each character.
+`src/ui/app.ts`: `render()` called `replaceChildren`, which destroyed and rebuilt every node, so the
+focused input was a different element after each character.
+
+**CLOSED 2026-09-14.** T3 landed and `src/ui/dom.ts` is deleted — `captureFocus`, `restoreFocus` and
+`replaceChildren` with it. The class is gone by construction, and §13 now carries the
+interaction-continuity requirement it never had (§13.6.1). Everything below is why, kept intact: the
+recurrence is the part worth re-reading, not the fix.
 
 **Why 541 tests and a 100% mutation score missed it:** §13 has no interaction-continuity
 requirement. The tests assert what the DOM CONTAINS, and it contained the right thing — the defect
@@ -258,7 +263,7 @@ remembering to patch instead of replace.
 
 **IT HAPPENED AGAIN SIX DAYS LATER, and this note did not say so until 2026-09-14.** `62bf677` fixed
 the same defect in the food search: the screen shipped with an `id` and no `data-field`, which is
-what `captureFocus` keys on, so the restore could not find the node. **647 tests and a 100% mutation
+what `captureFocus` keyed on, so the restore could not find the node. **647 tests and a 100% mutation
 score passed straight over it**, for the same reason they missed the first one. No note was written
 at the time, so every document described this as a single historical bug.
 
@@ -523,3 +528,119 @@ identical in a coverage report** and have opposite fixes.
 covering its neighbours. Narrowing to `disable next-line` with a named mutator surfaced two
 directives that had been riding under a justification about a different line. Folded into note 16's
 table.
+
+## 66. The Preact port's two surprises were a silent event name and a silent filter
+
+T3's full account is in `BACKLOG.md`; two things belong here because neither is about Preact and
+both will happen again in another form.
+
+**`onCompositionStart` attaches to nothing, and says nothing.** Preact works out an event's real
+name by probing the DOM — `if (lowerCaseName in dom) name = lowerCaseName.slice(2); else name =
+name.slice(2)` — and NO engine exposes `oncompositionstart` as a property. jsdom 30: `false`.
+Chrome 152: `false`, on an `<input>`, on `document.body` and on `window`. So the camelCase spelling
+registers a listener for the event type `"CompositionStart"`, which nothing fires. Written
+all-lowercase the probe still fails, but `name.slice(2)` then yields the right name — so the
+lowercase spelling works everywhere and the camelCase spelling works nowhere, and Preact's own types
+ship only the one that does not. The composition guard would have shipped doing nothing at all. What
+caught it was a test written to fail BEFORE the port, and the first instinct — "this is a jsdom gap"
+— was wrong in a way only the measurement showed.
+
+**A filter that stops matching reports clean.** `check_ui_text_outside_copy` selected files with
+`name.endswith(".ts")`. Renaming eight files to `.tsx` left it matching nothing, and because it
+expects ZERO findings, nothing about its output changed. An entire app's worth of user-facing text
+could have sat outside `copy.ts` — with `10a` handing a translator a file that no longer held the
+words — and the checker would have gone on printing `clean.` every time.
+
+The rename was caught by ONE check, the retired-phrase sweep, and only because that one pins a
+non-zero count: it expected 1 occurrence in source and found 0. **A check that pins a count tells
+you when it goes blind; a check that expects nothing cannot.** That is the general lesson, and it
+applies to every check here whose healthy output is silence.
+
+**A third instance, the same day, and it is the one worth reading.** ESLint flat config REPLACES a
+rule's options rather than merging them, so two config objects both matching `src/**/*.tsx` and both
+setting `no-restricted-syntax` do not combine — the later wins and the earlier selectors stop
+running. That hazard was spotted while adding the first pair of JSX guards, avoided, and written up
+as a warning inside the array's own comment. **Hours later the §11.1 `useState` guard was added as
+its own block by the person who wrote that comment**, switching off all four selectors — §11.8's two
+numeric-literal rules included — while `npx eslint .` printed nothing. A seeded probe found it in one
+run; re-reading the file had not, twice.
+
+Knowing about a silent failure mode does not protect you from it. Only a check that fails does, which
+is why the linter needs the same `--self-test` treatment this file's tooling already has. Where such a check selects its own
+inputs, the selection is the part to distrust — this one now walks for the file list and reads
+through `load()`, so `--self-test` can seed a defect into the files it claims to cover, which it
+could not do before.
+
+## 67. The real-browser layer had been failing 17 checks for a day, and nothing said so
+
+Found 2026-09-14 while verifying T3, and it is NOT a T3 defect — the identical seventeen failures
+reproduce on the pre-port build, from a `git archive` of the commit before it. The port neither
+caused them nor fixed them.
+
+`88f3394` removed §1.2's prefill on 2026-09-13 — the app fills in nobody's prescription now — and did
+not touch `tools/smoke.mjs`, whose `setUp` typed only the basal block because that used to be the
+only thing left to fill in. So "Save and start" stayed disabled, setup never completed, and every
+check after it ran against the first-run screen. Layout at two widths, the +/- key sizes, the block
+card, the HI/LO disclosure, the food list, the worked dose, the history stack and the back gesture:
+seventeen, all with one cause, three screens earlier.
+
+**The failures were loud.** `npm run smoke` reported `17 FAILURE(S)` on every run. That is the whole
+difference between this and note 66 — nothing here went silent, and it survived anyway, because
+`npm run smoke` is not part of `npm run check` and is not in CI. A check nobody runs and a check that
+reports clean while blind cost the same amount.
+
+Two things follow, and only the first is done:
+
+1. `setUp` types the three ratios. Fixed here; both builds then pass, which is what proves the
+   harness was broken rather than the app.
+2. **The harness's setup path is the part with no coverage of its own.** Every check in that file
+   depends on setup having succeeded, and nothing asserts that it did — a single check that "Save
+   and start" is enabled before tapping it would have named the real fault on the day it appeared,
+   instead of seventeen symptoms. That is a BACKLOG item, with the question of whether smoke belongs
+   in CI at all (it needs a built app, a served origin and a real Chrome, which is why it is not
+   there today).
+
+## 68. A tidier DOM halved two fields, and nothing in the project could see it
+
+Found by review during T3, 2026-09-14, and fixed in the same change.
+
+The port introduced a shared `TextField` component and gave it the shape the
+`personName` field already had — `div.field > label + div > input`. Two fields did
+not have that shape: `basalName` and `basalTiming` had the input as a DIRECT CHILD
+of `div.field.wide`. Unifying them looked like removing an inconsistency.
+
+`.field` is `display: grid`, and **nothing in `styles.css` sets an input's width**.
+`.field input` only caps it at `max-width: 9rem`, and `.field.wide input` lifts that
+cap. A wide field is full width because its input is a GRID ITEM and stretches.
+Wrapped in a plain `<div>` it stops being one and falls back to its intrinsic size.
+Measured in Chrome at 412px, before and after:
+
+| | before | after |
+|---|---|---|
+| `basalName` | 440px | **223px** |
+| `basalTiming` | 440px | **223px** |
+| `personName` | 144px | 144px (the 9rem cap decides it either way) |
+
+**Why every layer missed it.** 673 tests assert what the DOM CONTAINS, and it
+contained the right thing. The mutation gate does not cover `src/ui`. `check-plan.py`
+reads documents and source text, not geometry. `tools/smoke.mjs` TYPES INTO BOTH
+FIELDS and never measures them — it was the one layer that could have looked and had
+no reason to. jsdom cannot lay out a page at all, so no test in the fast suite could
+have measured this even if one had tried.
+
+**The check that was added, and why it is a shape and not a pixel.** A wide field's
+input must be a direct child of its `.field`. jsdom cannot measure the width, but it
+can see the RELATIONSHIP the width depends on — and that relationship is the thing a
+refactor breaks. A pixel assertion would live in smoke, need a real browser, and go
+red for a font change or a padding change that had nothing to do with the rule. The
+test also asserts it found at least one `.field.wide` before looping, so a renamed
+class fails rather than passing over an empty list (note 66's lesson, applied
+immediately).
+
+**The general shape, which is the third distinct instance in this file.** Note 25 was
+behaviour coupled to node identity. Note 56 was a card bursting its width. This is
+layout coupled to NESTING DEPTH. In all three the defect was invisible to assertions
+about content, and in all three the fix was to find the structural invariant the
+rendering depends on and assert that instead. **When CSS positions something, the
+selector it uses is part of the contract** — a component that changes the tree is
+changing the stylesheet's input, whether or not it touches the stylesheet.
