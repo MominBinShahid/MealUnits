@@ -711,9 +711,11 @@ export const COPY = {
      *
      * It does not interpolate the typed name either. On Settings the field is
      * two lines below, so the heading would only repeat it — and it would
-     * re-render on every keystroke, which is what `captureFocus` exists to
-     * survive. On the doctor-facing screen the name is already the first row of
-     * the list underneath.
+     * re-render on every keystroke. That used to matter a great deal — it is
+     * what `captureFocus` existed to survive — and since T3 it is ordinary: the
+     * field keeps its identity across a render. The reason to leave the heading
+     * generic is the one above, not the rendering. On the doctor-facing screen
+     * the name is already the first row of the list underneath.
      */
     /**
      * §8.1 and §3's windows are calibrated for ONE insulin, and until

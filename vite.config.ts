@@ -173,6 +173,23 @@ function serviceWorker(outDir: string): Plugin {
 export default defineConfig({
   base: BASE,
   plugins: [contentSecurityPolicy(), sitemap('dist'), serviceWorker('dist')],
+  // T3's JSX, stated rather than inferred. Vite can read `jsx` and
+  // `jsxImportSource` out of tsconfig, but this repository's root tsconfig is
+  // solution-style (`files: []` plus references), so that path depends on the
+  // resolver following a reference to find the options. It does; this does not
+  // rely on it.
+  //
+  // `oxc`, not `esbuild`. Vite 8 transforms with oxc, and setting the esbuild
+  // block instead produces "esbuild options will be ignored" on every run —
+  // configuration that reads as deliberate and does nothing. There is no Babel
+  // in any of this; `@preact/preset-vite` would have brought it, and cannot be
+  // installed here because it peer-deps @babel/core 7 against Stryker 10's 8.
+  oxc: {
+    jsx: {
+      runtime: 'automatic',
+      importSource: 'preact',
+    },
+  },
   define: {
     // §10.8: show the running build version. It is the only way to diagnose a
     // report from a phone that is not in front of you.
@@ -217,7 +234,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['test/**/*.test.ts'],
+    include: ['test/**/*.test.ts', 'test/**/*.test.tsx'],
     coverage: { provider: 'v8', include: ['src/core/**'] },
   },
 });

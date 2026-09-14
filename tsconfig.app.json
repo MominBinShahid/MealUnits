@@ -5,6 +5,22 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
 
+    // T3's JSX, through the AUTOMATIC runtime — no `import { h }` at the top of
+    // every screen, and no `h` left unused-but-required by the classic runtime.
+    //
+    // `jsxImportSource` is what makes this Preact rather than React: the
+    // compiler emits `import { jsx } from "preact/jsx-runtime"`. There is no
+    // Babel anywhere in this — esbuild performs the transform, and vite.config
+    // states the same pair so the build does not have to infer it through a
+    // solution-style tsconfig.
+    //
+    // `@preact/preset-vite` was the first choice and is NOT installable here:
+    // it peer-deps @babel/core 7.x, Stryker 10 already pins @babel/core 8, and
+    // the two cannot resolve together. The only thing lost with it is Prefresh,
+    // which preserves component state across a dev edit.
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+
     // Deliberately NOT ["node"]. §13.1 requires the core to import nothing —
     // no DOM, no storage, no clock — and the surest way to keep a Node global
     // out of a browser bundle is for the app project not to know it exists.

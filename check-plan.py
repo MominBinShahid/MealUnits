@@ -800,7 +800,13 @@ def check_retired_in_source(_plan):
     for dirpath, dirnames, filenames in os.walk(os.path.join(HERE, "src")):
         dirnames[:] = [d for d in dirnames if not d.startswith(".")]
         for name in sorted(filenames):
-            if not name.endswith(".ts"):
+            # `.tsx` ADDED 2026-09-14 with T3's Preact port. This one failed
+            # LOUDLY when the extension changed, and only because it pins a
+            # non-zero count: one retired phrase is expected in a docstring here,
+            # and a filter matching nothing found none of it. Check 1c below
+            # expects ZERO findings, so the same rename would have left it
+            # reporting clean over an entire app's worth of untranslated text.
+            if not name.endswith(SOURCE_SUFFIXES):
                 continue
             path = os.path.join(dirpath, name)
             rel = os.path.relpath(path, HERE).replace(os.sep, "/")
@@ -829,7 +835,87 @@ def check_retired_in_source(_plan):
 # test, not a tally.
 UI_TEXT_OK = {
     " compact", " mint", " ", " stale", " \u2014 ", "n empty", "go quiet",
+    # T3's JSX added ONE entry, not thirteen. The first version listed every
+    # multi-word class name in the ported tree — "key dim", "flag mint",
+    # "li act" and nine more — on the theory that class lists written out whole
+    # in JSX would need exempting. They do not: a class value reaches the
+    # attribute arm, which exempts `class` by NAME through
+    # JSX_ATTRIBUTES_NOT_TEXT and never consults this set. Twelve of the
+    # thirteen matched nothing, and "go quiet" was already here.
+    #
+    # A dead exemption is not free. This set is the list of strings the checker
+    # has been told to ignore, and padding it with entries nobody can explain is
+    # how a real one gets added later without anyone noticing.
+    #
+    # The survivor is a ternary's two branches in `settings.tsx`, which are a
+    # class value in EXPRESSION position — single-quoted in code, so the
+    # attribute arm never sees it.
+    "field wide",
 }
+
+# JSX attributes whose values are markup, ids or machine names rather than words
+# a person reads. The single-quote arm expresses the same set as a regex over the
+# text BEFORE the quote; in JSX the attribute name is right there, so it is a set.
+#
+# `aria-label` is deliberately ABSENT: a string read aloud to a blind user is
+# user-facing, and two stepper buttons shipped "half a unit less" and "half a
+# unit more" as attribute literals. `aria-labelledby` and `aria-describedby` ARE
+# here, because they hold element ids rather than words.
+JSX_ATTRIBUTES_NOT_TEXT = {
+    "class", "id", "type", "role", "inputmode", "autocomplete", "lang",
+    "aria-labelledby", "aria-describedby", "aria-hidden", "aria-live",
+    "aria-pressed", "aria-expanded", "key", "name", "rel", "href", "charset",
+}
+
+# Every hand-written source extension in `src/`. One tuple rather than four
+# literals, because T3 renamed eight files from .ts to .tsx and each filter that
+# spelled ".ts" for itself was a separate place to miss.
+SOURCE_SUFFIXES = (".ts", ".tsx")
+
+
+def two_words(text):
+    """Two runs of letters with whitespace between them — prose, not a token.
+
+    `[^\\W\\d_]` is "a letter in ANY script", which `[A-Za-z]` was not. The
+    ASCII form would have reported clean over an entire Urdu screen, in a
+    project whose next backlog item is Urdu translation — the same
+    expects-nothing blindness as the `.ts` filter, one layer down.
+
+    Two words rather than one, because a single token is almost always a class
+    name, an id or an enum value. That leaves single-word prose uncovered, which
+    is a known and separately tracked gap.
+    """
+    return re.search(r"[^\W\d_]{2,}\s+[^\W\d_]{2,}", text) is not None
+
+
+def without_block_comments(text):
+    """Blank out /* ... */ runs, KEEPING every newline so line numbers hold.
+
+    The prefix test below — a line starting `*` or `//` — was written for the
+    `h()` call sites, where a block comment's continuation lines all began with
+    ` *`. JSX comments are `{/* ... */}` and their continuation lines begin with
+    whatever the indentation is, so after T3's port the sweep started reading
+    comment prose as rendered text. The first run reported `misc.tsx` rendering
+    'no recent dose', which is a quotation from §7.5 inside a JSX comment.
+
+    Only `/* */` is stripped, never `//` to end of line: `//` appears inside URLs
+    and stripping it would make this check see LESS than it does today, which is
+    the wrong direction for a check whose failure mode is silence.
+    """
+    out, i, depth = [], 0, 0
+    while i < len(text):
+        if depth == 0 and text.startswith("/*", i):
+            depth, i = 1, i + 2
+            out.append("  ")
+            continue
+        if depth == 1 and text.startswith("*/", i):
+            depth, i = 0, i + 2
+            out.append("  ")
+            continue
+        character = text[i]
+        out.append(character if depth == 0 or character == "\n" else " ")
+        i += 1
+    return "".join(out)
 
 
 def check_ui_text_outside_copy(_plan):
@@ -863,20 +949,40 @@ def check_ui_text_outside_copy(_plan):
     single-word literals, and any string built at runtime from data. Neither has
     appeared here yet.
 
-    Shown to fail by execution, the standard §20.3 sets: re-inlining
-    `COPY.settings.saveFirstRun` as its literal produces the finding, and
-    restoring it returns the checker to clean.
+    **JSX, added 2026-09-14 with T3.** The port moved every screen from `h()`
+    calls to JSX, and that moved user-facing text out of the two forms above
+    into a THIRD the sweep could not see: a bare text node between tags,
+    `<p>Some words here</p>`, which is neither quoted nor in backticks. It also
+    changed how attributes are written — `aria-label="half a unit less"` is
+    double-quoted in JSX and was single-quoted before, and the sweep only ever
+    read single quotes.
+
+    Both are covered below. Without them this check would have gone on reporting
+    clean while every string in the app sat outside `copy.ts` — the exact
+    "certifies nothing" failure it was written to end, arriving through a file
+    rename.
+
+    Every arm has a seeded mutation in SELF_TESTS, which is why this reads
+    through `load` rather than opening files itself — see the call site. The
+    original was shown to fail by execution instead (re-inlining
+    `COPY.settings.saveFirstRun` produced the finding), and that is a weaker
+    standard: it verifies the check once, on the day someone remembers to do it.
     """
     out = []
     for dirpath, dirnames, filenames in os.walk(os.path.join(HERE, "src", "ui")):
         dirnames[:] = [d for d in dirnames if not d.startswith(".")]
         for name in sorted(filenames):
-            if not name.endswith(".ts") or name == "copy.ts":
+            if not name.endswith(SOURCE_SUFFIXES) or name == "copy.ts":
                 continue
             path = os.path.join(dirpath, name)
             rel = os.path.relpath(path, HERE).replace(os.sep, "/")
-            with io.open(path, encoding="utf-8") as handle:
-                lines = handle.read().split("\n")
+            # `load`, not a direct read. `--self-test` swaps this function out to
+            # serve mutated text in memory, and a check that opens the file
+            # itself sees the real one and reports clean against a seeded
+            # defect. The walk still touches the disk, because the FILE LIST is
+            # what makes this check discover new screens rather than be told
+            # about them.
+            lines = without_block_comments(load(path)).split("\n")
             for number, line in enumerate(lines, 1):
                 stripped = line.strip()
                 if (stripped.startswith("*") or stripped.startswith("//")
@@ -906,6 +1012,71 @@ def check_ui_text_outside_copy(_plan):
                                " claims to hold every user-facing string — move the sentence"
                                " there as a function taking the values"
                                % (rel, number, prose.strip()))
+                if not name.endswith(".tsx"):
+                    continue
+                # JSX attribute values are DOUBLE-quoted, which the single-quote
+                # sweep above cannot see. Same exemption rule; the attribute
+                # allowlist is the one from the single-quote arm plus `class`,
+                # which in JSX is written `class="go quiet"` rather than passed
+                # in an object.
+                for match in re.finditer(r'(\w[\w-]*)="([^"]*)"', line):
+                    attribute, value = match.group(1), match.group(2)
+                    if attribute in JSX_ATTRIBUTES_NOT_TEXT:
+                        continue
+                    if not two_words(value) or value in UI_TEXT_OK:
+                        continue
+                    out.append("%s:%d renders %r in the %s attribute, but src/ui/copy.ts"
+                               " claims to hold every user-facing string — move it there, or"
+                               " add the attribute to JSX_ATTRIBUTES_NOT_TEXT if it holds"
+                               " markup rather than words"
+                               % (rel, number, value, attribute))
+                # A DOUBLE-QUOTED STRING IN CODE, which the arm above skips
+                # because it only matches `name="..."`. `{"Type any part of a
+                # name"}` is a rendered string in an expression container and
+                # was invisible to all four arms. Matches are excluded when a
+                # `=` precedes them, which is what makes them attribute values
+                # the arm above already judged.
+                for match in re.finditer(r'"((?:[^"\\]|\\.)*)"', line):
+                    before = line[:match.start()].rstrip()
+                    if before.endswith("="):
+                        continue
+                    value = match.group(1)
+                    if not two_words(value) or value in UI_TEXT_OK:
+                        continue
+                    out.append("%s:%d renders %r, but src/ui/copy.ts claims to hold every"
+                               " user-facing string — move it there, or add it to UI_TEXT_OK"
+                               " if it is markup rather than words"
+                               % (rel, number, value))
+
+            # A BARE TEXT NODE between tags: `<p>Some words here</p>`, and the
+            # form the port moved most of the app's prose into. Not quoted, not
+            # in backticks, invisible to every arm above.
+            #
+            # Over the WHOLE FILE rather than per line, because the dominant
+            # shape in this codebase puts the text on its own line:
+            #
+            #     <Button class="go" onPress={save}>
+            #       Save these numbers
+            #     </Button>
+            #
+            # A per-line scan needs an opening `>` and a closing `<` on one
+            # line and sees none of that — which is most of the tree. Line
+            # numbers are recovered by counting newlines up to the match.
+            #
+            # `</` and not a bare `<`: the run has to sit immediately before a
+            # CLOSING tag. Without that, `=> a < b` reads as a text node and the
+            # arm reported eight findings, every one of them TypeScript. Text
+            # before a self-closing sibling (`<p>words<br />more</p>`) loses its
+            # first half to this, which is the price of an arm that is quiet
+            # enough to be read.
+            source = "\n".join(lines)
+            for match in re.finditer(r">([^<>{}]+)</", source):
+                prose = " ".join(match.group(1).split())
+                if not two_words(prose) or prose in UI_TEXT_OK:
+                    continue
+                out.append("%s:%d renders the text %r directly in JSX, but src/ui/copy.ts"
+                           " claims to hold every user-facing string — move it there"
+                           % (rel, source.count("\n", 0, match.start()) + 1, prose))
     return out
 
 
@@ -2801,8 +2972,40 @@ SELF_TESTS = [
     # structure" and used that zero to argue the integration suite is a safe net
     # for the Preact port. There were ten. The number did not start wrong, it
     # drifted when 62bf677 added a tenth and nobody recounted.
+    # T3's three arms of check 1c, 2026-09-14. Each seeds the form of
+    # user-facing text the port introduced, into a file the checker discovers by
+    # walking rather than by being told — so a NEW screen is covered by the same
+    # three without anyone adding a fourth seed.
+    ("a sentence rendered as a bare JSX text node", "src/ui/screens/misc.tsx",
+     lambda t: t.replace("<h1>{COPY.screens.exportTitle}</h1>",
+                         "<h1>Save a copy of your record</h1>")),
+    ("a sentence rendered in a JSX double-quoted attribute",
+     "src/ui/screens/settings.tsx",
+     lambda t: t.replace('aria-describedby={`label-${id}`}',
+                         'aria-label="how far one unit lowers you"')),
+    ("a user-facing string inlined in a .tsx, which .ts-only filters miss",
+     "src/ui/screens/foods.tsx",
+     lambda t: t.replace("{COPY.foods.searchHint}", "{'Type any part of a name'}")),
+    # The four forms Fable's review found the first version blind to, 2026-09-14.
+    # Seeded rather than demonstrated once, because the arms they cover are the
+    # kind whose healthy output is silence.
+    ("a sentence as a MULTI-LINE JSX text child, the shape most of this tree uses",
+     "src/ui/screens/misc.tsx",
+     lambda t: t.replace(
+         '<Button class="go" onPress={handlers.onMove}>{COPY.exports.makeBackup}</Button>',
+         '<Button class="go" onPress={handlers.onMove}>\n            Make a backup copy\n          </Button>')),
+    ("a sentence double-quoted inside an expression container",
+     "src/ui/screens/misc.tsx",
+     lambda t: t.replace("{COPY.screens.importTitle}", '{"Bring a record back"}')),
+    ("URDU prose as a bare text node, which an [A-Za-z] word test cannot see",
+     "src/ui/screens/foods.tsx",
+     lambda t: t.replace("<p>{COPY.foods.intro}</p>", "<p>کھانے کی مقدار دیکھیں</p>")),
+    ("a sentence in a double-quoted aria-label, which is read aloud",
+     "src/ui/screens/settings.tsx",
+     lambda t: t.replace('aria-describedby={`label-${id}`}',
+                         'aria-label="how far one unit lowers you"')),
     ("T3's structural-query count reverted to the wrong 0", "BACKLOG.md",
-     lambda t: t.replace("There are **10 structural", "There are **0 structural")),
+     lambda t: t.replace("There are **14 structural", "There are **0 structural")),
     # §20.3 — the check added in the same commit arrives with its own mutation.
     # A constant exported from src/config.ts and never written into §11.8 used to
     # be invisible: absent from PLAN.md so nothing reported it, absent from
@@ -3187,6 +3390,19 @@ def self_test():
     config_full = os.path.join(HERE, "src", "config.ts")
     if os.path.exists(config_full):
         base[config_rel] = load(config_full)
+
+    # `src/ui` for the same reason, ADDED 2026-09-14 with T3: check 1c reads
+    # those files, and a seed cannot mutate what the harness does not hold — it
+    # reports "target file is missing", which the runner counts as an ESCAPE.
+    # Held here rather than joined to `live_files()`, which drives §20.3's freeze
+    # and the dispatch hash and is not the thing being changed.
+    for dirpath, dirnames, filenames in os.walk(os.path.join(HERE, "src", "ui")):
+        dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+        for name in sorted(filenames):
+            if not name.endswith(SOURCE_SUFFIXES):
+                continue
+            full = os.path.join(dirpath, name)
+            base[os.path.relpath(full, HERE).replace(os.sep, "/")] = load(full)
 
     def run(overrides):
         files = dict(base)

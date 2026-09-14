@@ -9,6 +9,8 @@
  * core." Nothing here derives a band, a baseline or a provenance. It reads them.
  */
 
+import { render as mount } from 'preact';
+import type { JSX } from 'preact';
 import {
   ADVISORY_MIN_ELIGIBLE,
   JSON_INDENT,
@@ -46,21 +48,21 @@ import { initialState, reduce } from '../state/machine.js';
 import type { Action, AppState, FrozenLogPayload, RecordContext } from '../state/machine.js';
 import { localDayKey } from '../core/calendar.js';
 import { newId } from '../core/ids.js';
-import { foodListScreen } from './screens/foods.js';
+import { FoodListScreen } from './screens/foods.js';
 import { COPY, units } from './copy.js';
-import { button, captureFocus, replaceChildren, restoreFocus, h } from './dom.js';
-import { calculatorScreen } from './screens/calculator.js';
+import { Button } from './components.js';
+import { CalculatorScreen } from './screens/calculator.js';
 import { deriveThreshold } from '../core/threshold.js';
-import { draftFrom, settingsScreen } from './screens/settings.js';
+import { draftFrom, SettingsScreen } from './screens/settings.js';
 import type { SettingsDraft } from './screens/settings.js';
 import {
-  clearScreen,
-  disclaimerScreen,
-  exportScreen,
-  failClosedScreen,
-  historyScreen,
-  howItWorksScreen,
-  settingsAsTextScreen,
+  ClearScreen,
+  DisclaimerScreen,
+  ExportScreen,
+  FailClosedScreen,
+  HistoryScreen,
+  HowItWorksScreen,
+  SettingsAsTextScreen,
 } from './screens/misc.js';
 
 /**
@@ -581,51 +583,57 @@ export async function start(host: Host): Promise<void> {
     );
   };
 
-  function screenFor(): HTMLElement {
+  function screenFor(): JSX.Element {
     switch (state.screen) {
       case 'loading':
         // §7.9 — a re-boot after another tab's delete says so. Its second
         // sentence ("Setup will run again.") is true now: `boot()` is running.
-        return view.recordDeletedElsewhere
-          ? h(
-              'div',
-              { class: 'screen' },
-              h('h2', {}, COPY.recordDeleted.title),
-              h('p', {}, COPY.recordDeleted.body),
-            )
-          : h('div', { class: 'screen' }, h('p', {}, COPY.screens.opening));
+        return view.recordDeletedElsewhere ? (
+          <div class="screen">
+            <h2>{COPY.recordDeleted.title}</h2>
+            <p>{COPY.recordDeleted.body}</p>
+          </div>
+        ) : (
+          <div class="screen">
+            <p>{COPY.screens.opening}</p>
+          </div>
+        );
 
       case 'fail_closed':
-        return failClosedScreen({
-          recovery,
-          blocked: view.failClosedBlocked,
-          // §7.9 v23 — the recovery connection may read the frozen block AND
-          // NOTHING ELSE, so the stacking consequence cannot be evaluated here.
-          canReadLog: false,
-          confirming: view.failClosedConfirming,
-          onAsk: (asking) => {
-            view.failClosedConfirming = asking;
-            render();
-          },
-          onStartOver: () => { void startOver(); },
-        });
+        return (
+          <FailClosedScreen
+            recovery={recovery}
+            blocked={view.failClosedBlocked}
+            // §7.9 v23 — the recovery connection may read the frozen block AND
+            // NOTHING ELSE, so the stacking consequence cannot be evaluated here.
+            canReadLog={false}
+            confirming={view.failClosedConfirming}
+            onAsk={(asking) => {
+              view.failClosedConfirming = asking;
+              render();
+            }}
+            onStartOver={() => { void startOver(); }}
+          />
+        );
 
       case 'first_run_disclaimer':
-        return disclaimerScreen(
-          () => {
-            if (db !== null) void acknowledge(db, ackKeys.disclaimer, host.now());
-            dispatch({ type: 'disclaimer_accepted' });
-          },
-          view.disclaimerChecked,
-          () => {
-            view.disclaimerChecked = !view.disclaimerChecked;
-            render();
-          },
+        return (
+          <DisclaimerScreen
+            onAccept={() => {
+              if (db !== null) void acknowledge(db, ackKeys.disclaimer, host.now());
+              dispatch({ type: 'disclaimer_accepted' });
+            }}
+            accepted={view.disclaimerChecked}
+            onToggle={() => {
+              view.disclaimerChecked = !view.disclaimerChecked;
+              render();
+            }}
+          />
         );
 
       case 'first_run_settings':
       case 'settings':
-        return settingsScreen(view.draft, state.settings, {
+        return <SettingsScreen draft={view.draft} settings={state.settings} handlers={{
           firstRun: state.screen === 'first_run_settings',
           ceilAcknowledged: stored?.acks.has(ackKeys.forMode(view.draft.mode)) ?? false,
           advisoryStatus: advisoryStatus(),
@@ -673,10 +681,10 @@ export async function start(host: Host): Promise<void> {
             showAsText = true;
             dispatch({ type: 'go', screen: 'how_it_works' });
           },
-        });
+        }} />;
 
       case 'history':
-        return historyScreen(stored?.log ?? [], stored?.readings ?? [], {
+        return <HistoryScreen log={stored?.log ?? []} readings={stored?.readings ?? []} handlers={{
           timeZone: host.timeZone,
           nowMs: host.now(),
           pendingDelete: view.pendingDelete,
@@ -702,7 +710,7 @@ export async function start(host: Host): Promise<void> {
             }
           },
           onOpenExport: () => { showClear = false; dispatch({ type: 'go', screen: 'export' }); },
-        });
+        }} />;
 
       case 'export':
         if (
@@ -712,8 +720,8 @@ export async function start(host: Host): Promise<void> {
         ) {
           view.dosingDraft = stored.dosingHistory.text;
         }
-        return showClear
-          ? clearScreen(stored?.log ?? [], stored?.readings ?? [], {
+        return showClear ? (
+          <ClearScreen log={stored?.log ?? []} readings={stored?.readings ?? []} handlers={{
               timeZone: host.timeZone,
               nowMs: host.now(),
               confirming: view.clearConfirming,
@@ -736,8 +744,9 @@ export async function start(host: Host): Promise<void> {
                 }
               },
               onStartOver: () => { void startOver(); },
-            })
-          : exportScreen({
+            }} />
+        ) : (
+          <ExportScreen handlers={{
               lastJsonExportAtMs: stored?.lastJsonExportAtMs ?? null,
               hasRecord: (stored?.log.length ?? 0) + (stored?.readings.length ?? 0) > 0,
               nowMs: host.now(),
@@ -793,24 +802,29 @@ export async function start(host: Host): Promise<void> {
                   refresh,
                 );
               },
-            });
+            }} />
+        );
 
       case 'food_list':
-        return foodListScreen({
-          query: view.foodQuery,
-          onQuery: (value: string): void => {
-            view.foodQuery = value;
-            render();
-          },
-        });
+        return (
+          <FoodListScreen
+            query={view.foodQuery}
+            onQuery={(value: string): void => {
+              view.foodQuery = value;
+              render();
+            }}
+          />
+        );
 
       case 'how_it_works':
-        return showAsText && state.settings !== null
-          ? settingsAsTextScreen(state.settings)
-          : howItWorksScreen(advisoryStatus());
+        return showAsText && state.settings !== null ? (
+          <SettingsAsTextScreen settings={state.settings} />
+        ) : (
+          <HowItWorksScreen advisoryStatus={advisoryStatus()} />
+        );
 
       case 'calculator':
-        return calculatorScreen(state, {
+        return <CalculatorScreen state={state} handlers={{
           nowMs: host.now(),
           timeZone: host.timeZone,
           moreExpanded: view.moreExpanded,
@@ -884,7 +898,7 @@ export async function start(host: Host): Promise<void> {
             dispatch({ type: 'go', screen: 'settings' });
           },
           onStartOver: () => { void startOver(); },
-        });
+        }} />;
     }
   }
 
@@ -972,25 +986,45 @@ export async function start(host: Host): Promise<void> {
     }
   }
 
-  function footNav(): HTMLElement | null {
+  function footNav(): JSX.Element | null {
     const goBack = backAction();
-    const items: HTMLElement[] = [];
-    if (goBack !== null) items.push(button(COPY.back, goBack, { class: 'link' }));
+    const items: JSX.Element[] = [];
+    if (goBack !== null) {
+      items.push(<Button key="back" class="link" onPress={goBack}>{COPY.back}</Button>);
+    }
     if (state.screen === 'calculator' && state.step === 'reading') {
-      items.push(button(COPY.nav.settings, () => { dispatch({ type: 'go', screen: 'settings' }); }, { class: 'link' }));
-      items.push(button(COPY.nav.history, () => { dispatch({ type: 'go', screen: 'history' }); }, { class: 'link' }));
+      items.push(
+        <Button key="settings" class="link" onPress={() => { dispatch({ type: 'go', screen: 'settings' }); }}>
+          {COPY.nav.settings}
+        </Button>,
+        <Button key="history" class="link" onPress={() => { dispatch({ type: 'go', screen: 'history' }); }}>
+          {COPY.nav.history}
+        </Button>,
+      );
     }
     // §10.7 — on the carbohydrate step ONLY. The list answers the question being
     // asked at that exact moment and is noise on every other screen, which is
     // why it is gated the same way History is gated to the reading step.
     if (state.screen === 'calculator' && state.step === 'carbs') {
-      items.push(button(COPY.foods.navLabel, () => { dispatch({ type: 'go', screen: 'food_list' }); }, { class: 'link' }));
+      items.push(
+        <Button key="foods" class="link" onPress={() => { dispatch({ type: 'go', screen: 'food_list' }); }}>
+          {COPY.foods.navLabel}
+        </Button>,
+      );
     }
     if (state.screen === 'history') {
-      items.push(button(COPY.nav.saveACopy, () => { showClear = false; dispatch({ type: 'go', screen: 'export' }); }, { class: 'link mark' }));
+      items.push(
+        <Button
+          key="save-a-copy"
+          class="link mark"
+          onPress={() => { showClear = false; dispatch({ type: 'go', screen: 'export' }); }}
+        >
+          {COPY.nav.saveACopy}
+        </Button>,
+      );
     }
     if (items.length === 0) return null;
-    return h('nav', { class: 'foot-nav', 'aria-label': COPY.nav.label }, ...items);
+    return <nav class="foot-nav" aria-label={COPY.nav.label}>{items}</nav>;
   }
 
   function render(): void {
@@ -1031,47 +1065,79 @@ export async function start(host: Host): Promise<void> {
     host.root.className =
       blocking && state.outcome?.kind === 'blocked_low' ? 'mood-halt' : '';
 
-    // The ONLY call site for the focus patch. `replaceChildren` destroys every
-    // node, so focus, caret and scroll are captured here and put back below.
-    // See `captureFocus` for why this is a patch and not a fix, and
-    // `docs/BACKLOG.md` T3 for what replaces it.
     // Keep the history stack in step with whether the app HAS a back path, read
     // from the same `backAction` the on-screen control uses — so the gesture and
     // the button can never disagree.
     host.setCanGoBack(backAction() !== null);
 
-    const memory = captureFocus(host.root, host.scrollY());
-
     /**
      * Compared against the view rendered LAST TIME, held across calls.
      *
-     * This read `${state.screen}/${state.step}` twice inside one render — once
-     * before `replaceChildren` and once after — and claimed the second read
-     * would have "moved on". It cannot: `dispatch` updates the state and THEN
-     * calls render, so both reads see the same already-updated value and
-     * `sameView` was ALWAYS TRUE. The scroll was therefore restored across
-     * every navigation, which is why opening a screen from part-way down
-     * settings dropped the reader into the middle of a page they had not seen.
+     * This read `${state.screen}/${state.step}` twice inside one render and
+     * claimed the second read would have "moved on". It cannot: `dispatch`
+     * updates the state and THEN calls render, so both reads saw the same
+     * already-updated value and the comparison was ALWAYS "same view". That is
+     * why opening a screen from part-way down settings dropped the reader into
+     * the middle of a page they had not seen.
      *
      * The comparison has to span renders, so the previous key has to outlive
      * one — a note explaining why a wrong comparison was right is worth less
      * than a variable in the right scope.
      */
     const viewKey = `${state.screen}/${state.step}`;
-    const sameView = viewKey === lastViewKey;
+    const navigated = viewKey !== lastViewKey;
     lastViewKey = viewKey;
 
-    replaceChildren(
+    // Read BEFORE the diff, because a diff that shortens the page can have the
+    // browser clamp the offset on its own — then the branch below would be
+    // deciding from a number the render itself produced.
+    const scrollBefore = host.scrollY();
+
+    /**
+     * T3 — **one `mount` call, and it is a DIFF, not a rebuild.**
+     *
+     * This was `replaceChildren`, which destroyed every node on every
+     * keystroke, and the focus/caret/scroll patch in `dom.ts` existed to put
+     * back the three things anyone had thought to name. That patch is deleted
+     * with this change, and `dom.ts` with it: node identity now survives by
+     * algorithm rather than by every render path remembering to capture and
+     * restore — which is the same argument §11.3 made choosing IndexedDB over
+     * Web Locks, "it only works if every writer takes the lock, and a single
+     * path that forgets restores the race with no error". The food search WAS
+     * that path.
+     *
+     * What comes back for free is everything identity carries that no restore
+     * ever handled: IME composition, text selection, a running CSS transition,
+     * the soft keyboard's own state.
+     *
+     * Synchronous, deliberately. Preact's top-level `render` diffs and commits
+     * before it returns, so `dispatch` → state → DOM stays one turn, exactly as
+     * it was. Making it async would change the timing every test and every
+     * handler here already depends on.
+     */
+    mount(
+      <>
+        {screenFor()}
+        {footNav()}
+        {/* §10.8 — show the running build version. "It is the only way to
+            diagnose a report." Deliberately small and quiet: it is for the one
+            moment someone is diagnosing a report, not for every moment of every
+            day. */}
+        <div class="foot">{COPY.build(host.appVersion, host.buildId)}</div>
+      </>,
       host.root,
-      screenFor(),
-      footNav(),
-      // §10.8 — show the running build version. "It is the only way to diagnose
-      // a report." Deliberately small and quiet: it is for the one moment
-      // someone is diagnosing a report, not for every moment of every day.
-      h('div', { class: 'foot' }, COPY.build(host.appVersion, host.buildId)),
     );
 
-    restoreFocus(host.root, memory, sameView, host.scrollTo);
+    // A NEW view starts at the top, and this is the one piece of `restoreFocus`
+    // that was never a patch. The browser keeps the old offset across a render,
+    // so opening "How this works" from part-way down the settings screen
+    // dropped the reader into the middle of a page they had not seen — they had
+    // to scroll UP to find the beginning. Every screen reached from settings had
+    // it.
+    //
+    // Its other half is gone rather than ported: nothing restores the offset on
+    // a same-view render, because nothing moves it any more.
+    if (navigated && scrollBefore > 0) host.scrollTo(0);
   }
 
   // ── boot ─────────────────────────────────────────────────────────────────

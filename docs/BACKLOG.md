@@ -750,7 +750,14 @@ workstation note, recorded because the failure mode is convincingly disguised as
 
 **Unblock condition:** none needed — `fnm default 24.20.0`, or prefix scripts with `fnm exec --`.
 
-### T3. Move the UI layer to a framework with keyed reconciliation — Preact
+### T3. Move the UI layer to a framework with keyed reconciliation — DONE 2026-09-14, Preact 10.29.8
+
+**SHIPPED.** `src/ui` is JSX throughout, `src/ui/dom.ts` is deleted with `captureFocus`,
+`restoreFocus` and `replaceChildren`, and `render()` is one `mount()` call that diffs. 673 tests
+pass, up from 670 — the three added are the interaction-continuity cases §13 never had, and all
+three were RED before the port. Everything below is the reasoning as it stood, kept because the
+argument is the record; **what the port actually found is at the end of this entry, and two of the
+four things it found were not predicted here.**
 
 **Trigger: after v1 is in his brother's hands and in use.** Not before. The app is otherwise
 complete and verified, and refactoring working code while he is still injecting a fixed 24-25 units
@@ -772,9 +779,10 @@ on 7 Sep 2026:
 
 *(A first attempt measured 600 → 27 against a field that was ABOVE the viewport, where the browser
 was legitimately scrolling it into view. The symptom is real; that number was not. Re-measured with
-the field genuinely on screen. **`src/ui/dom.ts` carried the retracted number until 2026-09-14** —
-and described the field as "below the fold", the opposite geometry — because the correction was
-written here and never propagated there.)*
+the field genuinely on screen. **`src/ui/dom.ts` carried the retracted number until 2026-09-14**, and
+described the field as "below the fold", the opposite geometry — because the correction was written
+here and never propagated there. The file was deleted later the same day; this paragraph is now the
+only place either number is recorded.)*
 
 **It has happened TWICE, and only the commit log records the second time.** On 2026-09-13, six days
 after the patch shipped, `62bf677` fixed the same defect in the food search: the screen was built
@@ -870,7 +878,7 @@ exist in ten years. The counterweight is that Preact's entire source is ~12 KB o
 project could vendor and patch indefinitely — an option `react-dom`'s ~600 KB source does not offer.
 
 **Why the rewrite is lower-risk than it sounds — RECOUNTED 2026-09-14, and the old claim was wrong.**
-This said "66 assertions on rendered text and **0** on DOM structure". There are **10 structural
+This said "66 assertions on rendered text and **0** on DOM structure". There are **14 structural
 queries**, not zero: nine selectors that depend on markup shape — `#app`, `.ask`, `[role="group"]`,
 `#label-mode`, `#food-search`, `.entry .n` twice, `[data-field="foodQuery"]`, `.flag` — plus the
 `label.parentElement.querySelector('input')` traversal this entry already names. Queries by element
@@ -896,7 +904,9 @@ adding one**, which is why `check-plan.py` now pins this number.
   So: **never write back to a controlled input's value while a composition is in flight.** Preact
   has had exactly one IME regression (issue #4008, introduced 10.14.1, fixed within days) and the
   fix was making that pattern work. This matters beyond Urdu — see the mobile dropped-keystroke
-  report of 2026-09-14, which is a NEW symptom no prior record predicts.
+  report of 2026-09-14, which is a NEW symptom no prior record predicts. Momin narrowed it the same
+  day: **every text field, not one screen** — setup and the food search alike — which points at the
+  render path they share, not at any single call site.
 - **The `value` attribute-versus-property hazard, which nobody has ever written down.** `dom.ts`'s
   `h()` ends in `node.setAttribute(key, String(value))`, so an input's value is set as the **content
   attribute** — the element's *default* value — not as the property. That is harmless **only**
@@ -917,6 +927,128 @@ adding one**, which is why `check-plan.py` now pins this number.
   though it were current and was never corrected. **`tools/smoke.mjs` is the one that still types in
   one shot** (`i.value = …; dispatchEvent(new Event('input'))`) — so the only layer that types like a
   person is not a browser, and the only layer that is a browser does not type like a person.
+
+#### What the port actually found, 2026-09-14
+
+Everything above is the plan. Four things came out of doing it, and the plan predicted two.
+
+**1. Predicted, and it held.** The attribute-versus-property hazard never materialised, because no
+path stayed half-migrated: `dom.ts` was deleted in the same change that removed its last caller, so
+there was never a reused node still being written with `setAttribute`. The way to get this right was
+to make the old thing impossible rather than to remember not to use it.
+
+**2. Predicted, and it needed more than the framework.** Keyed reconciliation alone does not carry
+IME, exactly as this entry says. The rule is implemented as one shared `TextInput` in
+`src/ui/components.tsx`: while a composition is in flight it passes `value={undefined}`, which is the
+one thing Preact's value sync treats as *do not touch this input*. Every text field in the app goes
+through it — the four that exist, and any that are added. The window is real and arrives unprompted:
+§8.2's expiry tick fires a render every minute and on every return to visibility, and between
+`compositionstart` and the first `input` event the DOM holds the IME's preview while the app still
+holds the last committed value.
+
+**3. NOT predicted — `onCompositionStart` does not work in Preact, in any engine.** Preact infers an
+event's real name by probing the DOM: `if (lowerCaseName in dom) name = lowerCaseName.slice(2); else
+name = name.slice(2)`. **Nothing exposes `oncompositionstart` as a property**, so the camelCase form
+registers a listener for the event type `"CompositionStart"` — capital C — which nothing ever fires.
+No error, no warning, a handler that is simply never called. Measured rather than assumed, because
+the first instinct was that this was a jsdom gap:
+
+| | `'oncompositionstart' in <input>` |
+|---|---|
+| jsdom 30 | `false` |
+| Chrome 152 | `false` |
+| Chrome 152, on `document.body` and on `window` | `false` |
+
+All-lowercase the probe still fails, but `name.slice(2)` then yields `compositionstart`, which is
+right. **So the lowercase spelling is correct in both environments and the camelCase spelling is
+correct in neither.** `src/env.d.ts` declares the working spelling, because Preact's own types ship
+only the broken one. This would have shipped as a guard that silently did nothing; the continuity
+test written before the port is what caught it.
+
+**Confirmed upstream after the fact, and it is not a bug we are routing around.** preactjs/preact
+[#3003](https://github.com/preactjs/preact/issues/3003), opened 2021-02-11, names these exact three
+handlers; it was closed 2025-08-06 as a duplicate of
+[#1978](https://github.com/preactjs/preact/issues/1978) with *"will be fixed in v11"* — so v10 will
+not change, and pinning 10.29.8 means living with it. The maintainer's position on v10 is explicit:
+*"Preact has always and will always support attaching event handlers with the exact casing defined
+in the HTML/DOM specs. That is the lowercase variants all work."* The lowercase form is the
+SUPPORTED one; what is wrong is the camelCase typing, and the issue thread says so.
+
+**It generalises, which is the part worth carrying.** The rule is not about composition — ANY event
+whose `on*` property the DOM does not expose takes the same path, and #3003 names `focusin`,
+`focusout` and `beforeinput` in the same breath. `beforeinput` in particular is the one a future
+input-handling change would reach for. Before adding a handler for an event not already used here,
+check `'on' + name in element` and spell it lowercase if that is false.
+
+**4. NOT predicted — `@preact/preset-vite` cannot be installed here.** It peer-deps `@babel/core`
+7.x and Stryker 10 already pins `@babel/core` 8; npm refuses outright and the only way through is a
+forced duplicate Babel tree. Not taken. JSX is transformed by **oxc**, which is what Vite 8 uses,
+configured as `oxc.jsx` in `vite.config.ts` — setting the `esbuild` block instead is silently ignored
+and prints a warning on every run. **No Babel in the toolchain at all.** What is lost is Prefresh,
+which preserves component state across a dev edit.
+
+**The lint plugins looked like the same wall and were not, and the first answer here was wrong.**
+`eslint-plugin-jsx-a11y` (`^3 .. ^9`) and `eslint-plugin-react` (`^3 .. ^9.7`) both declare peer
+ranges that exclude this repository's eslint 10, and npm refuses both. They were dropped on the
+reasoning that a lint plugin which half-works reports clean on rules it never ran — true in general,
+and **not tested**. Tested afterwards, because Momin asked whether the answer was to downgrade
+eslint: **both load and both report correctly under eslint 10.** The ranges are stale, not accurate,
+and no downgrade is needed. `package.json` states the relaxation declaratively — `overrides` maps
+each plugin's `eslint` peer to `$eslint` — rather than through a global `--legacy-peer-deps`, so it
+is scoped to the two packages it is true of.
+
+Both are in. `jsx-a11y` reports **zero findings** on the ported tree, which is the first automated
+confirmation the app's accessibility discipline holds. From `eslint-plugin-react`, three rules:
+`jsx-key` — which guards the keys this port introduced and which `test/keys.test.ts` cannot see,
+since a data test pins that key VALUES are unique and says nothing about a key being absent —
+plus `no-children-prop` and `jsx-no-duplicate-props`. The plugin is not extended wholesale: most of
+what it carries is advice about a library this project does not use.
+
+`eslint-plugin-react-hooks@7.1.1` declares `^10` and needed no override. It earned its place
+immediately, catching a ref read during render and a ref not named `*Ref`.
+
+`eslint-config-preact` is still out, and on its merits rather than on its peer range: it bundles
+`eslint-plugin-react-hooks` at `^5.2.0` against the `^7.1.1` above and pins `@eslint/js` to `^9`, so
+adopting it would downgrade the one plugin that never needed an override to gain rules already
+listed.
+
+The two rules wanted from `eslint-plugin-react` — no inline `style`, no `dangerouslySetInnerHTML` —
+are still hand-written `no-restricted-syntax` JSX selectors rather than `forbid-dom-props` and
+`no-danger`, because the hand-written ones carry §11.5's `style-src` and §7.7.1's escaping rule in
+the message a reader actually gets. They live in the same array as §11.8's, because flat config
+REPLACES a rule's options rather than merging them and a second block would have switched §11.8 off
+for every ported file while reporting clean.
+
+**Cost.** 117.50 kB raw / 36.86 kB gzip before, 135.03 kB / 42.38 kB after: **+5.5 kB gzipped**,
+against the ~4 kB estimated. As a proportion that is +15% of the JavaScript, or +12.8% of the whole
+page gzipped — the absolute number is the small one, and both are worth quoting.
+
+**What review caught that nothing else did.** A second opinion on the finished port found one real
+regression: the new shared `TextField` wrapped its input in a `<div>`, and the two §1.3 basal fields
+had had theirs as a DIRECT CHILD of `div.field.wide`. `.field` is `display: grid` and nothing sets an
+input's width, so those two were full width by being grid items — measured in Chrome, they went
+**440px to 223px** while every test stayed green. Build note 68 has the full account. The fix removed
+the wrapper rather than adding CSS, because the old tree is the one that had been looked at on a
+real device; the check added with it asserts the SHAPE the width depends on, which jsdom can see
+even though it cannot lay out a page.
+
+The same review found four blind spots in the JSX arms of `check_ui_text_outside_copy` as first
+written — multi-line text children (the dominant shape in this tree), text beside an expression, a
+double-quoted string inside an expression container, and **any non-Latin prose**, because the word
+test was `[A-Za-z]{2,}`. That last one would have reported clean over an entire Urdu screen, in the
+checker written to protect `10a`. All four are fixed and seeded; the self-test is 117/117.
+
+**What `check-plan.py` needed, and why it is the part worth remembering.**
+`check_ui_text_outside_copy` filtered on `name.endswith(".ts")`. Renaming eight files to `.tsx` would
+have left it matching nothing and reporting clean over an entire app's worth of text sitting outside
+`copy.ts` — with `10a` then handing a translator a file that no longer held the words. It failed
+loudly in exactly one place, the retired-phrase sweep, and only because that one pins a NON-ZERO
+count. **A check that expects zero findings cannot tell you it has stopped looking.** Fixed in the
+same change as the rename: both filters take `.tsx`, the sweep reads JSX text nodes and
+double-quoted attributes as well as quoted and backticked strings, JSX `{/* */}` comments are
+stripped first (their continuation lines carry no marker the old prefix test could see), and the
+check reads through `load()` so `--self-test` can seed a defect into a `.tsx` file. Three seeded
+mutations, all caught; 113/113.
 
 ---
 
