@@ -693,3 +693,52 @@ Shown to fail on both real defects, not hypothetical ones: re-introducing the
 duplicate `no-restricted-syntax` block fails exactly the four §-prefixed cases, and
 restoring `object: '*'` fails exactly the §5.3 case. Nothing is imported from the
 fixture, so the production bundle is byte-identical with it present.
+
+## 70. Every discovering walk now declares a floor, and one had already gone blind again
+
+The general form of note 66's second half, built 2026-09-14 — and it found a live
+instance while being built, which is the argument for it.
+
+**The problem.** `check-plan.py`'s checks split into two kinds. Some pin a non-zero
+count and therefore announce their own blindness: the count drops to nought and they
+fail. The rest report findings and are healthy when silent — and for those,
+"examined forty files, found nothing" and "examined NO files, found nothing" print
+the same word. `clean.`
+
+T3's rename of eight `.ts` files to `.tsx` left `check_ui_text_outside_copy` matching
+zero files, and its output did not change by a character.
+
+**The fix.** Every walk that discovers its own inputs goes through one
+`source_files(label, roots, suffixes)` helper, which records how many files it found.
+`INPUT_FLOORS` pins a minimum per walk, and `check_input_sets` — registered LAST,
+because the registry is filled in by the walks as they run — fails when a walk drops
+below its floor, or never ran at all.
+
+The floors are deliberately well below the real counts. They are not a census;
+deleting a screen must not fail the build. They are the point at which "this
+directory still contains source" stops being true.
+
+**What it caught immediately, and this is the part worth reading.** Routing the
+citation sweep through the helper meant looking at its suffix list, which read
+`(".ts", ".mjs", ".css", ".js")`. **No `.tsx`.** The port had renamed the files a day
+earlier and this was one of the places that did not get updated, so five note
+citations — notes 3, 6, 25, 38 and 59, in `app.tsx`, `foods.tsx` and
+`calculator.tsx` — were not being checked at all. A citation naming a note that has
+been renumbered or deleted is precisely what that check exists to catch, and it
+could not see any of them.
+
+**So the same rename broke three separate checks, and exactly one of them said so.**
+`check_retired_in_source` failed loudly, because it pins a count. The other two went
+quiet. That ratio is the whole case for this note.
+
+**What a floor does NOT do.** It catches a walk that stopped finding files. It does
+not catch a regex that stopped matching inside a walk that still finds them — which
+is what the multi-line JSX arm did in the same session. SELF_TESTS covers that half.
+The two are not substitutes, and a reader who trusts one to do the other's job has
+recreated the hole.
+
+Shown to fail by execution against each floor: breaking `SOURCE_SUFFIXES` reports
+both src walks, breaking the citation suffixes reports the sweep, breaking
+`src/data`'s reports that. `_INPUT_SETS` is cleared at the start of every run,
+because `--self-test` calls `main` once per seeded mutation and a stale count from
+the previous iteration would mask a walk that stopped running in this one.

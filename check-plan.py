@@ -796,22 +796,17 @@ def check_retired_in_source(_plan):
     produces the finding, and removing it returns the checker to clean
     (executed 2026-09-11, the same standard §20.3 sets for every other check).
     """
+    # `.tsx` ADDED 2026-09-14 with T3's Preact port. This one failed LOUDLY when
+    # the extension changed, and only because it pins a non-zero count: one
+    # retired phrase is expected in a docstring here, and a filter matching
+    # nothing found none of it. Check 1c expects ZERO findings, so the same
+    # rename left it reporting clean — which is what INPUT_FLOORS now catches.
     files = {}
-    for dirpath, dirnames, filenames in os.walk(os.path.join(HERE, "src")):
-        dirnames[:] = [d for d in dirnames if not d.startswith(".")]
-        for name in sorted(filenames):
-            # `.tsx` ADDED 2026-09-14 with T3's Preact port. This one failed
-            # LOUDLY when the extension changed, and only because it pins a
-            # non-zero count: one retired phrase is expected in a docstring here,
-            # and a filter matching nothing found none of it. Check 1c below
-            # expects ZERO findings, so the same rename would have left it
-            # reporting clean over an entire app's worth of untranslated text.
-            if not name.endswith(SOURCE_SUFFIXES):
-                continue
-            path = os.path.join(dirpath, name)
-            rel = os.path.relpath(path, HERE).replace(os.sep, "/")
-            with io.open(path, encoding="utf-8") as handle:
-                files[rel] = handle.read()
+    for path in source_files("check_retired_in_source: src/**",
+                             os.path.join(HERE, "src"), SOURCE_SUFFIXES):
+        rel = os.path.relpath(path, HERE).replace(os.sep, "/")
+        with io.open(path, encoding="utf-8") as handle:
+            files[rel] = handle.read()
     out = []
     for phrase, _expected in RETIRED:
         allowed = RETIRED_IN_SOURCE_OK.get(phrase, 0)
@@ -866,6 +861,90 @@ JSX_ATTRIBUTES_NOT_TEXT = {
     "aria-labelledby", "aria-describedby", "aria-hidden", "aria-live",
     "aria-pressed", "aria-expanded", "key", "name", "rel", "href", "charset",
 }
+
+# What each DISCOVERING WALK found on this run, filled in by `source_files`
+# and read by `check_input_sets`. Cleared per run so `--self-test`, which calls
+# `main` once per seeded mutation, does not accumulate across them.
+_INPUT_SETS = {}
+
+# The floor for every walk that discovers its own inputs.
+#
+# **This exists because a check that expects zero findings cannot tell you it
+# has stopped looking.** Renaming eight files from `.ts` to `.tsx` left
+# `check_ui_text_outside_copy` matching nothing, and its output did not change:
+# `clean.`, over an entire app's worth of user-facing text that had moved out of
+# `copy.ts`, with `10a` about to hand a translator a file that no longer held
+# the words. One check caught the rename — the retired-phrase sweep — and only
+# because it pins a NON-ZERO count and saw it drop to nought.
+#
+# A floor is that property, made general. It does not catch a regex that stopped
+# matching inside a walk that still finds its files; SELF_TESTS covers that half,
+# and the two are not substitutes.
+#
+# The numbers are deliberately well below today's counts. They are not a census
+# — deleting a screen must not fail the build — they are the point at which
+# "this directory still has source in it" stops being true.
+INPUT_FLOORS = {
+    "check_retired_in_source: src/**": 20,
+    "check_ui_text_outside_copy: src/ui/**": 4,
+    "check_note_references: src, test, tools": 20,
+    "check_reference_data: src/data/**": 1,
+}
+
+
+def source_files(label, roots, suffixes):
+    """Walk `roots` for `suffixes`, recording the size of what was found.
+
+    Every discovering walk goes through here rather than spelling its own
+    `os.walk` and `endswith`, for two reasons. The size is recorded so
+    `check_input_sets` can fail when a filter stops matching; and T3's rename
+    showed that a suffix list spelled once per check is a suffix list that gets
+    updated in seven places out of eight — the citation sweep below still read
+    `.ts` and not `.tsx` a day after the port, leaving five note citations in
+    the ported screens unchecked.
+
+    `roots` may be one path or several; the count is the total, because a check
+    that reads three directories goes blind when the set of three empties, not
+    when any one of them does.
+    """
+    assert label in INPUT_FLOORS, "%s has no floor in INPUT_FLOORS" % label
+    paths = []
+    for root in ([roots] if isinstance(roots, str) else roots):
+        if not os.path.isdir(root):
+            continue
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+            for name in sorted(filenames):
+                if name.endswith(suffixes):
+                    paths.append(os.path.join(dirpath, name))
+    paths.sort()
+    _INPUT_SETS[label] = len(paths)
+    return paths
+
+
+def check_input_sets(_plan):
+    """0. A discovering walk that has stopped finding anything — ADDED 2026-09-14.
+
+    The meta-check. Every other check here reports on what it read; this one
+    reports on whether anything was read at all.
+
+    Runs LAST, because `_INPUT_SETS` is filled in by the walks as they happen.
+    A label that never appears is a check that did not run, which is its own
+    kind of silence and is reported as such.
+    """
+    out = []
+    for label, floor in sorted(INPUT_FLOORS.items()):
+        if label not in _INPUT_SETS:
+            out.append("%s never ran, so nothing was examined — a check that does"
+                       " not execute reports clean" % label)
+            continue
+        found = _INPUT_SETS[label]
+        if found < floor:
+            out.append("%s examined %d file(s) and the floor is %d — the walk has"
+                       " stopped finding its inputs, and a check with no inputs"
+                       " reports clean whatever is wrong" % (label, found, floor))
+    return out
+
 
 # Every hand-written source extension in `src/`. One tuple rather than four
 # literals, because T3 renamed eight files from .ts to .tsx and each filter that
@@ -969,114 +1048,113 @@ def check_ui_text_outside_copy(_plan):
     standard: it verifies the check once, on the day someone remembers to do it.
     """
     out = []
-    for dirpath, dirnames, filenames in os.walk(os.path.join(HERE, "src", "ui")):
-        dirnames[:] = [d for d in dirnames if not d.startswith(".")]
-        for name in sorted(filenames):
-            if not name.endswith(SOURCE_SUFFIXES) or name == "copy.ts":
+    for path in source_files("check_ui_text_outside_copy: src/ui/**",
+                             os.path.join(HERE, "src", "ui"), SOURCE_SUFFIXES):
+        name = os.path.basename(path)
+        if name == "copy.ts":
+            continue
+        rel = os.path.relpath(path, HERE).replace(os.sep, "/")
+        # `load`, not a direct read. `--self-test` swaps this function out to
+        # serve mutated text in memory, and a check that opens the file
+        # itself sees the real one and reports clean against a seeded
+        # defect. The walk still touches the disk, because the FILE LIST is
+        # what makes this check discover new screens rather than be told
+        # about them.
+        lines = without_block_comments(load(path)).split("\n")
+        for number, line in enumerate(lines, 1):
+            stripped = line.strip()
+            if (stripped.startswith("*") or stripped.startswith("//")
+                    or stripped.startswith("import ") or stripped.startswith("} from")):
                 continue
-            path = os.path.join(dirpath, name)
-            rel = os.path.relpath(path, HERE).replace(os.sep, "/")
-            # `load`, not a direct read. `--self-test` swaps this function out to
-            # serve mutated text in memory, and a check that opens the file
-            # itself sees the real one and reports clean against a seeded
-            # defect. The walk still touches the disk, because the FILE LIST is
-            # what makes this check discover new screens rather than be told
-            # about them.
-            lines = without_block_comments(load(path)).split("\n")
-            for number, line in enumerate(lines, 1):
-                stripped = line.strip()
-                if (stripped.startswith("*") or stripped.startswith("//")
-                        or stripped.startswith("import ") or stripped.startswith("} from")):
+            for match in re.finditer(r"'((?:[^'\\]|\\.)*)'", line):
+                value = match.group(1)
+                if " " not in value or value in UI_TEXT_OK:
                     continue
-                for match in re.finditer(r"'((?:[^'\\]|\\.)*)'", line):
-                    value = match.group(1)
-                    if " " not in value or value in UI_TEXT_OK:
-                        continue
-                    if re.search(r"(?:class|id|type|role|inputmode|autocomplete|lang"
-                                 r"|data-[\w-]+|aria-(?:labelledby|describedby|hidden"
-                                 r"|live|pressed|expanded))'?\s*:\s*$", line[:match.start()]):
-                        continue
-                    out.append("%s:%d renders %r, but src/ui/copy.ts claims to hold every"
-                               " user-facing string — move it there, or add it to UI_TEXT_OK"
-                               " if it is markup rather than words"
-                               % (rel, number, value))
-                for match in re.finditer(r"`((?:[^`\\]|\\.)*)`", line):
-                    # The `${...}` holes are values, not words. What is left is
-                    # the prose the template wraps around them.
-                    prose = re.sub(r"\$\{[^}]*\}", " ", match.group(1))
-                    if not re.search(r"[A-Za-z]{2,}\s+[A-Za-z]{2,}", prose):
-                        continue
-                    if prose.strip() in UI_TEXT_OK:
-                        continue
-                    out.append("%s:%d builds %r inside a template literal, but src/ui/copy.ts"
-                               " claims to hold every user-facing string — move the sentence"
-                               " there as a function taking the values"
-                               % (rel, number, prose.strip()))
-                if not name.endswith(".tsx"):
+                if re.search(r"(?:class|id|type|role|inputmode|autocomplete|lang"
+                             r"|data-[\w-]+|aria-(?:labelledby|describedby|hidden"
+                             r"|live|pressed|expanded))'?\s*:\s*$", line[:match.start()]):
                     continue
-                # JSX attribute values are DOUBLE-quoted, which the single-quote
-                # sweep above cannot see. Same exemption rule; the attribute
-                # allowlist is the one from the single-quote arm plus `class`,
-                # which in JSX is written `class="go quiet"` rather than passed
-                # in an object.
-                for match in re.finditer(r'(\w[\w-]*)="([^"]*)"', line):
-                    attribute, value = match.group(1), match.group(2)
-                    if attribute in JSX_ATTRIBUTES_NOT_TEXT:
-                        continue
-                    if not two_words(value) or value in UI_TEXT_OK:
-                        continue
-                    out.append("%s:%d renders %r in the %s attribute, but src/ui/copy.ts"
-                               " claims to hold every user-facing string — move it there, or"
-                               " add the attribute to JSX_ATTRIBUTES_NOT_TEXT if it holds"
-                               " markup rather than words"
-                               % (rel, number, value, attribute))
-                # A DOUBLE-QUOTED STRING IN CODE, which the arm above skips
-                # because it only matches `name="..."`. `{"Type any part of a
-                # name"}` is a rendered string in an expression container and
-                # was invisible to all four arms. Matches are excluded when a
-                # `=` precedes them, which is what makes them attribute values
-                # the arm above already judged.
-                for match in re.finditer(r'"((?:[^"\\]|\\.)*)"', line):
-                    before = line[:match.start()].rstrip()
-                    if before.endswith("="):
-                        continue
-                    value = match.group(1)
-                    if not two_words(value) or value in UI_TEXT_OK:
-                        continue
-                    out.append("%s:%d renders %r, but src/ui/copy.ts claims to hold every"
-                               " user-facing string — move it there, or add it to UI_TEXT_OK"
-                               " if it is markup rather than words"
-                               % (rel, number, value))
+                out.append("%s:%d renders %r, but src/ui/copy.ts claims to hold every"
+                           " user-facing string — move it there, or add it to UI_TEXT_OK"
+                           " if it is markup rather than words"
+                           % (rel, number, value))
+            for match in re.finditer(r"`((?:[^`\\]|\\.)*)`", line):
+                # The `${...}` holes are values, not words. What is left is
+                # the prose the template wraps around them.
+                prose = re.sub(r"\$\{[^}]*\}", " ", match.group(1))
+                if not re.search(r"[A-Za-z]{2,}\s+[A-Za-z]{2,}", prose):
+                    continue
+                if prose.strip() in UI_TEXT_OK:
+                    continue
+                out.append("%s:%d builds %r inside a template literal, but src/ui/copy.ts"
+                           " claims to hold every user-facing string — move the sentence"
+                           " there as a function taking the values"
+                           % (rel, number, prose.strip()))
+            if not name.endswith(".tsx"):
+                continue
+            # JSX attribute values are DOUBLE-quoted, which the single-quote
+            # sweep above cannot see. Same exemption rule; the attribute
+            # allowlist is the one from the single-quote arm plus `class`,
+            # which in JSX is written `class="go quiet"` rather than passed
+            # in an object.
+            for match in re.finditer(r'(\w[\w-]*)="([^"]*)"', line):
+                attribute, value = match.group(1), match.group(2)
+                if attribute in JSX_ATTRIBUTES_NOT_TEXT:
+                    continue
+                if not two_words(value) or value in UI_TEXT_OK:
+                    continue
+                out.append("%s:%d renders %r in the %s attribute, but src/ui/copy.ts"
+                           " claims to hold every user-facing string — move it there, or"
+                           " add the attribute to JSX_ATTRIBUTES_NOT_TEXT if it holds"
+                           " markup rather than words"
+                           % (rel, number, value, attribute))
+            # A DOUBLE-QUOTED STRING IN CODE, which the arm above skips
+            # because it only matches `name="..."`. `{"Type any part of a
+            # name"}` is a rendered string in an expression container and
+            # was invisible to all four arms. Matches are excluded when a
+            # `=` precedes them, which is what makes them attribute values
+            # the arm above already judged.
+            for match in re.finditer(r'"((?:[^"\\]|\\.)*)"', line):
+                before = line[:match.start()].rstrip()
+                if before.endswith("="):
+                    continue
+                value = match.group(1)
+                if not two_words(value) or value in UI_TEXT_OK:
+                    continue
+                out.append("%s:%d renders %r, but src/ui/copy.ts claims to hold every"
+                           " user-facing string — move it there, or add it to UI_TEXT_OK"
+                           " if it is markup rather than words"
+                           % (rel, number, value))
 
-            # A BARE TEXT NODE between tags: `<p>Some words here</p>`, and the
-            # form the port moved most of the app's prose into. Not quoted, not
-            # in backticks, invisible to every arm above.
-            #
-            # Over the WHOLE FILE rather than per line, because the dominant
-            # shape in this codebase puts the text on its own line:
-            #
-            #     <Button class="go" onPress={save}>
-            #       Save these numbers
-            #     </Button>
-            #
-            # A per-line scan needs an opening `>` and a closing `<` on one
-            # line and sees none of that — which is most of the tree. Line
-            # numbers are recovered by counting newlines up to the match.
-            #
-            # `</` and not a bare `<`: the run has to sit immediately before a
-            # CLOSING tag. Without that, `=> a < b` reads as a text node and the
-            # arm reported eight findings, every one of them TypeScript. Text
-            # before a self-closing sibling (`<p>words<br />more</p>`) loses its
-            # first half to this, which is the price of an arm that is quiet
-            # enough to be read.
-            source = "\n".join(lines)
-            for match in re.finditer(r">([^<>{}]+)</", source):
-                prose = " ".join(match.group(1).split())
-                if not two_words(prose) or prose in UI_TEXT_OK:
-                    continue
-                out.append("%s:%d renders the text %r directly in JSX, but src/ui/copy.ts"
-                           " claims to hold every user-facing string — move it there"
-                           % (rel, source.count("\n", 0, match.start()) + 1, prose))
+        # A BARE TEXT NODE between tags: `<p>Some words here</p>`, and the
+        # form the port moved most of the app's prose into. Not quoted, not
+        # in backticks, invisible to every arm above.
+        #
+        # Over the WHOLE FILE rather than per line, because the dominant
+        # shape in this codebase puts the text on its own line:
+        #
+        #     <Button class="go" onPress={save}>
+        #       Save these numbers
+        #     </Button>
+        #
+        # A per-line scan needs an opening `>` and a closing `<` on one
+        # line and sees none of that — which is most of the tree. Line
+        # numbers are recovered by counting newlines up to the match.
+        #
+        # `</` and not a bare `<`: the run has to sit immediately before a
+        # CLOSING tag. Without that, `=> a < b` reads as a text node and the
+        # arm reported eight findings, every one of them TypeScript. Text
+        # before a self-closing sibling (`<p>words<br />more</p>`) loses its
+        # first half to this, which is the price of an arm that is quiet
+        # enough to be read.
+        source = "\n".join(lines)
+        for match in re.finditer(r">([^<>{}]+)</", source):
+            prose = " ".join(match.group(1).split())
+            if not two_words(prose) or prose in UI_TEXT_OK:
+                continue
+            out.append("%s:%d renders the text %r directly in JSX, but src/ui/copy.ts"
+                       " claims to hold every user-facing string — move it there"
+                       % (rel, source.count("\n", 0, match.start()) + 1, prose))
     return out
 
 
@@ -1322,19 +1400,17 @@ def check_note_references(corpus):
         return []
     defined = set(re.findall(r"^## (\d+)\.", notes, re.M))
     files = dict(corpus)
-    for sub in ("src", "test", "tools"):
-        root = os.path.join(HERE, sub)
-        if not os.path.isdir(root):
-            continue
-        for dirpath, dirnames, filenames in os.walk(root):
-            dirnames[:] = [d for d in dirnames if not d.startswith(".")]
-            for name in sorted(filenames):
-                if not name.endswith((".ts", ".mjs", ".css", ".js")):
-                    continue
-                path = os.path.join(dirpath, name)
-                rel = os.path.relpath(path, HERE).replace(os.sep, "/")
-                with io.open(path, encoding="utf-8") as handle:
-                    files[rel] = handle.read()
+    roots = [os.path.join(HERE, name) for name in ("src", "test", "tools")]
+    # `.tsx` ADDED 2026-09-14. The port renamed eight files and this suffix list
+    # was not one of the places that got updated, so five note citations in the
+    # ported screens — notes 3, 6, 25, 38 and 59 — sat unchecked for a day. A
+    # citation naming a note that has been renumbered or deleted is exactly what
+    # this check exists to catch, and it could not see them.
+    for path in source_files("check_note_references: src, test, tools", roots,
+                             (".ts", ".tsx", ".mjs", ".css", ".js")):
+        rel = os.path.relpath(path, HERE).replace(os.sep, "/")
+        with io.open(path, encoding="utf-8") as handle:
+            files[rel] = handle.read()
     # Root-level configs are discovered, not listed: a hand-written list of four
     # names is the rot this tool exists to prevent, and `vite.config.ts` was
     # missed by exactly that kind of omission.
@@ -2730,10 +2806,9 @@ def check_reference_data(_plan):
               (".reduce(", "a transformation"), (".sort(", "a transformation"),
               ("...", "a spread, which hides where rows come from")]
     sources = {}
-    for name in sorted(os.listdir(data_dir)):
-        if not name.endswith(".ts"):
-            continue
-        with open(os.path.join(data_dir, name), encoding="utf-8") as fh:
+    for path in source_files("check_reference_data: src/data/**", data_dir, (".ts",)):
+        name = os.path.basename(path)
+        with open(path, encoding="utf-8") as fh:
             body = fh.read()
         sources[name] = body
         for line_no, line in enumerate(body.splitlines(), 1):
@@ -2941,6 +3016,10 @@ CHECKS = [
     ("prose restating §11.8's numbers", check_prose_numbers, "corpus"),
     ("a mock history row that cannot be produced", check_mock_doses, "corpus"),
     ("a mockup's self-derived numbers", check_design_numbers, "corpus"),
+    # LAST, and it has to be: `_INPUT_SETS` is filled in by the walks above as
+    # they run, so this reads what actually happened rather than what the file
+    # says should happen.
+    ("a discovering walk that found nothing", check_input_sets, "plan"),
 ]
 
 
@@ -3457,6 +3536,10 @@ def main(_inner=False):
     if not _inner and "--self-test" in sys.argv:
         return self_test()
     verbose = "--verbose" in sys.argv
+    # Cleared per run, because `--self-test` calls this once per seeded mutation
+    # and a count left over from the previous iteration would mask a walk that
+    # stopped running in this one — the meta-check going blind to blindness.
+    _INPUT_SETS.clear()
     plan, backlog, blogfix = load(PLAN), load(BACKLOG), load(BLOGFIX)
     corpus = load_all()
     total = 0
