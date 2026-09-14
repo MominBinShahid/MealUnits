@@ -757,7 +757,8 @@ complete and verified, and refactoring working code while he is still injecting 
 is the wrong order.
 
 **What:** replace the hand-rolled render loop in `src/ui` with Preact. `src/core`, `src/state`,
-`src/storage` and `src/config.ts` — 4,931 lines — are untouched, because none of them import the DOM.
+`src/storage` and `src/config.ts` — **5,662 lines**, counted 2026-09-14 — are untouched, because none
+of them import the DOM. `src/ui` itself is 4,719 lines of TypeScript.
 
 **Why, and this is not a preference.** `render()` calls `replaceChildren(host.root, ...)`, which
 destroys and rebuilds the entire tree on every state change. Everything the browser attaches to a
@@ -771,7 +772,18 @@ on 7 Sep 2026:
 
 *(A first attempt measured 600 → 27 against a field that was ABOVE the viewport, where the browser
 was legitimately scrolling it into view. The symptom is real; that number was not. Re-measured with
-the field genuinely on screen.)*
+the field genuinely on screen. **`src/ui/dom.ts` carried the retracted number until 2026-09-14** —
+and described the field as "below the fold", the opposite geometry — because the correction was
+written here and never propagated there.)*
+
+**It has happened TWICE, and only the commit log records the second time.** On 2026-09-13, six days
+after the patch shipped, `62bf677` fixed the same defect in the food search: the screen was built
+with an `id` and no `data-field`, which is what `captureFocus` keys on, so the restore could not find
+the node. Its commit message: *"Note 25's defect, reintroduced by a new screen rather than by a
+regression — and 647 tests with a 100% mutation score passed straight over it."* **That is the
+patch's own stated failure mode — "it holds only while every render path remembers" — coming true on
+schedule.** No build note was written for it, so every document here read as though this happened
+once.
 
 Still latent, same cause: CSS transitions restarting, `<details>` snapping shut, and **IME
 composition breaking** — which blocks backlog item 10 (Urdu), because composed input is exactly what
@@ -791,8 +803,12 @@ once.
   existing call site stays as written; Preact also accepts lowercase `onclick`/`oninput`, so the
   handlers do not change either. The work is the import, `replaceChildren(root, …)` becoming
   `render(vnode, root)`, and keys on the history list.
-- **Size, measured by bundling and gzipping both:** Preact **4.5 KB**, React + ReactDOM **60 KB**.
-  Against a 26 KB app that is +17% versus +230%, on a phone on mobile data in Pakistan.
+- **Size — REMEASURED 2026-09-14, and all three of the old numbers were wrong.** The app is
+  **36.9 KB gzip** of JavaScript (117.5 KB raw), not 26 KB: it grew with `T5`, `4a` and the food
+  list. React is **69 KB** gzip, not 60 — that figure was React 18, and 19 is larger. Preact's
+  4.5 KB is right for the core alone; the import set this app actually needs — core, hooks and the
+  JSX runtime — is **5.6 KB**. So the real comparison is **+15% against +189%**, on a phone on
+  mobile data in Pakistan.
 - React's fibre scheduler, concurrent rendering, synthetic events and server components buy nothing
   here — this is a local-only offline PWA with no ecosystem dependencies to shim.
 
@@ -800,21 +816,107 @@ once.
 (`"dependencies": NONE` today). For an offline medical-adjacent app that is a real change of
 posture, not a neutral one, and should be a deliberate decision rather than a default.
 
-**Why the rewrite is lower-risk than it sounds:** `test/integration.test.ts` has **66 assertions on
-rendered text and 0 on DOM structure** — it finds things by label and button text, which is
-framework-agnostic. The suite stays green throughout the migration and is the safety net for it.
-One coupling point to fix: `label.parentElement.querySelector('input')` assumes the input sits under
-the label's parent.
+**RULED 2026-09-14 after an independent audit, because "the incumbent proposal" is not a reason.**
+Momin asked for every serious alternative compared before any code. Preact, React, Solid, Svelte,
+Vue, Lit, and *"stay hand-rolled and write the keyed diff ourselves"* were measured — bundle sizes by
+building and gzipping, CSP compatibility by grepping the shipped `dist` files for `new Function` and
+`eval`, dependency counts by resolving real lockfiles.
+
+| | Preact | React | Solid | Vue (runtime-only) | Lit |
+|---|---|---|---|---|---|
+| gzip, the import set this app needs | **5.6 KB** | 69 KB | 5.2 KB | 25.2 KB | 6.1 KB |
+| Share of the 36.9 KB app | **+15%** | +189% | +14% | +69% | +17% |
+| Packages in the lockfile | **1** | 3 | 4 | 23 | 6 |
+
+**Vue is disqualified outright, on a hard constraint rather than a preference.** Its full build calls
+the Function constructor to compile templates at runtime — verified in the shipped file — and §11.5's
+`script-src 'self'` blocks it. The runtime-only build passes, but then it is 25.2 KB and 23 packages
+for a JSX dialect its own community treats as a minority.
+
+**Svelte and Lit are out on the JSX ruling** — neither has JSX at all. Lit is worth naming as the
+challenger: `render(template(state), root)` is the closest match to this app's existing architecture
+of any candidate. **If the JSX ruling is ever reversed, re-examine Lit, not Vue and not Svelte.**
+
+**Solid loses on fit, not on size.** Its JSX *looks* like React and behaves differently — components
+run once, props cannot be destructured, `<Show>`/`<For>` replace ternaries and `map` — so every React
+reflex is subtly wrong in a codebase ruled to follow React idiom. Worse, the trap sits exactly on
+§11.2's architecture: this reducer replaces the whole state object per dispatch, and `<For>` keys by
+*reference*, so every history row is recreated unless threaded through `reconcile()`. **That is the
+focus-loss defect this entry exists to fix, reintroduced by the fix.** And `solid-js@2.0.0-rc` is on
+npm now, so adopting it means a breaking major immediately.
+
+**React costs +189% for machinery this app never runs** — scheduler, concurrent rendering, server
+components. Two concrete costs beyond size: `createRoot().render()` is **not synchronous**, so the
+integration suite that is this migration's designated safety net would need `act()`/`flushSync`
+retrofitting throughout; and the migration becomes a real sweep (`className`, `htmlFor`, synthetic
+event semantics) rather than a mechanical one.
+
+**Hand-rolling the keyed diff loses to this project's own doctrine.** It is 400-800 lines of new
+*safety-critical* code with none of the production burn-in, and §13 still has no interaction-continuity
+tests to catch its bugs — which is precisely how the original defect survived 541 tests and a 100%
+mutation score. Add JSX and you need a factory and a vdom, at which point you are maintaining a
+private, worse Preact. **The zero-dependency posture is worth a great deal; it is not worth becoming
+a framework vendor with a bus factor of one.**
+
+**So: Preact, and pin `10.29.8` rather than the v11 release candidate.** One package, zero
+dependencies of its own — the smallest possible answer to "our first runtime dependency ever". CSP
+clean, verified. `render()` is synchronous, so the existing suite's dispatch-then-assert shape keeps
+working. `h(tag, attrs, ...children)` matches `dom.ts` exactly and `class` plus lowercase
+`onclick`/`oninput` are accepted natively. Seven years on one major version.
+
+**The strongest argument against it, recorded because it is real:** bus factor. Preact is four or
+five independent maintainers with no corporate guarantor; React is Meta and Vercel and will certainly
+exist in ten years. The counterweight is that Preact's entire source is ~12 KB of readable code this
+project could vendor and patch indefinitely — an option `react-dom`'s ~600 KB source does not offer.
+
+**Why the rewrite is lower-risk than it sounds — RECOUNTED 2026-09-14, and the old claim was wrong.**
+This said "66 assertions on rendered text and **0** on DOM structure". There are **10 structural
+queries**, not zero: nine selectors that depend on markup shape — `#app`, `.ask`, `[role="group"]`,
+`#label-mode`, `#food-search`, `.entry .n` twice, `[data-field="foodQuery"]`, `.flag` — plus the
+`label.parentElement.querySelector('input')` traversal this entry already names. Queries by element
+type alone (`button`, `label`, `p`, `b`, `input`) are not counted: they survive any faithful port.
+
+**The correction makes the safety net BETTER understood, not weaker.** Most of those survive a
+faithful port untouched, because Preact renders the same classes and ids — but they are a constraint
+on it, and the constraint is the useful part: **the port must preserve class names, element ids, and
+the `.entry .n` nesting.** Only two are genuinely fragile — `label.parentElement.querySelector` and
+`.entry .n` — and both depend on markup shape rather than on the framework.
+
+The bulk of the suite does find things by label and button text, which is framework-agnostic, and it
+stays green throughout the migration. **A count nobody recounted is how "0" survived `62bf677`
+adding one**, which is why `check-plan.py` now pins this number.
 
 **Carry these into PLAN.md when it lands** — they are spec, not notes:
 
 - **§11 gains the rule** that the view layer preserves DOM identity across renders, so focus, caret,
   scroll and composition survive a state change.
+- **§11 also gains the composition rule, and it is NOT implied by the one above.** Keyed
+  reconciliation is necessary but **not sufficient** for IME: a controlled input whose `value` is
+  rewritten *during* a composition session can still break it, on a node that was never destroyed.
+  So: **never write back to a controlled input's value while a composition is in flight.** Preact
+  has had exactly one IME regression (issue #4008, introduced 10.14.1, fixed within days) and the
+  fix was making that pattern work. This matters beyond Urdu — see the mobile dropped-keystroke
+  report of 2026-09-14, which is a NEW symptom no prior record predicts.
+- **The `value` attribute-versus-property hazard, which nobody has ever written down.** `dom.ts`'s
+  `h()` ends in `node.setAttribute(key, String(value))`, so an input's value is set as the **content
+  attribute** — the element's *default* value — not as the property. That is harmless **only**
+  because `replaceChildren` hands every render a brand-new element whose dirty-value flag is unset,
+  so attribute and property agree. **Preserving node identity is exactly what removes that
+  guarantee.** Preact sets `value` as a property on reused nodes and is correct; the danger is this
+  entry's own promise that *"every existing call site stays as written"*. A half-migrated path that
+  keeps `setAttribute` on a reused node gives an input whose displayed value silently stops tracking
+  state the moment the user types into it.
 - **§13 gains an interaction-continuity requirement, which it does not have today.** §13 has no
   mention of focus, caret, keystrokes or scroll anywhere — which is precisely why 541 tests and a
-  100% mutation score missed both symptoms. `typeInto` sets `input.value` in one assignment and
-  fires one `input` event; the bug only exists *between* renders, so the test does the one thing
-  that cannot reproduce it.
+  100% mutation score missed both symptoms.
+
+  **CORRECTED 2026-09-14: this entry said `typeInto` "sets `input.value` in one assignment and fires
+  one `input` event". That was false on the day it was written** — `typeInto` already typed one
+  character at a time into `document.activeElement` in the same commit, deliberately, so that the
+  whole suite would fail if focus continuity broke. The sentence described the pre-fix state as
+  though it were current and was never corrected. **`tools/smoke.mjs` is the one that still types in
+  one shot** (`i.value = …; dispatchEvent(new Event('input'))`) — so the only layer that types like a
+  person is not a browser, and the only layer that is a browser does not type like a person.
 
 ---
 

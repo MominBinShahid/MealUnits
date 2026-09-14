@@ -1,0 +1,194 @@
+<title>Link Preview Proof</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f4f7f7; --surface:#ffffff; --surface-2:#eaf0ef; --ink:#14191b; --ink-2:#46514f;
+  --ink-3:#6b7573; --line:#dae2e1; --accent:#0b5f5c; --accent-soft:#d9efec;
+  --shadow:0 1px 2px rgba(20,25,27,.05), 0 14px 34px -22px rgba(20,25,27,.35);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0a0e0f; --surface:#151b1d; --surface-2:#1d2527; --ink:#e8edec; --ink-2:#a8b3b1;
+  --ink-3:#7b8584; --line:#2a3233; --accent:#5ee6c5; --accent-soft:#123330;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 34px -22px rgba(0,0,0,.8);
+}}
+:root[data-theme="dark"]{
+  --bg:#0a0e0f; --surface:#151b1d; --surface-2:#1d2527; --ink:#e8edec; --ink-2:#a8b3b1;
+  --ink-3:#7b8584; --line:#2a3233; --accent:#5ee6c5; --accent-soft:#123330;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 34px -22px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box;}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  line-height:1.5; padding:64px 24px 96px;
+}
+.wrap{max-width:760px;margin:0 auto;}
+h1{font-size:clamp(30px,5vw,42px);font-weight:600;letter-spacing:-.025em;margin:0 0 12px;text-wrap:balance;}
+.sub{color:var(--ink-2);font-size:17px;max-width:60ch;margin:0 0 10px;}
+.meta{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;color:var(--ink-3);letter-spacing:.02em;}
+h2{font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+   margin:56px 0 14px;display:flex;align-items:baseline;gap:10px;}
+h2 em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:none;
+      letter-spacing:0;color:var(--ink-3);opacity:.75;}
+.note{font-size:14.5px;color:var(--ink-2);margin:12px 2px 0;max-width:62ch;}
+.note b{color:var(--ink);font-weight:600;}
+hr{border:0;border-top:1px solid var(--line);margin:0;}
+
+/* generic mock frame */
+.mock{border-radius:14px;overflow:hidden;box-shadow:var(--shadow);background:var(--surface);
+      border:1px solid var(--line);}
+.mock img{display:block;width:100%;height:auto;}
+
+/* ── twitter / x ─────────────────────────────── */
+.x{max-width:520px;border-radius:16px;border:1px solid var(--line);overflow:hidden;background:var(--surface);}
+.x .body{padding:11px 13px;background:var(--surface-2);}
+.x .dom{font-size:12.5px;color:var(--ink-3);}
+.x .t{font-size:14.5px;font-weight:500;color:var(--ink);margin-top:1px;}
+.x .d{font-size:14px;color:var(--ink-3);margin-top:2px;}
+
+/* ── whatsapp ────────────────────────────────── */
+.wa-stage{background:#0b1418;padding:22px;border-radius:14px;}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .wa-stage{background:#e5ddd5;}}
+:root[data-theme="light"] .wa-stage{background:#e5ddd5;}
+.wa{max-width:330px;margin-left:auto;background:#005c4b;border-radius:9px 9px 2px 9px;padding:3px;
+    box-shadow:0 1px 1px rgba(0,0,0,.2);}
+.wa .card{background:rgba(0,0,0,.22);border-radius:7px;overflow:hidden;}
+.wa img{width:100%;display:block;}
+.wa .txt{padding:8px 10px 9px;}
+.wa .t{color:#e9edef;font-size:13.5px;font-weight:500;line-height:1.3;}
+.wa .d{color:#8fa3ab;font-size:12.5px;margin-top:3px;line-height:1.35;
+       display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.wa .u{color:#8fa3ab;font-size:12px;margin-top:4px;}
+.wa .link{padding:2px 10px 6px;color:#53bdeb;font-size:14px;word-break:break-all;}
+.wa .time{text-align:right;color:#8fa3ab;font-size:11px;padding:0 10px 5px;}
+
+/* ── imessage ────────────────────────────────── */
+.im{max-width:300px;border-radius:17px;overflow:hidden;background:var(--surface-2);border:1px solid var(--line);}
+.im .bar{padding:9px 12px;}
+.im .t{font-size:13px;font-weight:500;line-height:1.3;}
+.im .u{font-size:12px;color:var(--ink-3);margin-top:2px;}
+
+/* ── slack ───────────────────────────────────── */
+.sl{border-left:4px solid var(--accent);padding-left:13px;max-width:560px;}
+.sl .site{font-size:13px;font-weight:700;color:var(--ink);}
+.sl .t{font-size:15px;font-weight:700;color:#1264a3;margin-top:2px;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .sl .t{color:#6db5f5;}}
+:root[data-theme="dark"] .sl .t{color:#6db5f5;}
+.sl .d{font-size:14px;color:var(--ink-2);margin-top:3px;max-width:52ch;}
+.sl img{margin-top:9px;border-radius:8px;max-width:420px;width:100%;display:block;}
+
+/* ── google ──────────────────────────────────── */
+.g{max-width:600px;}
+.g .crumb{display:flex;align-items:center;gap:9px;}
+.g .fav{width:26px;height:26px;border-radius:50%;background:var(--accent-soft);border:1px solid var(--line);
+        display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--accent);
+        font-family:'IBM Plex Mono',monospace;}
+.g .site{font-size:14px;color:var(--ink);line-height:1.2;}
+.g .path{font-size:12.5px;color:var(--ink-3);line-height:1.2;}
+.g .t{font-size:21px;line-height:1.3;color:#1a0dab;margin-top:6px;font-weight:400;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .g .t{color:#8ab4f8;}}
+:root[data-theme="dark"] .g .t{color:#8ab4f8;}
+.g .d{font-size:14.5px;color:var(--ink-2);margin-top:4px;line-height:1.58;max-width:56ch;}
+
+/* ── budget table ────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse;margin-top:16px;font-size:14.5px;}
+.tbl th{text-align:left;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);
+        font-weight:600;padding:0 12px 9px 0;border-bottom:1px solid var(--line);}
+.tbl td{padding:11px 12px 11px 0;border-bottom:1px solid var(--line);vertical-align:top;}
+.tbl td.n{font-family:'IBM Plex Mono',monospace;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.ok{color:var(--accent);font-weight:600;}
+.scroll{overflow-x:auto;}
+</style>
+
+<div class="wrap">
+  <h1>How the link actually lands</h1>
+  <p class="sub">The same page, rendered the way each platform will draw it. The point of the exercise
+  is the last column of the table: <b>where the text gets cut</b>.</p>
+  <p class="meta">og:title 41 chars &middot; description 109 chars &middot; card 1200&times;630 &middot; 105 KB</p>
+
+  <h2>Twitter / X <em>summary_large_image</em></h2>
+  <div class="x">
+    <img src="../../public/social/card.png" alt="MealUnits preview card" />
+    <div class="body">
+      <div class="dom">mominbinshahid.github.io</div>
+      <div class="t">MealUnits — a mealtime insulin calculator</div>
+      <div class="d">A mealtime insulin calculator for type 1 diabetes. Your own numbers, not anyone else&rsquo;s. Not a medical device.</div>
+    </div>
+  </div>
+  <p class="note">Nothing truncates. X cuts the description near 125 characters; ours is 109.</p>
+
+  <h2>WhatsApp <em>the one that matters most here</em></h2>
+  <div class="wa-stage">
+    <div class="wa">
+      <div class="card">
+        <img src="../../public/social/card.png" alt="MealUnits preview card" />
+        <div class="txt">
+          <div class="t">MealUnits — a mealtime insulin calculator</div>
+          <div class="d">A mealtime insulin calculator for type 1 diabetes. Your own numbers, not anyone else&rsquo;s. Not a medical device.</div>
+          <div class="u">mominbinshahid.github.io</div>
+        </div>
+      </div>
+      <div class="link">https://mominbinshahid.github.io/MealUnits/</div>
+      <div class="time">11:42 &check;&check;</div>
+    </div>
+  </div>
+  <p class="note">WhatsApp clamps the description to <b>two lines</b> — the reason the copy is 109
+  characters rather than the 197 of the longer draft. This is the surface 4a was actually written for:
+  a link sent to a doctor or a family member.</p>
+
+  <h2>iMessage <em>no description at all</em></h2>
+  <div class="im">
+    <img src="../../public/social/card.png" alt="MealUnits preview card" />
+    <div class="bar">
+      <div class="t">MealUnits — a mealtime insulin calculator</div>
+      <div class="u">mominbinshahid.github.io</div>
+    </div>
+  </div>
+  <p class="note">iMessage shows the image and title and <b>drops the description entirely</b>. That is
+  why &ldquo;NOT A MEDICAL DEVICE&rdquo; is burned into the card itself rather than left to the text —
+  on this surface the card is the only thing carrying it.</p>
+
+  <h2>Slack <em>and Discord, closely</em></h2>
+  <div class="sl">
+    <div class="site">MealUnits</div>
+    <div class="t">MealUnits — a mealtime insulin calculator</div>
+    <div class="d">A mealtime insulin calculator for type 1 diabetes. Your own numbers, not anyone else&rsquo;s. Not a medical device.</div>
+    <img src="../../public/social/card.png" alt="MealUnits preview card" />
+  </div>
+  <p class="note">Full description, image below rather than above.</p>
+
+  <h2>Google <em>search result</em></h2>
+  <div class="g">
+    <div class="crumb">
+      <div class="fav">MU</div>
+      <div>
+        <div class="site">MealUnits</div>
+        <div class="path">https://mominbinshahid.github.io &rsaquo; MealUnits</div>
+      </div>
+    </div>
+    <div class="t">MealUnits — insulin dose calculator for type 1 diabetes</div>
+    <div class="d">A mealtime insulin calculator for type 1 diabetes. Your own numbers, not anyone else&rsquo;s. Not a medical device.</div>
+  </div>
+  <p class="note">Google uses the longer <b>&lt;title&gt;</b>, not og:title — 55 characters against a
+  ~60 limit, so the words &ldquo;type 1 diabetes&rdquo; survive. That was the whole reason for
+  lengthening it.</p>
+
+  <h2>The truncation budget</h2>
+  <div class="scroll">
+  <table class="tbl">
+    <thead><tr><th>Surface</th><th>Field</th><th>Limit</th><th>Ours</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Google</td><td>title</td><td class="n">~60</td><td class="n">55</td><td class="ok">fits</td></tr>
+      <tr><td>Google</td><td>description</td><td class="n">~155</td><td class="n">109</td><td class="ok">fits</td></tr>
+      <tr><td>Twitter / X</td><td>description</td><td class="n">~125</td><td class="n">109</td><td class="ok">fits</td></tr>
+      <tr><td>WhatsApp</td><td>description</td><td class="n">2 lines</td><td class="n">109</td><td class="ok">fits</td></tr>
+      <tr><td>iMessage</td><td>description</td><td class="n">not shown</td><td class="n">&mdash;</td><td>card carries it</td></tr>
+      <tr><td>Slack</td><td>description</td><td class="n">~300</td><td class="n">109</td><td class="ok">fits</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">These are approximations from each platform&rsquo;s observed behaviour, not published
+  contracts — they drift. The margin is wide enough that drift does not matter.</p>
+</div>
