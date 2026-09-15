@@ -890,3 +890,77 @@ concatenating single-word literals, and any string built at runtime from data.
 Neither has appeared here yet.
 
 Seeded: a one-word `aria-label` is caught, 118/118.
+
+## 74. §10.4's never-wrap rule, enforced by a character rather than a stylesheet
+
+Closed 2026-09-15. The rule had been in the plan since v1 and applied nowhere.
+
+`white-space: nowrap` was the stated mechanism, and `Qty` carried it. `Qty` had zero
+call sites — before the port as `quantity()`, after it as `Qty` — and `.qty` had no
+other user, so whether "10 units" broke across a line depended on the viewport, the
+font and the surrounding text. The docstring on `Qty` had already been corrected once
+to admit this; the gap itself stayed open because closing it moves the text of every
+assertion that names a dose, which is its own piece of work rather than a line to
+slip into a port.
+
+**Wiring `Qty` up was not the weaker option. It was impossible.** Most dose strings
+are not standalone JSX children — they are arguments into sentence-composing copy
+functions (`historyDose`, `divergent`, `overrideAction`, `stuck`), and a `<span>`
+cannot wrap a substring of a string. `onSaveStuck`'s figure goes to `promptBar` in
+pre-framework DOM where no component exists at all. Making it work would have forced
+copy functions to return JSX and dismantled the single-file copy audit that check 1c
+exists to protect. The component had zero call sites because it could not have the
+ones that mattered.
+
+Only a character travels with a string through every path. So `\u00A0`, written as
+the escape and never as a raw character: a raw one fails `no-irregular-whitespace`,
+which does not skip templates, and is invisible in a diff — the way this rots.
+
+**The export keeps `&nbsp;` and is not stripped back.** An earlier plan normalised the
+character away at the export boundary, on the theory that a doctor's document should
+carry plain text. Two things killed it. The export never consumes `units()` at all —
+`readable.ts` builds its own strings from raw numbers, so the strip would have guarded
+a flow that does not exist, which is the same defect as `Qty` rebuilt on the day `Qty`
+was deleted. And the only shared boundary, `download()` in `main.ts`, serves the JSON
+restore envelope too, where free text can legitimately contain the character; rewriting
+bytes on the way to a medical record's restore file is not a typographic decision.
+
+**Scope is units, grams, g and mg/dL; duration words are exempt.** The misreading §10.4
+guards is a glyph passing for a digit — `4U` read as 40, "10"/"units" rejoined as
+"10Units". Nothing in "minutes" can do that. Grams are in for the opposite reason: the
+food-list figure is the one number in the app a person reads off the screen and types
+back into the calculator, and the hypo-treatment line — "have 15 grams of fast-acting
+carbohydrate now" — is a grams string read by someone while they are low.
+
+**Tests fold the character away, and that is what keeps the negative assertions honest.**
+`plain()` normalises before every wording assertion, following `buttonLabel`'s precedent
+of stripping decorative glyphs. Six `not.toContain` assertions carry a digit-unit pair;
+against un-normalised text each would have passed whether or not the phrase was on
+screen — an assertion that silently stops testing anything. One test reads the raw DOM
+and asserts the character itself, which is where that guarantee lives now.
+
+**The check has two arms because the rule fails two ways.** A sweep catches a plain space
+between a digit and a unit word anywhere in `src/`. `units()` needs its own pin: it picks
+"unit" or "units" with a ternary, so its source holds no literal pair for the sweep to
+match — revert its no-break space and the sweep reports clean. The one string that matters
+most is the one the general rule structurally cannot see.
+
+**The entity goes OUTSIDE `escapeHtml`, and one cell had it inside.** `doseRows` built the
+blood-sugar cell as `` `${bloodSugar}&nbsp;mg/dL` `` and then escaped the whole string, so
+`&` became `&amp;` and the doctor's record printed the characters `330&nbsp;mg/dL` — in the
+most common row of the document. Every sibling cell appends the entity after the escape and
+was correct. 697 tests passed over it: the only two `&nbsp;mg/dL` assertions both name a
+reading-only row, which goes through the other function, and the dose row's reading cell had
+no assertion at all. Found by review, not by the suite; it now has a test that fails without
+the fix.
+
+**What the check does not catch, recorded so the next reader does not assume more.** It
+matches the literal form only. Concatenation, `join(' ')`, a template literal broken across
+lines, a space at a JSX element boundary, and multi-line JSX text that collapses to a space
+were all seeded in review and all escaped. §10.4 and the check's own docstring say so
+explicitly — a check whose documentation claims more than it does is the thing this note
+opens by describing.
+
+Measured in Chrome at 64px: an ordinary space breaks between the number and the word, the
+no-break space holds them on one line, and both subsetted webfonts render it at identical
+width to an ordinary space. Seeded: both arms, 120/120.

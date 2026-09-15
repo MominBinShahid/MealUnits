@@ -466,7 +466,7 @@ function ConfirmInputs({
   const reading =
     state.inputs.bloodSugar === ''
       ? COPY.confirm.noReading
-      : `${state.inputs.bloodSugar} mg/dL`;
+      : `${state.inputs.bloodSugar}\u00A0mg/dL`;
   return (
     <div class="screen">
       <StepDots current={TOTAL_STEPS} total={TOTAL_STEPS} label={COPY.calculator.stepCheck} />
@@ -478,7 +478,7 @@ function ConfirmInputs({
         </div>
         <div class="row">
           <span>{COPY.calculator.rowCarbohydrate}</span>
-          <b>{`${state.inputs.carbs} g`}</b>
+          <b>{`${state.inputs.carbs}\u00A0g`}</b>
         </div>
       </div>
       <p class="hint">

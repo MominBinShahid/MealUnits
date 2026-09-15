@@ -17,8 +17,8 @@ export interface FoodListProps {
  */
 function FoodRow({ food }: { readonly food: Food }): JSX.Element {
   const amount = food.gramsMax === null
-    ? `${String(food.grams)} g`
-    : `${String(food.grams)}–${String(food.gramsMax)} g`;
+    ? `${String(food.grams)}\u00A0g`
+    : `${String(food.grams)}–${String(food.gramsMax)}\u00A0g`;
 
   return (
     <li class="li">

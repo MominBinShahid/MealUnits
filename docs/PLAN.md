@@ -2600,7 +2600,21 @@ Joint Commission "do not use" items, not style preferences.
 - **Never abbreviate units as "U".** `4U` is misread as 40 — a tenfold overdose. Spell out
   "units" everywhere, **including screen-reader text**.
 - **Space between number and unit**; `10Units` has been misread as 100.
-- **Never wrap between number and unit** — `white-space: nowrap`.
+- **Never wrap between number and unit** — a **no-break space**: `\u00A0` in a TypeScript
+  string, `&nbsp;` in the readable export. **CORRECTED 2026-09-15.** This said
+  `white-space: nowrap`, and that mechanism was applied NOWHERE: `Qty` and `.qty` both
+  existed, both had zero call sites, and the rule held only by wherever the line happened
+  to break. The character travels with the string through every path a stylesheet cannot
+  reach — a sentence composed in `copy.ts`, a prompt bar built outside the component tree,
+  the exported file. **Scope: `units`, `grams`, the bare `g`, and `mg/dL`.** Duration words
+  are exempt, because the misreading this guards is a glyph passing for a digit and nothing
+  in "minutes" can. `check-plan.py` fails on an ordinary space between a number and any of
+  those words **written literally** in `src/`, and pins `units()` separately — it picks its
+  word with a ternary, so no literal pair appears in its source for the sweep to find. It
+  does **not** catch a pair assembled by concatenation, by `join(' ')`, across a line break,
+  or at a JSX element boundary; those forms were seeded in review and escaped. The check
+  NARROWS the next call site rather than making it impossible, and this bullet says so
+  because the sentence it replaced named a mechanism that was applied nowhere.
 - Warnings phrased affirmatively, in the active voice.
 - `font-variant-numeric: tabular-nums` so a digit appearing or disappearing is noticeable.
 

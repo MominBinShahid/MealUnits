@@ -33,10 +33,16 @@ const [EAT_MIN, EAT_MAX] = EAT_DELAY_MINUTES;
 const [MIN_BLOOD_SUGAR, MAX_BLOOD_SUGAR] = RANGE.bloodSugar.hard;
 const [, MAX_INJECTED] = RANGE.injected.hard;
 
-/** §10.4 — "units", spelled out, always. `4U` has been misread as 40. */
+/**
+ * §10.4 — "units", spelled out, always. `4U` has been misread as 40.
+ *
+ * The space is U+00A0, so the line cannot break between the number and the
+ * word. A break renders "10" above "units", which rejoins in the reader's
+ * head as "10Units" — the same misreading, by a different route.
+ */
 export function units(hundredths: number): string {
   const value = formatHundredths(hundredths);
-  return `${value} ${value === '1' ? 'unit' : 'units'}`;
+  return `${value}\u00A0${value === '1' ? 'unit' : 'units'}`;
 }
 
 export const COPY = {
@@ -121,7 +127,7 @@ export const COPY = {
 
     carbTitle: 'What counts as carbohydrate',
     carbBody: [
-      'The reading comes off your meter. The grams do not — that number is yours, and it is the one thing here the app takes entirely on trust. What it is counting is the carbohydrate in the food: starch and sugar. Rice, roti, potato, biryani, daal, fruit and the sugar in chai all count. A 250 g plate of biryani is about 50 g of carbohydrate, so this is never the weight of what is on the plate.',
+      'The reading comes off your meter. The grams do not — that number is yours, and it is the one thing here the app takes entirely on trust. What it is counting is the carbohydrate in the food: starch and sugar. Rice, roti, potato, biryani, daal, fruit and the sugar in chai all count. A 250\u00A0g plate of biryani is about 50\u00A0g of carbohydrate, so this is never the weight of what is on the plate.',
       'Fibre is carbohydrate as well, but your body does not absorb it, so it does not raise blood sugar the way starch does. Some doctors subtract it from the total and some do not. Ask yours which they want, then do the same thing every meal — the app cannot tell which rule you used, and counting the same way every time helps it more than being exactly right once.',
       'Protein and fat are not carbohydrate and do not belong in this number. They do move blood sugar, hours later, and that is in "What this app does not know about" below.',
     ] as const,
@@ -202,17 +208,17 @@ export const COPY = {
   // ── §3's bands ────────────────────────────────────────────────────────────
   bandC: {
     title: 'Treat this first. Do not inject.',
-    body: `Have ${String(FAST_CARB_GRAMS)} grams of fast-acting carbohydrate now, then check again in ${String(RECHECK_MINUTES)} minutes.`,
+    body: `Have ${String(FAST_CARB_GRAMS)}\u00A0grams of fast-acting carbohydrate now, then check again in ${String(RECHECK_MINUTES)} minutes.`,
     // §3.3 — the block suppresses every INSULIN quantity. It does not suppress
     // the treatment instructions, which necessarily contain 15 grams, 15
     // minutes and 70 mg/dL. "The rule is no insulin dose numbers, not no digits."
-    gate: `Do not inject until you are above ${String(HYPO_LEVEL_1)} mg/dL.`,
+    gate: `Do not inject until you are above ${String(HYPO_LEVEL_1)}\u00A0mg/dL.`,
   },
   bandD: {
     title: 'This is very low. Treat it now.',
-    body: `Have ${String(FAST_CARB_GRAMS)} grams of fast-acting carbohydrate now. Check again in ${String(RECHECK_MINUTES)} minutes, and repeat if you have not recovered.`,
+    body: `Have ${String(FAST_CARB_GRAMS)}\u00A0grams of fast-acting carbohydrate now. Check again in ${String(RECHECK_MINUTES)} minutes, and repeat if you have not recovered.`,
     escalation: 'Get help if you cannot treat yourself.',
-    gate: `Do not inject until you are above ${String(HYPO_LEVEL_1)} mg/dL.`,
+    gate: `Do not inject until you are above ${String(HYPO_LEVEL_1)}\u00A0mg/dL.`,
   },
   bandB: {
     title: 'You are well below target.',
@@ -271,7 +277,7 @@ export const COPY = {
   },
 
   range: {
-    injectedAbove: `A syringe does not hold more than ${String(MAX_INJECTED)} units.`,
+    injectedAbove: `A syringe does not hold more than ${String(MAX_INJECTED)}\u00A0units.`,
     injectedZero: 'Tapping this says you injected. Enter how much.',
   },
 
@@ -308,7 +314,7 @@ export const COPY = {
     readingLow: (min: number): string =>
       `A meter does not read below ${String(min)}. Check the number — if it is showing LO, do not enter a number at all. Treat first.`,
     carbsHigh: (max: number): string =>
-      `That is more than ${String(max)} grams of carbohydrate. Check the number — this is the carbohydrate in the food, not what the plate weighs.`,
+      `That is more than ${String(max)}\u00A0grams of carbohydrate. Check the number — this is the carbohydrate in the food, not what the plate weighs.`,
     carbsLow: 'Carbohydrate cannot be negative.',
   },
 
@@ -327,12 +333,12 @@ export const COPY = {
     nothingEntered:
       'Nothing entered yet. Put in the carbohydrate for this meal, and your blood sugar if you have it.',
     nothingToDose: (target: number): string =>
-      `No carbohydrate, and your blood sugar is at or below ${String(target)}. There is nothing to dose for — this is not "0 units", it is no dose at all.`,
+      `No carbohydrate, and your blood sugar is at or below ${String(target)}. There is nothing to dose for — this is not "0\u00A0units", it is no dose at all.`,
   },
 
   meterLo: {
     title: 'Meter showing LO?',
-    body: `Do not enter a number. Treat now — ${String(FAST_CARB_GRAMS)} grams of fast-acting carbohydrate, and check again in ${String(RECHECK_MINUTES)} minutes.`,
+    body: `Do not enter a number. Treat now — ${String(FAST_CARB_GRAMS)}\u00A0grams of fast-acting carbohydrate, and check again in ${String(RECHECK_MINUTES)} minutes.`,
   },
 
   /**
@@ -352,7 +358,7 @@ export const COPY = {
   // ── §4.6's blank reading ──────────────────────────────────────────────────
   blankReading: {
     title: 'No reading entered.',
-    body: `This covers carbohydrates only — it cannot check whether you are low. If you feel low, test first. Do not use this if you might be below ${String(HYPO_LEVEL_1)} mg/dL.`,
+    body: `This covers carbohydrates only — it cannot check whether you are low. If you feel low, test first. Do not use this if you might be below ${String(HYPO_LEVEL_1)}\u00A0mg/dL.`,
     accept: 'I understand — carbohydrates only',
   },
 
@@ -415,7 +421,7 @@ export const COPY = {
      * direction.
      */
     ceiling: (amount: string, hours: number, mgDl: number): string =>
-      `You injected ${amount} ${String(hours)} hour${hours === 1 ? '' : 's'} ago. That insulin may still lower you by at most about ${String(mgDl)} mg/dL on its own — likely less this far in.`,
+      `You injected ${amount} ${String(hours)} hour${hours === 1 ? '' : 's'} ago. That insulin may still lower you by at most about ${String(mgDl)}\u00A0mg/dL on its own — likely less this far in.`,
     mealOnly: 'Covering carbohydrates only',
     overrideAction: (candidate: string): string => `Add the correction anyway → ${candidate}`,
     /** §7.4.1 v4 — when either figure reaches the threshold, NO numbers show. */
@@ -436,14 +442,14 @@ export const COPY = {
    */
   advisory: {
     low: (carbs: string, baseline: string): string =>
-      `${carbs} g is smaller than your usual meals, which are around ${baseline} g. Check that's right.`,
+      `${carbs}\u00A0g is smaller than your usual meals, which are around ${baseline}\u00A0g. Check that's right.`,
     high: (carbs: string, baseline: string): string =>
-      `${carbs} g is larger than your usual meals, which are around ${baseline} g. Check that's right.`,
+      `${carbs}\u00A0g is larger than your usual meals, which are around ${baseline}\u00A0g. Check that's right.`,
     /** §6.5 — "disabled and declared", as a settings status line. */
     notEnoughHistory: (eligible: number, needed: number): string =>
       `Meal-size check: not enough history yet (${String(eligible)} of ${String(needed)} meals logged).`,
     highDisabled: 'Upper check off — your meals are large enough that it could never trigger.',
-    active: (baseline: string): string => `Meal-size check: on, against a usual meal of ${baseline} g.`,
+    active: (baseline: string): string => `Meal-size check: on, against a usual meal of ${baseline}\u00A0g.`,
   },
 
   // ── §7.1, §7.2, §7.3 — logging ────────────────────────────────────────────
@@ -665,7 +671,7 @@ export const COPY = {
     /** The target had no explanatory line at all, only the question. */
     targetClinical:
       'The blood sugar your doctor wants you at before a meal. Often between 100 and 150. Hasham\u2019s is 150.',
-    isfSentence: (value: string): string => `1 unit lowers blood sugar by ${value} mg/dL`,
+    isfSentence: (value: string): string => `1\u00A0unit lowers blood sugar by ${value}\u00A0mg/dL`,
     isfQuestion: 'How far does one unit lower your blood sugar?',
     /**
      * The clinical NAME and the MEANING, in that order and in two sentences.
@@ -677,11 +683,11 @@ export const COPY = {
      * person makes it unmistakably an EXAMPLE rather than a default.
      */
     isfClinical:
-      'Insulin sensitivity factor (ISF). Often written "1 to 30" — meaning one unit brings your blood sugar down 30 mg/dL. Hasham\u2019s is 30.',
-    icrSentence: (value: string): string => `1 unit covers ${value} grams of carbohydrate`,
+      'Insulin sensitivity factor (ISF). Often written "1 to 30" — meaning one unit brings your blood sugar down 30\u00A0mg/dL. Hasham\u2019s is 30.',
+    icrSentence: (value: string): string => `1\u00A0unit covers ${value}\u00A0grams of carbohydrate`,
     icrQuestion: 'How much carbohydrate does one unit cover?',
     icrClinical:
-      'Insulin-to-carbohydrate ratio (ICR). Often written "1 to 10" — meaning one unit covers 10 grams of carbohydrate. Hasham\u2019s is 10.',
+      'Insulin-to-carbohydrate ratio (ICR). Often written "1 to 10" — meaning one unit covers 10\u00A0grams of carbohydrate. Hasham\u2019s is 10.',
     /** §10.1.6 — the delta confirmation. A ratio fat-fingered 10→40 is inside
      * the accepted range, produces 5 units instead of 20 on a 200 g meal, and
      * passes every other check. */
@@ -884,7 +890,7 @@ export const COPY = {
     askCarbsLead: 'How much carbohydrate ',
     askCarbsRest: 'is in this meal?',
     carbsHint:
-      'The carbohydrate in the food — not what the plate weighs. A 250 g plate of biryani is about 50 g of carbohydrate.',
+      'The carbohydrate in the food — not what the plate weighs. A 250\u00A0g plate of biryani is about 50\u00A0g of carbohydrate.',
     /** §10.1 — the field says GRAMS OF CARBOHYDRATE, never "grams" or "carbs". */
     unitReading: 'MG/DL',
     unitCarbs: 'GRAMS OF CARBOHYDRATE',
@@ -903,9 +909,9 @@ export const COPY = {
      * now, and found these.
      */
     correctionRow: (from: string, to: string): string => `${from} down to ${to}`,
-    mealRow: (grams: string): string => `${grams} g of carbohydrate`,
+    mealRow: (grams: string): string => `${grams}\u00A0g of carbohydrate`,
     exactBeforeRounding: (exact: string): string =>
-      `Worked out exactly: ${exact} units, then rounded.`,
+      `Worked out exactly: ${exact}\u00A0units, then rounded.`,
     decimalPointLabel: 'decimal point',
     /**
      * The backspace key's accessible name. A single word, which is why it sat
@@ -971,9 +977,9 @@ export const COPY = {
      */
     stackingOverridden: 'stacking check overridden',
     historyIntake: (reading: string, carbs: string): string =>
-      `${reading} \u00b7 ${carbs} g of carbohydrate`,
+      `${reading} \u00b7 ${carbs}\u00A0g of carbohydrate`,
     readingOnly: (reading: string, note: string): string =>
-      `${reading} mg/dL \u2014 reading only, no dose${note}`,
+      `${reading}\u00A0mg/dL \u2014 reading only, no dose${note}`,
     dosingAnsweredAt: (at: string): string =>
       `Answered ${at}. Editing it replaces the answer and re-dates it.`,
     mealCheckNeeds: (meals: string): string =>
@@ -1000,8 +1006,8 @@ export const COPY = {
     startOverBody:
       'Everything goes, including your prescription. Setup runs again. For handing the phone on, or for getting out of a stuck state.',
     recordTarget: 'A correction aims for',
-    recordIsf: '1 unit lowers blood sugar by',
-    recordIcr: '1 unit covers',
+    recordIsf: '1\u00A0unit lowers blood sugar by',
+    recordIcr: '1\u00A0unit covers',
     arithmeticTitle: 'The arithmetic, in full',
     arithmeticBody:
       'A correction is how far you are above your target, divided by how far one unit lowers you. A meal dose is the carbohydrate divided by how much one unit covers. The two are added, and a negative correction is subtracted from the meal dose rather than ignored.',
@@ -1051,7 +1057,7 @@ export const COPY = {
     modes: [
       { mode: 'nearest', name: 'Whole units', what: 'To the nearest whole unit, so 4.4 becomes 4 and 4.6 becomes 5. Exactly half rounds away from zero: 4.5 becomes 5. This is right for an ordinary U-100 syringe, which is marked in whole units.' },
       { mode: 'half', name: 'Half units', what: 'To the nearest half, so 4.37 becomes 4.5. Choose this only if your pen or syringe actually has half-unit markings — a NovoPen Echo or a Humalog Junior KwikPen. On a whole-unit syringe it asks you to measure something you cannot see.' },
-      { mode: 'ceil', name: 'Always round up', what: 'To the next whole unit, so 4.1 becomes 5. This adds insulin on every single dose, always in the direction of low blood sugar. If one unit brings you down 30 mg/dL, that is up to 30 mg/dL of extra drop you did not intend — on a 1-unit correction it doubles the dose. The app asks you to confirm this one before it will use it.' },
+      { mode: 'ceil', name: 'Always round up', what: 'To the next whole unit, so 4.1 becomes 5. This adds insulin on every single dose, always in the direction of low blood sugar. If one unit brings you down 30\u00A0mg/dL, that is up to 30\u00A0mg/dL of extra drop you did not intend — on a 1-unit correction it doubles the dose. The app asks you to confirm this one before it will use it.' },
       { mode: 'floor', name: 'Always round down', what: 'To the whole unit below, so 4.9 becomes 4. This gives slightly less insulin every time, which errs toward higher blood sugar. Some doctors ask for this deliberately.' },
       { mode: 'off', name: 'Show the exact number', what: 'No rounding — 4.37 stays 4.37. This is for reading the true figure, not for measuring: a syringe cannot draw 4.37. Use it to see what the app really worked out.' },
     ] as const satisfies readonly { readonly mode: RoundingMode; readonly name: string; readonly what: string }[],

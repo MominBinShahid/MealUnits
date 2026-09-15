@@ -143,8 +143,26 @@ async function settle(): Promise<void> {
   for (let i = 0; i < 60; i++) await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+/**
+ * The rendered text, with §10.4's no-break spaces folded back to ordinary ones.
+ *
+ * Same reasoning as `buttonLabel` below: the character between a number and its
+ * unit is a typographic guarantee, not part of what the sentence says, and an
+ * assertion that had to spell `\u00A0` would be asserting the mechanism instead
+ * of the wording. It also keeps the NEGATIVE assertions honest — a
+ * `not.toContain('30 units')` compared against un-normalised text would pass
+ * whether or not the phrase was on screen, and stop testing anything without
+ * failing to say so.
+ *
+ * That the character is actually there is proved once, directly, by "§10.4 joins
+ * every number to its unit with a no-break space".
+ */
+function plain(value: string): string {
+  return value.replace(/\u00A0/g, ' ');
+}
+
 function text(): string {
-  return root.textContent ?? '';
+  return plain(root.textContent ?? '');
 }
 
 /**
@@ -154,7 +172,11 @@ function text(): string {
  * user reads and what a screen reader announces.
  */
 function buttonLabel(button: Element): string {
-  return (button.textContent ?? '').replace(/[\u2190\u2192\u200a]/g, '').trim();
+  // `plain` too, for the same reason the glyphs go: a label carrying a dose
+  // ("Add the correction anyway") would otherwise need its no-break space
+  // spelled out at the call site, and `tap('… 4 units')` would fail for a
+  // reason invisible in the source.
+  return plain(button.textContent ?? '').replace(/[\u2190\u2192\u200a]/g, '').trim();
 }
 
 async function tap(label: string): Promise<void> {
@@ -631,9 +653,9 @@ describe('§10.6 the five terms the app used and never explained', () => {
 
     expect(page).toContain('The names your doctor uses');
     // The SAME strings, so the two screens cannot drift apart.
-    expect(page).toContain(COPY.settings.isfClinical);
-    expect(page).toContain(COPY.settings.icrClinical);
-    expect(settings).toContain(COPY.settings.isfClinical);
+    expect(page).toContain(plain(COPY.settings.isfClinical));
+    expect(page).toContain(plain(COPY.settings.icrClinical));
+    expect(settings).toContain(plain(COPY.settings.isfClinical));
   });
 
   it('explains expiry and the missing-history caveat, with windows read from config', async () => {
@@ -1167,6 +1189,26 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     // buzz before it lands would be a lie about a dosing record.
     expect(buzzes).toBe(1);
     expect(text()).toContain('Logged 2 units');
+  });
+
+  it('§10.4 joins every number to its unit with a no-break space', async () => {
+    // The one test that reads the RAW text rather than `text()`. Everything
+    // else asserts wording and folds the character away; this asserts the
+    // character, because §10.4 is the only rule in the app whose whole content
+    // is which byte sits between two words. A line break there renders "11"
+    // above "units", and "11Units" has been read as 110.
+    await setUpAsHisBrother();
+    await keys('180');
+    await tap('Next');
+    await keys('50');
+    await tap('Work out the dose');
+
+    const raw = root.textContent ?? '';
+    expect(raw).toMatch(/\d\u00A0units/);
+    // And nothing on the screen still uses an ordinary one. This is the half
+    // that catches a NEW string written the old way, which is the failure the
+    // check in `check-plan.py` guards at source and this guards once rendered.
+    expect(raw).not.toMatch(/\d (?:units?|grams?|g|mg\/dL)\b/);
   });
 
   it('the device back gesture goes back INSIDE the app, and only when there is somewhere to go', async () => {
@@ -1827,7 +1869,7 @@ describe('§7.2 a failed write retries, and escalates only when retrying stops h
     await tap('I injected this');
     await tap('Log this injection');
     expect(stuckPrompts).toHaveLength(1);
-    expect(stuckPrompts[0]?.amount).toBe('11 units');
+    expect(plain(stuckPrompts[0]?.amount ?? '')).toBe('11 units');
     expect(text()).toContain('still counts toward your next calculation while the app is open');
     expect(text()).not.toMatch(/retry|retrying/i);
     expect(buzzes).toBe(0);
@@ -2095,7 +2137,7 @@ describe('§7.7.1 both exports, from the interface', () => {
     await settle();
     const html = downloads[0]?.contents ?? '';
     expect(html).toContain('reading only, no dose');
-    expect(html).toContain('65 mg/dL');
+    expect(html).toContain('65&nbsp;mg/dL');
     expect(html).toContain('cannot be loaded back into the app');
     expect(html.toLowerCase()).not.toContain('<script');
   });

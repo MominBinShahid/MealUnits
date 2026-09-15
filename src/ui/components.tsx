@@ -122,30 +122,6 @@ export function TextInput({ value, onValue, ...rest }: TextInputProps): JSX.Elem
 }
 
 /**
- * §10.4 — never wrap between a number and its unit. `10Units` has been misread
- * as 100, and a line break between them produces exactly that reading.
- *
- * **CORRECTED 2026-09-14. This said the rule "is enforced here rather than
- * hoped for in a stylesheet", and it is not enforced anywhere.** Nothing calls
- * this — zero call sites, before the port as `quantity()` and after it as
- * `Qty` — and `.qty` in `styles.css` has no other user. Meanwhile `units()` in
- * `copy.ts` joins the number to its word with an ORDINARY space, and every dose
- * figure on every screen goes through it. So the rule holds by luck: it needs
- * the line to break somewhere other than that space, which depends on the
- * viewport, the font and the surrounding text.
- *
- * Kept rather than deleted because the fix probably removes it anyway — a
- * no-break space inside `units()` would enforce the rule at the one place every
- * dose string is built, and needs no component. That change moves the text of
- * every assertion that names a dose, so it is its own piece of work rather than
- * a line to slip into a port. The comment is corrected now because a docstring
- * claiming a safety rule is enforced, while it is not, is worse than the gap.
- */
-export function Qty({ children }: { readonly children: ComponentChildren }): JSX.Element {
-  return <span class="qty">{children}</span>;
-}
-
-/**
  * §10.1 item 2, added in v20 — **the keypad is a different contract from the
  * grammar.**
  *
