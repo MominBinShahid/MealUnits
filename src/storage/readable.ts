@@ -81,8 +81,8 @@ function prescriptionHeading(period: SettingsPeriod): string {
   // §10.1 — the sentence form, in the document as on the screen. Never the
   // short form as a primary label.
   return [
-    `1 unit covers ${String(period.icr)} g`,
-    `1 unit lowers ${String(period.isf)} mg/dL`,
+    `1&nbsp;unit covers ${String(period.icr)}&nbsp;g`,
+    `1&nbsp;unit lowers ${String(period.isf)}&nbsp;mg/dL`,
     `target ${String(period.target)}`,
   ].join(' &middot; ');
 }
@@ -97,15 +97,20 @@ function periodRange(group: PeriodGroup, timeZone: string, nowMs: number): strin
 function doseRows(group: PeriodGroup, timeZone: string): string {
   return group.doses
     .map((dose) => {
-      const reading = dose.bloodSugar === null ? 'not entered' : `${String(dose.bloodSugar)} mg/dL`;
+      // The entity is appended OUTSIDE `escapeHtml`, like every sibling cell
+      // below. Built inside and escaped afterwards, `&` becomes `&amp;` and the
+      // doctor's record prints the literal text `330&nbsp;mg/dL`.
+      const reading = dose.bloodSugar === null
+        ? 'not entered'
+        : `${escapeHtml(String(dose.bloodSugar))}&nbsp;mg/dL`;
       const override = dose.overrodeStacking ? ' <span class="mark">override</span>' : '';
       return `<tr>
         <td>${escapeHtml(formatDate(dose.timestamp, timeZone))}</td>
         <td class="t">${escapeHtml(formatClockTime(dose.timestamp, timeZone))}</td>
-        <td class="n">${escapeHtml(reading)}</td>
-        <td class="n">${escapeHtml(String(dose.carbs))} g</td>
-        <td class="n">${escapeHtml(formatHundredths(dose.units))} units</td>
-        <td class="n">${escapeHtml(formatHundredths(dose.injectedUnits))} units${override}</td>
+        <td class="n">${reading}</td>
+        <td class="n">${escapeHtml(String(dose.carbs))}&nbsp;g</td>
+        <td class="n">${escapeHtml(formatHundredths(dose.units))}&nbsp;units</td>
+        <td class="n">${escapeHtml(formatHundredths(dose.injectedUnits))}&nbsp;units${override}</td>
       </tr>`;
     })
     .join('\n');
@@ -118,7 +123,7 @@ function readingRows(group: PeriodGroup, timeZone: string): string {
       return `<tr class="reading">
         <td>${escapeHtml(formatDate(reading.timestamp, timeZone))}</td>
         <td class="t">${escapeHtml(formatClockTime(reading.timestamp, timeZone))}</td>
-        <td class="n">${escapeHtml(String(reading.bloodSugar))} mg/dL</td>
+        <td class="n">${escapeHtml(String(reading.bloodSugar))}&nbsp;mg/dL</td>
         <td colspan="3">reading only, no dose${note === '' ? '' : ` &mdash; ${escapeHtml(note)}`}</td>
       </tr>`;
     })
@@ -166,7 +171,7 @@ ${rows}
   const basal =
     input.settings === null
       ? ''
-      : `<p><strong>${escapeHtml(input.settings.basalName)}</strong>, ${escapeHtml(String(input.settings.basalUnits))} units, ${escapeHtml(input.settings.basalTiming)}. Set by the prescribing doctor, not calculated by this app.</p>`;
+      : `<p><strong>${escapeHtml(input.settings.basalName)}</strong>, ${escapeHtml(String(input.settings.basalUnits))}&nbsp;units, ${escapeHtml(input.settings.basalTiming)}. Set by the prescribing doctor, not calculated by this app.</p>`;
 
   const note =
     input.dosingNote === null

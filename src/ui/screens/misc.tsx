@@ -80,7 +80,7 @@ function DoseRow({
 }): JSX.Element {
   const asking = handlers.pendingDelete === row.id;
   const inWindow = hasRowInsideWindow([row], handlers.nowMs, DELETE_CONFIRM_WINDOW_HOURS);
-  const reading = row.bloodSugar === null ? COPY.screens.noReading : `${String(row.bloodSugar)} mg/dL`;
+  const reading = row.bloodSugar === null ? COPY.screens.noReading : `${String(row.bloodSugar)}\u00A0mg/dL`;
 
   return (
     <li class="li">
@@ -542,19 +542,19 @@ export function FailClosedScreen({
           <ul class="list">
             <li class="li">
               <div class="k">{COPY.screens.recordTarget}</div>
-              <div class="v">{`${String(recovery.targetMgDl)} mg/dL`}</div>
+              <div class="v">{`${String(recovery.targetMgDl)}\u00A0mg/dL`}</div>
             </li>
             <li class="li">
               <div class="k">{COPY.screens.recordIsf}</div>
-              <div class="v">{`${String(recovery.oneUnitLowersMgDl)} mg/dL`}</div>
+              <div class="v">{`${String(recovery.oneUnitLowersMgDl)}\u00A0mg/dL`}</div>
             </li>
             <li class="li">
               <div class="k">{COPY.screens.recordIcr}</div>
-              <div class="v">{`${String(recovery.oneUnitCoversGramsCarbohydrate)} g`}</div>
+              <div class="v">{`${String(recovery.oneUnitCoversGramsCarbohydrate)}\u00A0g`}</div>
             </li>
             <li class="li">
               <div class="k">{recovery.basalInsulinName}</div>
-              <div class="v">{`${String(recovery.basalUnitsPerDay)} units`}</div>
+              <div class="v">{`${String(recovery.basalUnitsPerDay)}\u00A0units`}</div>
             </li>
           </ul>
           <p class="hint">{COPY.failClosed.copyThemDown}</p>
@@ -732,7 +732,7 @@ export function SettingsAsTextScreen({
       <ul class="list">
         <li class="li">
           <div class="k">{COPY.screens.recordTarget}</div>
-          <div class="v">{`${String(settings.target)} mg/dL`}</div>
+          <div class="v">{`${String(settings.target)}\u00A0mg/dL`}</div>
         </li>
         <li class="li">
           <div class="k">{COPY.settings.isfSentence(String(settings.isf))}</div>
@@ -758,7 +758,7 @@ export function SettingsAsTextScreen({
               {settings.basalName.trim() === '' ? COPY.settings.basalNameMissing : settings.basalName}
             </div>
             <div class="v">
-              {`${formatHundredths(settings.basalUnits * HUNDREDTHS_SCALE)} units`}
+              {`${formatHundredths(settings.basalUnits * HUNDREDTHS_SCALE)}\u00A0units`}
             </div>
           </li>
           <li class="li">

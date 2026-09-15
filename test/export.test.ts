@@ -603,17 +603,27 @@ describe('§7.7.1 the readable export', () => {
 
   it('groups by prescription, so no row prints under ratios that did not produce it', () => {
     const html = buildReadableExport(input);
-    expect(html).toContain('1 unit covers 10 g');
-    expect(html).toContain('1 unit covers 12 g');
+    expect(html).toContain('1&nbsp;unit covers 10&nbsp;g');
+    expect(html).toContain('1&nbsp;unit covers 12&nbsp;g');
     // Each heading appears exactly once — the two doses are in different groups.
-    expect(html.split('1 unit covers 10 g')).toHaveLength(2);
+    expect(html.split('1&nbsp;unit covers 10&nbsp;g')).toHaveLength(2);
+  });
+
+  it('renders a dose row\'s reading as text, not as a literal entity', () => {
+    // The cell that had no assertion, and the one that broke. Its sibling cells
+    // append `&nbsp;` outside `escapeHtml`; this one built the entity INSIDE the
+    // escaped string, so `&` became `&amp;` and the doctor's record printed the
+    // characters `330&nbsp;mg/dL`. Caught by review, not by 697 tests.
+    const html = buildReadableExport(input);
+    expect(html).toContain('330&nbsp;mg/dL');
+    expect(html).not.toContain('&amp;nbsp;');
   });
 
   it('carries the readings with no dose, which are the whole reason §7.8 exists', () => {
     const html = buildReadableExport(input);
     expect(html).toContain('reading only, no dose');
     expect(html).toContain('felt low');
-    expect(html).toContain('65 mg/dL');
+    expect(html).toContain('65&nbsp;mg/dL');
   });
 
   it('§10.4 governs its times — a lunch dose renders as 12:00 noon', () => {

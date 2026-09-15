@@ -905,6 +905,7 @@ INPUT_FLOORS = {
     "check_ui_text_outside_copy: src/ui/**": 4,
     "check_note_references: src, test, tools": 20,
     "check_reference_data: src/data/**": 1,
+    "check_number_unit_nowrap: src/**": 20,
 }
 
 
@@ -2900,6 +2901,97 @@ def check_copy_hardcodes_config(_plan):
     return out
 
 
+def check_number_unit_nowrap(_plan):
+    r"""§10.4 — a plain space between a number and its unit, anywhere in src.
+
+    "10 units" broken across a line renders "10" above "units", which rejoins in
+    the reader's head as "10Units" — the same misreading that made §10.4 spell
+    the word out to begin with. Until 2026-09-15 the rule was enforced NOWHERE:
+    `Qty` and `.qty` both existed, both had zero call sites, and the docstring
+    on `Qty` claimed the rule was enforced rather than hoped for in a stylesheet.
+
+    The invariant checked here is the CHARACTER, not the component. A no-break
+    space in the app strings and `&nbsp;` in the readable export both pass,
+    because neither contains U+0020; a contributor's `` `${carbs} g` `` fails
+    with a file and a line. `units()` is therefore not required, only the
+    character it emits.
+
+    **What it does NOT catch, stated because an overclaiming docstring is the
+    defect this check exists to delete.** It matches a LITERAL digit-or-closing-
+    brace, a space, and a unit word, on one line. It is blind to
+    `String(n) + ' g'`, to `[n, 'units'].join(' ')`, to a template literal broken
+    across lines, to `<b>{n}</b> grams` where the space sits at a JSX element
+    boundary, and to multi-line JSX text that collapses to a space when rendered.
+    All five were seeded during review and all five escaped. The literal form is
+    the one people actually write, which is why this earns its place — but it
+    NARROWS the next call site, it does not make it impossible.
+
+    Duration words are deliberately absent from the list. "30 minutes" split
+    over two lines still reads as thirty minutes: no glyph in "minutes" can pass
+    for a digit, and that substitution is the whole mechanism §10.4 guards.
+
+    Two limits, stated rather than fixed. An en-dash range ("12–15 g") can still
+    break at the dash, where there is no space to replace; `.v` carries
+    `white-space: nowrap` for the food rows where that matters. And this reads
+    source rather than the rendered DOM, which is the trade every check in this
+    file makes.
+    """
+    src = os.path.join(HERE, "src")
+    if not os.path.isdir(src):
+        return []
+
+    unit = r"(?:units?|grams?|mg/dL|g)"
+    pattern = re.compile(r"(?:[0-9]|\}) " + unit + r"\b")
+    out = []
+    for path in source_files("check_number_unit_nowrap: src/**", src, (".ts", ".tsx")):
+        if "__lint-fixtures" in path:
+            continue
+        # `load`, never `open`: `self_test` seeds its mutations by overriding
+        # `load`, so a check that reads the disk directly reports "clean" on a
+        # file the harness has already broken — which is the exact shape of
+        # escape this checker's self-test exists to catch.
+        body = load(path)
+        rel = os.path.relpath(path, HERE)
+        for line_no, line in enumerate(without_block_comments(body).splitlines(), 1):
+            # `without_block_comments` leaves `//` alone on purpose — it appears
+            # inside URLs — so line comments are dropped here. A TRAILING one
+            # counts: `const CAP = 30; // at most 30 units` is a comment, and
+            # reporting it is the crying-wolf failure this file warns about. The
+            # lookbehind keeps `https://` intact, which is why `//` survives the
+            # sweep above in the first place.
+            line = re.sub(r"(?<!:)//.*$", "", line)
+            if line.strip().startswith("*"):
+                continue
+            for m in pattern.finditer(line):
+                out.append(
+                    "%s:%d joins a number to its unit with an ordinary space "
+                    "(\"%s\") — §10.4 forbids a line break there. Use \\u00A0 in "
+                    "a TypeScript string, or &nbsp; in the readable export"
+                    % (rel, line_no, m.group()))
+
+    # The formatter every dose goes through, pinned separately — and it has to
+    # be. `units()` picks "unit" or "units" with a ternary, so its source holds
+    # no literal `} units` for the sweep above to match: revert its no-break
+    # space and the sweep reports clean. The one string that matters most is the
+    # one the general rule structurally cannot see.
+    copy_path = os.path.join(HERE, "src", "ui", "copy.ts")
+    if os.path.exists(copy_path):
+        body = load(copy_path)
+        m = re.search(r"export function units\([^)]*\)[^{]*\{(.*?)\n\}", body, re.S)
+        if m is None:
+            out.append("src/ui/copy.ts no longer defines units() — §10.4's "
+                       "no-break space was pinned to it and that pin is now blind")
+        elif "export function" in m.group(1):
+            out.append("src/ui/copy.ts: units() could not be read as a block — "
+                       "the §10.4 pin matched past its own closing brace, so it "
+                       "is checking somebody else's body")
+        elif "\\u00A0" not in m.group(1):
+            out.append("src/ui/copy.ts: units() no longer joins the number to "
+                       "its word with \\u00A0 — §10.4's rule is enforced there "
+                       "and nowhere else for a dose figure")
+    return out
+
+
 def check_reference_data(_plan):
     r"""§11.8's second exemption, and the two conditions it was granted on.
 
@@ -3140,6 +3232,7 @@ CHECKS = [
     ("PLAN references BACKLOG by number", check_plan_against_backlog, "plan"),
     ("config values typed as digits in copy", check_copy_hardcodes_config, "plan"),
     ("§11.8's reference-data exemption", check_reference_data, "plan"),
+    ("§10.4: a number joined to its unit by a plain space", check_number_unit_nowrap, "plan"),
     ("tests missing from the mutation run", check_mutation_coverage_list, "plan"),
     ("§20.5 listing vs the directory", check_file_listing, "plan"),
     ("NEXT-STEPS.md has come back", check_next_steps, "plan"),
@@ -3577,6 +3670,16 @@ SELF_TESTS = [
                          '<span class="ref">§6.9</span>', 1)),
     ("constants: drift seeded in a design file", "docs/design/screens.html",
      lambda t: t + "\n<code>export const HYPO_LEVEL_1 = 60;</code>\n"),
+    # §10.4's no-break space, added 2026-09-15 with the check. Two seeds rather
+    # than one because the rule has two halves that fail independently: the
+    # formatter every dose goes through, and a screen that builds its own
+    # string. The second is the one a new screen reintroduces.
+    ("nowrap: the no-break space in units() reverted to a plain space",
+     "src/ui/copy.ts",
+     lambda t: t.replace(r"${value}\u00A0${value", "${value} ${value")),
+    ("nowrap: a ported screen builds its own plain-space pair",
+     "src/ui/screens/foods.tsx",
+     lambda t: t.replace(r"${String(food.grams)}\u00A0g", "${String(food.grams)} g")),
 ]
 
 

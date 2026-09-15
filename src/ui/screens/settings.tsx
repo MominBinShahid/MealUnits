@@ -156,8 +156,8 @@ export function deltasFor(settings: Settings | null, draft: SettingsDraft): Delt
   if (draft.target !== String(settings.target)) {
     deltas.push({
       label: COPY.settings.deltaTarget,
-      was: `${String(settings.target)} mg/dL`,
-      now: `${draft.target} mg/dL`,
+      was: `${String(settings.target)}\u00A0mg/dL`,
+      now: `${draft.target}\u00A0mg/dL`,
     });
   }
   return deltas;

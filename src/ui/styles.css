@@ -323,12 +323,6 @@ body {
   letter-spacing: 0.14em;
 }
 
-/* §10.4 — never wrap between a number and its unit. */
-.qty {
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
 /* ── the keypad ─────────────────────────────────────────────────────────── */
 .pad {
   margin-top: auto;
