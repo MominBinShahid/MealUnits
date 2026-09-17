@@ -119,7 +119,8 @@ function sitemap(outDir: string): Plugin {
       };
 
       for (const route of ROUTES) {
-        const url = `${SITE_URL}${BASE}${route.segment}`;
+        // Trailing slash: the form the host actually serves — see `pathForScreen`.
+        const url = `${SITE_URL}${BASE}${route.segment}/`;
         let html = shell;
         html = swap(html, /<title>[^<]*<\/title>/, `<title>${route.title}</title>`);
         html = swap(html, /<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${route.description}" />`);
@@ -136,7 +137,7 @@ function sitemap(outDir: string): Plugin {
       // Every route is its own `<loc>`. One `lastmod` is honest only while they
       // ship together, which they do — the build date is the day all five were
       // emitted.
-      const entries = [BASE, ...ROUTES.map((route) => `${BASE}${route.segment}`)];
+      const entries = [BASE, ...ROUTES.map((route) => `${BASE}${route.segment}/`)];
       const xml = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',

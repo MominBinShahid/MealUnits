@@ -1115,3 +1115,20 @@ render the calculator, since it sits inside the worker's scope; it is now in `NO
 guarded: `check_404_paths_agree` pins the link back and the icon against `BASE`. The failure it
 prevents is the sharpest version of that defect — the page whose entire job is to offer a way back,
 offering one that 404s as well. Seeded. 125/125.
+
+**A correction to note 75, found while verifying this one.** That note reports the four routes
+returning 200. They return **301**, to the same address with a trailing slash — the build emits
+`history/index.html`, and a static host redirects `/history` to `/history/`. The original
+measurement used `curl -L`, which follows the hop and reports the final 200, so the redirect was
+never in the output I read.
+
+It mattered more than a status code. The canonical and every sitemap `<loc>` named the bare form,
+so each pointed at a URL that redirects — which Search Console reports as "page with redirect" and
+which is the one thing a canonical must not be, since its whole job is to name the address that
+serves the content. `pathForScreen` now returns the trailing-slash form and the build follows it;
+`screenForPath` already accepted both, so a link typed either way still lands.
+
+**The general lesson, which is the reason this is written down: `-L` hides the thing you are
+checking.** A redirect is invisible to a tool told to follow redirects, and "200" was a true
+statement about the wrong URL.
+
