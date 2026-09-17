@@ -961,6 +961,33 @@ were all seeded in review and all escaped. §10.4 and the check's own docstring 
 explicitly — a check whose documentation claims more than it does is the thing this note
 opens by describing.
 
+**`ml` and `inch` added 2026-09-17, and the reason is not the one above.** "m" cannot pass for
+a digit any more than "minutes" can, so these are not here on the glyph ground — they are here
+because `carbs.ts:78` read `'1 medium, 7 inch, about 40\u00A0g'`: one pair protected, one not,
+in a single string, in a file whose rows are written by copying the row above. A template
+teaching both patterns is how the next wrong row appears. Durations stay exempt on hazard,
+measurement units come in on coherence, and §10.4 now states the two grounds separately rather
+than stretching one over both.
+
+**Where the list stops.** `CARBS.md` defines the household words in metric — katori, chai cup,
+glass, Tbsp — which gives the line: a word whose magnitude this project must declare is a
+container noun; a word used to do the declaring is a unit. `'1 katori, 150\u00A0g'` already
+enacts it, count on the noun and protection on the measure. An earlier attempt at the line —
+"quantities you could put on a scale or a ruler" — fails on its own terms, since a cup is a
+volume measure you level off and a katori is what a Pakistani kitchen measures with.
+
+**One name is searched, not just rendered.** `'Large flatbread, 12\u00A0inch'` is a `name`, and
+`matchFoods` folds with trim and lower case only. Nobody types U+00A0, so the row became
+unreachable by the words printed on it — a silent miss, in the module whose header says matching
+the wrong dish is a wrong dose. `fold()` now normalises the character, which is safe for exactly
+the reason the case fold is: both needle and haystack pass through it. Two tests, one naming the
+row and one general over every row's displayed name; both fail without the fix.
+
+**And the self-test could not have caught any of this.** `src/data` was not in the harness's held
+corpus, so a seed there reported its file missing — which the runner counts as an ESCAPE, not a
+skip. Held now, with a seed reverting a portion, which is a third shape after the formatter and
+the screen: a data row someone edits by copying its neighbour.
+
 Measured in Chrome at 64px: an ordinary space breaks between the number and the word, the
 no-break space holds them on one line, and both subsetted webfonts render it at identical
-width to an ordinary space. Seeded: both arms, 120/120.
+width to an ordinary space. Seeded: three shapes, 121/121.

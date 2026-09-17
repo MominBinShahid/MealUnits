@@ -617,6 +617,41 @@ survive trivially by not being in the page at all.
 sugar readings and insulin doses. Counting page views is fine; anything that could carry a reading or
 a dose off the device is not, and nothing in this app has ever sent data anywhere.
 
+**Cloudflare Web Analytics evaluated 2026-09-15, and the evaluation found something larger.** Momin
+is moving the blog off GA4 and asked whether MealUnits could use the same tool, so both properties
+report consistently. **Nothing is chosen yet — GA4, Cloudflare and anything else are all still open,
+and this entry records what any of them has to answer here.**
+
+*On the app itself*, Cloudflare is the shape the fold-in above already refuses. `beacon.min.js`
+loads from `static.cloudflareinsights.com` and reports to a Cloudflare endpoint; the policy shipped
+on the deployed page is `script-src 'self'; connect-src 'self'`, so it is blocked on load AND on
+send. Dropping the snippet before `</body>` yields two policy violations and no data. Cookieless
+does not help — the fold-in's point is that same-origin, not cookielessness, is the property the
+policy is about.
+
+**The larger finding, which is not about analytics at all.** The dose log lives in **IndexedDB**,
+database `MealUnits` (`src/storage/schema.ts:25`), with the `log` and `readings` stores created in
+`src/storage/open.ts:56-66`; the service worker additionally uses Cache Storage. **All of those are
+scoped to the ORIGIN, not the path**, and the blog shares `mominbinshahid.github.io`. The service
+worker's `/MealUnits/` scope does not partition storage — it governs fetch interception.
+
+So a third-party script on any page of the BLOG — homepage, a post, anywhere — runs in the same
+origin and can call `indexedDB.open('MealUnits')` and read blood sugar readings and insulin doses.
+The database name is the app's name, so there is no practical friction. **MealUnits' CSP protects
+MealUnits' documents and has no reach into the blog's pages.** Path is not a security boundary for
+storage, and the isolation this app has been assuming is by path.
+
+This is not a property of Cloudflare, or of analytics. It is true of **any** third-party script the
+blog loads — a tag manager, an embed, a comment widget, a font that ships JavaScript. The threat is
+sharing an origin with a medical record.
+
+**What that does to the options.** GitHub's repo traffic stats survive by putting nothing in any
+page, on either property. A self-hosted same-origin collector still survives for the app. And
+*Dedicated GitHub organisation / clean origin*, filed under DECIDED as a tidiness matter, now has a
+security reason: a separate domain is what makes the isolation real rather than assumed, and it is
+the only option that also frees the blog to use whatever it likes. **Raised by the blog session,
+2026-09-15; recorded here rather than acted on.**
+
 ### 13. AI carbohydrate estimation — MOVED HERE FROM "NEVER", 2026-09-06
 **Momin asked for this in v2 and it was misfiled.** The old entry sat under NEVER while
 specifying how to build it safely, which is a contradiction: that is a constraint list, not a

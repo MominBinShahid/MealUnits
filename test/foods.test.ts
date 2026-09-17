@@ -86,4 +86,24 @@ describe('the shipped table — §11.8\'s exemption conditions, as tests', () =>
       expect(matchFoods(FOODS, food.urdu), food.id).toContain(food);
     }
   });
+
+  it('a name carrying §10.4\'s no-break space is still found by typing a space', () => {
+    // `Large flatbread, 12\u00A0inch` — the name is rendered AND searched, and
+    // nobody can type U+00A0. Without the fold in `matchFoods`, this row is
+    // unreachable by the words printed on it.
+    const row = FOODS.find((f) => f.name.includes('\u00A0'));
+    expect(row, 'no row carries a no-break space — retarget this test').toBeDefined();
+    expect(matchFoods(FOODS, '12 inch')).toContain(row);
+    // And the character itself still works, so neither spelling is privileged.
+    expect(matchFoods(FOODS, '12\u00A0inch')).toContain(row);
+  });
+
+  it('every row is findable by the words printed in its own name', () => {
+    // The general form of the case above: whatever a row displays, typing it
+    // finds the row. Guards the next name that gains a no-break space.
+    for (const food of FOODS) {
+      const asDisplayed = food.name.replace(/\u00A0/g, ' ');
+      expect(matchFoods(FOODS, asDisplayed), food.id).toContain(food);
+    }
+  });
 });

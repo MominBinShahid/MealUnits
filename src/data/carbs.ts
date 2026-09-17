@@ -43,7 +43,14 @@ export interface Food {
    * app eventually matches the wrong dish, and a wrong dish is a wrong dose.
    */
   readonly aliases: readonly string[];
-  /** What is being measured — "1 cup, 160 g", "1 medium, 7 inch". */
+  /**
+   * What is being measured — `1 cup, 160\u00A0g`, `1 medium, 7\u00A0inch`.
+   *
+   * §10.4: the space before a unit is \u00A0, not an ordinary one. The check
+   * strips comments, so this example is unenforced — and it is written the right
+   * way anyway, because rows here are made by copying the row above and an
+   * example teaching the old shape is how the next wrong one appears.
+   */
   readonly portion: string;
   /** Grams of carbohydrate. The number the app asks for. */
   readonly grams: number;
@@ -75,7 +82,7 @@ export const FOODS: readonly Food[] = [
     name: 'Home flatbread, medium',
     urdu: 'Roti',
     aliases: ['roti', 'chapati', 'chapatti', 'chappati', 'rotli', 'phulka'],
-    portion: '1 medium, 7 inch, about 40\u00A0g',
+    portion: '1 medium, 7\u00A0inch, about 40\u00A0g',
     grams: 18,
     gramsMax: 19,
     varies: 'Size only. Carbohydrate is about the cooked weight times 0.46.',
@@ -87,7 +94,7 @@ export const FOODS: readonly Food[] = [
     name: 'Home flatbread, large and thin',
     urdu: 'Roti',
     aliases: ['roti', 'chapati', 'chapatti', 'badi roti'],
-    portion: '1 large, 8 inch, about 50\u00A0g',
+    portion: '1 large, 8\u00A0inch, about 50\u00A0g',
     grams: 23,
     gramsMax: null,
     varies: 'Thickness as much as width.',
@@ -99,7 +106,7 @@ export const FOODS: readonly Food[] = [
     name: 'Home flatbread, thick',
     urdu: 'Moti roti',
     aliases: ['moti roti', 'ghar ki roti', 'thick roti', 'roti'],
-    portion: '1 thick, 8 inch, 60 to 80\u00A0g',
+    portion: '1 thick, 8\u00A0inch, 60 to 80\u00A0g',
     grams: 28,
     gramsMax: 37,
     varies: 'Thickness varies house to house. This is the row to weigh once.',
@@ -108,7 +115,7 @@ export const FOODS: readonly Food[] = [
   },
   {
     id: 'chapatti-large',
-    name: 'Large flatbread, 12 inch',
+    name: 'Large flatbread, 12\u00A0inch',
     urdu: 'Bari chapatti',
     aliases: ['chapatti', 'chapati', 'large roti', 'bari roti', 'tandoori roti'],
     portion: '1 large, about 92\u00A0g',
@@ -159,7 +166,7 @@ export const FOODS: readonly Food[] = [
     name: 'Restaurant naan, butter or garlic',
     urdu: 'Naan',
     aliases: ['butter naan', 'garlic naan', 'naan', 'restaurant naan'],
-    portion: '1 plate-sized, 10 inch or more',
+    portion: '1 plate-sized, 10\u00A0inch or more',
     grams: 85,
     gramsMax: 95,
     varies: 'Butter and garlic add fat, not carbohydrate.',
@@ -397,7 +404,7 @@ export const FOODS: readonly Food[] = [
     name: 'Tea with milk, small cup, 1 sugar',
     urdu: 'Chai',
     aliases: ['chai', 'chaa', 'tea', 'doodh wali chai'],
-    portion: '1 Pakistani cup, 150 ml',
+    portion: '1 Pakistani cup, 150\u00A0ml',
     grams: 8,
     gramsMax: null,
     varies: 'A heaped spoon is nearer 6\u00A0g than 4.2.',
@@ -409,7 +416,7 @@ export const FOODS: readonly Food[] = [
     name: 'Tea with milk, small cup, 2 sugars',
     urdu: 'Chai',
     aliases: ['chai', 'chaa', 'tea', 'doodh wali chai'],
-    portion: '1 Pakistani cup, 150 ml',
+    portion: '1 Pakistani cup, 150\u00A0ml',
     grams: 12,
     gramsMax: null,
     varies: 'Three cups a day is about 36\u00A0g nobody counts.',
@@ -421,7 +428,7 @@ export const FOODS: readonly Food[] = [
     name: 'Tea with milk, mug, 2 sugars',
     urdu: 'Chai',
     aliases: ['chai', 'tea', 'mug of chai'],
-    portion: '1 standard mug, 200 ml',
+    portion: '1 standard mug, 200\u00A0ml',
     grams: 13,
     gramsMax: null,
     varies: null,
@@ -433,7 +440,7 @@ export const FOODS: readonly Food[] = [
     name: 'Tea with milk, large mug, 2 sugars',
     urdu: 'Chai',
     aliases: ['chai', 'tea', 'large chai'],
-    portion: '1 large mug, 250 ml',
+    portion: '1 large mug, 250\u00A0ml',
     grams: 15,
     gramsMax: null,
     varies: null,
