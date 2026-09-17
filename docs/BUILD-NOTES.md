@@ -1054,5 +1054,23 @@ was always there — a stale render overwriting `canGoBack` with the same boolea
 it becomes a real failure the moment the recorded value carries information. Both assertions are
 back, and the suite is stable across repeated full runs.
 
+**The worker serves ONE shell for every route, and the browser found it.** Opening the deployed
+`/MealUnits/foods` rendered the right screen and showed the wrong tab title. Measured rather than
+guessed: `deliveryType: 'cache-storage'`, `transferSize: 0`, `workerStart > 0` — the navigation never
+reached the network, so the route's own `<title>` and canonical never arrived. That is not a bug in
+the worker; answering in-scope navigations from cache is what makes the app work offline. It means
+the route files serve exactly two audiences — a first visit, and every crawler, neither of which has
+a worker. For those the canonical is right, which is where a canonical matters.
+
+The title is different: it is what a person sees on a tab and in a bookmark, so the app sets it from
+the same table. Four precached shells would have fixed it too, at 28 KB on every install for a
+string — the trade the precache exclusion above already refuses. `check_route_titles_agree` pins the
+app's default against the one `index.html` ships, because two files stating the front door's title
+drift into a title that visibly changes while the page opens.
+
+**And this is the second finding in this note that only a browser could produce.** The suite was
+green, `check-plan` was clean, CI was green, the deploy was verified by HTTP status — 200 on all four
+routes — and the page still showed the wrong title. CLAUDE.md's rule is not a courtesy.
+
 `check_routes_do_not_collide` is new, because this entry's own warning — a route named like a file,
-a file named like a route — was checked by nothing. Two seeds, one per direction. 123/123.
+a file named like a route — was checked by nothing. Two seeds, one per direction. 124/124.

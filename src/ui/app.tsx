@@ -10,7 +10,7 @@
  */
 
 import { render as mount } from 'preact';
-import { ROUTES, pathForScreen, screenForPath } from '../routes.js';
+import { ROUTES, pathForScreen, screenForPath, titleForScreen } from '../routes.js';
 import type { JSX } from 'preact';
 import {
   ADVISORY_MIN_ELIGIBLE,
@@ -185,6 +185,16 @@ export interface Host {
    * `backAction` the on-screen control uses, so the gesture and the button can
    * never disagree.
    */
+  /**
+   * The document title, which a route's own HTML file cannot be relied on to
+   * carry. The worker answers every in-scope navigation with the SHELL — that
+   * is what makes the app work offline — so anyone with it installed receives
+   * `index.html`'s title whatever address they opened. Measured on the deployed
+   * app: `deliveryType: 'cache-storage'`, `transferSize: 0`. A crawler has no
+   * worker and reads the route file, so the canonical is right where it counts;
+   * the TITLE is what a person sees on a tab and a bookmark, so the app sets it.
+   */
+  readonly setTitle: (title: string) => void;
   readonly syncHistory: (can: boolean, path: string) => void;
   /** Fired on a real browser navigation, with the path it landed on. */
   readonly onNavigate: (handler: (path: string) => void) => void;
@@ -1094,6 +1104,7 @@ export async function start(host: Host): Promise<void> {
     // from the same `backAction` the on-screen control uses — so the gesture and
     // the button can never disagree.
     host.syncHistory(backAction() !== null, pathForScreen(state.screen, BASE_PATH));
+    host.setTitle(titleForScreen(state.screen));
 
     /**
      * Compared against the view rendered LAST TIME, held across calls.

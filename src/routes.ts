@@ -71,6 +71,19 @@ export const ROUTES: readonly Route[] = [
   },
 ] as const;
 
+/**
+ * The title for the app's own front door, and the fallback for every screen
+ * without an address. Must match `index.html`'s `<title>`, which is where a
+ * first visit gets it from — `check_route_titles_agree` asserts that rather
+ * than hoping.
+ */
+export const DEFAULT_TITLE = 'MealUnits — mealtime insulin calculator for type 1 diabetes';
+
+/** The title for a screen: its own if it has an address, the front door's otherwise. */
+export function titleForScreen(screen: string): string {
+  return ROUTES.find((route) => route.screen === screen)?.title ?? DEFAULT_TITLE;
+}
+
 /** The screen a path addresses, or `null` for anything else — including the app's own front door. */
 export function screenForPath(pathname: string, base: string): RoutableScreen | null {
   if (!pathname.startsWith(base)) return null;
