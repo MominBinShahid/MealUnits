@@ -350,63 +350,59 @@ function offerInstall(): () => void {
 }
 
 /**
- * §10.7 — the Android back gesture, made to mean "back inside the app".
+ * §10.7's back gesture, and BACKLOG 24's four addresses, in one mechanism.
  *
- * In an installed PWA the system back button and the edge swipe otherwise CLOSE
- * THE APP, and people use that gesture reflexively — losing a half-entered
- * reading to it is the kind of thing that gets an app abandoned.
+ * **The URL is a projection of `state.screen`.** `machine.ts` owns where the app
+ * is; this writes that outwards and reports the browser's navigations back in.
+ * Nothing here decides anything — that is the whole point, and it is why there
+ * is no router library. A router wants to own "where is the app", and a second
+ * owner of that question is the two-sources-of-truth defect this project keeps
+ * refusing.
  *
- * The mechanism is ONE sentinel history entry, held exactly while the app has
- * somewhere to go back to:
+ * **Why the sentinel survives.** Real routes let the browser do the work for the
+ * four screens that have addresses. The calculator's steps deliberately do not
+ * have one — §8.2 expires a result, and a URL that restores a screen restores a
+ * dose — so back INSIDE the wizard still needs an entry that carries no address.
+ * `BACKLOG` 24 expected routing to delete this function outright; it does not,
+ * because the safety exclusion that keeps the calculator unroutable is exactly
+ * what keeps the sentinel necessary.
  *
- *   * back-ability false -> true: push the sentinel.
- *   * the gesture fires: the browser has already popped it, so run the app's
- *     back action; `render` then re-pushes if there is still further to go.
- *   * back-ability true -> false: NOTHING. The sentinel is left where it is.
- *
- * That last rule was `history.back()` and it was a real defect. The intent was
- * to tidy a spent entry; the effect was a navigation driven by this module's own
- * bookkeeping, and when the bookkeeping was off by one it walked PAST the app.
- * Traced with `Page.frameNavigated`: tapping "Log this injection" reached the
- * logged screen, which has no back path, and the resulting `history.back()`
- * navigated to `about:blank`. The row was written; the app was simply gone. On a
- * phone that is "the app closed when I logged a dose", and it reproduced about
- * one time in three, which is why it read as flaky rather than as broken.
- *
- * The cost of leaving the entry is that one back press after reaching a
- * no-back screen is absorbed doing nothing, and the next one leaves the app.
- * **A press that does nothing is a wart; a press that closes the app while
- * recording an injection is a defect.** Never navigate on your own accounting.
- *
- * `pushState` is called with the CURRENT url. Nothing is written to the URL and
- * there are no deep links, so §11.5's "Routing: None" holds — what it rules out
- * is URL state, and this is a stack entry with no state in it.
+ * The pushed entry replaces its predecessor's documented defect rather than
+ * inheriting it: there is still no `history.back()` call here, so nothing
+ * navigates on this function's own bookkeeping.
  */
-function hardwareBack(): {
-  setCanGoBack: (can: boolean) => void;
-  onHardwareBack: (handler: () => void) => void;
+function browserHistory(): {
+  syncHistory: (can: boolean, path: string) => void;
+  onNavigate: (handler: (path: string) => void) => void;
 } {
   let sentinel = false;
-  let handler: (() => void) | null = null;
+  let handler: ((path: string) => void) | null = null;
 
   window.addEventListener('popstate', () => {
-    // The browser has already popped our entry by the time this runs.
+    // The browser has already moved by the time this runs.
     sentinel = false;
-    // `handler` asks the app to go back and does nothing if it cannot, and the
-    // render that follows re-pushes only if there is still somewhere to go. So
-    // a press on a no-back screen is absorbed, and the next one leaves the app.
-    handler?.();
+    handler?.(window.location.pathname);
   });
 
   return {
-    setCanGoBack: (can) => {
-      // PUSH ONLY. There is deliberately no branch for `!can` — see above.
+    syncHistory: (can, path) => {
+      // A different ADDRESS is a real navigation and always gets an entry, so
+      // back leaves the route the way it arrived and the address bar agrees
+      // with the screen.
+      if (window.location.pathname !== path) {
+        history.pushState(null, '', path);
+        sentinel = true;
+        return;
+      }
+      // Same address: the wizard. PUSH ONLY, and deliberately no branch for
+      // `!can` — see above. A press on a no-back screen is absorbed by the
+      // handler doing nothing, and the next one leaves the app.
       if (can && !sentinel) {
-        history.pushState(null, '', location.href);
+        history.pushState(null, '', path);
         sentinel = true;
       }
     },
-    onHardwareBack: (next) => {
+    onNavigate: (next) => {
       handler = next;
     },
   };
@@ -449,7 +445,8 @@ if (root) {
     },
     scrollY: () => window.scrollY,
     scrollTo: (y) => { window.scrollTo(0, y); },
-    ...hardwareBack(),
+    ...browserHistory(),
+    initialPath: window.location.pathname,
     onSettled: showInstallOffer,
     // §7.2 — the write and its automatic retry have both failed, so the dose is
     // not in the record and he is the only one who can carry it. A bar rather

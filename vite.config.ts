@@ -1,8 +1,9 @@
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { build as esbuild } from 'esbuild';
 import { defineConfig } from 'vitest/config';
 import type { Plugin } from 'vite';
+import { ROUTES } from './src/routes.js';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
   version: string;
@@ -93,13 +94,58 @@ function sitemap(outDir: string): Plugin {
     apply: 'build',
     closeBundle() {
       const day = new Date().toISOString().split('T')[0];
+
+      /**
+       * BACKLOG 24 — one real file per route, so a shared link is a 200 on a
+       * FIRST visit. The worker answers in-scope navigations with the shell,
+       * but only once it is installed; a stranger opening a link has no worker,
+       * and GitHub Pages serves files. Without this, `/history` is a 404 for
+       * exactly the person the feature exists for.
+       *
+       * The file is the same shell with a different head. It carries no
+       * content: the app still renders the screen, reading the path on boot.
+       *
+       * Every address is built from SITE_URL and BASE rather than written out.
+       * `index.html` states the deployed path eight times by hand and
+       * `check_site_url_agrees` exists because of it — four more pages would
+       * have made that fifteen. See `T15`.
+       */
+      const shell = readFileSync(join(outDir, 'index.html'), 'utf8');
+      const swap = (html: string, pattern: RegExp, replacement: string): string => {
+        if (!pattern.test(html)) {
+          throw new Error(`sitemap: ${String(pattern)} matched nothing in index.html — the head changed shape`);
+        }
+        return html.replace(pattern, replacement);
+      };
+
+      for (const route of ROUTES) {
+        const url = `${SITE_URL}${BASE}${route.segment}`;
+        let html = shell;
+        html = swap(html, /<title>[^<]*<\/title>/, `<title>${route.title}</title>`);
+        html = swap(html, /<meta name="description" content="[^"]*" \/>/, `<meta name="description" content="${route.description}" />`);
+        html = swap(html, /<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${url}" />`);
+        html = swap(html, /<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${url}" />`);
+        html = swap(html, /<meta property="og:title" content="[^"]*" \/>/, `<meta property="og:title" content="${route.title}" />`);
+        html = swap(html, /<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${route.description}" />`);
+        html = swap(html, /<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${route.title}" />`);
+        html = swap(html, /<meta name="twitter:description" content="[^"]*" \/>/, `<meta name="twitter:description" content="${route.description}" />`);
+        mkdirSync(join(outDir, route.segment), { recursive: true });
+        writeFileSync(join(outDir, route.segment, 'index.html'), html, 'utf8');
+      }
+
+      // Every route is its own `<loc>`. One `lastmod` is honest only while they
+      // ship together, which they do — the build date is the day all five were
+      // emitted.
+      const entries = [BASE, ...ROUTES.map((route) => `${BASE}${route.segment}`)];
       const xml = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-        '  <url>',
-        `    <loc>${SITE_URL}${BASE}</loc>`,
-        `    <lastmod>${String(day)}</lastmod>`,
-        '  </url>',
+        ...entries.flatMap((path) => [
+          '  <url>',
+          `    <loc>${SITE_URL}${path}</loc>`,
+          `    <lastmod>${String(day)}</lastmod>`,
+          '  </url>',
+        ]),
         '</urlset>',
         '',
       ].join('\n');
@@ -143,7 +189,12 @@ function serviceWorker(outDir: string): Plugin {
             return walk(join(dir, entry.name), `${at}/`);
           }
           if (entry.name.endsWith('.map')) return [];
-          if (at === 'sw.js' || at === 'index.html') return [];
+          // `index.html` at ANY depth, not just the root. BACKLOG 24's routes
+          // emit one shell per route, and the worker answers every in-scope
+          // navigation with the SHELL it already holds — so precaching them
+          // would put four more copies of the same bytes on the install path,
+          // which is the shape the source-map exclusion above already rejects.
+          if (at === 'sw.js' || entry.name === 'index.html') return [];
           if (at === 'sitemap.xml' || at === 'robots.txt') return [];
           return [`${BASE}${at}`];
         });
@@ -195,6 +246,10 @@ export default defineConfig({
     // report from a phone that is not in front of you.
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_ID__: JSON.stringify(process.env.GITHUB_SHA?.slice(0, 7) ?? 'local'),
+    // BACKLOG 24 — the app reads the deployed path to turn a URL into a screen,
+    // from the SAME constant the worker's scope and the sitemap are built from.
+    // Spelling it a second time is what `T15` is about.
+    __SCOPE_PATH__: JSON.stringify(BASE),
   },
   build: {
     target: 'es2022',

@@ -29,7 +29,15 @@ import type {
   Snapshot,
 } from '../core/types.js';
 
-/** Where the app is. Not a route: §11.5 rules out routing entirely. */
+/**
+ * Where the app is, and the ONE owner of that question.
+ *
+ * Four of these have an address as of BACKLOG 24 — see `src/routes.ts`. The URL
+ * is a projection of this field, never a second copy: §11.5's rule was restated
+ * from "no routing" to **no URL state**, which is what it always meant. Nothing
+ * is read back out of a URL except which screen to open, and the calculator is
+ * deliberately not among them.
+ */
 export type Screen =
   | 'loading'
   /** §11.3 — a downgrade yields no connection. The calculator refuses. */

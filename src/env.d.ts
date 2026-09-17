@@ -1,5 +1,7 @@
 declare const __APP_VERSION__: string;
 declare const __BUILD_ID__: string;
+/** `BASE` from `vite.config.ts` — the deployed path, for turning a URL into a screen. */
+declare const __SCOPE_PATH__: string;
 
 /**
  * The two composition handlers, spelled LOWERCASE, because in Preact that is
