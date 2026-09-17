@@ -144,6 +144,13 @@ sw.addEventListener('fetch', (event) => {
     `${__SCOPE_PATH__}sitemap.xml`,
     `${__SCOPE_PATH__}robots.txt`,
     `${__SCOPE_PATH__}social/`,
+    // Asked for BY NAME, which is the only way it is ever reached with a worker
+    // installed. When the host serves it for a mistyped address the URL is the
+    // mistyped one, this branch never sees `404.html`, and the app answers —
+    // which is the right outcome and the one measured on the deployed app.
+    // Someone typing the file's own name should get the page, not the
+    // calculator.
+    `${__SCOPE_PATH__}404.html`,
   ];
   if (NOT_THE_APP.some((path) => url.pathname === path || url.pathname.startsWith(path))) {
     return;

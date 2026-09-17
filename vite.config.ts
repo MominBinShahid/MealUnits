@@ -196,6 +196,12 @@ function serviceWorker(outDir: string): Plugin {
           // which is the shape the source-map exclusion above already rejects.
           if (at === 'sw.js' || entry.name === 'index.html') return [];
           if (at === 'sitemap.xml' || at === 'robots.txt') return [];
+          // `404.html` on the SAME argument. With the worker installed a bad
+          // address never reaches it at all — the worker answers the navigation
+          // from cache and the app tidies the URL to the front door. The only
+          // people who can see this page are the ones who have no worker to
+          // have precached it with, so shipping it to every phone buys nothing.
+          if (at === '404.html') return [];
           return [`${BASE}${at}`];
         });
       const precache = walk(outDir, '');
