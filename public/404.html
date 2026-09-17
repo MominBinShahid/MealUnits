@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>That address doesn't exist — MealUnits</title>
+    <!-- Not indexed. This page exists to catch a typo and a stale bookmark, and
+         a 404 in a search result helps nobody. -->
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/MealUnits/icons/icon-192.png" />
+
+    <!--
+      NO JAVASCRIPT, and no stylesheet either — both are deliberate.
+
+      Most people never see this page: with the app installed, the service
+      worker answers every in-scope navigation from cache, so a mistyped address
+      renders the calculator and the URL tidies itself to /MealUnits/. Measured
+      on the deployed app: `deliveryType: 'cache-storage'`, `workerStart > 0`.
+      What reaches this file is a FIRST visit with no worker — a new device, a
+      cleared browser, a link opened in someone else's phone — and a crawler.
+
+      So it has to work on its own, on a cold connection, for someone who may
+      have nothing else of this app cached. Booting the application to say "that
+      page is missing" would be a second thing that can fail. The styles are
+      inlined, copied from `src/ui/styles.css`, because a page telling you
+      nothing is broken should not arrive unstyled.
+    -->
+    <style>
+      :root {
+        --bg: #f6f8f8;
+        --surface: #ffffff;
+        --ink: #14191b;
+        --ink-2: #46514f;
+        --line: #dee4e3;
+        --mark: #0b5f5c;
+        --mark-ink: #ffffff;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0c1011;
+          --surface: #151b1d;
+          --ink: #e8edec;
+          --ink-2: #a8b3b1;
+          --line: #2a3233;
+          --mark: #5ee6c5;
+          --mark-ink: #062019;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 1.5rem;
+        background: var(--bg);
+        color: var(--ink);
+        /* The app's face if it is already cached, the system stack otherwise.
+           No @font-face here: fetching a webfont to render four lines, on the
+           one visit where nothing is cached, is the wrong trade. */
+        font-family: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        font-size: 1rem;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        width: 100%;
+        max-width: 26rem;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+      }
+      h1 {
+        margin: 0 0 0.75rem;
+        font-size: 1.35rem;
+        line-height: 1.25;
+        text-wrap: balance;
+      }
+      p { margin: 0 0 1rem; color: var(--ink-2); }
+      p.keep { color: var(--ink); }
+      a.go {
+        display: block;
+        /* §10.7 — 48 CSS pixels is the floor for anything tapped. */
+        min-height: 3rem;
+        display: grid;
+        place-items: center;
+        border-radius: 0.6rem;
+        background: var(--mark);
+        color: var(--mark-ink);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      a.go:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>That address doesn&rsquo;t exist</h1>
+      <!--
+        This sentence is the whole reason the page is worth building. Someone
+        who bookmarked a screen and lands here has one specific fear on an app
+        that holds their doses: that their record is gone. It is not — the log
+        lives in this device's own storage, and a missing page cannot reach it.
+        Saying so first, before anything else, is the point.
+      -->
+      <p class="keep">
+        Nothing has happened to your record. Your doses are saved on this device,
+        and a page that is missing cannot touch them.
+      </p>
+      <p>
+        The link you followed points at a page this app does not have. It may
+        have been mistyped, or it may be an old bookmark.
+      </p>
+      <a class="go" href="/MealUnits/">Open MealUnits</a>
+    </main>
+  </body>
+</html>

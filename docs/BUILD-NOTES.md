@@ -1074,3 +1074,44 @@ routes — and the page still showed the wrong title. CLAUDE.md's rule is not a 
 
 `check_routes_do_not_collide` is new, because this entry's own warning — a route named like a file,
 a file named like a route — was checked by nothing. Two seeds, one per direction. 124/124.
+
+## 76. The address that does not exist, and who actually sees it
+
+Closed 2026-09-17, after Momin asked whether the app could have its own 404 page — and corrected the
+answer I gave.
+
+**The premise was wrong, and testing it is what showed that.** I had said a mistyped address returns
+404. That is true only for someone with no service worker. With the app installed, the worker answers
+every in-scope navigation from cache, the app finds no route for the path and stays on the
+calculator, and `syncHistory` rewrites the address bar to `/MealUnits/`. Measured on the deployed
+app: `deliveryType: 'cache-storage'`, `workerStart > 0`, address bar `/MealUnits/`. So the app
+already did the sensible thing, and it does it without a 404 page existing at all.
+
+**Which narrows who this page is for, and that decided its design.** Only two audiences reach it: a
+FIRST visit with nothing cached — a new device, a cleared browser, a link opened on someone else's
+phone — and a crawler. Both arrive cold. So the page carries no script and no external stylesheet:
+booting the application to say "this page is missing" is a second thing that can fail, on the one
+visit where nothing is warm. The styles are inlined from `styles.css`, because a page telling you
+nothing is broken should not arrive unstyled.
+
+**The first sentence is the whole reason it is worth building.** Someone who bookmarked a screen and
+lands on a 404 has a specific fear on an app holding their doses: that the record is gone. It is not
+— the log is in this device's IndexedDB and a missing page cannot reach it. The page says that
+before it says anything else, above the explanation and above the way back.
+
+**It is a real 404, deliberately.** GitHub Pages serves this file with a 404 status, which is
+correct. The SPA trick — pointing `404.html` at the app so every unknown address opens it — was
+rejected for the same reason in `BACKLOG` 24: a typo should not look like success.
+
+**Three checks fired while building it, and each was right.**
+`check_public_assets_classified` refused the new `public/` file until it was declared precache or
+crawler-only; it is crawler-only, and excluded — the only people who can SEE this page are the ones
+with no worker to have cached it with, so shipping it to every phone buys nothing and costs mobile
+data. `check_worker_knows_non_app_files` caught that `/MealUnits/404.html` asked for BY NAME would
+render the calculator, since it sits inside the worker's scope; it is now in `NOT_THE_APP`. And
+§20.5's listing refused to let it exist undocumented.
+
+**And it added two hardcoded copies of the deployed path**, which is `T15`'s subject, so both are
+guarded: `check_404_paths_agree` pins the link back and the icon against `BASE`. The failure it
+prevents is the sharpest version of that defect — the page whose entire job is to offer a way back,
+offering one that 404s as well. Seeded. 125/125.

@@ -1559,6 +1559,8 @@ The constraints above are the brief for whichever he picks.
 
 ### T15. The deployed path is stated sixteen times and guarded three
 
+**Count is now eighteen, seventeen of them in files that cannot be generated.** `public/404.html` added two on 2026-09-17; both are guarded, because `public/` is copied verbatim and the page whose job is to offer the way back offering a broken one is the worst version of this defect.
+
 **Found 2026-09-17, while costing a possible move to `mealunits.github.io`.** Momin asked the right
 question — *"when we move, do we have to change it everywhere?"* — and the answer today is yes, in
 more places than the constants suggest.
@@ -1570,6 +1572,7 @@ more places than the constants suggest.
 |---|---|---|
 | `index.html` | 8 — canonical, `og:url`, `og:image`, `twitter:image`, manifest, apple-touch-icon, icon, JSON-LD `url` | 3, by `check_site_url_agrees` |
 | `public/manifest.webmanifest` | 3 — `id`, `start_url`, `scope` | none |
+| `public/404.html` | 2 — the link back to the app, and its icon | both, by `check_404_paths_agree` |
 | `src/ui/fonts.css` | 3 font URLs | none |
 | `public/robots.txt` | 1 sitemap URL | none |
 

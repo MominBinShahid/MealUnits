@@ -1297,7 +1297,7 @@ def check_ui_text_outside_copy(_plan):
 # downloaded to every phone on install unless it is excluded there. Pinned by
 # name so a new file forces the decision rather than defaulting to "ship it".
 PUBLIC_PRECACHED = {"fonts", "icons", "manifest.webmanifest"}
-PUBLIC_CRAWLER_ONLY = {"social", "robots.txt"}
+PUBLIC_CRAWLER_ONLY = {"social", "robots.txt", "404.html"}
 
 
 def check_public_assets_classified(_plan):
@@ -3086,6 +3086,47 @@ def check_route_titles_agree(_plan):
     return []
 
 
+def check_404_paths_agree(_plan):
+    r"""`public/404.html`'s links against `BASE` — ADDED 2026-09-17.
+
+    The page is copied verbatim, so it cannot be generated from the constants
+    the way the route heads are; it states the deployed path twice, in the link
+    back to the app and in its icon. `T15` counts both.
+
+    Getting them wrong is silent in the worst way: the page whose whole job is
+    to say "nothing is broken, here is the way back" would offer a way back that
+    404s as well. It is also exactly the class of drift a domain move causes,
+    and the day it moves is the day nobody is looking at this file.
+    """
+    page = os.path.join(HERE, "public", "404.html")
+    config = os.path.join(HERE, "vite.config.ts")
+    if not os.path.exists(page) or not os.path.exists(config):
+        return []
+
+    base = re.search(r"const BASE\s*=\s*'([^']+)'", load(config))
+    if base is None:
+        return ["vite.config.ts no longer declares BASE — public/404.html's "
+                "links are pinned against it and that pin is now blind"]
+    want = base.group(1)
+
+    body = load(page)
+    hrefs = re.findall(r'href="(/[^"]*)"', body)
+    if not hrefs:
+        return ["public/404.html has no absolute links — the way back to the "
+                "app is what the page is for"]
+
+    out = []
+    for href in hrefs:
+        if not href.startswith(want):
+            out.append("public/404.html links to %r, which is outside BASE (%r) "
+                       "— the page offering the way back would 404 too"
+                       % (href, want))
+    if want not in hrefs:
+        out.append("public/404.html never links to %r itself — it tells someone "
+                   "the address is wrong and does not offer the right one" % want)
+    return out
+
+
 def check_reference_data(_plan):
     r"""§11.8's second exemption, and the two conditions it was granted on.
 
@@ -3328,6 +3369,7 @@ CHECKS = [
     ("§11.8's reference-data exemption", check_reference_data, "plan"),
     ("BACKLOG 24: a route colliding with a file", check_routes_do_not_collide, "plan"),
     ("BACKLOG 24: the app's default title vs index.html", check_route_titles_agree, "plan"),
+    ("404.html's links vs BASE", check_404_paths_agree, "plan"),
     ("§10.4: a number joined to its unit by a plain space", check_number_unit_nowrap, "plan"),
     ("tests missing from the mutation run", check_mutation_coverage_list, "plan"),
     ("§20.5 listing vs the directory", check_file_listing, "plan"),
@@ -3797,6 +3839,11 @@ SELF_TESTS = [
      "src/routes.ts",
      lambda t: t.replace("MealUnits \u2014 mealtime insulin calculator for type 1 diabetes",
                          "MealUnits", 1)),
+    # The 404 page, 2026-09-17. A domain move is the case this guards, and the
+    # failure is the page that exists to offer a way back offering a broken one.
+    ("404: the way back points outside BASE",
+     "public/404.html",
+     lambda t: t.replace('href="/MealUnits/"', 'href="/"', 1)),
 ]
 
 
@@ -3835,6 +3882,11 @@ def self_test():
     routes_full = os.path.join(HERE, "src", "routes.ts")
     if os.path.exists(routes_full):
         base["src/routes.ts"] = load(routes_full)
+
+    # `public/404.html` likewise, for `check_404_paths_agree`.
+    page_full = os.path.join(HERE, "public", "404.html")
+    if os.path.exists(page_full):
+        base["public/404.html"] = load(page_full)
 
     # `src/ui` for the same reason, ADDED 2026-09-14 with T3: check 1c reads
     # those files, and a seed cannot mutate what the harness does not hold — it

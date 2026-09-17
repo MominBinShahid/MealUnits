@@ -4498,6 +4498,14 @@ MealUnits/
                                 request and appeared nowhere a contributor looks
   check-plan.py              <- consistency checker; run before every dispatch (§20.3)
   index.html                 <- the app's document shell (§11.5)
+  public/404.html            <- the address that does not exist. Static, with no
+                                script and no stylesheet of its own: with the
+                                worker installed a bad address never reaches it
+                                (the worker answers from cache and the app tidies
+                                the URL to the front door), so its only readers
+                                are a FIRST visit with nothing cached, and a
+                                crawler. It says the record is safe before it says
+                                anything else
   docs/PLAN.md               <- this document, the single source of truth
   docs/BACKLOG.md            <- everything deliberately deferred, with reasons
   docs/BLOG-FIX.md           <- the separate blog service-worker change (§11.6)
