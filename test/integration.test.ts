@@ -46,6 +46,16 @@ let canGoBack: boolean;
 /** The address the shell last projected, and the one the harness "navigates" to. */
 let currentPath: string;
 let startPath: string;
+/**
+ * Which `boot` a Host belongs to. A test that boots twice — and a test whose
+ * predecessor left a render in flight — has more than one app alive, and the
+ * later one's promises resolve after `install()` has replaced the DOM. Those
+ * stale renders were writing to the module-level records below, which was
+ * invisible while `canGoBack` was a boolean and became an order-dependent
+ * failure the moment `syncHistory` recorded a path. Each Host captures the
+ * generation it was built in and stops reporting once it is not the live one.
+ */
+let generation = 0;
 let buzzes: number;
 let hardwareBack: ((path: string) => void) | null;
 let stuckPrompts: { amount: string; retry: () => void }[];
@@ -108,6 +118,7 @@ beforeEach(() => {
   hardwareBack = null;
   currentPath = '/MealUnits/';
   startPath = '/MealUnits/';
+  generation += 1;
   buzzes = 0;
   stuckPrompts = [];
 });
@@ -117,6 +128,9 @@ afterEach(() => {
 });
 
 async function boot(indexedDB: IDBFactory = new IDBFactory()): Promise<void> {
+  generation += 1;
+  const mine = generation;
+  const live = (): boolean => generation === mine;
   await start({
     root,
     now: () => clock,
@@ -135,8 +149,8 @@ async function boot(indexedDB: IDBFactory = new IDBFactory()): Promise<void> {
     // testable: `canGoBack` records what the shell claims, and `pressBack`
     // fires the gesture. jsdom's own history would not tell us either.
     buzz: () => { buzzes += 1; },
-    syncHistory: (can, path) => { canGoBack = can; currentPath = path; },
-    onNavigate: (handler) => { hardwareBack = handler; },
+    syncHistory: (can, path) => { if (live()) { canGoBack = can; currentPath = path; } },
+    onNavigate: (handler) => { if (live()) hardwareBack = handler; },
     initialPath: startPath,
     onSaveStuck: (amount, retry) => { stuckPrompts.push({ amount, retry }); },
   });
@@ -2191,6 +2205,9 @@ describe('§10.8 the running build is on screen', () => {
 describe('BACKLOG 24 — the four screens that have an address', () => {
   it('projects each routable screen onto its own path', async () => {
     await setUpAsHisBrother();
+    // The calculator's own address, and a check that no stale app is still
+    // reporting — see `generation` above.
+    expect(currentPath).toBe('/MealUnits/');
 
     await tap('Settings');
     expect(currentPath).toBe('/MealUnits/settings');

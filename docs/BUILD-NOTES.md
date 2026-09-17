@@ -1042,11 +1042,17 @@ the screen showing another. The handler reads the path the browser actually land
 landing only moves the app on from the ordinary front door. The alternative is a URL that walks a
 stranger past a disclaimer, which is worse than a link that merely does not work.
 
-**One thing the tests made visible rather than caused.** The harness now records the projected path,
-a string, where it recorded a boolean before. Asserting on it straight after setup fails in a full
-run and passes in isolation — a previous test's pending render writing to module state after the
-harness reinstalled. Pre-existing, invisible while the value was a boolean, and left alone here
-rather than fixed inside a routing change.
+**One thing the tests made visible, and it had to be fixed after all.** The harness now records the
+projected path, a string, where it recorded a boolean before. Asserting on it straight after setup
+passed in isolation and failed in a full run — a previous test's pending render writing to module
+state after `install()` had already replaced the DOM. The first instinct was to drop the assertion
+and record the weakness; CI then failed on a DIFFERENT assertion in the same test, which settled it:
+an order-dependent harness does not stay confined to the assertion you noticed it on.
+
+Each `boot` now takes a generation, and a Host stops reporting once it is not the live one. The leak
+was always there — a stale render overwriting `canGoBack` with the same boolean is invisible — and
+it becomes a real failure the moment the recorded value carries information. Both assertions are
+back, and the suite is stable across repeated full runs.
 
 `check_routes_do_not_collide` is new, because this entry's own warning — a route named like a file,
 a file named like a route — was checked by nothing. Two seeds, one per direction. 123/123.
