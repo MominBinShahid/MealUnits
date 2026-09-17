@@ -645,8 +645,27 @@ This is not a property of Cloudflare, or of analytics. It is true of **any** thi
 blog loads — a tag manager, an embed, a comment widget, a font that ships JavaScript. The threat is
 sharing an origin with a medical record.
 
-**What that does to the options.** GitHub's repo traffic stats survive by putting nothing in any
-page, on either property. A self-hosted same-origin collector still survives for the app. And
+**CHOSEN 2026-09-17 [Momin]: Cloudflare Web Analytics.** Ruled after comparing it against GA4,
+Plausible, Umami and Fathom. It wins here on the things this app actually needs: free, cookieless
+so no consent banner, ~10 KB against GA4's ~50, far less often blocked, and it reports Core Web
+Vitals — the one measurement with engineering value here, since it says how the app performs on
+the phones people really use. GA4 leads only on custom events, funnels and 14-month retention,
+none of which the open question needs, and it is the worst fit in kind: a surveillance-shaped tool
+on an app holding blood sugar readings.
+
+**Momin also ruled the origin question 2026-09-17: the blog and the app stay on one origin, and the
+CSP is widened for reputable services when a feature needs it.** That admits the third-party script
+this entry's §11.5 fold-in refuses, so the fold-in is now a cost he has accepted rather than a bar.
+The storage exposure it describes is unchanged and still recorded above — deferred, not withdrawn.
+
+**Still true whatever is chosen, and worth reading before trusting a number:** offline sessions
+never report, and offline is when this app matters most. Ad-blockers remove more of a
+developer-heavy audience than a general one. The figure will undercount, and it will undercount
+exactly the usage most worth knowing about. **Search Console already answers "is anyone finding
+this?" for free, with no script in the page** — shipped 2026-09-14, verified on both properties.
+
+**What that does to the remaining options.** GitHub's repo traffic stats survive by putting nothing
+in any page, on either property. A self-hosted same-origin collector still survives for the app. And
 *Dedicated GitHub organisation / clean origin*, filed under DECIDED as a tidiness matter, now has a
 security reason: a separate domain is what makes the isolation real rather than assumed, and it is
 the only option that also frees the blog to use whatever it likes. **Raised by the blog session,
