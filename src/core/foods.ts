@@ -27,12 +27,22 @@ export interface Searchable {
  * the user look again.
  */
 function fold(value: string): string {
+  // §10.4 put a no-break space inside `Large flatbread, 12\u00A0inch`, and a
+  // name is SEARCHED as well as rendered. Nobody types U+00A0, so without this
+  // the row is unreachable by the words printed on it — a silent miss in the
+  // module whose header says matching the wrong dish is a wrong dose.
+  //
+  // Safe for the same reason the case fold is: BOTH the needle and the haystack
+  // come through here, so normalising one more character on both sides cannot
+  // change which rows match. It can only stop a match being lost to a character
+  // the user has no way to enter.
+  //
   // Stryker disable next-line MethodExpression: toLowerCase -> toUpperCase is
   // EQUIVALENT and no assertion can distinguish it. Both the needle and the
   // haystack pass through this function, so folding both to upper case matches
   // exactly the same rows as folding both to lower. Disabled with the reason
   // rather than chased with a test that would only appear to prove something.
-  return value.trim().toLowerCase();
+  return value.replace(/\u00A0/g, ' ').trim().toLowerCase();
 }
 
 /**

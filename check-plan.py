@@ -2930,6 +2930,13 @@ def check_number_unit_nowrap(_plan):
     over two lines still reads as thirty minutes: no glyph in "minutes" can pass
     for a digit, and that substitution is the whole mechanism §10.4 guards.
 
+    `ml` and `inch` joined the list 2026-09-17 on a DIFFERENT ground, and the
+    distinction is worth keeping straight: "m" cannot pass for a digit either, so
+    they are not here on the glyph argument. They are here because `carbs.ts`
+    rows are written by copying the row above, and a row holding one protected
+    pair and one plain one teaches both patterns at once. Durations stay out on
+    hazard; measurement units come in on coherence.
+
     Two limits, stated rather than fixed. An en-dash range ("12–15 g") can still
     break at the dash, where there is no space to replace; `.v` carries
     `white-space: nowrap` for the food rows where that matters. And this reads
@@ -2940,7 +2947,12 @@ def check_number_unit_nowrap(_plan):
     if not os.path.isdir(src):
         return []
 
-    unit = r"(?:units?|grams?|mg/dL|g)"
+    # `inch(?:es)?`, NOT `inches?` — the latter requires "inche" and misses the
+    # bare word, which is every site in the corpus. "inches" appears nowhere
+    # today; it costs nothing to cover and the trap is easy to walk into.
+    # Case-sensitive, so a hypothetical "150 mL" escapes — consistent with the
+    # narrows-not-prevents charter stated above.
+    unit = r"(?:units?|grams?|mg/dL|ml|inch(?:es)?|g)"
     pattern = re.compile(r"(?:[0-9]|\}) " + unit + r"\b")
     out = []
     for path in source_files("check_number_unit_nowrap: src/**", src, (".ts", ".tsx")):
@@ -3680,6 +3692,14 @@ SELF_TESTS = [
     ("nowrap: a ported screen builds its own plain-space pair",
      "src/ui/screens/foods.tsx",
      lambda t: t.replace(r"${String(food.grams)}\u00A0g", "${String(food.grams)} g")),
+    # A third, 2026-09-17, when `ml` and `inch` joined the list: the food table
+    # is a THIRD shape — not a formatter, not a screen, a data row someone edits
+    # by copying the row above. It is also the seed that proves `src/data` is
+    # held by the harness at all; before it was, a seed here reported its file
+    # missing, which the runner counts as an escape.
+    ("nowrap: a data row reverts a portion to a plain space",
+     "src/data/carbs.ts",
+     lambda t: t.replace(r"150\u00A0ml", "150 ml", 1)),
 ]
 
 
@@ -3717,13 +3737,19 @@ def self_test():
     # reports "target file is missing", which the runner counts as an ESCAPE.
     # Held here rather than joined to `live_files()`, which drives §20.3's freeze
     # and the dispatch hash and is not the thing being changed.
-    for dirpath, dirnames, filenames in os.walk(os.path.join(HERE, "src", "ui")):
-        dirnames[:] = [d for d in dirnames if not d.startswith(".")]
-        for name in sorted(filenames):
-            if not name.endswith(SOURCE_SUFFIXES):
-                continue
-            full = os.path.join(dirpath, name)
-            base[os.path.relpath(full, HERE).replace(os.sep, "/")] = load(full)
+    #
+    # `src/data` joins it 2026-09-17, for the same reason one step later: §10.4's
+    # sweep reads the food table, and a seed there reported "target is missing",
+    # which the runner counts as an ESCAPE rather than a skip — a seed that
+    # cannot find its file verifies nothing and says nothing.
+    for root in (os.path.join(HERE, "src", "ui"), os.path.join(HERE, "src", "data")):
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+            for name in sorted(filenames):
+                if not name.endswith(SOURCE_SUFFIXES):
+                    continue
+                full = os.path.join(dirpath, name)
+                base[os.path.relpath(full, HERE).replace(os.sep, "/")] = load(full)
 
     def run(overrides):
         files = dict(base)

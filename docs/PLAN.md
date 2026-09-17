@@ -2606,9 +2606,22 @@ Joint Commission "do not use" items, not style preferences.
   existed, both had zero call sites, and the rule held only by wherever the line happened
   to break. The character travels with the string through every path a stylesheet cannot
   reach — a sentence composed in `copy.ts`, a prompt bar built outside the component tree,
-  the exported file. **Scope: `units`, `grams`, the bare `g`, and `mg/dL`.** Duration words
-  are exempt, because the misreading this guards is a glyph passing for a digit and nothing
-  in "minutes" can. `check-plan.py` fails on an ordinary space between a number and any of
+  the exported file. **Scope: `units`, `grams`, the bare `g`, `mg/dL`, `ml` and `inch`** —
+  units of measurement, and the list is closed until the corpus gains one.
+
+  **Two different grounds, stated as two, because one of them does not reach.** Duration
+  words are exempt on the GLYPH ground: the misreading is the unit's first character merging
+  with the number after a break — `4U` read as 40 — and nothing in "minutes" can do that.
+  But neither can "m", so `ml` is **not** here on that ground. It is here on COHERENCE:
+  `carbs.ts` rows are written by copying the row above, and `'1 medium, 7 inch, about 40 g'`
+  with one pair protected and one not is a template teaching both patterns at once. That is
+  how the next wrong row gets written. Saying "consistency" plainly beats borrowing a
+  hazard argument that does not apply.
+
+  **Where the list stops, and why it is not arbitrary.** `CARBS.md` defines the household
+  words in metric — katori, chai cup, glass, Tbsp — so *a word whose magnitude this project
+  must declare is a container noun; a word used to do the declaring is a unit.* `'1 katori,
+  150 g'` already enacts it: the count sits on the noun, the protection on the measure. `check-plan.py` fails on an ordinary space between a number and any of
   those words **written literally** in `src/`, and pins `units()` separately — it picks its
   word with a ternary, so no literal pair appears in its source for the sweep to find. It
   does **not** catch a pair assembled by concatenation, by `join(' ')`, across a line break,
