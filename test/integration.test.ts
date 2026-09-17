@@ -21,7 +21,7 @@ import { JSDOM } from 'jsdom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { start } from '../src/ui/app.js';
 import { DATABASE_NAME } from '../src/storage/schema.js';
-import { ROUTES, pathForScreen, screenForPath } from '../src/routes.js';
+import { DEFAULT_TITLE, ROUTES, pathForScreen, screenForPath } from '../src/routes.js';
 // Asserted by reference, not by literal: these cases prove the combined §4.3
 // step 3 response RENDERS, which is what was missing. The words themselves are
 // a clinical-review matter and must stay free to change without going red.
@@ -45,6 +45,7 @@ let scrollY: number;
 let canGoBack: boolean;
 /** The address the shell last projected, and the one the harness "navigates" to. */
 let currentPath: string;
+let currentTitle: string;
 let startPath: string;
 /**
  * Which `boot` a Host belongs to. A test that boots twice — and a test whose
@@ -117,6 +118,7 @@ beforeEach(() => {
   canGoBack = false;
   hardwareBack = null;
   currentPath = '/MealUnits/';
+  currentTitle = '';
   startPath = '/MealUnits/';
   generation += 1;
   buzzes = 0;
@@ -149,6 +151,7 @@ async function boot(indexedDB: IDBFactory = new IDBFactory()): Promise<void> {
     // testable: `canGoBack` records what the shell claims, and `pressBack`
     // fires the gesture. jsdom's own history would not tell us either.
     buzz: () => { buzzes += 1; },
+    setTitle: (title) => { if (live()) currentTitle = title; },
     syncHistory: (can, path) => { if (live()) { canGoBack = can; currentPath = path; } },
     onNavigate: (handler) => { if (live()) hardwareBack = handler; },
     initialPath: startPath,
@@ -2276,6 +2279,21 @@ describe('BACKLOG 24 — the four screens that have an address', () => {
     // browser actually is, or the address bar and the screen disagree.
     await navigateTo('/MealUnits/settings');
     expect(text()).toContain('Insulin sensitivity factor');
+  });
+
+  it('sets the tab title per route, because the worker serves one shell for all of them', async () => {
+    // Measured on the deployed app: an installed worker answers every in-scope
+    // navigation from cache-storage, so the route's own HTML — and its title —
+    // never reaches anyone who has used the app before. The canonical still
+    // reaches crawlers, which have no worker; the title is what a person sees.
+    await setUpAsHisBrother();
+    expect(currentTitle).toBe(DEFAULT_TITLE);
+
+    await tap('History');
+    expect(currentTitle).toBe('Your record — MealUnits');
+
+    await tap('Back');
+    expect(currentTitle).toBe(DEFAULT_TITLE);
   });
 
   it('every route in the table resolves to a screen and back to its own path', () => {

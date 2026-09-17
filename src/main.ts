@@ -445,6 +445,9 @@ if (root) {
     },
     scrollY: () => window.scrollY,
     scrollTo: (y) => { window.scrollTo(0, y); },
+    setTitle: (title) => {
+      if (document.title !== title) document.title = title;
+    },
     ...browserHistory(),
     initialPath: window.location.pathname,
     onSettled: showInstallOffer,

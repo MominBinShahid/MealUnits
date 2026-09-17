@@ -3054,6 +3054,38 @@ def check_routes_do_not_collide(_plan):
     return out
 
 
+def check_route_titles_agree(_plan):
+    r"""BACKLOG 24 — `DEFAULT_TITLE` against the title `index.html` actually ships.
+
+    The app sets the document title itself, because the worker answers every
+    in-scope navigation with the SHELL and a route's own HTML never reaches
+    anyone who has the app installed. So two files state the front door's title:
+    `index.html`, which a first visit and every crawler read, and
+    `src/routes.ts`, which the app applies a moment later.
+
+    Drift is visible as a title that CHANGES while the page is opening — the
+    kind of defect nobody reports and everybody notices.
+    """
+    routes_file = os.path.join(HERE, "src", "routes.ts")
+    page = os.path.join(HERE, "index.html")
+    if not os.path.exists(routes_file) or not os.path.exists(page):
+        return []
+
+    declared = re.search(r"DEFAULT_TITLE\s*=\s*'([^']+)'", load(routes_file))
+    shipped = re.search(r"<title>([^<]+)</title>", load(page))
+    if declared is None:
+        return ["src/routes.ts no longer declares DEFAULT_TITLE — the app's "
+                "title and index.html's can now disagree unnoticed"]
+    if shipped is None:
+        return ["index.html has no <title> — BACKLOG 24 pins the app's default "
+                "against it and that pin is now blind"]
+    if declared.group(1) != shipped.group(1):
+        return ["src/routes.ts's DEFAULT_TITLE is %r but index.html ships %r — "
+                "the title would change as the app boots"
+                % (declared.group(1), shipped.group(1))]
+    return []
+
+
 def check_reference_data(_plan):
     r"""§11.8's second exemption, and the two conditions it was granted on.
 
@@ -3295,6 +3327,7 @@ CHECKS = [
     ("config values typed as digits in copy", check_copy_hardcodes_config, "plan"),
     ("§11.8's reference-data exemption", check_reference_data, "plan"),
     ("BACKLOG 24: a route colliding with a file", check_routes_do_not_collide, "plan"),
+    ("BACKLOG 24: the app's default title vs index.html", check_route_titles_agree, "plan"),
     ("§10.4: a number joined to its unit by a plain space", check_number_unit_nowrap, "plan"),
     ("tests missing from the mutation run", check_mutation_coverage_list, "plan"),
     ("§20.5 listing vs the directory", check_file_listing, "plan"),
@@ -3760,6 +3793,10 @@ SELF_TESTS = [
     ("routes: the table emptied, so the check sees nothing",
      "src/routes.ts",
      lambda t: re.sub(r"segment: '[^']+'", "segmentX: 'x'", t)),
+    ("routes: DEFAULT_TITLE drifts from the title index.html ships",
+     "src/routes.ts",
+     lambda t: t.replace("MealUnits \u2014 mealtime insulin calculator for type 1 diabetes",
+                         "MealUnits", 1)),
 ]
 
 
