@@ -2213,10 +2213,10 @@ describe('BACKLOG 24 — the four screens that have an address', () => {
     expect(currentPath).toBe('/MealUnits/');
 
     await tap('Settings');
-    expect(currentPath).toBe('/MealUnits/settings');
+    expect(currentPath).toBe('/MealUnits/settings/');
 
     await tap('How this works');
-    expect(currentPath).toBe('/MealUnits/how-it-works');
+    expect(currentPath).toBe('/MealUnits/how-it-works/');
   });
 
   it('gives the calculator NO address, because a URL that restores it restores a dose', async () => {
@@ -2302,7 +2302,10 @@ describe('BACKLOG 24 — the four screens that have an address', () => {
     // else here would notice.
     for (const route of ROUTES) {
       expect(screenForPath(`/MealUnits/${route.segment}`, '/MealUnits/'), route.segment).toBe(route.screen);
-      expect(pathForScreen(route.screen, '/MealUnits/'), route.screen).toBe(`/MealUnits/${route.segment}`);
+      expect(pathForScreen(route.screen, '/MealUnits/'), route.screen).toBe(`/MealUnits/${route.segment}/`);
+      // BOTH spellings resolve, because a host 301s the bare form to the slash
+      // one and a person may type either.
+      expect(screenForPath(`/MealUnits/${route.segment}/`, '/MealUnits/'), route.segment).toBe(route.screen);
     }
     expect(screenForPath('/MealUnits/', '/MealUnits/')).toBeNull();
     expect(pathForScreen('calculator', '/MealUnits/')).toBe('/MealUnits/');

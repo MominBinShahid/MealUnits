@@ -97,5 +97,10 @@ export function screenForPath(pathname: string, base: string): RoutableScreen | 
  */
 export function pathForScreen(screen: string, base: string): string {
   const route = ROUTES.find((entry) => entry.screen === screen);
-  return route === undefined ? base : `${base}${route.segment}`;
+  // TRAILING SLASH, and it is not cosmetic. The build emits `history/index.html`,
+  // and a static host answers `/history` with a 301 to `/history/` — measured on
+  // the deployed app. Naming the form that redirects makes every canonical point
+  // at a hop and every sitemap entry a "page with redirect" in Search Console.
+  // `screenForPath` accepts both, so a link typed either way still lands.
+  return route === undefined ? base : `${base}${route.segment}/`;
 }
