@@ -3397,7 +3397,7 @@ can break an older page still open in another tab.
 | Vite `base` | `/MealUnits/` — never `'./'` |
 | Manifest `id` / `start_url` / `scope` | all `/MealUnits/` — **set `id` day one, never change it** |
 | Worker path | `/MealUnits/sw.js` — never hashed, never nested |
-| Routing | **None.** Single screen plus sheets; component state, not URL state |
+| Routing | **No URL state** — CORRECTED 2026-09-17. This said "None", and `BACKLOG` 24 added an address for the four screens that mean the same thing whenever opened: Settings, History, How this works, Food list (`src/routes.ts`). The rule's real content survives and is what it always meant — the URL is a PROJECTION of `machine.ts`'s `screen`, never a second copy, and nothing is read back out of it but which screen to open. **The calculator has no address**, because §8.2 expires a result and a URL that restores a screen restores a dose; export has none because it is an action. No router library, for the same reason: a second owner of "where is the app" is the defect this rule existed to prevent |
 | Storage | IndexedDB database `MealUnits` (§11.3) — the localStorage key was v3 residue |
 | Content security policy | `default-src 'self'`, no inline script, no `unsafe-eval`, no third-party origins |
 | Actions | `configure-pages@v6`, `upload-pages-artifact@v5` (path `./dist`), `deploy-pages@v5`; needs **both** `pages: write` and `id-token: write` plus `environment: github-pages` |

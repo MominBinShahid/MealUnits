@@ -21,6 +21,7 @@ import { JSDOM } from 'jsdom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { start } from '../src/ui/app.js';
 import { DATABASE_NAME } from '../src/storage/schema.js';
+import { ROUTES, pathForScreen, screenForPath } from '../src/routes.js';
 // Asserted by reference, not by literal: these cases prove the combined §4.3
 // step 3 response RENDERS, which is what was missing. The words themselves are
 // a clinical-review matter and must stay free to change without going red.
@@ -42,8 +43,21 @@ let downloads: { name: string; type: string; contents: string }[];
 let fileToImport: string | null;
 let scrollY: number;
 let canGoBack: boolean;
+/** The address the shell last projected, and the one the harness "navigates" to. */
+let currentPath: string;
+let startPath: string;
+/**
+ * Which `boot` a Host belongs to. A test that boots twice — and a test whose
+ * predecessor left a render in flight — has more than one app alive, and the
+ * later one's promises resolve after `install()` has replaced the DOM. Those
+ * stale renders were writing to the module-level records below, which was
+ * invisible while `canGoBack` was a boolean and became an order-dependent
+ * failure the moment `syncHistory` recorded a path. Each Host captures the
+ * generation it was built in and stops reporting once it is not the live one.
+ */
+let generation = 0;
 let buzzes: number;
-let hardwareBack: (() => void) | null;
+let hardwareBack: ((path: string) => void) | null;
 let stuckPrompts: { amount: string; retry: () => void }[];
 
 /**
@@ -102,6 +116,9 @@ beforeEach(() => {
   scrollY = 0;
   canGoBack = false;
   hardwareBack = null;
+  currentPath = '/MealUnits/';
+  startPath = '/MealUnits/';
+  generation += 1;
   buzzes = 0;
   stuckPrompts = [];
 });
@@ -111,6 +128,9 @@ afterEach(() => {
 });
 
 async function boot(indexedDB: IDBFactory = new IDBFactory()): Promise<void> {
+  generation += 1;
+  const mine = generation;
+  const live = (): boolean => generation === mine;
   await start({
     root,
     now: () => clock,
@@ -129,10 +149,21 @@ async function boot(indexedDB: IDBFactory = new IDBFactory()): Promise<void> {
     // testable: `canGoBack` records what the shell claims, and `pressBack`
     // fires the gesture. jsdom's own history would not tell us either.
     buzz: () => { buzzes += 1; },
-    setCanGoBack: (can) => { canGoBack = can; },
-    onHardwareBack: (handler) => { hardwareBack = handler; },
+    syncHistory: (can, path) => { if (live()) { canGoBack = can; currentPath = path; } },
+    onNavigate: (handler) => { if (live()) hardwareBack = handler; },
+    initialPath: startPath,
     onSaveStuck: (amount, retry) => { stuckPrompts.push({ amount, retry }); },
   });
+  await settle();
+}
+
+/**
+ * The browser navigating to `path` — back, forward or a tapped link. The shell
+ * is told where it landed, exactly as `popstate` tells it in `main.ts`.
+ */
+async function navigateTo(path: string): Promise<void> {
+  currentPath = path;
+  hardwareBack?.(path);
   await settle();
 }
 
@@ -1222,7 +1253,7 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     expect(text()).toContain('How much carbohydrate');
     expect(canGoBack).toBe(true);
 
-    hardwareBack?.();
+    hardwareBack?.(currentPath);
     await settle();
     expect(text()).toContain("What's your blood sugar right now?");
     expect(canGoBack).toBe(false);
@@ -1264,7 +1295,7 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     await tap('Back');
     const viaButton = text();
     await tap('Work out the dose');
-    hardwareBack?.();
+    hardwareBack?.(currentPath);
     await settle();
     expect(text()).toBe(viaButton);
   });
@@ -2168,5 +2199,94 @@ describe('§10.8 the running build is on screen', () => {
   it('because it is the only way to diagnose a report', async () => {
     await boot();
     expect(text()).toContain('test (test)');
+  });
+});
+
+describe('BACKLOG 24 — the four screens that have an address', () => {
+  it('projects each routable screen onto its own path', async () => {
+    await setUpAsHisBrother();
+    // The calculator's own address, and a check that no stale app is still
+    // reporting — see `generation` above.
+    expect(currentPath).toBe('/MealUnits/');
+
+    await tap('Settings');
+    expect(currentPath).toBe('/MealUnits/settings');
+
+    await tap('How this works');
+    expect(currentPath).toBe('/MealUnits/how-it-works');
+  });
+
+  it('gives the calculator NO address, because a URL that restores it restores a dose', async () => {
+    // §8.2 expires a result after 15 minutes, and a link is exactly the thing
+    // opened next week. The wizard's steps are addressless for the same reason.
+    await setUpAsHisBrother();
+    await keys('180');
+    await tap('Next');
+    expect(text()).toContain('How much carbohydrate');
+    expect(currentPath).toBe('/MealUnits/');
+
+    await keys('50');
+    await tap('Work out the dose');
+    expect(currentPath).toBe('/MealUnits/');
+  });
+
+  it('lands a shared link on its screen, for someone already set up', async () => {
+    // The real case: a configured user opens a link someone sent them. The
+    // same factory, so the second boot reads the record the first one wrote.
+    const db = new IDBFactory();
+    await setUpAsHisBrother(db);
+    startPath = '/MealUnits/history';
+    await boot(db);
+    expect(text()).toContain('Entries can be deleted, never edited');
+  });
+
+  it('and a link during FIRST RUN still starts at the disclaimer', async () => {
+    // Boot lands on a gate, so the landing does not move it — setup comes
+    // first and the link is spent. That is the right trade: the alternative is
+    // a URL that walks a stranger past the disclaimer.
+    startPath = '/MealUnits/history';
+    await setUpAsHisBrother();
+    expect(text()).toContain("What's your blood sugar right now?");
+  });
+
+  it('but a link NEVER jumps past the disclaimer', async () => {
+    // The gate is the whole point of the gate. Boot decides where the app
+    // opens, and the landing only moves it on from the ordinary front door.
+    startPath = '/MealUnits/settings';
+    await boot();
+    expect(text()).toContain('I have read this');
+    expect(text()).not.toContain('Insulin sensitivity factor');
+  });
+
+  it('opens the calculator for a path that addresses nothing', async () => {
+    startPath = '/MealUnits/not-a-screen';
+    await setUpAsHisBrother();
+    expect(text()).toContain("What's your blood sugar right now?");
+  });
+
+  it('follows the browser BACK out of a route, and FORWARD into one', async () => {
+    await setUpAsHisBrother();
+    await tap('Settings');
+    expect(text()).toContain('Insulin sensitivity factor');
+
+    await navigateTo('/MealUnits/');
+    expect(text()).toContain("What's your blood sugar right now?");
+
+    // Forward is not "one step back" — it has to be read from where the
+    // browser actually is, or the address bar and the screen disagree.
+    await navigateTo('/MealUnits/settings');
+    expect(text()).toContain('Insulin sensitivity factor');
+  });
+
+  it('every route in the table resolves to a screen and back to its own path', () => {
+    // The table is the single source for the build and the app both. A segment
+    // renamed in one place and not the other is a link that 404s, and nothing
+    // else here would notice.
+    for (const route of ROUTES) {
+      expect(screenForPath(`/MealUnits/${route.segment}`, '/MealUnits/'), route.segment).toBe(route.screen);
+      expect(pathForScreen(route.screen, '/MealUnits/'), route.screen).toBe(`/MealUnits/${route.segment}`);
+    }
+    expect(screenForPath('/MealUnits/', '/MealUnits/')).toBeNull();
+    expect(pathForScreen('calculator', '/MealUnits/')).toBe('/MealUnits/');
   });
 });

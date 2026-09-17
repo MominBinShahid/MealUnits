@@ -3004,6 +3004,56 @@ def check_number_unit_nowrap(_plan):
     return out
 
 
+def check_routes_do_not_collide(_plan):
+    r"""BACKLOG 24 — a route named like a file, or a file named like a route.
+
+    The worker answers every in-scope navigation with the shell, and that is
+    exactly what real routes want. It is also the hazard: `NOT_THE_APP` in
+    `src/sw.ts` is what keeps `sitemap.xml` and `robots.txt` from being served
+    the application, and the two lists are maintained apart. A route segment
+    that matches a real file means the file wins and the route 404s in a fresh
+    browser and renders the app in an installed one — the same address behaving
+    two ways depending on who clicks it. A file added under a route's name is
+    the same collision from the other side.
+
+    Checked against `public/`, because that is the directory copied verbatim
+    into the deploy, and against the worker's own exclusion list.
+    """
+    routes_file = os.path.join(HERE, "src", "routes.ts")
+    worker = os.path.join(HERE, "src", "sw.ts")
+    public = os.path.join(HERE, "public")
+    if not os.path.exists(routes_file):
+        return []
+
+    segments = re.findall(r"segment:\s*'([^']+)'", load(routes_file))
+    if not segments:
+        return ["src/routes.ts declares no segments — BACKLOG 24's four routes "
+                "are the input to this check and it has gone blind"]
+
+    out = []
+    if os.path.isdir(public):
+        present = set(os.listdir(public))
+        for segment in segments:
+            for name in (segment, "%s.html" % segment, "%s.xml" % segment, "%s.txt" % segment):
+                if name in present:
+                    out.append(
+                        "route '%s' collides with public/%s — the file is served "
+                        "verbatim and the route never reaches the app"
+                        % (segment, name))
+
+    if os.path.exists(worker):
+        excluded = re.findall(r"\$\{__SCOPE_PATH__\}([^`']+)", load(worker))
+        for segment in segments:
+            for path in excluded:
+                if path.rstrip("/") == segment:
+                    out.append(
+                        "route '%s' is listed in src/sw.ts's NOT_THE_APP — the "
+                        "worker refuses to answer it with the app, so the route "
+                        "works only where no worker is installed"
+                        % segment)
+    return out
+
+
 def check_reference_data(_plan):
     r"""§11.8's second exemption, and the two conditions it was granted on.
 
@@ -3244,6 +3294,7 @@ CHECKS = [
     ("PLAN references BACKLOG by number", check_plan_against_backlog, "plan"),
     ("config values typed as digits in copy", check_copy_hardcodes_config, "plan"),
     ("§11.8's reference-data exemption", check_reference_data, "plan"),
+    ("BACKLOG 24: a route colliding with a file", check_routes_do_not_collide, "plan"),
     ("§10.4: a number joined to its unit by a plain space", check_number_unit_nowrap, "plan"),
     ("tests missing from the mutation run", check_mutation_coverage_list, "plan"),
     ("§20.5 listing vs the directory", check_file_listing, "plan"),
@@ -3700,6 +3751,15 @@ SELF_TESTS = [
     ("nowrap: a data row reverts a portion to a plain space",
      "src/data/carbs.ts",
      lambda t: t.replace(r"150\u00A0ml", "150 ml", 1)),
+    # BACKLOG 24's routes, 2026-09-17. Two seeds because the collision has two
+    # directions and the check has two arms: a route renamed onto a file that
+    # already ships, and a route the worker has been told is not the app.
+    ("routes: a segment renamed onto a file that ships verbatim",
+     "src/routes.ts",
+     lambda t: t.replace("segment: 'foods'", "segment: 'robots.txt'", 1)),
+    ("routes: the table emptied, so the check sees nothing",
+     "src/routes.ts",
+     lambda t: re.sub(r"segment: '[^']+'", "segmentX: 'x'", t)),
 ]
 
 
@@ -3731,6 +3791,13 @@ def self_test():
     config_full = os.path.join(HERE, "src", "config.ts")
     if os.path.exists(config_full):
         base[config_rel] = load(config_full)
+
+    # `src/routes.ts` for the same reason, ADDED 2026-09-17 with BACKLOG 24: the
+    # route-collision check reads it, and a seed against a file the harness does
+    # not hold reports "missing", which the runner counts as an ESCAPE.
+    routes_full = os.path.join(HERE, "src", "routes.ts")
+    if os.path.exists(routes_full):
+        base["src/routes.ts"] = load(routes_full)
 
     # `src/ui` for the same reason, ADDED 2026-09-14 with T3: check 1c reads
     # those files, and a seed cannot mutate what the harness does not hold — it

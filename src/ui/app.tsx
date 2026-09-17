@@ -10,6 +10,7 @@
  */
 
 import { render as mount } from 'preact';
+import { ROUTES, pathForScreen, screenForPath } from '../routes.js';
 import type { JSX } from 'preact';
 import {
   ADVISORY_MIN_ELIGIBLE,
@@ -118,6 +119,16 @@ interface ViewState {
   recordDeletedElsewhere: boolean;
 }
 
+/**
+ * The deployed path, injected at build time from `vite.config.ts`'s `BASE` —
+ * the one constant a domain move changes. `T15` records the fifteen places that
+ * still spell it out by hand; these four routes deliberately add none of them.
+ */
+const BASE_PATH = __SCOPE_PATH__;
+
+/** The screens with an address, as a set, for the reverse question. */
+const ROUTABLE = new Set<string>(ROUTES.map((route) => route.screen));
+
 export interface Host {
   readonly root: HTMLElement;
   readonly now: () => number;
@@ -163,8 +174,22 @@ export interface Host {
    * transaction commits would be a lie about a dosing record.
    */
   readonly buzz: () => void;
-  readonly setCanGoBack: (can: boolean) => void;
-  readonly onHardwareBack: (handler: () => void) => void;
+  /**
+   * BACKLOG 24 — the URL is a PROJECTION of `state.screen`, never a second copy
+   * of it. `machine.ts` owns where the app is; this reports that outwards and
+   * reports the browser's navigations back in. A router library would want to
+   * own the answer too, and two owners of "where is the app" is the bug class
+   * this project keeps refusing.
+   *
+   * `can` is whether there is anywhere to go back to, read from the same
+   * `backAction` the on-screen control uses, so the gesture and the button can
+   * never disagree.
+   */
+  readonly syncHistory: (can: boolean, path: string) => void;
+  /** Fired on a real browser navigation, with the path it landed on. */
+  readonly onNavigate: (handler: (path: string) => void) => void;
+  /** The path the app was opened at, so a shared link lands on its screen. */
+  readonly initialPath: string;
   /**
    * §12 — called the first time the calculator is reached, which is the first
    * moment an install offer is not an interruption. Version 1 gated ONBOARDING
@@ -1068,7 +1093,7 @@ export async function start(host: Host): Promise<void> {
     // Keep the history stack in step with whether the app HAS a back path, read
     // from the same `backAction` the on-screen control uses — so the gesture and
     // the button can never disagree.
-    host.setCanGoBack(backAction() !== null);
+    host.syncHistory(backAction() !== null, pathForScreen(state.screen, BASE_PATH));
 
     /**
      * Compared against the view rendered LAST TIME, held across calls.
@@ -1210,12 +1235,44 @@ export async function start(host: Host): Promise<void> {
   // there is nowhere to go back to, nothing is registered and the gesture does
   // what it always did — which on the first screen is leave the app, and that
   // is correct.
-  host.onHardwareBack(() => {
+  host.onNavigate((path) => {
+    // Back and FORWARD both land here, so the screen is read from where the
+    // browser actually is rather than assumed to be one step backwards. A
+    // forward tap that only ran `backAction` would leave the address bar saying
+    // one thing and the app showing another.
+    const target = screenForPath(path, BASE_PATH);
+    if (target !== null && target !== state.screen) {
+      dispatch({ type: 'go', screen: target });
+      return;
+    }
+    if (target === null && ROUTABLE.has(state.screen)) {
+      dispatch({ type: 'go', screen: 'calculator' });
+      return;
+    }
+    // Same address either way: the calculator's steps are deliberately not
+    // routable (§8.2 — a URL that restores a screen restores a dose), so back
+    // INSIDE the wizard is still the app's own action.
     const goBack = backAction();
     if (goBack !== null) goBack();
   });
 
   await boot();
+
+  /**
+   * BACKLOG 24 — a shared link lands on its screen.
+   *
+   * AFTER `boot`, and only from `calculator`, which is what makes it safe. Boot
+   * decides where the app opens, and two of its answers are gates: an
+   * unaccepted disclaimer and a first run with no settings. A link that jumped
+   * past either would defeat the thing it is there for, so this moves the app
+   * only when boot has already landed it on the ordinary front door.
+   *
+   * The calculator itself has no address, so nothing here can restore a dose.
+   */
+  const landing = screenForPath(host.initialPath, BASE_PATH);
+  if (landing !== null && state.screen === 'calculator') {
+    dispatch({ type: 'go', screen: landing });
+  }
 }
 
 /** §7.1 — exported for the amount screen's confirmation, and for tests. */

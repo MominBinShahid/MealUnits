@@ -991,3 +991,68 @@ the screen: a data row someone edits by copying its neighbour.
 Measured in Chrome at 64px: an ordinary space breaks between the number and the word, the
 no-break space holds them on one line, and both subsetted webfonts render it at identical
 width to an ordinary space. Seeded: three shapes, 121/121.
+
+## 75. Routes, and the 404 that was not in the plan
+
+Closed 2026-09-17. `BACKLOG` 24 listed four things that move with routing — the sitemap, the
+worker's `NOT_THE_APP`, the canonical, and §11.5's wording. All four were real. The thing that
+actually decided the shape was none of them.
+
+**`/MealUnits/history` is a 404.** Measured, not reasoned: GitHub Pages serves files, and there is
+no `history` file. The service worker answers every in-scope navigation with the shell, which is
+exactly what routes want — but only once it is installed. A stranger opening a link Momin sent has
+no worker, so the naive implementation 404s for precisely the person the feature exists for:
+*"if I wanted to guide someone to history page I can't."*
+
+Three ways out were weighed. Hash routes (`#/history`) work everywhere and cost nothing, but a
+fragment is one page to a crawler, so the per-route canonicals this entry asks for would mean
+nothing. A `404.html` redirect works, at the cost of every first visit being a 404 response with a
+redirect flash. **The build emits a real file per route instead** — the same shell with a different
+head — so a shared link is a 200 on a first visit with no JavaScript involved. The file carries no
+content: the app still renders the screen, reading the path on boot.
+
+**Those heads are generated from `SITE_URL` and `BASE`.** `index.html` states the deployed path
+eight times by hand and `check_site_url_agrees` exists because of it; four more pages written the
+same way would have made fifteen. `T15` records the fifteen that remain.
+
+**The shells are excluded from the precache, and the walk needed widening to do it.** It skipped
+`index.html` by exact path, so `history/index.html` would have shipped four more copies of the same
+bytes to every phone — the shape the source-map and `social/` exclusions already reject. An
+offline-first app pays for its precache in someone's mobile data, and the worker serves the shell
+for these navigations anyway.
+
+**`hardwareBack` survives, and this entry expected it not to.** Real routes let the browser do the
+work for the four screens that have addresses. The calculator's steps deliberately have none —
+§8.2 expires a result, and a URL that restores a screen restores a dose — so back inside the wizard
+still needs an entry carrying no address. The safety exclusion that keeps the calculator unroutable
+is exactly what keeps the sentinel necessary. It now pushes a real path when the address changes
+and keeps its push-only shape otherwise.
+
+**No router library, and the reason is the same one that delayed this work.** `machine.ts` owns
+where the app is. A router wants to own it too, and two owners of that question is the defect §11.5
+existed to prevent. The URL is written as a projection of `state.screen` and read back only as which
+screen to open, so the rule's content survives its wording changing from "no routing" to **no URL
+state**.
+
+**Forward is not "one step back".** The first draft ran the app's own back action on `popstate`,
+which is what the old gesture did. A forward tap then leaves the address bar saying one thing and
+the screen showing another. The handler reads the path the browser actually landed on.
+
+**A link during first run is spent.** Boot lands on the disclaimer or on first-run settings, and the
+landing only moves the app on from the ordinary front door. The alternative is a URL that walks a
+stranger past a disclaimer, which is worse than a link that merely does not work.
+
+**One thing the tests made visible, and it had to be fixed after all.** The harness now records the
+projected path, a string, where it recorded a boolean before. Asserting on it straight after setup
+passed in isolation and failed in a full run — a previous test's pending render writing to module
+state after `install()` had already replaced the DOM. The first instinct was to drop the assertion
+and record the weakness; CI then failed on a DIFFERENT assertion in the same test, which settled it:
+an order-dependent harness does not stay confined to the assertion you noticed it on.
+
+Each `boot` now takes a generation, and a Host stops reporting once it is not the live one. The leak
+was always there — a stale render overwriting `canGoBack` with the same boolean is invisible — and
+it becomes a real failure the moment the recorded value carries information. Both assertions are
+back, and the suite is stable across repeated full runs.
+
+`check_routes_do_not_collide` is new, because this entry's own warning — a route named like a file,
+a file named like a route — was checked by nothing. Two seeds, one per direction. 123/123.

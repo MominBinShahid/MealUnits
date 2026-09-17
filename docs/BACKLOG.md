@@ -258,7 +258,7 @@ added after its absence caused harm."
 forward. The app is now for anyone with type 1, and the reader who has never been told what ISF
 means is the reader it was widened for.
 
-### 24. URL routes for the four screens that are not the calculator
+### 24. URL routes for the four screens that are not the calculator — DONE 2026-09-17
 
 **WHEN THIS LANDS, THE SITEMAP AND THE SERVICE WORKER BOTH NEED IT.** Flagged by Momin 2026-09-14,
 before the work starts, so it is not discovered afterwards.
@@ -337,6 +337,37 @@ So the icon opens the calculator however many routes exist. **And this is precis
 exclusion above is a safety rule:** because a link can drop someone into a screen cold, every
 routable screen has to be safe to arrive at with no context — which is the same test that admitted
 the four.
+
+#### What it turned out to be, 2026-09-17
+
+**The blocker was not in this entry.** `/MealUnits/history` returns **404** on GitHub Pages, which
+serves files and has no such file. The worker answers in-scope navigations with the shell — but only
+once it is installed, and a stranger opening a shared link has no worker. So the naive
+implementation breaks precisely the case this entry exists for. The build now emits a real
+`index.html` per route, generated from the built shell with its own title, description, canonical
+and `og:url`; a link is a 200 on a first visit, with no JavaScript and no redirect. Those heads are
+built from `SITE_URL` and `BASE`, so four pages added **zero** new copies of the deployed path —
+see `T15`.
+
+**`hardwareBack` was NOT deleted, and the reason is the safety exclusion above.** This entry
+expected real routes to make the browser do the work. They do, for the four screens that have
+addresses. The calculator's steps deliberately have none, so back INSIDE the wizard still needs an
+entry that carries no address — the same mechanism, now also pushing a real path when the address
+changes. The function it replaces kept its push-only shape, so the defect this entry attributes to
+it is not inherited.
+
+**No router library.** `machine.ts` already owns where the app is, and a router wants to own it too;
+the URL is written as a projection of `state.screen` and read back only as which screen to open.
+§11.5's row was restated from "Routing: None" to **no URL state**, which is what it always meant,
+and `machine.ts`'s comment with it.
+
+**The four excluded screens are not three.** `loading` and `fail_closed` are states rather than
+destinations, and both first-run screens are gates — a link past a disclaimer defeats the
+disclaimer. A link during first run is spent: boot lands on the gate and the landing only moves the
+app on from the ordinary front door. Tested both ways.
+
+**`check_routes_do_not_collide` is new**, because this entry's own warning — a route named like a
+file, a file named like a route — was a thing nothing checked. Two seeds, one per direction.
 
 **One thing to verify before building, not to assume.** iOS Safari's *Add to Home Screen* has
 historically bookmarked the CURRENT page URL rather than honouring `start_url`. If that still holds,
@@ -1525,6 +1556,43 @@ migration against a change that was happening regardless.
 **Trigger: Momin's ruling, and the options are three, not two.** Port it now; port it alongside the
 config-as-data work; or leave it and accept that the repository has one file in another language.
 The constraints above are the brief for whichever he picks.
+
+### T15. The deployed path is stated sixteen times and guarded three
+
+**Found 2026-09-17, while costing a possible move to `mealunits.github.io`.** Momin asked the right
+question — *"when we move, do we have to change it everywhere?"* — and the answer today is yes, in
+more places than the constants suggest.
+
+`vite.config.ts` holds both halves already: `BASE = '/MealUnits/'` (line 48) and `SITE_URL`
+(line 54). A domain move is meant to be those two lines. It is not.
+
+| File | Copies | Guarded |
+|---|---|---|
+| `index.html` | 8 — canonical, `og:url`, `og:image`, `twitter:image`, manifest, apple-touch-icon, icon, JSON-LD `url` | 3, by `check_site_url_agrees` |
+| `public/manifest.webmanifest` | 3 — `id`, `start_url`, `scope` | none |
+| `src/ui/fonts.css` | 3 font URLs | none |
+| `public/robots.txt` | 1 sitemap URL | none |
+
+**The failures are silent and they are not equal.** A wrong `scope` in the manifest orphans an
+installed app — the icon on a phone stops matching the site it was installed from, and nobody is
+told. Wrong font URLs render the page with no webfont and no error. Both survive a green build,
+a passing test suite and a successful deploy.
+
+**Why it is not one job.** `index.html` is transformed at build time already (`transformIndexHtml`,
+the CSP plugin), so its eight are the cheap ones — and **`24`'s routing work generates four route
+heads from the same constants, which takes those eight with it.** The other seven are harder for
+real reasons: `public/` is copied verbatim, so the manifest and `robots.txt` have to move out and
+be emitted the way `sitemap.xml` already is, which shrinks the `public/` walk that
+`check_public_assets_classified` pins and that `check_input_sets` fails on when it empties. And the
+idiomatic fix for `fonts.css` — importing the fonts from `src/` so Vite rewrites the URLs — turns
+them into hashed filenames, which the worker's precache manifest then has to pick up. That last one
+would also clear the "didn't resolve at build time" warnings printed on every build today.
+
+**Order, and the reason for it:** the manifest is the item that can break an existing install, so it
+gets a change where it is the only thing moving, rather than riding along with routing.
+
+**Not urgent.** The cost lands on the day the domain actually moves. Recorded now so that day has a
+price attached before anyone decides it is cheap.
 
 ### T10. A sanity suite, separate from smoke — decide whether two files are worth it
 
