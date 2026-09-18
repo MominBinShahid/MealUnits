@@ -1097,14 +1097,22 @@ export async function start(host: Host): Promise<void> {
       host.onSettled?.();
     }
 
-    // §12 — a dose has just been written and this browser has not promised to
-    // keep it. `=== false` deliberately: `null` is "will not say" and
-    // `undefined` is "has not answered", and warning on either would be a guess.
+    // §12 — something is now STORED and this browser has not promised to keep
+    // it. The moment is the settings landing, not the first dose: "Save and
+    // start" writes a prescription, and losing that means re-entering ISF, ICR,
+    // target and basal. Waiting for a dose would warn about the second thing at
+    // risk and not the first.
+    //
+    // Not on the first-run screens themselves — mid-setup, about data that does
+    // not exist yet, is the wrong moment for it. And `=== false` deliberately:
+    // `null` is "will not say", `undefined` is "has not answered", and warning
+    // on either would be a guess, which §12 forbids.
     if (
       !storageWarned
       && storageDurable === false
-      && state.screen === 'calculator'
-      && state.step === 'logged'
+      && state.settings !== null
+      && state.screen !== 'first_run_disclaimer'
+      && state.screen !== 'first_run_settings'
     ) {
       storageWarned = true;
       host.onStorageAtRisk?.();

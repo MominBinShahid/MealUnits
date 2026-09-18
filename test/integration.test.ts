@@ -2330,23 +2330,32 @@ describe('§12 — what this browser promises about the record', () => {
     await tap('Log this injection');
   }
 
-  it('offers the warning only once a dose has actually been written', async () => {
+  it('offers it as soon as a PRESCRIPTION is stored, not waiting for a dose', async () => {
+    // "Save and start" writes ISF, ICR, target and basal. Losing those means
+    // re-entering a prescription, so they are the first thing at risk — waiting
+    // for a dose would warn about the second thing and not the first.
     storageAnswer = false;
     await setUpAsHisBrother();
-    // Nothing logged yet: the warning would be about nothing, and a storage
-    // warning on an empty app reads as the app apologising for itself.
-    expect(storageWarnings).toBe(0);
-
-    await logADose();
     expect(storageWarnings).toBe(1);
   });
 
-  it('offers it once per session, not on every dose', async () => {
+  it('says nothing while setup is still on screen', async () => {
+    // Mid-task, about data that does not exist yet, is the wrong moment.
+    storageAnswer = false;
+    await boot();
+    await tap('☐  I have read this');
+    await tap('I understand — use at my own risk');
+    expect(storageWarnings).toBe(0);
+  });
+
+  it('offers it once per session, however many doses follow', async () => {
+    // One bar. `promptBar` APPENDS rather than replaces, so a second would
+    // stack on the update prompt on a phone screen.
     storageAnswer = false;
     await setUpAsHisBrother();
-    await logADose();
     expect(storageWarnings).toBe(1);
 
+    await logADose();
     await tap('Done');
     await logADose();
     expect(storageWarnings).toBe(1);
@@ -2357,6 +2366,13 @@ describe('§12 — what this browser promises about the record', () => {
     await setUpAsHisBrother();
     await logADose();
     expect(storageWarnings).toBe(0);
+  });
+
+  it('carries the three taps in the bar itself, so nothing opens a second one', () => {
+    // iOS cannot be offered an install programmatically, so the text IS the
+    // action. Behind a button it would need a second bar to reveal it.
+    expect(COPY.storage.atRiskBar).toContain('Share');
+    expect(COPY.storage.atRiskBar).toContain('Add to Home Screen');
   });
 
   it('stays silent when the browser will not say, which is not the same as no', async () => {

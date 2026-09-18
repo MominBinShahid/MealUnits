@@ -3733,11 +3733,33 @@ are not two:** durable, evictable, and *will not say*. Warning on "will not say"
 record is at risk on a browser that keeps it perfectly well, and claiming danger is as dishonest as
 claiming durability.
 
-**Where it appears, ruled 2026-09-18 [Momin].** A permanent line in Settings reporting whatever the
-browser said, and a one-per-session bar **after the first dose is written** — not at boot and not
-during first-run setup, because before anything is logged the warning is about nothing and reads as
-the app apologising for itself. The bar cannot install anything on iOS; it can only say where the
-control is, so it gives the three taps in the order a person makes them.
+**Where it appears, ruled 2026-09-18 [Momin]. TWO places, and one of them is not a new control.**
+
+A permanent line in **Settings**, reporting whatever the browser said — the place to check, and where
+"has promised" and "will not say" are reported too.
+
+And **one bar, which is the install offer wearing an honest reason.** The storage warning and the
+install offer are the same message: one says why, the other says what. A separate bar would have been
+a third stacking on the update prompt, and `promptBar` appends rather than replaces. So where a real
+install prompt exists the bar is unchanged and one tap installs; where it does not — **every browser
+on an iPhone, because `beforeinstallprompt` never fires there** — the same bar carries the reason and
+the three taps in its text. That closes a gap this section created: the offer that prevents the loss
+was gated on an event iOS does not send, so it was never shown to the only people who needed it.
+
+**The moment is the settings landing, not the first dose.** "Save and start" writes a prescription,
+and losing that means re-entering ISF, ICR, target and basal — so it is the first thing at risk, not
+the second. Not during first-run setup itself: mid-task, about data that does not exist yet, is the
+wrong moment. **And not on the setup screen as well as the bar** — the bar arrives seconds later and
+says the same thing.
+
+**The taps are in the bar's text, not behind a button.** iOS cannot be offered an install
+programmatically, so there is nothing to put behind one; a button that only revealed instructions
+would mean a second bar, which is the duplication this arrangement exists to avoid. The bar therefore
+has no action, only a dismissal — `promptBar`'s action is optional for exactly this.
+
+**No "nothing has happened to your record" here**, unlike §7.7.1's not-found page. Nothing has: this
+is a warning about next week, and reassuring someone about a loss that has not occurred muddies a
+short message.
 
 **Do not treat private-mode detection as a dependable gate** [R2]. There is no supported
 detection contract, and a successful write does not prove persistence. Report storage
