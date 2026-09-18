@@ -3706,7 +3706,14 @@ appears in both: the config holds the default, the store holds what he is actual
 | `safe-area-inset` / `position:fixed` bugs | Neither | Both |
 
 The two facts that drove version 1's install-before-onboarding ordering — eviction and
-non-transferring data — **do not apply to this user.**
+non-transferring data — **do not apply to this user. CORRECTED 2026-09-18: they apply to a great
+many of its users now.** `T5` made the app's audience anyone with type 1, and this sentence was
+written when it had one, on Android. The table above is unchanged and was always right; what was
+wrong was reading it as an architecture note rather than a live hazard. An iPhone user who does not
+install loses the entire dose log after about a week away — silently, with the app simply opening
+empty — and `beforeinstallprompt` never fires there, so the install that would prevent it was never
+even offered. The row above says "iOS Safari"; read it as **iOS**, since every browser on an iPhone
+is the same engine underneath and a person using Chrome there is equally affected.
 
 **Still in v1:** `persist()` (three lines, call it and surface `persisted()` honestly),
 export/backup, and the **"last made a copy you can restore from: N days ago"** prompt (§7.7.1 owns
@@ -3714,8 +3721,23 @@ its wording, its field, and the rules that it counts the JSON only and reports o
 observed) — the log makes stored data worth protecting.
 
 **Downgraded to a light touch:** the install prompt becomes an ordinary `beforeinstallprompt`
-flow rather than an onboarding gate; iOS danger-state warnings appear only when iOS Safari and
-not standalone is actually detected.
+flow rather than an onboarding gate.
+
+**The danger-state warning is triggered by CAPABILITY, not by detection — CORRECTED 2026-09-18.**
+This said warnings "appear only when iOS Safari and not standalone is actually detected", which is
+detection twice over and sits a paragraph above the rule forbidding exactly that. It is also wrong
+on its own terms: naming Safari misses every other browser on an iPhone, all of which are the same
+engine. So the app asks the browser the question instead of guessing from its name —
+`navigator.storage.persisted()`, which it already called and threw away. **Three answers, and they
+are not two:** durable, evictable, and *will not say*. Warning on "will not say" tells someone their
+record is at risk on a browser that keeps it perfectly well, and claiming danger is as dishonest as
+claiming durability.
+
+**Where it appears, ruled 2026-09-18 [Momin].** A permanent line in Settings reporting whatever the
+browser said, and a one-per-session bar **after the first dose is written** — not at boot and not
+during first-run setup, because before anything is logged the warning is about nothing and reads as
+the app apologising for itself. The bar cannot install anything on iOS; it can only say where the
+control is, so it gives the three taps in the order a person makes them.
 
 **Do not treat private-mode detection as a dependable gate** [R2]. There is no supported
 detection contract, and a successful write does not prove persistence. Report storage

@@ -1645,6 +1645,29 @@ That turned out to be benign — Google's own help lists "low crawl demand" as a
 status, and a live test returned "URL is available to Google" — but reading the apex `robots.txt` to
 rule it out is what surfaced the ownership question.
 
+### T17. Prune the long documents again, after this round
+
+**Momin, 2026-09-18.** `BUILD-NOTES.md`, `BACKLOG.md` and `PLAN.md` have grown through a week of
+work. Review them and remove pointers that are done and no longer needed **even for future
+reference** — not merely closed, but genuinely spent.
+
+**Step 3a did this once, on 2026-09-13**, under the rule *"we can't keep everything for ever, so we
+will only keep things that earn their place."* Two outcomes from that pass are the brief for this
+one: every build-note NUMBER survived even where its body did not, because many are cited from
+source and tests; and `git log` keeps the figures, which rot in prose.
+
+**The order matters — this waits until the current round lands**, because a note is hardest to judge
+while the work it describes is still moving.
+
+**One thing to weigh rather than assume.** Several entries are load-bearing in a way their status
+does not show: note 77 records a premise invalidated by a decision made three sections away, and
+`T16` records a dependency on a repository this project does not control. Neither is "done" in any
+sense that makes it disposable. The test is whether removing it would let the same mistake happen
+again unnoticed.
+
+**And one piece of housekeeping to fold in:** two entries in this file are both numbered `T14` —
+the Vitest pin and the Lighthouse question. Citations to "T14" are ambiguous today.
+
 ### T10. A sanity suite, separate from smoke — decide whether two files are worth it
 
 **Trigger: when `smoke.mjs` next feels too big, or when a change needs deep verification of one

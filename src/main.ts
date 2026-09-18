@@ -26,13 +26,18 @@ import { COPY } from './ui/copy.js';
  *
  * So this asks, records the answer, and claims nothing further.
  */
-async function askForPersistence(): Promise<boolean> {
-  if (!('storage' in navigator) || typeof navigator.storage.persist !== 'function') return false;
+async function askForPersistence(): Promise<boolean | null> {
+  // THREE answers, not two, and the third is the reason this returns a union.
+  // `null` is "this browser will not say" — the API is absent, or it threw.
+  // Folding that into `false` would report a browser that keeps data perfectly
+  // well as one that deletes it, and §12's rule cuts both ways: reporting
+  // capability honestly forbids claiming danger as much as claiming durability.
+  if (!('storage' in navigator) || typeof navigator.storage.persist !== 'function') return null;
   try {
     if (await navigator.storage.persisted()) return true;
     return await navigator.storage.persist();
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -410,7 +415,11 @@ function browserHistory(): {
 
 const root = document.querySelector<HTMLDivElement>('#app');
 if (root) {
-  void askForPersistence();
+  // NOT discarded — §12 says "call it and SURFACE `persisted()` honestly", and
+  // until 2026-09-18 this was `void askForPersistence()`, which did the calling
+  // and none of the surfacing. The app awaits it and renders when it lands, so
+  // boot is not held up by a storage API.
+  const storagePersisted = askForPersistence();
   registerServiceWorker();
   const showInstallOffer = offerInstall();
   void start({
@@ -445,12 +454,36 @@ if (root) {
     },
     scrollY: () => window.scrollY,
     scrollTo: (y) => { window.scrollTo(0, y); },
+    storagePersisted,
     setTitle: (title) => {
       if (document.title !== title) document.title = title;
     },
     ...browserHistory(),
     initialPath: window.location.pathname,
     onSettled: showInstallOffer,
+    /**
+     * §12 — the bar, and then the three taps, because iOS cannot be offered an
+     * install programmatically. `beforeinstallprompt` never fires there, so the
+     * offer that would protect the record is one this app can only DESCRIBE.
+     *
+     * Two bars rather than a dialog: the mechanism already exists, it does not
+     * trap focus, and it cannot cover the dose the person just logged.
+     */
+    onStorageAtRisk: () => {
+      promptBar({
+        text: COPY.storage.barText,
+        actionLabel: COPY.storage.barAction,
+        onAction: () => {
+          promptBar({
+            text: COPY.storage.howToInstall.join(' '),
+            actionLabel: COPY.storage.howToClose,
+            onAction: () => { /* reading it is the whole action */ },
+            dismissLabel: COPY.storage.barDismiss,
+          });
+        },
+        dismissLabel: COPY.storage.barDismiss,
+      });
+    },
     // §7.2 — the write and its automatic retry have both failed, so the dose is
     // not in the record and he is the only one who can carry it. A bar rather
     // than a line on the logged screen because `committing` outlives that

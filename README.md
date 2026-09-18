@@ -115,7 +115,7 @@ launder a literal through a local constant.
 
 ### The testing, and what it is worth
 
-- **709 tests**, including 77 golden cases that each carry the hand derivation of their expected
+- **715 tests**, including 77 golden cases that each carry the hand derivation of their expected
   value in the fixture.
 - **100% mutation score** on the core, the state machine and `config.ts` — 1,721 mutants killed, 0
   survived, 0 uncovered. A further 69 are **disabled by name**, each with its reason written at the
