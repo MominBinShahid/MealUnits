@@ -1597,6 +1597,54 @@ gets a change where it is the only thing moving, rather than riding along with r
 **Not urgent.** The cost lands on the day the domain actually moves. Recorded now so that day has a
 price attached before anyone decides it is cheap.
 
+### T16. This app's crawlability belongs to a repository it does not control
+
+**Recorded 2026-09-18, for book-keeping. Nothing is wrong today.**
+
+`robots.txt` is defined per HOST, not per path. There is exactly one per origin, at `/robots.txt`,
+and it governs every path on that host. Crawlers do not look for `/MealUnits/robots.txt`, there is no
+include directive, and there is no way to delegate a subtree. So the rules for this app are written
+by whoever serves `mominbinshahid.github.io/` — **the blog, a different repository.**
+
+This is already recorded obliquely: item 4a notes that `public/robots.txt` here "is inert, and ships
+anyway. Only the apex file is read." This entry names the consequence that note does not.
+
+**Today the apex file reads `Allow: /`, so the app is fully crawlable.** The exposure is that the day
+the blog adds a `Disallow` covering `/MealUnits/` — deliberately, or by a template change, or by a
+Gatsby plugin default — this app stops being indexed and **nothing here says so**. Search Console
+lists "sitemap blocked by robots.txt" as the first cause of a fetch failure, and the symptom is
+indistinguishable from the ordinary crawl-scheduling lag that this project has already spent a day
+diagnosing (see below). A silent failure whose symptom matches a benign one is the worst shape a
+dependency can have.
+
+**It cannot be fixed by agreement.** A promise from the blog side is a social contract, and those
+decay without anyone noticing — which is the same argument §20.3 makes about a convention no check
+enforces.
+
+**Three options, and only the third is available under the current ruling.**
+
+| | |
+|---|---|
+| A separate origin for the app | Real isolation: its own `robots.txt`, and it also settles item 12's storage exposure and the github.io crawl sluggishness in one move. **Ruled out 2026-09-17** — Momin keeps one origin and widens the CSP for reputable services when a feature needs it |
+| Ask the blog to leave `/MealUnits/` alone | Not a mechanism |
+| **Watch it, and make a break loud** | A scheduled job — weekly, not per-commit, since nothing in a pull request here can change another repository's file — that fetches the apex `robots.txt` and fails when a `Disallow` covers a path under `BASE` |
+
+**If the third is built, two things constrain it.** It does **not** belong in `check-plan.py`: that tool
+is deliberately offline, and a network call would mean the thing that tells you the specification and
+the code disagree stops working whenever the network does — `T13` records the same argument against
+letting it acquire an npm dependency. And it must fail only on an unambiguous `Disallow`, never on a
+timeout, or it becomes a check people learn to ignore, which `check_copy_hardcodes_config`'s docstring
+already names as the failure mode that matters.
+
+**GitHub disables scheduled workflows after about sixty days without repository activity**, so the
+watch goes quiet exactly when the project is dormant — which is also when nobody would notice the
+blog changing. Worth knowing before trusting it.
+
+**Where this came from.** 2026-09-17/18, diagnosing a Search Console "Couldn't fetch" on the sitemap.
+That turned out to be benign — Google's own help lists "low crawl demand" as a cause of that exact
+status, and a live test returned "URL is available to Google" — but reading the apex `robots.txt` to
+rule it out is what surfaced the ownership question.
+
 ### T10. A sanity suite, separate from smoke — decide whether two files are worth it
 
 **Trigger: when `smoke.mjs` next feels too big, or when a change needs deep verification of one
