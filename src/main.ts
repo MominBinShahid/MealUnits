@@ -105,8 +105,15 @@ function pickFile(): Promise<string | null> {
  */
 function promptBar(options: {
   readonly text: string;
-  readonly actionLabel: string;
-  readonly onAction: () => void;
+  /**
+   * OPTIONAL, because not every bar has something to do. iOS cannot be offered
+   * an install programmatically, so its storage bar carries the three taps in
+   * its text and has nothing to put behind a button — and a button that only
+   * closed the bar, beside a dismiss that also closes it, is two controls for
+   * one outcome.
+   */
+  readonly actionLabel?: string | undefined;
+  readonly onAction?: (() => void) | undefined;
   readonly dismissLabel: string;
 }): void {
   const bar = document.createElement('div');
@@ -115,10 +122,12 @@ function promptBar(options: {
   const text = document.createElement('b');
   text.textContent = options.text;
 
-  const action = document.createElement('button');
-  action.type = 'button';
-  action.className = 'go';
-  action.textContent = options.actionLabel;
+  const action = options.actionLabel === undefined ? null : document.createElement('button');
+  if (action !== null) {
+    action.type = 'button';
+    action.className = 'go';
+    action.textContent = options.actionLabel ?? '';
+  }
 
   const dismiss = document.createElement('button');
   dismiss.type = 'button';
@@ -130,9 +139,9 @@ function promptBar(options: {
     document.documentElement.style.removeProperty('--prompt-h');
   };
 
-  action.addEventListener('click', () => {
+  action?.addEventListener('click', () => {
     close();
-    options.onAction();
+    options.onAction?.();
   });
   /**
    * DISMISSAL IS IN MEMORY AND NOTHING ELSE. It is gone for this session and
@@ -145,7 +154,7 @@ function promptBar(options: {
    */
   dismiss.addEventListener('click', close);
 
-  bar.append(text, action, dismiss);
+  bar.append(...(action === null ? [text, dismiss] : [text, action, dismiss]));
   document.body.append(bar);
   // Measured after insertion, because the text wraps differently by width.
   document.documentElement.style.setProperty('--prompt-h', `${String(bar.offsetHeight)}px`);
@@ -330,7 +339,7 @@ function registerServiceWorker(): void {
  * storage after seven days, and its generated package shares origin storage, so
  * data does transfer on install. Both facts were iOS facts.
  */
-function offerInstall(): () => void {
+function offerInstall(): { routine: () => void; atRisk: () => void } {
   let pending: (Event & { prompt: () => Promise<void> }) | null = null;
   let shown = false;
 
@@ -341,16 +350,49 @@ function offerInstall(): () => void {
     pending = event as Event & { prompt: () => Promise<void> };
   });
 
-  return (): void => {
-    const prompt = pending;
-    if (prompt === null || shown) return;
-    shown = true;
-    promptBar({
-      text: 'Add this to your home screen?',
-      actionLabel: 'Add it',
-      onAction: () => { void prompt.prompt(); },
-      dismissLabel: 'Not now',
-    });
+  return {
+    /**
+     * The ordinary offer, when the browser can be ASKED. One tap installs.
+     */
+    routine: (): void => {
+      const prompt = pending;
+      if (prompt === null || shown) return;
+      shown = true;
+      promptBar({
+        text: 'Add this to your home screen?',
+        actionLabel: 'Add it',
+        onAction: () => { void prompt.prompt(); },
+        dismissLabel: 'Not now',
+      });
+    },
+    /**
+     * §12 — the same offer, when the browser has not promised to keep the
+     * record. `shown` is shared with `routine` deliberately: these are two
+     * shapes of one message, and `promptBar` APPENDS, so two of them would
+     * stack on a phone screen alongside the update prompt.
+     *
+     * Where a real install prompt exists, prefer it — one tap beats three.
+     * Where it does not, which is every browser on an iPhone, the text carries
+     * the taps and there is nothing to put behind a button.
+     */
+    atRisk: (): void => {
+      if (shown) return;
+      shown = true;
+      const prompt = pending;
+      if (prompt !== null) {
+        promptBar({
+          text: 'Add this to your home screen?',
+          actionLabel: 'Add it',
+          onAction: () => { void prompt.prompt(); },
+          dismissLabel: 'Not now',
+        });
+        return;
+      }
+      promptBar({
+        text: COPY.storage.atRiskBar,
+        dismissLabel: COPY.storage.atRiskDismiss,
+      });
+    },
   };
 }
 
@@ -421,7 +463,7 @@ if (root) {
   // boot is not held up by a storage API.
   const storagePersisted = askForPersistence();
   registerServiceWorker();
-  const showInstallOffer = offerInstall();
+  const installOffer = offerInstall();
   void start({
     root,
     now: () => Date.now(),
@@ -460,30 +502,8 @@ if (root) {
     },
     ...browserHistory(),
     initialPath: window.location.pathname,
-    onSettled: showInstallOffer,
-    /**
-     * §12 — the bar, and then the three taps, because iOS cannot be offered an
-     * install programmatically. `beforeinstallprompt` never fires there, so the
-     * offer that would protect the record is one this app can only DESCRIBE.
-     *
-     * Two bars rather than a dialog: the mechanism already exists, it does not
-     * trap focus, and it cannot cover the dose the person just logged.
-     */
-    onStorageAtRisk: () => {
-      promptBar({
-        text: COPY.storage.barText,
-        actionLabel: COPY.storage.barAction,
-        onAction: () => {
-          promptBar({
-            text: COPY.storage.howToInstall.join(' '),
-            actionLabel: COPY.storage.howToClose,
-            onAction: () => { /* reading it is the whole action */ },
-            dismissLabel: COPY.storage.barDismiss,
-          });
-        },
-        dismissLabel: COPY.storage.barDismiss,
-      });
-    },
+    onSettled: installOffer.routine,
+    onStorageAtRisk: installOffer.atRisk,
     // §7.2 — the write and its automatic retry have both failed, so the dose is
     // not in the record and he is the only one who can carry it. A bar rather
     // than a line on the logged screen because `committing` outlives that

@@ -696,21 +696,25 @@ export const COPY = {
      */
     atRiskWhy:
       'On an iPhone or iPad, a browser clears apps it has not seen for about a week \u2014 including everything logged here. Adding this to your home screen stops that.',
-    /** The bar, offered once, and only after there is a record to lose. */
-    barText: 'Your doses could be deleted',
-    barAction: 'How do I?',
-    barDismiss: 'Not now',
     /**
-     * iOS has no programmatic install, so the action cannot install anything —
-     * it can only say where the control is. Written as the three taps a person
-     * actually makes, in the order they make them.
+     * ONE bar, and it is the install offer wearing an honest reason.
+     *
+     * The storage warning and the install offer are the same message: one says
+     * why, the other says what. A separate bar would have been a third one
+     * stacking on the update prompt, and `promptBar` appends rather than
+     * replaces — so the duplication was the bar, not the wording.
+     *
+     * This shape is for the browser that CANNOT be asked to install: iOS never
+     * fires `beforeinstallprompt`, so the offer that prevents the loss was
+     * never shown to the only people who needed it. The three taps are in the
+     * text because putting them behind a button means a second bar.
+     *
+     * No "nothing has happened to your record" here, unlike the 404 page.
+     * Nothing HAS happened — this is about next week — and reassuring someone
+     * about a loss that has not occurred only muddies a short message.
      */
-    howToInstall: [
-      'Nothing has happened to your record. Your doses are saved on this device.',
-      'This browser can clear them if you do not open the app for about a week. Putting it on your home screen stops that, and nothing is lost in the move.',
-      'Tap the Share button, then \u201cAdd to Home Screen\u201d, then \u201cAdd\u201d.',
-    ] as const,
-    howToClose: 'Got it',
+    atRiskBar: 'Your doses could be deleted. Tap Share, then \u201cAdd to Home Screen\u201d.',
+    atRiskDismiss: 'Got it',
   },
 
   settings: {

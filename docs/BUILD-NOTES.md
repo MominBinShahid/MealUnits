@@ -1167,10 +1167,27 @@ browser that keeps data perfectly well as one that deletes it. Reporting capabil
 claiming danger as firmly as it forbids claiming durability, so the type is `boolean | null` and the
 trigger is `=== false`, never falsy.
 
-**Where it appears** — Momin's ruling. A permanent line in Settings, reporting whatever the browser
-said; and a bar offered once per session **after the first dose is written**. Not at boot, not during
-setup: before anything is logged the warning is about nothing. On iOS the bar cannot install
-anything, so it gives the three taps instead, and its first sentence is that the record is safe —
-same reasoning as note 76's 404 page, and for the same reader.
+**Where it appears — and the first answer was wrong twice, both times caught by Momin.**
+
+The first draft warned after the first DOSE. He asked why setup did not show it, which exposed the
+hole: "Save and start" writes a prescription, and losing ISF, ICR, target and basal means re-entering
+it. Waiting for a dose warns about the second thing at risk and not the first. The trigger is now the
+settings landing.
+
+Then, offered a line on setup as well, he asked whether that made three bars — install, update, and
+this. It would have, and `promptBar` APPENDS rather than replaces, so they stack on a phone screen.
+**The answer was that the storage warning and the install offer are the same message**: one says why,
+the other says what. So there is no new bar. The install offer gained a second shape — where a real
+prompt exists, one tap installs as before; where it does not, the same bar carries the reason and the
+three taps. That also closed a gap nobody had named: the offer is gated on `beforeinstallprompt`,
+which iOS never fires, so **the action that prevents the loss had never been shown to the only people
+who needed it.**
+
+The taps sit in the text rather than behind a button, because a button revealing instructions means a
+second bar — the duplication just removed. `promptBar`'s action is now optional for that.
+
+Final shape: a permanent line in Settings, and one bar at the settings landing. Not on the setup
+screen, which the bar follows by seconds. No "nothing has happened to your record" line here, unlike
+note 76's 404 page — nothing has, and reassuring about a loss that has not occurred muddies it.
 
 Six tests, one per answer and one per placement, including that first-run says nothing at all.
