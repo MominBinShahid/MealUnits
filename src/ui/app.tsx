@@ -194,6 +194,22 @@ export interface Host {
    * worker and reads the route file, so the canonical is right where it counts;
    * the TITLE is what a person sees on a tab and a bookmark, so the app sets it.
    */
+  /**
+   * Whether this browser has promised to keep the record, as THREE answers:
+   * `true` durable, `false` evictable, `null` the browser will not say.
+   *
+   * §12: "call it and SURFACE `persisted()` honestly." Until 2026-09-18 the
+   * answer was computed and thrown away, so the app knew and never said. It
+   * matters most on iOS, where storage is deleted after seven days without a
+   * visit unless the app is on the home screen — and where `beforeinstallprompt`
+   * never fires, so the install that would prevent it is never offered.
+   *
+   * A promise rather than a value: asking is asynchronous and boot does not wait
+   * on it. Deliberately NOT a browser check — §12 forbids treating detection as
+   * a dependable gate, and this asks the browser the actual question instead of
+   * inferring the answer from its name.
+   */
+  readonly storagePersisted: Promise<boolean | null>;
   readonly setTitle: (title: string) => void;
   readonly syncHistory: (can: boolean, path: string) => void;
   /** Fired on a real browser navigation, with the path it landed on. */
@@ -207,6 +223,15 @@ export interface Host {
    * disclaimer is the same mistake with a smaller footprint.
    */
   readonly onSettled?: (() => void) | undefined;
+  /**
+   * §12 — offered once, and only with a record to lose.
+   *
+   * The moment chosen is the first dose LANDING, not boot and not first run.
+   * Before anything is logged the warning is about nothing, and a storage
+   * warning on an empty app reads as the app apologising for itself; after a
+   * dose is written there is something a seven-day gap would take.
+   */
+  readonly onStorageAtRisk?: (() => void) | undefined;
   /**
    * §7.2 — a dose whose write has now failed TWICE, handed to something that
    * follows him off the screen he logged it on.
@@ -668,7 +693,7 @@ export async function start(host: Host): Promise<void> {
 
       case 'first_run_settings':
       case 'settings':
-        return <SettingsScreen draft={view.draft} settings={state.settings} handlers={{
+        return <SettingsScreen draft={view.draft} settings={state.settings} storageDurable={storageDurable} handlers={{
           firstRun: state.screen === 'first_run_settings',
           ceilAcknowledged: stored?.acks.has(ackKeys.forMode(view.draft.mode)) ?? false,
           advisoryStatus: advisoryStatus(),
@@ -943,6 +968,10 @@ export async function start(host: Host): Promise<void> {
   let showAsText = false;
 
   let settled = false;
+  /** §12's answer once it lands; `undefined` until then, which is not `null`. */
+  let storageDurable: boolean | null | undefined;
+  /** The at-risk bar is offered once per session, and only with a record to lose. */
+  let storageWarned = false;
 
 
   /**
@@ -1066,6 +1095,19 @@ export async function start(host: Host): Promise<void> {
     if (!settled && state.screen === 'calculator') {
       settled = true;
       host.onSettled?.();
+    }
+
+    // §12 — a dose has just been written and this browser has not promised to
+    // keep it. `=== false` deliberately: `null` is "will not say" and
+    // `undefined` is "has not answered", and warning on either would be a guess.
+    if (
+      !storageWarned
+      && storageDurable === false
+      && state.screen === 'calculator'
+      && state.step === 'logged'
+    ) {
+      storageWarned = true;
+      host.onStorageAtRisk?.();
     }
 
     // §11.3 layer 2 — watch while a result is displayed OR a confirmation is
@@ -1265,6 +1307,13 @@ export async function start(host: Host): Promise<void> {
     // INSIDE the wizard is still the app's own action.
     const goBack = backAction();
     if (goBack !== null) goBack();
+  });
+
+  // §12 — the answer arrives after boot and re-renders when it does. Settings
+  // reports it whatever it says; the bar below acts only on `false`.
+  void host.storagePersisted.then((answer) => {
+    storageDurable = answer;
+    render();
   });
 
   await boot();

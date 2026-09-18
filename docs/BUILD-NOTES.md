@@ -1132,3 +1132,45 @@ serves the content. `pathForScreen` now returns the trailing-slash form and the 
 checking.** A redirect is invisible to a tool told to follow redirects, and "200" was a true
 statement about the wrong URL.
 
+
+## 77. The app knew its storage was evictable and never said
+
+Closed 2026-09-18. `§12` said "call it and SURFACE `persisted()` honestly"; `main.ts` read
+`void askForPersistence()`. It did the calling and none of the surfacing, and had since v1.
+
+**What that cost.** WebKit deletes IndexedDB, and with it the entire dose log, after about seven
+days without a visit — unless the app is on the home screen. The record simply is not there when the
+app next opens, with no error and nothing on screen to explain it. §12's own table has said so from
+the beginning: *"7-day storage eviction — iOS Safari: Yes, unless installed to Home Screen."*
+
+**The reason it sat there is the interesting part, and it is a pattern worth naming.** The line under
+that table read *"The two facts that drove version 1's install-before-onboarding ordering — eviction
+and non-transferring data — do not apply to this user."* That was TRUE and well-reasoned: the user
+was one person, on Android. `T5` then made the audience anyone with type 1, and this sentence did not
+change, because nothing links an audience decision to a sentence three sections away that depends on
+it. **A premise can be invalidated by a decision made somewhere else entirely, and the sentence
+resting on it goes on reading as though it were still checked.**
+
+Worse, the protection was unreachable: the install offer is gated on `beforeinstallprompt`, which iOS
+never fires. So the one action that prevents the loss was never offered to the only people who needed
+it.
+
+**Capability, not detection.** §12 also said the warning should appear "when iOS Safari and not
+standalone is actually detected" — detection, a paragraph above the rule forbidding detection, and
+wrong anyway: every browser on an iPhone is WebKit, so naming Safari misses Chrome and Firefox users
+who are equally affected. Asking `navigator.storage.persisted()` selects exactly the people at risk
+without reading a user-agent string, and it is the question the app was already asking.
+
+**Three answers, and collapsing them to two is the defect this note would otherwise repeat.** Durable,
+evictable, and *will not say*. The old helper returned `false` for a missing API, which reports a
+browser that keeps data perfectly well as one that deletes it. Reporting capability honestly forbids
+claiming danger as firmly as it forbids claiming durability, so the type is `boolean | null` and the
+trigger is `=== false`, never falsy.
+
+**Where it appears** — Momin's ruling. A permanent line in Settings, reporting whatever the browser
+said; and a bar offered once per session **after the first dose is written**. Not at boot, not during
+setup: before anything is logged the warning is about nothing. On iOS the bar cannot install
+anything, so it gives the three taps instead, and its first sentence is that the record is safe —
+same reasoning as note 76's 404 page, and for the same reader.
+
+Six tests, one per answer and one per placement, including that first-run says nothing at all.

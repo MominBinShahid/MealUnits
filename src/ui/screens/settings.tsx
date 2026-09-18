@@ -331,10 +331,18 @@ export function SettingsScreen({
   draft,
   settings,
   handlers,
+  storageDurable,
 }: {
   readonly draft: SettingsDraft;
   readonly settings: Settings | null;
   readonly handlers: SettingsHandlers;
+  /**
+   * §12's answer: `true` durable, `false` evictable, `null` the browser will not
+   * say, `undefined` it has not answered yet. Four cases because the question is
+   * asynchronous and has three answers — reporting "at risk" while the answer is
+   * still in flight would be a guess, which is the thing §12 forbids.
+   */
+  readonly storageDurable: boolean | null | undefined;
 }): JSX.Element {
   const problems = checkDraft(draft);
   const problemFor = (field: keyof SettingsDraft): FieldProblem | undefined =>
@@ -559,6 +567,24 @@ export function SettingsScreen({
           {handlers.firstRun ? COPY.settings.saveFirstRun : COPY.settings.save}
         </Button>
       </div>
+
+      {/* §12 — what the browser has promised about the record, reported whatever
+          it says. Not first-run: someone who has logged nothing has nothing at
+          risk yet, and a storage warning before there is any storage reads as
+          the app apologising for itself. */}
+      {handlers.firstRun || storageDurable === undefined ? null : (
+        <div class="card">
+          <b>{COPY.storage.label}</b>
+          <p class="hint">
+            {storageDurable === true
+              ? COPY.storage.durable
+              : storageDurable === null
+                ? COPY.storage.unknown
+                : COPY.storage.atRisk}
+          </p>
+          {storageDurable === false ? <p class="hint">{COPY.storage.atRiskWhy}</p> : null}
+        </div>
+      )}
 
       {handlers.firstRun ? null : (
         <div class="list">

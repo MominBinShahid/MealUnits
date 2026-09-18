@@ -666,6 +666,53 @@ export const COPY = {
   },
 
   // ── §10.1 — naming the two ratios ─────────────────────────────────────────
+  /**
+   * §12 — what this browser has promised about keeping the record, and what to
+   * do when it has promised nothing.
+   *
+   * **Three states, because there are three answers.** A browser that will not
+   * say is not a browser that deletes: reporting capability honestly forbids
+   * claiming danger as much as it forbids claiming durability, and §12's rule
+   * is explicit that a successful write does not prove persistence.
+   *
+   * The first sentence of the at-risk copy is the record, not the fix. Someone
+   * reading a storage warning on an app holding their doses wants to know what
+   * has happened to what they already logged, before they are told what to do
+   * about it.
+   *
+   * iOS is named rather than described, and NOT as "Safari": every browser on
+   * an iPhone is the same engine underneath, so a person using Chrome there is
+   * affected and would read past a warning about Safari.
+   */
+  storage: {
+    label: 'Keeping your record',
+    durable: 'This browser has promised to keep it.',
+    unknown: 'This browser has not said either way. Save a copy from time to time.',
+    atRisk: 'This browser has not promised to keep it.',
+    /**
+     * Shown under `atRisk` in Settings. Seven days is not interpolated from a
+     * constant because it is not ours — it is WebKit's policy, and a number in
+     * `config.ts` would imply this app can change it.
+     */
+    atRiskWhy:
+      'On an iPhone or iPad, a browser clears apps it has not seen for about a week \u2014 including everything logged here. Adding this to your home screen stops that.',
+    /** The bar, offered once, and only after there is a record to lose. */
+    barText: 'Your doses could be deleted',
+    barAction: 'How do I?',
+    barDismiss: 'Not now',
+    /**
+     * iOS has no programmatic install, so the action cannot install anything —
+     * it can only say where the control is. Written as the three taps a person
+     * actually makes, in the order they make them.
+     */
+    howToInstall: [
+      'Nothing has happened to your record. Your doses are saved on this device.',
+      'This browser can clear them if you do not open the app for about a week. Putting it on your home screen stops that, and nothing is lost in the move.',
+      'Tap the Share button, then \u201cAdd to Home Screen\u201d, then \u201cAdd\u201d.',
+    ] as const,
+    howToClose: 'Got it',
+  },
+
   settings: {
     targetQuestion: 'What should a correction aim for?',
     /** The target had no explanatory line at all, only the question. */

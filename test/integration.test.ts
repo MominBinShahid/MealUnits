@@ -46,6 +46,10 @@ let canGoBack: boolean;
 /** The address the shell last projected, and the one the harness "navigates" to. */
 let currentPath: string;
 let currentTitle: string;
+/** §12's answer, which each test sets before booting. */
+let storageAnswer: boolean | null;
+/** Counts the at-risk offer, so "once, and only with a record" is testable. */
+let storageWarnings: number;
 let startPath: string;
 /**
  * Which `boot` a Host belongs to. A test that boots twice — and a test whose
@@ -119,6 +123,8 @@ beforeEach(() => {
   hardwareBack = null;
   currentPath = '/MealUnits/';
   currentTitle = '';
+  storageAnswer = true;
+  storageWarnings = 0;
   startPath = '/MealUnits/';
   generation += 1;
   buzzes = 0;
@@ -151,6 +157,8 @@ async function boot(indexedDB: IDBFactory = new IDBFactory()): Promise<void> {
     // testable: `canGoBack` records what the shell claims, and `pressBack`
     // fires the gesture. jsdom's own history would not tell us either.
     buzz: () => { buzzes += 1; },
+    storagePersisted: Promise.resolve(storageAnswer),
+    onStorageAtRisk: () => { if (live()) storageWarnings += 1; },
     setTitle: (title) => { if (live()) currentTitle = title; },
     syncHistory: (can, path) => { if (live()) { canGoBack = can; currentPath = path; } },
     onNavigate: (handler) => { if (live()) hardwareBack = handler; },
@@ -2309,5 +2317,89 @@ describe('BACKLOG 24 — the four screens that have an address', () => {
     }
     expect(screenForPath('/MealUnits/', '/MealUnits/')).toBeNull();
     expect(pathForScreen('calculator', '/MealUnits/')).toBe('/MealUnits/');
+  });
+});
+
+describe('§12 — what this browser promises about the record', () => {
+  async function logADose(): Promise<void> {
+    await keys('180');
+    await tap('Next');
+    await keys('50');
+    await tap('Work out the dose');
+    await tap('I injected this');
+    await tap('Log this injection');
+  }
+
+  it('offers the warning only once a dose has actually been written', async () => {
+    storageAnswer = false;
+    await setUpAsHisBrother();
+    // Nothing logged yet: the warning would be about nothing, and a storage
+    // warning on an empty app reads as the app apologising for itself.
+    expect(storageWarnings).toBe(0);
+
+    await logADose();
+    expect(storageWarnings).toBe(1);
+  });
+
+  it('offers it once per session, not on every dose', async () => {
+    storageAnswer = false;
+    await setUpAsHisBrother();
+    await logADose();
+    expect(storageWarnings).toBe(1);
+
+    await tap('Done');
+    await logADose();
+    expect(storageWarnings).toBe(1);
+  });
+
+  it('stays silent when the browser HAS promised to keep it', async () => {
+    storageAnswer = true;
+    await setUpAsHisBrother();
+    await logADose();
+    expect(storageWarnings).toBe(0);
+  });
+
+  it('stays silent when the browser will not say, which is not the same as no', async () => {
+    // §12: report capability honestly. `null` is "no answer", and warning on it
+    // would tell someone their record is at risk on a browser that keeps it
+    // perfectly well — claiming danger is as dishonest as claiming durability.
+    storageAnswer = null;
+    await setUpAsHisBrother();
+    await logADose();
+    expect(storageWarnings).toBe(0);
+  });
+
+  it('reports all three answers in Settings, and never guesses', async () => {
+    for (const [answer, expected] of [
+      [true, COPY.storage.durable],
+      [false, COPY.storage.atRisk],
+      [null, COPY.storage.unknown],
+    ] as const) {
+      storageAnswer = answer;
+      install();
+      await boot();
+      await tap('☐  I have read this');
+      await tap('I understand — use at my own risk');
+      await typeInto('What should a correction aim for', '150');
+      await typeInto('How far does one unit lower', '30');
+      await typeInto('How much carbohydrate does one unit cover', '10');
+      await typeInto('Which insulin', 'Lantus');
+      await typeInto('How many units', '36');
+      await typeInto('When', 'early morning, before breakfast');
+      await tap('Save and start');
+      await tap('Settings');
+      expect(text(), String(answer)).toContain(plain(expected));
+      // And only the at-risk state explains itself.
+      expect(text().includes(plain(COPY.storage.atRiskWhy)), String(answer)).toBe(answer === false);
+    }
+  });
+
+  it('says nothing about storage during first-run setup', async () => {
+    // Nothing is stored yet, so there is nothing to lose and nothing to report.
+    storageAnswer = false;
+    await boot();
+    await tap('☐  I have read this');
+    await tap('I understand — use at my own risk');
+    expect(text()).not.toContain(plain(COPY.storage.label));
   });
 });
