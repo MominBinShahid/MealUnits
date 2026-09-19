@@ -133,7 +133,11 @@ function promptBar(options: {
 
   const dismiss = document.createElement('button');
   dismiss.type = 'button';
-  dismiss.className = 'link';
+  // A LINK beside a real action, a BUTTON when it is the only control. The
+  // quiet link reads as secondary next to "Add it"; alone in the bar it reads
+  // as text nobody thought to style, and the one thing a person can do here
+  // stops looking like a thing they can do.
+  dismiss.className = options.actionLabel === undefined ? 'go quiet' : 'link';
   dismiss.textContent = options.dismissLabel;
 
   const close = (): void => {

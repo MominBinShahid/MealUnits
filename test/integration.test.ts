@@ -2386,6 +2386,16 @@ describe('§12 — what this browser promises about the record', () => {
     expect(COPY.installSteps(0)).toBe(COPY.storage.addToDock);
   });
 
+  it('does not also raise the bar while Settings is open', async () => {
+    // The same warning is on that screen in full, with the steps. A bar over
+    // the top of the section you are reading is noise.
+    storageAnswer = false;
+    await setUpAsHisBrother();
+    const afterSetup = storageWarnings;
+    await tap('Settings');
+    expect(storageWarnings).toBe(afterSetup);
+  });
+
   it('puts the steps in Settings too, since the bar is gone once dismissed', async () => {
     storageAnswer = false;
     await setUpAsHisBrother();
