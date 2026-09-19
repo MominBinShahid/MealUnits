@@ -693,7 +693,15 @@ export async function start(host: Host): Promise<void> {
 
       case 'first_run_settings':
       case 'settings':
-        return <SettingsScreen draft={view.draft} settings={state.settings} storageDurable={storageDurable} handlers={{
+        return <SettingsScreen
+          draft={view.draft}
+          settings={state.settings}
+          storageDurable={storageDurable}
+          storageWarningOff={stored?.acks.has(ackKeys.storageEviction) ?? false}
+          onStopStorageWarning={() => {
+            if (db !== null) void acknowledge(db, ackKeys.storageEviction, host.now()).then(refresh);
+          }}
+          handlers={{
           firstRun: state.screen === 'first_run_settings',
           ceilAcknowledged: stored?.acks.has(ackKeys.forMode(view.draft.mode)) ?? false,
           advisoryStatus: advisoryStatus(),
@@ -1111,7 +1119,14 @@ export async function start(host: Host): Promise<void> {
     // is why it is a word rather than two booleans. It was a `shown` flag here
     // and another inside `main.ts`, so "raise once" lived in one file and
     // "do not raise again" in the other, and neither could be read alone.
-    if (storageDurable === false && state.settings !== null && storageBar !== 'done') {
+    const storageWarningOff = stored?.acks.has(ackKeys.storageEviction) ?? false;
+    if (
+      storageDurable === false
+      && state.settings !== null
+      && storageBar !== 'done'
+      // An explicit tap in Settings, never an inference from having been there.
+      && !storageWarningOff
+    ) {
       const onAGate = state.screen === 'first_run_disclaimer' || state.screen === 'first_run_settings';
       if (storageBar === 'never' && !onAGate && state.screen !== 'settings') {
         storageBar = 'showing';

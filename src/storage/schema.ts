@@ -230,6 +230,19 @@ export interface SettingsHistoryRow {
  */
 export const ACK_KEY = {
   disclaimer: 'disclaimer',
+  /**
+   * §12 — "stop warning me that this browser can delete my record".
+   *
+   * NOT bound to a value, unlike the mode and setting acks: what it
+   * acknowledges is a fact about the browser, and that fact does not change
+   * when a number does.
+   *
+   * It lives in the storage the warning is ABOUT, and that is correct rather
+   * than ironic. If the eviction actually fires, the record goes and this goes
+   * with it — and someone who has just lost their log is exactly the person who
+   * should be told it can happen again.
+   */
+  storageEviction: 'storage-eviction',
 } as const;
 
 export function ackKeyForMode(mode: RoundingMode): string {

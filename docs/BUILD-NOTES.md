@@ -1242,3 +1242,44 @@ three times running, which is exactly `translateY(100%)` from its resting place.
 disabled it measures `top: 998, bottom: 1118`: flush to the bottom edge, fully visible, no defect.
 Anything animated must be measured with `animation: none` or not at all.
 
+**The reminder now has an off switch, and it is a TAP rather than an inference — 2026-09-20.**
+
+The first proposal was to stop warning once the reader had "seen the explanation in Settings". Momin
+rejected the premise: Settings is where you go to change a ratio or export, the storage panel sits
+near the bottom, and scrolling past something is not reading it. Inferring comprehension from a
+visit is the kind of guess this app refuses everywhere else.
+
+So the panel carries an explicit **Stop warning me about this**, persisted in the existing `acks`
+store — the same mechanism as the disclaimer and the round-up gate. It turns off the REMINDER and
+not the status: the panel survives the tap, so someone who decided not to install can still find out
+where they stand. And the bar names its own off switch, because an opt-out nobody can find is the
+same as no opt-out.
+
+**It matters that this exists at all.** The update bar's dismissal is in-memory by design, and its
+docstring justifies that: *"the waiting worker activates on the next full restart regardless, so
+dismissing defers the tap rather than the update."* **That reasoning does not transfer.** Dismissing
+the storage bar defers nothing — the risk stands until the app is installed — so without an opt-out
+the bar returns every launch for ever, which §10.5's warning budget says is how a warning stops being
+read. Inheriting a policy along with a mechanism is easy; the rationale has to be re-checked.
+
+**The ack lives in the storage the warning is about**, which is right rather than ironic: if the
+eviction fires, the record goes and the opt-out goes with it, and someone who has just lost their log
+is exactly who should be told it can happen again.
+
+**Two smaller things, both Momin's eye.**
+
+*The heading was smaller than its own body text.* `.flag` declares `0.8125rem`, the heading inherited
+it, and the global `p` rule is `0.9375rem` — so a paragraph inside an advisory rendered LARGER than
+the heading above it. `.flag` had never contained a `<p>` until §12's panel. Fixed at the component:
+its children honour its scale, which is also what the design does — `.alert h4` and `.alert p` are
+one size, separated by weight and colour.
+
+*And "this browser has not promised to keep it" was API-speak.* Browsers do not make promises to
+people. The three answers now say what happens: **will keep**, **won't say**, **can delete**.
+
+**A second browser-verification trap, after the throttled animation.** A preview server reused across
+builds serves the NEW `index.html` only to a browser that has not cached the old one. A stale page
+requests the previous hashed CSS, the dev server answers a missing asset with `index.html`, and that
+parses as **zero CSS rules** — so every element measures as unstyled and the app never boots. It
+looks exactly like a broken stylesheet. Bust the cache, or use a fresh port.
+

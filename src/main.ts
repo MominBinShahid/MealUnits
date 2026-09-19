@@ -422,7 +422,7 @@ function offerInstall(): { routine: () => void; atRisk: (show: boolean) => void 
         // The steps are in the TEXT. Behind a button they would need a second
         // bar, which is the stacking this arrangement exists to avoid — and on
         // WebKit there is nothing else a button could do.
-        text: `${COPY.storage.atRiskBar} ${COPY.installSteps(navigator.maxTouchPoints)}`,
+        text: `${COPY.storage.atRiskBar} ${COPY.installSteps(navigator.maxTouchPoints)} ${COPY.storage.barOptOut}`,
         dismissLabel: COPY.storage.atRiskDismiss,
         variant: 'warn',
       });

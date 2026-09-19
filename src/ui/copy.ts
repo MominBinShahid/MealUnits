@@ -686,9 +686,9 @@ export const COPY = {
    */
   storage: {
     label: 'Keeping your record',
-    durable: 'This browser has promised to keep it.',
-    unknown: 'This browser has not said either way. Save a copy from time to time.',
-    atRisk: 'This browser has not promised to keep it.',
+    durable: 'This browser will keep your record.',
+    unknown: 'This browser won\u2019t say whether it keeps your record. Save a copy from time to time.',
+    atRisk: 'This browser can delete your record.',
     /**
      * Shown under `atRisk` in Settings. Seven days is not interpolated from a
      * constant because it is not ours — it is WebKit's policy, and a number in
@@ -713,6 +713,20 @@ export const COPY = {
      * about a loss that has not occurred only muddies a short message.
      */
     atRiskBar: 'Your doses could be deleted.',
+    /**
+     * The bar names its own off switch. An opt-out nobody can find is the
+     * same as no opt-out, and without it the only way to stop a reminder that
+     * never resolves itself is to dismiss it for ever.
+     */
+    barOptOut: 'You can turn this reminder off in Settings.',
+    /**
+     * The off switch itself, and it is a TAP rather than an inference.
+     * Reaching Settings proves nothing — it is where you go to change a ratio
+     * or export, and this section sits near the bottom. Treating a scroll past
+     * it as \u201cinformed\u201d is the kind of guess this app refuses everywhere else.
+     */
+    stopWarning: 'Stop warning me about this',
+    stoppedWarning: 'Reminders about this are off. The warning above stays, so you can still see where you stand.',
     atRiskDismiss: 'Got it',
 
     /**
