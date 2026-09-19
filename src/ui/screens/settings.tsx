@@ -597,9 +597,9 @@ export function SettingsScreen({
               interrupted; they should not stop being able to find out where
               they stand, which is why the panel above survives the tap. */}
           {storageWarningOff ? (
-            <p class="hint">{COPY.storage.stoppedWarning}</p>
+            <p class="settled">{COPY.storage.stoppedWarning}</p>
           ) : (
-            <Button class="go quiet" onPress={onStopStorageWarning}>
+            <Button class="more" onPress={onStopStorageWarning}>
               {COPY.storage.stopWarning}
             </Button>
           )}

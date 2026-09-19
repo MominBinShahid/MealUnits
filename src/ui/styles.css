@@ -564,6 +564,34 @@ body {
   margin-top: 0;
 }
 
+/*
+ * The advisory's own footer: what the reader has DECIDED, under a hairline,
+ * separated from what the app is telling them.
+ *
+ * Dimmer rather than louder, and deliberately not a warning colour. Turning a
+ * reminder off is a choice, not a fault — styling it as an error would tell
+ * someone they had done something wrong, and the panel above already carries
+ * everything that is actually wrong.
+ *
+ * The rule is `--warn-line` rather than `--line` so it belongs to the panel it
+ * divides, and the same shape as `.working .row.total`, which is the app's
+ * existing way of setting a settled line apart from the rows above it.
+ */
+.flag .settled {
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--warn-line);
+  padding-top: 0.5rem;
+  color: var(--ink-3);
+}
+
+/* The opt-out is `.more`: findable, and never competing with the warning it
+   sits beneath. A filled button there would make "turn this off" look like the
+   thing to do, which is the same mistake as a cyan dismissal. */
+.flag .more {
+  margin-top: 0.375rem;
+  color: var(--warn);
+}
+
 /* §10.5 — band E de-escalates in FORM only. Same words, same rank, never
    behind "more". */
 .flag.compact {
