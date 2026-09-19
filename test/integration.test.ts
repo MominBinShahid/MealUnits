@@ -2368,11 +2368,31 @@ describe('§12 — what this browser promises about the record', () => {
     expect(storageWarnings).toBe(0);
   });
 
-  it('carries the three taps in the bar itself, so nothing opens a second one', () => {
-    // iOS cannot be offered an install programmatically, so the text IS the
-    // action. Behind a button it would need a second bar to reveal it.
-    expect(COPY.storage.atRiskBar).toContain('Share');
-    expect(COPY.storage.atRiskBar).toContain('Add to Home Screen');
+  it('names all THREE steps, because people stop at the last one you name', () => {
+    // The confirming "Add" is a real tap and was missing from the first draft.
+    for (const steps of [COPY.storage.addToHomeScreen, COPY.storage.addToDock]) {
+      expect(steps).toContain('Share');
+      expect(steps).toContain('Add');
+    }
+    expect(COPY.storage.addToHomeScreen).toContain('Add to Home Screen');
+    expect(COPY.storage.addToDock).toContain('Add to Dock');
+  });
+
+  it('words the instruction for the device, because the control has a different name', () => {
+    // §12's rule governs WHETHER to warn and stays a capability question.
+    // WHAT the install control is called has no capability API and genuinely
+    // differs: a Mac has no Home Screen to send anyone looking for.
+    expect(COPY.installSteps(5)).toBe(COPY.storage.addToHomeScreen);
+    expect(COPY.installSteps(0)).toBe(COPY.storage.addToDock);
+  });
+
+  it('puts the steps in Settings too, since the bar is gone once dismissed', async () => {
+    storageAnswer = false;
+    await setUpAsHisBrother();
+    await tap('Settings');
+    // jsdom reports no touch points, so Settings shows the desktop wording —
+    // the point under test is that the steps are THERE, not which they are.
+    expect(text()).toContain(plain(COPY.installSteps(navigator.maxTouchPoints)));
   });
 
   it('stays silent when the browser will not say, which is not the same as no', async () => {

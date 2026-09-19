@@ -602,6 +602,22 @@ body {
   color: var(--ink);
 }
 
+/*
+ * A bar that WARNS rather than offers, per the design's `.alert.warn`: a left
+ * accent in the caution colour on a soft caution ground. The design marks
+ * severity with a 3px left border rather than a ring, so the eye reads the
+ * colour before the words — §10.5's advisories use the same two tokens.
+ *
+ * The radius stays square on that edge, or the accent tapers away at the corner
+ * and reads as a rendering artefact rather than a deliberate mark.
+ */
+.prompt-bar.warn {
+  background: var(--warn-bg);
+  border-color: var(--warn-line);
+  border-left: 3px solid var(--warn);
+  border-top-left-radius: 0;
+}
+
 .prompt-bar b {
   flex: 1 1 100%;
 }

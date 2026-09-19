@@ -582,7 +582,16 @@ export function SettingsScreen({
                 ? COPY.storage.unknown
                 : COPY.storage.atRisk}
           </p>
-          {storageDurable === false ? <p class="hint">{COPY.storage.atRiskWhy}</p> : null}
+          {storageDurable === false ? (
+            <>
+              <p class="hint">{COPY.storage.atRiskWhy}</p>
+              {/* The STEPS, here as well as in the bar. The bar is dismissed
+                  and gone for the session; this is the permanent place, and
+                  someone who comes back meaning to fix it should not have to
+                  remember how. */}
+              <p class="hint">{COPY.installSteps(navigator.maxTouchPoints)}</p>
+            </>
+          ) : null}
         </div>
       )}
 

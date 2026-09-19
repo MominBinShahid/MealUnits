@@ -1191,3 +1191,30 @@ screen, which the bar follows by seconds. No "nothing has happened to your recor
 note 76's 404 page — nothing has, and reassuring about a loss that has not occurred muddies it.
 
 Six tests, one per answer and one per placement, including that first-run says nothing at all.
+
+**Three more corrections, 2026-09-19, all from Momin checking it on a real machine.**
+
+*The steps named two taps and there are three.* "Share, then Add to Home Screen" omits the confirming
+**Add**, and someone following instructions stops at the last step you name.
+
+*The steps were only in the bar.* The bar is dismissed and gone for the session; Settings is the
+permanent place, and someone returning there meaning to fix it was told what to do and never how.
+Both now read from one helper, because two copies drift the day either is reworded.
+
+*And the instruction was iOS-worded while firing on a Mac.* Research settles what §12's table only
+implied: WebKit's rule is *"seven days of Safari use without user interaction on the site"*, so
+**macOS Safari evicts exactly as iOS does** — same engine, same policy — while Chrome and Firefox on
+the same Mac grant persistence. `persist()` is REFUSED on Safari rather than unanswered, so the
+`false` is a true answer. But a Mac has no Home Screen: there the control is **Add to Dock**.
+
+So the split is: **capability decides whether to warn, platform decides how to word the instruction.**
+The trigger stays `persisted()` with no sniffing. The wording keys on `maxTouchPoints`, which
+separates handheld WebKit from desktop WebKit without parsing a user-agent — and everything that
+reaches this copy is WebKit already, so the only question left is whether it is the one with a Home
+Screen. Getting this wrong confuses; getting the TRIGGER wrong would be a false alarm, which is why
+they are different mechanisms.
+
+The bar also takes §10.5's advisory treatment — the design's `.alert.warn`: a 3px left accent in the
+caution colour on a soft caution ground, so the colour is read before the words. `.flag` is
+deliberately untouched; bringing the rest of the app back to the mockup is its own pass.
+
