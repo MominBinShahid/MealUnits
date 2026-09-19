@@ -545,6 +545,25 @@ body {
   margin-bottom: 0.125rem;
 }
 
+/*
+ * An advisory declares its own type scale, and its children have to honour it.
+ * The global `p` rule is 0.9375rem against this block's 0.8125rem, so a
+ * paragraph inside rendered LARGER than the heading above it — the heading
+ * inherits, the paragraph did not. It had never held a `<p>` until §12's
+ * storage panel, which is why it surfaced there.
+ *
+ * Heading and body at one size is also what the design does: `.alert h4` and
+ * `.alert p` are both 13.5px, separated by weight and colour rather than size.
+ */
+.flag p {
+  font-size: inherit;
+  color: inherit;
+}
+
+.flag p:first-of-type {
+  margin-top: 0;
+}
+
 /* §10.5 — band E de-escalates in FORM only. Same words, same rank, never
    behind "more". */
 .flag.compact {

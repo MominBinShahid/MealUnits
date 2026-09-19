@@ -3761,6 +3761,18 @@ exist — and macOS Safari is subject to the same eviction, because it is the sa
 parsing a name, and everything reaching this copy is WebKit already. **Three steps, not two** — the
 confirming *Add* is a real tap and people stop at the last one you name.
 
+**The reminder has an off switch, and it is an explicit tap — RULED 2026-09-20 [Momin].** The bar
+returns every launch otherwise, because dismissing it defers nothing: the risk stands until the app
+is installed. §12 cannot inherit the update prompt's in-memory dismissal here — that is justified by
+the update resolving itself on the next restart, and this does not. So Settings carries **Stop
+warning me about this**, persisted in `acks`, and the bar names it so the opt-out is findable.
+
+**Stopping the reminder does not stop the status.** The panel survives the tap: someone who has
+decided not to install should stop being interrupted, not lose the ability to find out where they
+stand. And the acknowledgement is a TAP, never an inference from having reached Settings — that is
+where you go to change a ratio, the panel sits near the bottom, and scrolling past a thing is not
+reading it.
+
 **Settings carries the steps too.** The bar is dismissed and gone for the session; Settings is the
 permanent place, and someone returning to it meaning to fix this should not have to remember how.
 One helper produces the steps for both, because two copies drift the day either is reworded.

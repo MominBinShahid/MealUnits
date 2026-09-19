@@ -332,6 +332,8 @@ export function SettingsScreen({
   settings,
   handlers,
   storageDurable,
+  storageWarningOff,
+  onStopStorageWarning,
 }: {
   readonly draft: SettingsDraft;
   readonly settings: Settings | null;
@@ -343,6 +345,9 @@ export function SettingsScreen({
    * still in flight would be a guess, which is the thing §12 forbids.
    */
   readonly storageDurable: boolean | null | undefined;
+  /** §12 — an explicit tap, persisted. The warning stays; only the reminder stops. */
+  readonly storageWarningOff: boolean;
+  readonly onStopStorageWarning: () => void;
 }): JSX.Element {
   const problems = checkDraft(draft);
   const problemFor = (field: keyof SettingsDraft): FieldProblem | undefined =>
@@ -587,6 +592,17 @@ export function SettingsScreen({
           {/* The steps live here as well as in the bar. The bar is dismissed
               and gone for the session; this is the permanent place. */}
           <p>{COPY.installSteps(navigator.maxTouchPoints)}</p>
+          {/* The off switch, and it turns off the REMINDER rather than the
+              status. Someone who has decided not to install should stop being
+              interrupted; they should not stop being able to find out where
+              they stand, which is why the panel above survives the tap. */}
+          {storageWarningOff ? (
+            <p class="hint">{COPY.storage.stoppedWarning}</p>
+          ) : (
+            <Button class="go quiet" onPress={onStopStorageWarning}>
+              {COPY.storage.stopWarning}
+            </Button>
+          )}
         </div>
       ) : (
         <div class="card">

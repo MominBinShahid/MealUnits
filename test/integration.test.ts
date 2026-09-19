@@ -2413,6 +2413,45 @@ describe('§12 — what this browser promises about the record', () => {
     expect(storageWarnings).toBe(1);
   });
 
+  it('stops the reminder on an explicit tap, and keeps it stopped next launch', async () => {
+    // A TAP, never an inference. Reaching Settings proves nothing — it is where
+    // you go to change a ratio, and this section sits near the bottom.
+    const db = new IDBFactory();
+    storageAnswer = false;
+    await setUpAsHisBrother(db);
+    expect(storageWarnings).toBe(1);
+
+    await tap('Settings');
+    await tap('Stop warning me about this');
+    await settle();
+    expect(text()).toContain(plain(COPY.storage.stoppedWarning));
+
+    // A NEW session, same record: the reminder stays off. The counter is reset
+    // by hand because `install()` rebuilds the DOM and not the test's tallies.
+    install();
+    storageWarnings = 0;
+    storageAnswer = false;
+    await boot(db);
+    expect(storageWarnings).toBe(0);
+  });
+
+  it('turns off the reminder, not the status — the panel survives the tap', async () => {
+    // Someone who decided not to install should stop being interrupted. They
+    // should not stop being able to find out where they stand.
+    const db = new IDBFactory();
+    storageAnswer = false;
+    await setUpAsHisBrother(db);
+    await tap('Settings');
+    await tap('Stop warning me about this');
+    await settle();
+    expect(text()).toContain(plain(COPY.storage.atRisk));
+    expect(text()).toContain(plain(COPY.installSteps(navigator.maxTouchPoints)));
+  });
+
+  it('names its own off switch, or the opt-out is undiscoverable', () => {
+    expect(COPY.storage.barOptOut).toContain('Settings');
+  });
+
   it('gives the at-risk answer the advisory treatment, and the other two plain text', async () => {
     // The FORM carries the severity. An amber panel on "it has promised to keep
     // it" teaches someone to stop reading the amber.
