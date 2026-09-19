@@ -231,7 +231,7 @@ export interface Host {
    * warning on an empty app reads as the app apologising for itself; after a
    * dose is written there is something a seven-day gap would take.
    */
-  readonly onStorageAtRisk?: (() => void) | undefined;
+  readonly onStorageAtRisk?: ((show: boolean) => void) | undefined;
   /**
    * §7.2 — a dose whose write has now failed TWICE, handed to something that
    * follows him off the screen he logged it on.
@@ -970,8 +970,8 @@ export async function start(host: Host): Promise<void> {
   let settled = false;
   /** §12's answer once it lands; `undefined` until then, which is not `null`. */
   let storageDurable: boolean | null | undefined;
-  /** The at-risk bar is offered once per session, and only with a record to lose. */
-  let storageWarned = false;
+  /** §12's bar: never raised, on screen, or finished with for this session. */
+  let storageBar: 'never' | 'showing' | 'done' = 'never';
 
 
   /**
@@ -1107,19 +1107,22 @@ export async function start(host: Host): Promise<void> {
     // not exist yet, is the wrong moment for it. And `=== false` deliberately:
     // `null` is "will not say", `undefined` is "has not answered", and warning
     // on either would be a guess, which §12 forbids.
-    if (
-      !storageWarned
-      && storageDurable === false
-      && state.settings !== null
-      && state.screen !== 'first_run_disclaimer'
-      && state.screen !== 'first_run_settings'
-      // Not while Settings is open either: the same warning is on that screen
-      // in full, with the steps, and a bar repeating it over the top of the
-      // section you are already reading is noise.
-      && state.screen !== 'settings'
-    ) {
-      storageWarned = true;
-      host.onStorageAtRisk?.();
+    // §12's bar has exactly three states and one transition out of each, which
+    // is why it is a word rather than two booleans. It was a `shown` flag here
+    // and another inside `main.ts`, so "raise once" lived in one file and
+    // "do not raise again" in the other, and neither could be read alone.
+    if (storageDurable === false && state.settings !== null && storageBar !== 'done') {
+      const onAGate = state.screen === 'first_run_disclaimer' || state.screen === 'first_run_settings';
+      if (storageBar === 'never' && !onAGate && state.screen !== 'settings') {
+        storageBar = 'showing';
+        host.onStorageAtRisk?.(true);
+      } else if (storageBar === 'showing' && state.screen === 'settings') {
+        // RETIRED, not withheld. Settings carries the same warning in full with
+        // the steps, and it does not come back afterwards — the reader has now
+        // seen the longer version, so raising the short one again is nagging.
+        storageBar = 'done';
+        host.onStorageAtRisk?.(false);
+      }
     }
 
     // §11.3 layer 2 — watch while a result is displayed OR a confirmation is

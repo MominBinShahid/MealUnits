@@ -3453,8 +3453,12 @@ SELF_TESTS = [
     ("a ONE-WORD aria-label, which the two-word rule used to let through",
      "src/ui/screens/settings.tsx",
      lambda t: t.replace('aria-describedby={`label-${id}`}', 'aria-label="dosage"')),
+    # Re-aimed 2026-09-19: the recount moved to 15 when §12's storage section
+    # gained a `.flag` query, and this seed still named 14 — so it edited nothing
+    # and proved nothing. The self-test reported it, which is the whole point of
+    # a seed knowing whether its anchor still exists.
     ("T3's structural-query count reverted to the wrong 0", "BACKLOG.md",
-     lambda t: t.replace("There are **14 structural", "There are **0 structural")),
+     lambda t: t.replace("There are **15 structural", "There are **0 structural")),
     # §20.3 — the check added in the same commit arrives with its own mutation.
     # A constant exported from src/config.ts and never written into §11.8 used to
     # be invisible: absent from PLAN.md so nothing reported it, absent from

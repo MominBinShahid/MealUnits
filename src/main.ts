@@ -103,6 +103,18 @@ function pickFile(): Promise<string | null> {
  * published as a custom property and `#app` pads by it while a prompt is up.
  * That is the difference between overlaying the PAGE and overlaying a BUTTON.
  */
+/**
+ * The close of the bar most recently raised, so a bar can be RETIRED by
+ * whatever raised it rather than only by the person reading it.
+ *
+ * A single reference, not a list, because there is only ever meant to be one
+ * bar: `promptBar` appends and every bar is `position: fixed; bottom: 0`, so a
+ * second does not stack below the first — it is painted directly OVER it and
+ * hides it completely. Turning that into one slot with a queue is its own
+ * change; this holds the line until then.
+ */
+let closeCurrent: (() => void) | null = null;
+
 function promptBar(options: {
   readonly text: string;
   /**
@@ -144,6 +156,7 @@ function promptBar(options: {
     bar.remove();
     document.documentElement.style.removeProperty('--prompt-h');
   };
+  closeCurrent = close;
 
   action?.addEventListener('click', () => {
     close();
@@ -345,7 +358,7 @@ function registerServiceWorker(): void {
  * storage after seven days, and its generated package shares origin storage, so
  * data does transfer on install. Both facts were iOS facts.
  */
-function offerInstall(): { routine: () => void; atRisk: () => void } {
+function offerInstall(): { routine: () => void; atRisk: (show: boolean) => void } {
   let pending: (Event & { prompt: () => Promise<void> }) | null = null;
   let shown = false;
 
@@ -381,7 +394,18 @@ function offerInstall(): { routine: () => void; atRisk: () => void } {
      * Where it does not, which is every browser on an iPhone, the text carries
      * the taps and there is nothing to put behind a button.
      */
-    atRisk: (): void => {
+    atRisk: (show: boolean): void => {
+      // Retire it rather than merely stop raising it. The guard in `app.tsx`
+      // prevented the bar being RAISED on Settings and did nothing about one
+      // already on screen, so a bar raised on the calculator followed the
+      // reader to the screen that explains it in full — the condition was
+      // fixed and the state that outlives it was not.
+      if (!show) {
+        if (shown) closeCurrent?.();
+        return;
+      }
+      // `shown` is never reset: retiring it on Settings must not re-raise it
+      // when the reader walks back to the calculator.
       if (shown) return;
       shown = true;
       const prompt = pending;

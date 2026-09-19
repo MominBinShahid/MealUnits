@@ -50,6 +50,8 @@ let currentTitle: string;
 let storageAnswer: boolean | null;
 /** Counts the at-risk offer, so "once, and only with a record" is testable. */
 let storageWarnings: number;
+/** Counts the bar being RETIRED, which is not the same as never raising it. */
+let storageRetired: number;
 let startPath: string;
 /**
  * Which `boot` a Host belongs to. A test that boots twice — and a test whose
@@ -125,6 +127,7 @@ beforeEach(() => {
   currentTitle = '';
   storageAnswer = true;
   storageWarnings = 0;
+  storageRetired = 0;
   startPath = '/MealUnits/';
   generation += 1;
   buzzes = 0;
@@ -158,7 +161,10 @@ async function boot(indexedDB: IDBFactory = new IDBFactory()): Promise<void> {
     // fires the gesture. jsdom's own history would not tell us either.
     buzz: () => { buzzes += 1; },
     storagePersisted: Promise.resolve(storageAnswer),
-    onStorageAtRisk: () => { if (live()) storageWarnings += 1; },
+    onStorageAtRisk: (show) => {
+      if (!live()) return;
+      if (show) storageWarnings += 1; else storageRetired += 1;
+    },
     setTitle: (title) => { if (live()) currentTitle = title; },
     syncHistory: (can, path) => { if (live()) { canGoBack = can; currentPath = path; } },
     onNavigate: (handler) => { if (live()) hardwareBack = handler; },
@@ -2386,14 +2392,48 @@ describe('§12 — what this browser promises about the record', () => {
     expect(COPY.installSteps(0)).toBe(COPY.storage.addToDock);
   });
 
-  it('does not also raise the bar while Settings is open', async () => {
-    // The same warning is on that screen in full, with the steps. A bar over
-    // the top of the section you are reading is noise.
+  it('RETIRES the bar on Settings, rather than only declining to raise it there', async () => {
+    // The first fix guarded the raise and left a bar raised elsewhere sitting
+    // over the screen that explains it in full. Guarding a condition does
+    // nothing about state that outlives the condition.
     storageAnswer = false;
     await setUpAsHisBrother();
-    const afterSetup = storageWarnings;
+    expect(storageWarnings).toBe(1);
+    expect(storageRetired).toBe(0);
+
     await tap('Settings');
-    expect(storageWarnings).toBe(afterSetup);
+    expect(storageRetired).toBeGreaterThan(0);
+  });
+
+  it('does not raise it again on the way back, because it was answered once', async () => {
+    storageAnswer = false;
+    await setUpAsHisBrother();
+    await tap('Settings');
+    await tap('Back');
+    expect(storageWarnings).toBe(1);
+  });
+
+  it('gives the at-risk answer the advisory treatment, and the other two plain text', async () => {
+    // The FORM carries the severity. An amber panel on "it has promised to keep
+    // it" teaches someone to stop reading the amber.
+    for (const [answer, amber] of [[false, true], [true, false], [null, false]] as const) {
+      storageAnswer = answer;
+      install();
+      await boot();
+      await tap('☐  I have read this');
+      await tap('I understand — use at my own risk');
+      await typeInto('What should a correction aim for', '150');
+      await typeInto('How far does one unit lower', '30');
+      await typeInto('How much carbohydrate does one unit cover', '10');
+      await typeInto('Which insulin', 'Lantus');
+      await typeInto('How many units', '36');
+      await typeInto('When', 'early morning, before breakfast');
+      await tap('Save and start');
+      await tap('Settings');
+      const flagged = [...root.querySelectorAll('.flag')]
+        .some((el) => (el.textContent ?? '').includes(plain(COPY.storage.label)));
+      expect(flagged, String(answer)).toBe(amber);
+    }
   });
 
   it('puts the steps in Settings too, since the bar is gone once dismissed', async () => {
