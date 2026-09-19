@@ -704,18 +704,46 @@ export const COPY = {
      * stacking on the update prompt, and `promptBar` appends rather than
      * replaces — so the duplication was the bar, not the wording.
      *
-     * This shape is for the browser that CANNOT be asked to install: iOS never
-     * fires `beforeinstallprompt`, so the offer that prevents the loss was
-     * never shown to the only people who needed it. The three taps are in the
-     * text because putting them behind a button means a second bar.
+     * This shape is for the browser that CANNOT be asked to install: WebKit
+     * never fires `beforeinstallprompt`, so the offer that prevents the loss
+     * was never shown to the only people who needed it.
      *
      * No "nothing has happened to your record" here, unlike the 404 page.
      * Nothing HAS happened — this is about next week — and reassuring someone
      * about a loss that has not occurred only muddies a short message.
      */
-    atRiskBar: 'Your doses could be deleted. Tap Share, then \u201cAdd to Home Screen\u201d.',
+    atRiskBar: 'Your doses could be deleted.',
     atRiskDismiss: 'Got it',
+
+    /**
+     * **The instruction is the one place platform matters, and it has to.**
+     *
+     * §12's rule governs WHETHER to warn, and that stays a capability question
+     * — `persisted()`, no sniffing. But there is no API for "what is the
+     * install control called here", and the answer genuinely differs: an iPhone
+     * says *Add to Home Screen*, macOS Safari says **Add to Dock**. Telling a
+     * Mac user to find a Home Screen sends them looking for something that does
+     * not exist.
+     *
+     * Split by TOUCH rather than by name. `maxTouchPoints` separates iOS and
+     * iPadOS from macOS without parsing a user-agent string, and it cannot be
+     * wrong in a way that matters: every browser that reaches this copy is
+     * WebKit, so the only question is whether it is the handheld one.
+     *
+     * Three steps, not two. The confirming **Add** is a real tap, and someone
+     * following instructions stops at the last step you name.
+     */
+    addToHomeScreen: 'Tap Share, then \u201cAdd to Home Screen\u201d, then \u201cAdd\u201d.',
+    addToDock: 'Click Share, then \u201cAdd to Dock\u201d, then \u201cAdd\u201d.',
   },
+
+  /**
+   * The install steps for THIS device, read once and used in both places that
+   * need them — the bar and Settings. Two copies would drift the day either is
+   * reworded, and the two are read minutes apart by the same person.
+   */
+  installSteps: (touchPoints: number): string =>
+    touchPoints > 0 ? COPY.storage.addToHomeScreen : COPY.storage.addToDock,
 
   settings: {
     targetQuestion: 'What should a correction aim for?',

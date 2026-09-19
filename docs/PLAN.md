@@ -3752,6 +3752,19 @@ the second. Not during first-run setup itself: mid-task, about data that does no
 wrong moment. **And not on the setup screen as well as the bar** — the bar arrives seconds later and
 says the same thing.
 
+**The instruction is the ONE place platform matters, and it has to be.** The rule above governs
+WHETHER to warn and stays a capability question. But there is no API for *what the install control is
+called here*, and the answer differs: an iPhone says **Add to Home Screen**, macOS Safari says **Add
+to Dock**. Telling a Mac user to find a Home Screen sends them looking for something that does not
+exist — and macOS Safari is subject to the same eviction, because it is the same engine. Split by
+`maxTouchPoints`, not by user-agent: it separates the handheld WebKit from the desktop one without
+parsing a name, and everything reaching this copy is WebKit already. **Three steps, not two** — the
+confirming *Add* is a real tap and people stop at the last one you name.
+
+**Settings carries the steps too.** The bar is dismissed and gone for the session; Settings is the
+permanent place, and someone returning to it meaning to fix this should not have to remember how.
+One helper produces the steps for both, because two copies drift the day either is reworded.
+
 **The taps are in the bar's text, not behind a button.** iOS cannot be offered an install
 programmatically, so there is nothing to put behind one; a button that only revealed instructions
 would mean a second bar, which is the duplication this arrangement exists to avoid. The bar therefore

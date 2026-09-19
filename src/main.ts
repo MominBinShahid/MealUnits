@@ -115,9 +115,11 @@ function promptBar(options: {
   readonly actionLabel?: string | undefined;
   readonly onAction?: (() => void) | undefined;
   readonly dismissLabel: string;
+  /** §10.5's advisory treatment, for a bar that is a warning rather than an offer. */
+  readonly variant?: 'warn' | undefined;
 }): void {
   const bar = document.createElement('div');
-  bar.className = 'prompt-bar';
+  bar.className = options.variant === undefined ? 'prompt-bar' : `prompt-bar ${options.variant}`;
 
   const text = document.createElement('b');
   text.textContent = options.text;
@@ -389,8 +391,12 @@ function offerInstall(): { routine: () => void; atRisk: () => void } {
         return;
       }
       promptBar({
-        text: COPY.storage.atRiskBar,
+        // The steps are in the TEXT. Behind a button they would need a second
+        // bar, which is the stacking this arrangement exists to avoid — and on
+        // WebKit there is nothing else a button could do.
+        text: `${COPY.storage.atRiskBar} ${COPY.installSteps(navigator.maxTouchPoints)}`,
         dismissLabel: COPY.storage.atRiskDismiss,
+        variant: 'warn',
       });
     },
   };
