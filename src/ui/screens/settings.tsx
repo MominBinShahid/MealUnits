@@ -568,30 +568,32 @@ export function SettingsScreen({
         </Button>
       </div>
 
-      {/* §12 — what the browser has promised about the record, reported whatever
-          it says. Not first-run: someone who has logged nothing has nothing at
-          risk yet, and a storage warning before there is any storage reads as
-          the app apologising for itself. */}
-      {handlers.firstRun || storageDurable === undefined ? null : (
+      {/*
+          §12 — what the browser has promised, reported whatever it says.
+          **The FORM carries the severity, not just the words.** Two of the three
+          answers are not problems, and an amber panel on "it has promised to
+          keep it" would teach someone to stop reading the amber. Only the
+          at-risk answer takes §10.5's advisory treatment, so the section is
+          calm two times out of three and means something the third.
+
+          Not on first run: nothing is stored yet, so there is nothing at risk
+          and a warning would be about nothing.
+      */}
+      {handlers.firstRun || storageDurable === undefined ? null : storageDurable === false ? (
+        <div class="flag">
+          <b>{COPY.storage.label}</b>
+          <p>{COPY.storage.atRisk}</p>
+          <p>{COPY.storage.atRiskWhy}</p>
+          {/* The steps live here as well as in the bar. The bar is dismissed
+              and gone for the session; this is the permanent place. */}
+          <p>{COPY.installSteps(navigator.maxTouchPoints)}</p>
+        </div>
+      ) : (
         <div class="card">
           <b>{COPY.storage.label}</b>
           <p class="hint">
-            {storageDurable === true
-              ? COPY.storage.durable
-              : storageDurable === null
-                ? COPY.storage.unknown
-                : COPY.storage.atRisk}
+            {storageDurable === true ? COPY.storage.durable : COPY.storage.unknown}
           </p>
-          {storageDurable === false ? (
-            <>
-              <p class="hint">{COPY.storage.atRiskWhy}</p>
-              {/* The STEPS, here as well as in the bar. The bar is dismissed
-                  and gone for the session; this is the permanent place, and
-                  someone who comes back meaning to fix it should not have to
-                  remember how. */}
-              <p class="hint">{COPY.installSteps(navigator.maxTouchPoints)}</p>
-            </>
-          ) : null}
         </div>
       )}
 

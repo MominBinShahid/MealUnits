@@ -963,10 +963,18 @@ exist in ten years. The counterweight is that Preact's entire source is ~12 KB o
 project could vendor and patch indefinitely — an option `react-dom`'s ~600 KB source does not offer.
 
 **Why the rewrite is lower-risk than it sounds — RECOUNTED 2026-09-14, and the old claim was wrong.**
-This said "66 assertions on rendered text and **0** on DOM structure". There are **14 structural
-queries**, not zero: nine selectors that depend on markup shape — `#app`, `.ask`, `[role="group"]`,
-`#label-mode`, `#food-search`, `.entry .n` twice, `[data-field="foodQuery"]`, `.flag` — plus the
-`label.parentElement.querySelector('input')` traversal this entry already names. Queries by element
+This said "66 assertions on rendered text and **0** on DOM structure". There are **15 structural
+queries** (14 at the recount, plus one added 2026-09-19), not zero: selectors that depend on markup
+shape — `#app`, `.ask`, `[role="group"]`, `#label-mode`, `#food-search`, `.entry .n` twice,
+`[data-field="foodQuery"]`, `.flag` twice — plus the `label.parentElement.querySelector('input')`
+traversal this entry already names.
+
+**The fifteenth is deliberate and is the exception that shows the rule.** §12's storage section takes
+`.flag` only when the browser has NOT promised to keep the record, and plain text for the other two
+answers — the form carries the severity, so that an amber panel never appears on an answer that is
+not a problem. What is under test there IS the markup: no assertion on rendered text can tell you
+which treatment a paragraph received. A structural query is the honest tool for a structural claim,
+and the count is kept true rather than the query avoided. Queries by element
 type alone (`button`, `label`, `p`, `b`, `input`) are not counted: they survive any faithful port.
 
 **The correction makes the safety net BETTER understood, not weaker.** Most of those survive a
