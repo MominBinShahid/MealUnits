@@ -1113,6 +1113,10 @@ export async function start(host: Host): Promise<void> {
       && state.settings !== null
       && state.screen !== 'first_run_disclaimer'
       && state.screen !== 'first_run_settings'
+      // Not while Settings is open either: the same warning is on that screen
+      // in full, with the steps, and a bar repeating it over the top of the
+      // section you are already reading is noise.
+      && state.screen !== 'settings'
     ) {
       storageWarned = true;
       host.onStorageAtRisk?.();

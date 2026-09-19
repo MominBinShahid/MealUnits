@@ -1218,3 +1218,27 @@ The bar also takes §10.5's advisory treatment — the design's `.alert.warn`: a
 caution colour on a soft caution ground, so the colour is read before the words. `.flag` is
 deliberately untouched; bringing the rest of the app back to the mockup is its own pass.
 
+**Two more from Momin checking the deployed build, and the first is a process failure rather than a
+defect.**
+
+*The bar's only control rendered as bare text.* Removing the action button left the dismissal alone,
+and it still carried `.link` — a class with **transitions and nothing else**, correct beside a real
+button and invisible on its own. The one thing a person could do stopped looking like a thing they
+could do. It now takes `go quiet` when it is alone: `.go` supplies `border: 1px solid transparent`
+for `.quiet`'s `border-color` to land on, plus the radius, the padding and the 48px touch floor.
+
+**The lesson is not about CSS.** When an element loses a sibling, what remains has to be looked at.
+This was findable by reading two rules in `styles.css` and needed no browser at all, and it shipped
+because the check was never made. Verified this time before pushing, from the built CSS and then in
+a rendered page.
+
+*And the bar is suppressed while Settings is open*, because that screen carries the same warning in
+full, with the steps. A bar repeating it over the section you are reading is noise.
+
+**One tooling note worth keeping, because it wasted three measurements.** `.prompt-bar` slides in
+over 220ms. **CSS animations are throttled in a background tab**, so geometry read over CDP on an
+unfocused tab is the animation's FIRST frame — the bar measured at `top: 1118` in an 1118px viewport
+three times running, which is exactly `translateY(100%)` from its resting place. With the animation
+disabled it measures `top: 998, bottom: 1118`: flush to the bottom edge, fully visible, no defect.
+Anything animated must be measured with `animation: none` or not at all.
+
