@@ -964,6 +964,16 @@ body {
   padding: 0.75rem 0.875rem;
 }
 
+/*
+ * The one row that is not a name. `.insulin` rows are a column of brands read
+ * down the left edge; this is an action under its own heading, and left-aligned
+ * among them it read as an unfinished row rather than a deliberate alternative.
+ */
+.go.insulin.sole {
+  justify-items: center;
+  text-align: center;
+}
+
 .go.insulin .brand {
   font-weight: 700;
 }

@@ -119,6 +119,15 @@ function Picker({ handlers }: { readonly handlers: InsulinHandlers }): JSX.Eleme
       <h1>{COPY.insulin.title}</h1>
       <p>{COPY.insulin.intro}</p>
       <p class="hint">{COPY.insulin.whereToLook}</p>
+      {/* §10.6 item 6's voice, on the screen that asks first. Settings says who
+          Hasham is beside the three ratios; this screen asked a question about
+          the reader's own insulin and said nothing about whose app it is.
+
+          Placed HERE, above every group, rather than beside the Humulin R row.
+          A named example sitting next to a tappable brand is a suggestion, and
+          §8.5's whole objection to a picker was false confirmation of fit — so
+          the sentence ends by telling the reader to read their own box. */}
+      <p class="hint">{COPY.insulin.builtFor}</p>
 
       {CLASS_ORDER.map((insulinClass) => {
         const rows = INSULINS.filter((insulin) => insulin.insulinClass === insulinClass);
@@ -143,8 +152,14 @@ function Picker({ handlers }: { readonly handlers: InsulinHandlers }): JSX.Eleme
         <h2>{COPY.insulin.unknownHeading}</h2>
         <p class="hint">{COPY.insulin.unknownNote}</p>
         <div class="list">
+          {/* CENTRED, unlike every row above it, and the difference is the
+              point. Those are a scannable column of names — you read down the
+              left edge. This is not a name and not part of that scan: it is an
+              action, under its own heading, and left-aligned against a column
+              of brands it read as an unfinished row rather than a deliberate
+              alternative. Reported by Momin off a screenshot. */}
           <Button
-            class="go quiet insulin"
+            class="go quiet insulin sole"
             onPress={() => {
               handlers.onPick(UNKNOWN_INSULIN);
             }}

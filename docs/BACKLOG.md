@@ -1791,6 +1791,28 @@ That turned out to be benign — Google's own help lists "low crawl demand" as a
 status, and a live test returned "URL is available to Google" — but reading the apex `robots.txt` to
 rule it out is what surfaced the ownership question.
 
+### T21. `test/lint-config.test.ts` times out at 5 seconds under load
+
+**Seen once, 2026-09-20**, while a mutation run and a browser were competing for the same cores:
+
+    × parses the fixture at all 6270ms
+    Error: Test timed out in 5000ms.
+
+Not an assertion failure — the test spawns a real ESLint against a fixture, and vitest's default
+5-second timeout is tight for a cold start. Re-run four times on the change and four times with it
+stashed: **eight passes, no failures.** So it is a flake, not a regression, and it predates the work
+it appeared during.
+
+It still matters, because this file is inside `npm run check`, which is a required CI job: a
+required job that fails on machine load fails for a reason the log does not name, and the reflex it
+trains is "re-run it", which is the reflex that hides a real one.
+
+**The fix is one argument** — an explicit timeout on that case, generous enough for a cold ESLint
+and stated as being about process start rather than about the assertion. Not done here because it is
+unrelated to the change it surfaced during, and a flake seen once deserves the note before the edit.
+
+---
+
 ### T20. The 12-hour advisory ceiling is shorter than the label it was reasoned from — DONE 2026-09-20
 
 **Found by research, 2026-09-20, verified from the label.** Not part of entry 26 and not changed
