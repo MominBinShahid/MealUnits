@@ -1447,8 +1447,11 @@ verbatim — users learn the escape route. Delete also legitimately means two th
 cannot distinguish: *"I never actually injected this"* (the gate should forget it) and
 *"tidying up"* (it should not).
 
-**Therefore: deleting a row whose timestamp is inside the last 12 hours requires a confirmation
-that states the consequence.**
+**Therefore: deleting a row whose timestamp is inside the last 18 hours requires a confirmation
+that states the consequence.** That window is `LONGEST_ADVISE_HOURS` — the longest §7.4 advise
+window any insulin class declares, not the reader's own. A tombstone must outlive anything the gate
+could still be reasoning about, and the delete rule must not change because somebody switched
+insulin.
 
 > **Delete the 6 units from 2:00 PM?**
 > The stacking check is currently using this dose. Delete it only if you did **not** inject it.
@@ -1531,8 +1534,8 @@ as the cautious option. This was a fresh instance of the defect §2.1 calls non-
 |---|---|---|
 | under 4 hours | **positive** | Suppressed → meal only. Override available (§7.4.1). |
 | under 4 hours | **negative or zero** | **Applied in full, always.** It is the safety-direction term. Informational line only. |
-| 4–12 hours | any | Applied in full. "Last dose: 6 units, 5 hours ago — may still be acting." |
-| over 12 hours | any | Applied in full. No line. |
+| 4–18 hours | any | Applied in full. "Last dose: 6 units, 5 hours ago — may still be acting." |
+| over 18 hours | any | Applied in full. No line. |
 | **no usable record** | any | Applied in full, plus §7.5's line. |
 
 **The meal term is never touched.** Food needs covering regardless of what is on board.
@@ -1540,10 +1543,17 @@ as the cautious option. This was a fresh instance of the defect §2.1 calls non-
 A correction-only dose (zero carbs) inside 4 hours is suppressed to zero units — with the
 override, since blocking outright is what drove users to delete rows.
 
-**Twelve hours, not eight** [R2]. v2 used 8 while simultaneously noting action extends "toward
-18 hours at large doses" — a contradiction. Twelve is chosen because the line is informational
-only, so erring long is free. **No decay model, now or ever**: dose-dependent duration makes a
-fixed curve false precision.
+**Eighteen hours for regular insulin, and the number came from the label in the end** [R2]. v2 used
+8 while simultaneously noting action extends "toward 18 hours at large doses" — a contradiction.
+Twelve replaced it, because the line is informational only and erring long is free. Research on
+2026-09-20 found the label's own sentence: Humulin R section 12.2, *"In a study that administered 50
+and 100 units doses subcutaneously to obese subjects, mean time of termination of effect was
+prolonged to approximately 18 hours (range approximately 12-24 hours)."* The reader this app was
+built for injects 24–25 units a meal, so at twelve hours the app fell silent while the label still
+said insulin was acting. **The analogues stay at 12** — every one is finished inside 5–7 hours by
+its own label, so widening theirs would be furniture. `BACKLOG` T20 carries the change.
+
+**No decay model, now or ever**: dose-dependent duration makes a fixed curve false precision.
 
 #### 7.4.2 Whose windows — §8.5's answer, and the switch day
 
@@ -3706,7 +3716,7 @@ export const CLOCK_SKEW_TOLERANCE_HOURS = 1;  // §7.6 future-timestamp bound
 // src/data/insulins.ts says which class a brand is; this says what a
 // class means.
 export const INSULIN_TIMING = {
-  regular:     { eatDelayMinutes: [20, 30], stackSuppressHours: 4, stackAdviseHours: 12 },
+  regular:     { eatDelayMinutes: [20, 30], stackSuppressHours: 4, stackAdviseHours: 18 },
   rapid:       { eatDelayMinutes: [10, 15], stackSuppressHours: 4, stackAdviseHours: 12 },
   ultra_rapid: { eatDelayMinutes: [0, 0],   stackSuppressHours: 4, stackAdviseHours: 12 },
 };
@@ -3745,9 +3755,14 @@ export const RANGE = {
 // per-class edit leaving a second copy behind.
 export const STACK_SUPPRESS_HOURS = INSULIN_TIMING.regular.stackSuppressHours;
 export const STACK_ADVISE_HOURS   = INSULIN_TIMING.regular.stackAdviseHours;
+// The longest advise window any class declares, derived so a class added to
+// the table joins it. §7.3's delete window tracks THIS rather than one
+// class's: a tombstone must outlive anything the gate could still reason
+// about, and the delete rule must not change with the reader's insulin.
+export const LONGEST_ADVISE_HOURS = Math.max(...Object.values(INSULIN_TIMING).map((t) => t.stackAdviseHours));
 // Declared after STACK_ADVISE_HOURS deliberately — v9 printed this above it,
 // which is a TDZ ReferenceError if transcribed literally [R1].
-export const DELETE_CONFIRM_WINDOW_HOURS = STACK_ADVISE_HOURS;  // §7.3
+export const DELETE_CONFIRM_WINDOW_HOURS = LONGEST_ADVISE_HOURS;  // §7.3
 
 // ─── BAND E's FULL CARD (§10.5) ────────────────────────────
 // NOT derived from STACK_ADVISE_HOURS, which holds the same 12: one is

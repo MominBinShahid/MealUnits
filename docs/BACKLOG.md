@@ -1791,7 +1791,7 @@ That turned out to be benign — Google's own help lists "low crawl demand" as a
 status, and a live test returned "URL is available to Google" — but reading the apex `robots.txt` to
 rule it out is what surfaced the ownership question.
 
-### T20. The 12-hour advisory ceiling is shorter than the label it was reasoned from
+### T20. The 12-hour advisory ceiling is shorter than the label it was reasoned from — DONE 2026-09-20
 
 **Found by research, 2026-09-20, verified from the label.** Not part of entry 26 and not changed
 with it — this is its own PR, because it drags §7.3 in behind it.
@@ -1812,7 +1812,9 @@ standing as the 20–30.
 **Proposed.** Per class, like the eat delay: regular 18, analogues stay at 12. Every analogue is
 done inside 5–7 hours by its own label, so widening theirs would only add furniture.
 
-**Two knock-ons, which are why it is not folded into entry 26.**
+**BUILT as proposed.** Regular human insulin's advise window is 18; the analogues stay at 12.
+
+**Two knock-ons, which are why it was not folded into entry 26.**
 
 1. **`DELETE_CONFIRM_WINDOW_HOURS` is currently *defined* as equal to this number** (§7.3), and
    `checkConfig` asserts the equality. Per-class windows break that. The honest replacement is the
@@ -1822,6 +1824,15 @@ done inside 5–7 hours by its own label, so widening theirs would only add furn
 2. **It changes when §7.5's caveat fires.** A 15-hour-old dose becomes a usable record, so "no
    recent dose recorded" appears less often. That is correct — there IS a record — but it is a real
    behaviour change next to the gate, and it deserves its own tests rather than riding along.
+
+**What it took.** `LONGEST_ADVISE_HOURS`, derived as a maximum over the table so a class added later
+joins it automatically; `DELETE_CONFIRM_WINDOW_HOURS` points at that instead of at one class's
+window, and `checkConfig` asserts the relationship rather than an equality with a constant. Two
+golden cases moved from the 12-hour boundary to the 18-hour one — they were always regular
+insulin's, and now say so. `check-plan.py` gained a check that the derivation in `src/config.ts` IS
+a maximum and not a row lookup, because the constants table reads `PLAN.md` and would not have seen
+a re-pointing in the shipping file — the same hole the three timing aliases had, closed here before
+a seeded mutation had to find it.
 
 ---
 

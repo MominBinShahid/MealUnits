@@ -166,8 +166,8 @@ against 3–5 for a rapid analog. That longer tail is why this table's windows a
 |---|---|---|
 | under 4 hours | **positive** | Held back; meal covered. Override available. |
 | under 4 hours | **negative or zero** | **Applied in full, always.** |
-| 4–12 hours | any | Applied in full, with an informational line. |
-| over 12 hours | any | Applied in full, no line. |
+| 4–18 hours | any | Applied in full, with an informational line. |
+| over 18 hours | any | Applied in full, no line. |
 | no usable record | any | Applied in full, and the app says it does not know. |
 
 **The meal term is never touched.** Food needs covering regardless of what is on board.

@@ -10,6 +10,7 @@
  */
 
 import { IDBFactory } from 'fake-indexeddb';
+import { DELETE_CONFIRM_WINDOW_HOURS } from '../src/config.js';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DATABASE_NAME, META_KEY, SETTINGS_KEY, STORE } from '../src/storage/schema.js';
 import type { EnvelopeRow, SettingsHistoryRow, SettingsRow } from '../src/storage/schema.js';
@@ -501,7 +502,7 @@ describe('§7.3 delete leaves a tombstone only inside the window', () => {
     // §7.3 — outside the window there is no gate to bypass, and a tombstone for
     // every tidied old row would bury the signal it exists to show.
     const db = await open();
-    const row = injection({ timestamp: NOW - 13 * HOUR });
+    const row = injection({ timestamp: NOW - 19 * HOUR });
     await appendInjection(db, row, NOW);
     expect((await deleteLogRow(db, row.id, NOW)).kind).toBe('removed');
     expect(
@@ -512,8 +513,15 @@ describe('§7.3 delete leaves a tombstone only inside the window', () => {
 
   it('is exact at the window boundary', async () => {
     const db = await open();
-    const atBoundary = injection({ id: 'at', timestamp: NOW - 12 * HOUR });
-    const justOutside = injection({ id: 'outside', timestamp: NOW - 12 * HOUR - 1 });
+    // §7.3's window tracks the LONGEST advise window across every insulin
+    // class, not one class's — a tombstone must outlive anything the gate could
+    // still be reasoning about, and the delete rule must not change because the
+    // reader switched insulin. That is 18 hours since `BACKLOG` T20.
+    const atBoundary = injection({ id: 'at', timestamp: NOW - DELETE_CONFIRM_WINDOW_HOURS * HOUR });
+    const justOutside = injection({
+      id: 'outside',
+      timestamp: NOW - DELETE_CONFIRM_WINDOW_HOURS * HOUR - 1,
+    });
     await appendInjection(db, atBoundary, NOW);
     await appendInjection(db, justOutside, NOW);
     expect((await deleteLogRow(db, 'at', NOW)).kind).toBe('tombstoned');

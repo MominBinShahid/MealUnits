@@ -453,7 +453,12 @@ CONSTANTS = {
     "DIVERGE_RATIO": "3",
     "STACK_SUPPRESS_HOURS": "INSULIN_TIMING.regular.stackSuppressHours",
     "STACK_ADVISE_HOURS": "INSULIN_TIMING.regular.stackAdviseHours",
-    "DELETE_CONFIRM_WINDOW_HOURS": "STACK_ADVISE_HOURS",
+    # Both are DERIVED, so both are pinned to the expression rather than to a
+    # number — the numbers themselves live in INSULIN_TIMINGS below. Pinning the
+    # spelling is what stops one being re-pointed at a single class's window
+    # while every literal stays correct.
+    "LONGEST_ADVISE_HOURS": "Math.max(...Object.values(INSULIN_TIMING).map((t) => t.stackAdviseHours))",
+    "DELETE_CONFIRM_WINDOW_HOURS": "LONGEST_ADVISE_HOURS",
     "ADVISORY_MIN_ELIGIBLE": "10",
     "ADVISORY_WINDOW": "30",
     "ADVISORY_LOW_DIVISOR": "4",
@@ -468,13 +473,15 @@ CONSTANTS = {
 # because there stopped being "the" eat delay the day the app started asking
 # which insulin is in the pen.
 #
-# The stacking windows are IDENTICAL on every row and that is a HOLD, not an
-# oversight: CLINICAL.md question 10c asks the prescriber whether they may
-# shorten for a rapid analogue and nobody has answered. Pinning them here means
-# the day somebody edits one, this file has to be edited in the same commit —
+# The SUPPRESSION windows are identical on every row and that is a hold:
+# research on 2026-09-20 found no citable basis below 4 hours and a published
+# argument against 3, so CLINICAL.md question 10c's answer is "do not shorten".
+# The ADVISE windows differ — regular human insulin carries its own label's 18
+# hours (BACKLOG T20), the analogues stay at 12. Pinning all of it here means
+# the day somebody edits one, this file has to be edited in the same commit,
 # which is exactly the ceremony a clinical change deserves.
 INSULIN_TIMINGS = {
-    "regular": ("[20, 30]", "4", "12"),
+    "regular": ("[20, 30]", "4", "18"),
     "rapid": ("[10, 15]", "4", "12"),
     "ultra_rapid": ("[0, 0]", "4", "12"),
 }
@@ -3514,6 +3521,28 @@ def check_insulin_timing(corpus):
                        % (line_of(config_src, m.start()), name,
                           m.group(1).strip(), want))
 
+    # §7.3's delete window, IN THE SHIPPING FILE. `check_constants` reads its
+    # declarations out of PLAN.md, so re-pointing this at one class's window in
+    # `src/config.ts` alone would pass — the same hole the three timing aliases
+    # had, found there by a seeded mutation and closed here before it could be.
+    #
+    # The property rather than the spelling: a tombstone must outlive anything
+    # the gate could still be reasoning about, so this has to be a maximum over
+    # the whole table and never a single row.
+    if config_src:
+        if not re.search(
+                r"export const LONGEST_ADVISE_HOURS = Math\.max\(\s*"
+                r"\.\.\.Object\.values\(INSULIN_TIMING\)\.map\(", config_src):
+            out.append("src/config.ts: LONGEST_ADVISE_HOURS is not a maximum over "
+                       "INSULIN_TIMING — §7.3's delete window must outlive every "
+                       "class's advise window, not track one of them")
+        if not re.search(
+                r"export const DELETE_CONFIRM_WINDOW_HOURS = LONGEST_ADVISE_HOURS;",
+                config_src):
+            out.append("src/config.ts: DELETE_CONFIRM_WINDOW_HOURS is not "
+                       "LONGEST_ADVISE_HOURS — §7.3's window would then change "
+                       "with whichever insulin the reader last selected")
+
     # The class table, which states the same waits in words. BOTH documents
     # carry one — §8.1 in the plan, section 4.1 in CLINICAL.md — and only the
     # plan's was pinned until a seeded mutation walked straight through the
@@ -3860,7 +3889,7 @@ SELF_TESTS = [
     ("canonical: band A's floor drifts from HYPO_LEVEL_1", "PLAN.md",
      lambda t: t.replace("blood sugar >= 70", "blood sugar >= 60")),
     ("canonical: §7.4's advise row drifts from its constants", "PLAN.md",
-     lambda t: t.replace("| 4–12 hours | any |", "| 4–6 hours | any |")),
+     lambda t: t.replace("| 4\u201318 hours | any |", "| 4\u20136 hours | any |")),
     ("ranges: §4.5's confirm-once band drifts from §11.8's soft", "PLAN.md",
      lambda t: t.replace("| Target blood sugar | 70–**200** mg/dL | 90–140 mg/dL |",
                          "| Target blood sugar | 70–**200** mg/dL | 90–180 mg/dL |")),
@@ -3890,6 +3919,19 @@ SELF_TESTS = [
      lambda t: t.replace(
          "| Regular human insulin | 20\u201330 minutes",
          "| Regular human insulin | 25\u201335 minutes")),
+    # T20's window, and §7.3's coupling to it.
+    ("T20: the advise window narrowed back under the label it quotes", "src/config.ts",
+     lambda t: t.replace("stackSuppressHours: 4, stackAdviseHours: 18 }",
+                         "stackSuppressHours: 4, stackAdviseHours: 12 }")),
+    ("T20: the delete window pinned to one class instead of the longest",
+     "src/config.ts",
+     lambda t: t.replace(
+         "export const DELETE_CONFIRM_WINDOW_HOURS = LONGEST_ADVISE_HOURS;",
+         "export const DELETE_CONFIRM_WINDOW_HOURS = STACK_ADVISE_HOURS;")),
+    ("T20: the longest-window derivation reduced to a single row", "src/config.ts",
+     lambda t: t.replace(
+         "export const LONGEST_ADVISE_HOURS = Math.max(",
+         "export const LONGEST_ADVISE_HOURS = Math.min(")),
     ("§8.5: the rapid analogue wait widened to Humulin R's", "src/config.ts",
      lambda t: t.replace("rapid: { eatDelayMinutes: [10, 15],",
                          "rapid: { eatDelayMinutes: [20, 30],")),
@@ -3973,7 +4015,7 @@ SELF_TESTS = [
      lambda t: t.replace("| Target blood sugar | 70–**200** mg/dL |",
                          "| Target blood sugar | 70–**300** mg/dL |")),
     ("canonical: §7.3's window prose contradicts its constant", "PLAN.md",
-     lambda t: t.replace("inside the last 12 hours", "inside the last 4 hours")),
+     lambda t: t.replace("inside the last 18 hours", "inside the last 4 hours")),
     ("design: a mock history row shows an unproducible dose",
      "docs/design/step-flow.html",
      lambda t: t.replace('194 mg/dL · 45 g</span>\n                <span class="v"><span class="c">6</span>',

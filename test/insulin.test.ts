@@ -24,7 +24,7 @@ import {
   windowsFor,
 } from '../src/core/insulin.js';
 import type { Classified, InsulinClass } from '../src/core/insulin.js';
-import { INSULIN_TIMING, MS_PER_HOUR } from '../src/config.js';
+import { DELETE_CONFIRM_WINDOW_HOURS, INSULIN_TIMING, MS_PER_HOUR } from '../src/config.js';
 import { INSULINS } from '../src/data/insulins.js';
 
 /**
@@ -271,16 +271,40 @@ describe('§7.4 the stacking windows, and §8.5s switch day', () => {
 });
 
 describe('§8.5 the shipped table, stated rather than assumed', () => {
-  it('holds every stacking window at the SAME pair, pending CLINICAL question 10c', () => {
-    // This is a HOLD, and the assertion records it so that changing it is a
-    // deliberate act with a test to update rather than a quiet data edit.
-    // Shortening a gate is the dose-raising direction, nobody has ruled on it,
-    // and §20.1.1 forbids picking the number off a reading of the literature.
-    const rows = Object.values(INSULIN_TIMING);
-    for (const row of rows) {
+  it('holds every SUPPRESSION window at the same value, which is the gate', () => {
+    // A HOLD, and the assertion records it so that changing it is a deliberate
+    // act with a test to update rather than a quiet data edit. Shortening this
+    // one is the dose-RAISING direction: research on 2026-09-20 found no
+    // citable basis below 4 hours and a published argument against 3.
+    for (const row of Object.values(INSULIN_TIMING)) {
       expect(row.stackSuppressHours).toBe(INSULIN_TIMING.regular.stackSuppressHours);
-      expect(row.stackAdviseHours).toBe(INSULIN_TIMING.regular.stackAdviseHours);
     }
+  });
+
+  it('but lets the ADVISE window differ, because that one is only a sentence', () => {
+    // No dose changes at this boundary — only whether "your last dose may still
+    // be acting" appears — so §7.4's "erring long is free" applies. Regular
+    // human insulin gets its own label's 18 hours; the analogues stay at 12,
+    // which already carries a wide margin over their 5-7.
+    expect(INSULIN_TIMING.regular.stackAdviseHours).toBe(18);
+    expect(INSULIN_TIMING.rapid.stackAdviseHours).toBe(12);
+    expect(INSULIN_TIMING.ultra_rapid.stackAdviseHours).toBe(12);
+    // And the relationship that must not invert: the slowest insulin gets the
+    // longest window.
+    for (const row of Object.values(INSULIN_TIMING)) {
+      expect(row.stackAdviseHours).toBeLessThanOrEqual(
+        INSULIN_TIMING.regular.stackAdviseHours,
+      );
+    }
+  });
+
+  it('§7.3 — the delete window outlives every class, not just the current one', () => {
+    // A tombstone must survive as long as any insulin could still matter to the
+    // gate, and the delete rule must not depend on which insulin the reader is
+    // on today.
+    expect(DELETE_CONFIRM_WINDOW_HOURS).toBe(
+      Math.max(...Object.values(INSULIN_TIMING).map((row) => row.stackAdviseHours)),
+    );
   });
 
   it('keeps `MEALTIME_CLASSES` and the table the same list', () => {
