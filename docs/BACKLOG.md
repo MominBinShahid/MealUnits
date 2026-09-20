@@ -1703,7 +1703,25 @@ migration against a change that was happening regardless.
 config-as-data work; or leave it and accept that the repository has one file in another language.
 The constraints above are the brief for whichever he picks.
 
-### T15. The deployed path is stated sixteen times and guarded three
+### T15. The deployed path is stated sixteen times and guarded three — IN PROGRESS
+
+**Count was eighteen. Four are now generated** (2026-09-21): the manifest's three and
+`robots.txt`'s one. **Fourteen remain**, and the fonts are the next real piece of work.
+
+| Done | How |
+|---|---|
+| `public/manifest.webmanifest` → generated | Emitted into `dist` from `BASE` by the `sitemap` plugin, which runs before `serviceWorker` so the precache walk still finds it. The file is gone from `public/` |
+| `public/robots.txt` → generated | Same plugin, `Sitemap:` line built from `SITE_URL` and `BASE`. Still excluded from the precache and still in the worker's `NOT_THE_APP` |
+
+**The manifest went first because its failure is the one that reaches somebody's phone.** A wrong
+`scope` orphans an app they have already installed: the home-screen icon stops matching the site it
+came from, the install quietly stops being the install, and nothing says so.
+
+**One knock-on, and the checker found it rather than a person.** Moving `robots.txt` out of
+`public/` dropped it from `PUBLIC_CRAWLER_ONLY`, which is the same set `check_worker_knows_non_app_files`
+validates `src/sw.ts`'s `NOT_THE_APP` against — so the worker was suddenly excluding a file nothing
+vouched for. Its job had not changed; only where it is written had. There is a
+`GENERATED_CRAWLER_ONLY` set now, holding it and the sitemap.
 
 **Count is now eighteen, seventeen of them in files that cannot be generated.** `public/404.html` added two on 2026-09-17; both are guarded, because `public/` is copied verbatim and the page whose job is to offer the way back offering a broken one is the worst version of this defect.
 
@@ -1717,10 +1735,10 @@ more places than the constants suggest.
 | File | Copies | Guarded |
 |---|---|---|
 | `index.html` | 8 — canonical, `og:url`, `og:image`, `twitter:image`, manifest, apple-touch-icon, icon, JSON-LD `url` | 3, by `check_site_url_agrees` |
-| `public/manifest.webmanifest` | 3 — `id`, `start_url`, `scope` | none |
+| ~~`public/manifest.webmanifest`~~ | ~~3 — `id`, `start_url`, `scope`~~ | **generated 2026-09-21** |
 | `public/404.html` | 2 — the link back to the app, and its icon | both, by `check_404_paths_agree` |
 | `src/ui/fonts.css` | 3 font URLs | none |
-| `public/robots.txt` | 1 sitemap URL | none |
+| ~~`public/robots.txt`~~ | ~~1 sitemap URL~~ | **generated 2026-09-21** |
 
 **The failures are silent and they are not equal.** A wrong `scope` in the manifest orphans an
 installed app — the icon on a phone stops matching the site it was installed from, and nobody is
