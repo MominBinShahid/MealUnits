@@ -20,18 +20,30 @@ const dose = (hoursAgo: number, units = 6): LastDose => ({
 
 /**
  * §8.5 — the windows are an ARGUMENT now, so every case here has to name the
- * insulin it is about. These are regular human insulin's four and twelve
- * hours: the pair this file has always asserted, said out loud.
+ * insulin it is about. These are regular human insulin's: four hours of
+ * suppression, and eighteen of advisory.
+ *
+ * The advisory end was twelve until `BACKLOG` T20 — Humulin R's own label puts
+ * termination at approximately 18 hours for large doses, and the reader this
+ * app was built for injects 24-25 units a meal, so the line fell silent while
+ * the label still said insulin was acting. No dose changes at that boundary,
+ * which is why widening it was free.
  */
 const W = windowsFor('regular');
+const ADVISE_HOURS = 18;
 
 describe('§7.6 the elapsed cases, and every boundary between them', () => {
   it('classifies the four windows', () => {
     expect(classifyElapsed(dose(0), NOW, W)).toBe('within_suppress_window');
     expect(classifyElapsed(dose(3.99), NOW, W)).toBe('within_suppress_window');
     expect(classifyElapsed(dose(4), NOW, W)).toBe('within_advise_window');
-    expect(classifyElapsed(dose(12), NOW, W)).toBe('within_advise_window');
-    expect(classifyElapsed(dose(12.001), NOW, W)).toBe('too_old');
+    expect(classifyElapsed(dose(ADVISE_HOURS), NOW, W)).toBe('within_advise_window');
+    expect(classifyElapsed(dose(ADVISE_HOURS + 0.001), NOW, W)).toBe('too_old');
+    // And an ANALOGUE reaches silence sooner, off the same function — the one
+    // place in this file where the class actually changes an answer.
+    const rapid = windowsFor('rapid');
+    expect(classifyElapsed(dose(ADVISE_HOURS), NOW, rapid)).toBe('too_old');
+    expect(classifyElapsed(dose(12), NOW, rapid)).toBe('within_advise_window');
     expect(classifyElapsed(null, NOW, W)).toBe('no_record');
   });
 
@@ -44,11 +56,11 @@ describe('§7.6 the elapsed cases, and every boundary between them', () => {
     );
   });
 
-  it('is exact at twelve hours to the millisecond', () => {
-    expect(classifyElapsed({ injectedHundredths: 600, atMs: NOW - 12 * HOUR, insulinClass: 'regular' as const }, NOW, W)).toBe(
+  it('is exact at the advise boundary to the millisecond', () => {
+    expect(classifyElapsed({ injectedHundredths: 600, atMs: NOW - ADVISE_HOURS * HOUR, insulinClass: 'regular' as const }, NOW, W)).toBe(
       'within_advise_window',
     );
-    expect(classifyElapsed({ injectedHundredths: 600, atMs: NOW - 12 * HOUR - 1, insulinClass: 'regular' as const }, NOW, W)).toBe(
+    expect(classifyElapsed({ injectedHundredths: 600, atMs: NOW - ADVISE_HOURS * HOUR - 1, insulinClass: 'regular' as const }, NOW, W)).toBe(
       'too_old',
     );
   });

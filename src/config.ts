@@ -182,7 +182,30 @@ export const CLOCK_SKEW_TOLERANCE_HOURS = 1; // §7.6 future-timestamp bound
 // prescriber — see `RANGE.eatDelay`. That is the answer §8.5 used to ask for
 // and then give nowhere to live.
 //
-// ## The stacking windows, and why they are IDENTICAL in every row
+// ## The ADVISE windows differ, and the reason is a label rather than a model
+//
+// `stackAdviseHours` is the informational one: between the suppression window
+// and this, a correction is applied IN FULL and the app says the last dose may
+// still be acting. Past it, the app says nothing. No dose changes at that
+// boundary — only whether a sentence appears — which is why §7.4 records that
+// "erring long is free" here.
+//
+// **Regular human insulin gets 18 hours because its own label says so.**
+// Humulin R, section 12.2: the effect "terminates after approximately 8 hours
+// (range: 3 to 14 hours)", and then, verbatim — "In a study that administered
+// 50 and 100 units doses subcutaneously to obese subjects, mean time of
+// termination of effect was prolonged to approximately 18 hours (range
+// approximately 12-24 hours)." Momin's brother injects 24-25 units a meal. At
+// 12 hours the app fell silent while the label still said insulin was acting.
+// 18 is quoted, not derived, which is the same standing as the 20-30.
+//
+// **The analogues stay at 12, and widening them would be furniture.** Every one
+// is finished inside 5-7 hours by its own label — Fiasp returns to baseline at
+// ~7 h even at 0.4 U/kg, Lyumjev at ~7.3 h even at 30 units — so 12 already
+// carries a wide margin, and §10.5's budget is spent on lines that mean
+// something.
+//
+// ## The SUPPRESSION windows are identical in every row
 //
 // They move by class in the SHAPE of this table and not yet in its values, and
 // that is a deliberate hold rather than an oversight. CLINICAL.md question 10c
@@ -195,7 +218,8 @@ export const CLOCK_SKEW_TOLERANCE_HOURS = 1; // §7.6 future-timestamp bound
 // per-dose override — recorded on the row as `overrodeStacking` — is the
 // designed escape for the reader who knows better on the day.
 //
-// **RESEARCHED 2026-09-20, and the answer is: do not shorten them.** Every
+// `stackSuppressHours` is the GATE: inside it a positive correction is held
+// back. **RESEARCHED 2026-09-20, and the answer is: do not shorten it.** Every
 // regulated device that ships a duration-of-insulin-action default lands on 4
 // hours or above — Medtronic 670G and 780G both 4 (range 2-8), Accu-Chek 4,
 // mySugr 4.5, Tandem's Control-IQ forced to 5. The bolus-calculator literature
@@ -217,7 +241,7 @@ export const CLOCK_SKEW_TOLERANCE_HOURS = 1; // §7.6 future-timestamp bound
 // the reader's class. Recorded here because this comment is what the person
 // making that edit will be reading.
 export const INSULIN_TIMING = {
-  regular: { eatDelayMinutes: [20, 30], stackSuppressHours: 4, stackAdviseHours: 12 },
+  regular: { eatDelayMinutes: [20, 30], stackSuppressHours: 4, stackAdviseHours: 18 },
   rapid: { eatDelayMinutes: [10, 15], stackSuppressHours: 4, stackAdviseHours: 12 },
   ultra_rapid: { eatDelayMinutes: [0, 0], stackSuppressHours: 4, stackAdviseHours: 12 },
 } as const;
@@ -267,14 +291,29 @@ export const RANGE = {
 
 // ─── STACKING (§7.4) ───────────────────────────────────────
 // Aliases onto `INSULIN_TIMING`, for the same reason `EAT_DELAY_MINUTES` is
-// one. Every class currently declares the same pair, so these are still "the"
-// windows — but they are regular human insulin's windows, and naming them from
-// that row is what stops a future per-class edit leaving a second copy behind.
+// one: they are regular human insulin's windows, and naming them from that row
+// is what stops a per-class edit leaving a second copy behind.
 export const STACK_SUPPRESS_HOURS = INSULIN_TIMING.regular.stackSuppressHours;
 export const STACK_ADVISE_HOURS = INSULIN_TIMING.regular.stackAdviseHours;
+
+/**
+ * The LONGEST advise window any class declares.
+ *
+ * Exists because §7.3's delete-confirmation window used to be defined as equal
+ * to `STACK_ADVISE_HOURS`, and that stopped being a single number on
+ * 2026-09-20. A deleted dose must leave a tombstone for at least as long as ANY
+ * insulin could still matter to the gate — and the delete rule should not
+ * depend on which insulin the reader happens to be on today, which is the other
+ * reason this is a maximum rather than a lookup.
+ *
+ * Derived rather than written down, so a class added to the table joins it.
+ */
+export const LONGEST_ADVISE_HOURS = Math.max(
+  ...Object.values(INSULIN_TIMING).map((timing) => timing.stackAdviseHours),
+);
 // Declared after STACK_ADVISE_HOURS deliberately — v9 printed this above it,
 // which is a TDZ ReferenceError if transcribed literally [R1].
-export const DELETE_CONFIRM_WINDOW_HOURS = STACK_ADVISE_HOURS; // §7.3
+export const DELETE_CONFIRM_WINDOW_HOURS = LONGEST_ADVISE_HOURS; // §7.3
 
 // ─── PLAUSIBILITY ADVISORY (§6.5) ──────────────────────────
 export const ADVISORY_MIN_ELIGIBLE = 10;
@@ -558,9 +597,16 @@ export function checkConfig(values: ConfigValues): string[] {
       `stacking windows are out of order: ${values.stackSuppressHours} < ${values.stackAdviseHours}`,
     );
   }
-  if (values.deleteConfirmWindowHours !== values.stackAdviseHours) {
+  // §7.3 — the delete window tracks the LONGEST advise window rather than one
+  // class's, because a tombstone must outlive every insulin the gate could
+  // still be reasoning about. It was `=== stackAdviseHours` until the advise
+  // windows stopped being one number.
+  const longestAdvise = Math.max(
+    ...Object.values(values.insulinTiming).map((timing) => timing.stackAdviseHours),
+  );
+  if (values.deleteConfirmWindowHours !== longestAdvise) {
     problems.push(
-      `DELETE_CONFIRM_WINDOW_HOURS (${values.deleteConfirmWindowHours}) must equal STACK_ADVISE_HOURS (${values.stackAdviseHours})`,
+      `DELETE_CONFIRM_WINDOW_HOURS (${values.deleteConfirmWindowHours}) must equal the longest stackAdviseHours (${longestAdvise})`,
     );
   }
 

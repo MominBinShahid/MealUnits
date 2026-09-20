@@ -115,9 +115,9 @@ launder a literal through a local constant.
 
 ### The testing, and what it is worth
 
-- **772 tests**, including 77 golden cases that each carry the hand derivation of their expected
+- **775 tests**, including 77 golden cases that each carry the hand derivation of their expected
   value in the fixture.
-- **100% mutation score** on the core, the state machine and `config.ts` — 1,818 mutants killed, 0
+- **100% mutation score** on the core, the state machine and `config.ts` — 1,822 mutants killed, 0
   survived, 0 uncovered. A further 83 are **disabled by name**, each with its reason written at the
   line it silences; `BUILD-NOTES.md` note 16 tables every one and says why it is disabled rather
   than killed.

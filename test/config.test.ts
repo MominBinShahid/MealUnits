@@ -216,7 +216,7 @@ describe('§11.8 the self-check catches what it claims to catch', () => {
     [
       'the delete window drifting away from the advise window',
       { ...SHIPPED, deleteConfirmWindowHours: 8 },
-      /must equal STACK_ADVISE_HOURS/,
+      /must equal the longest stackAdviseHours/,
     ],
     [
       'the eat-delay window reversed',
@@ -238,6 +238,14 @@ describe('§11.8 the self-check catches what it claims to catch', () => {
       '§8.5 — a class range the reader could not type back in',
       { ...SHIPPED, insulinTiming: { ...TIMING, regular: timing([20, 90], 4, 12) } },
       /escapes RANGE.eatDelay/,
+    ],
+    [
+      '§7.3 — the delete window pinned to one class rather than to the longest',
+      {
+        ...SHIPPED,
+        insulinTiming: { ...TIMING, ultra_rapid: timing([0, 0], 4, 24) },
+      },
+      /must equal the longest stackAdviseHours/,
     ],
     [
       '§8.5 — a class whose stacking windows are the wrong way round',
