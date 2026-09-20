@@ -1283,3 +1283,18 @@ requests the previous hashed CSS, the dev server answers a missing asset with `i
 parses as **zero CSS rules** — so every element measures as unstyled and the app never boots. It
 looks exactly like a broken stylesheet. Bust the cache, or use a fresh port.
 
+**And the opt-out's own weight was wrong, which Momin spotted immediately.** A filled button inside
+the advisory made *turn this off* look like the thing to do — the same mistake as a cyan dismissal,
+one level down. It is `.more` now: the app's existing understated text action, underlined, no
+background, and still 48px tall so §10.7's touch floor holds. Findable without competing with the
+warning it sits beneath.
+
+**The confirmation is a footer, not a second warning.** Under a `--warn-line` hairline and in
+`--ink-3` — dimmer rather than louder, and deliberately not a warning colour. Turning a reminder off
+is a choice, not a fault, and colouring it as an error would tell someone they had done something
+wrong while the panel above still carries everything that actually is. The shape copies
+`.working .row.total`, which is already how this app sets a settled line apart from the rows above it.
+
+Measured on a fresh port: heading and body 13px, the opt-out 13px amber and underlined at 48px, the
+footer `--ink-3` above a `--warn-line` rule.
+

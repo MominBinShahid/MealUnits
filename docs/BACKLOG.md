@@ -258,6 +258,119 @@ added after its absence caused harm."
 forward. The app is now for anyone with type 1, and the reader who has never been told what ISF
 means is the reader it was widened for.
 
+### 26. The two clocks are Humulin R's, and the reader has nowhere to put their own
+
+**RULED 2026-09-20 [Momin]: build it.** The shape below is his, after two rounds of review that first
+argued against it and then withdrew the argument.
+
+**The problem.** The dose arithmetic is insulin-agnostic — `DosingSettings` is `{target, isf, icr,
+mode}` and the app does not know which mealtime insulin is in the pen. The molecule reaches exactly
+two clocks: §8.1's 20–30-minute eat delay and §7.4's 4/12-hour stacking windows, plus §7.3's
+delete-confirm window derived from the second, and two sentences in `copy.ts` that interpolate them.
+`settings.insulinAssumption` says all this on screen and ends *"ask your doctor how long before a
+meal to inject"* — **then gives the answer nowhere to live and renders the Humulin R wait after every
+dose.** Since `T5` the analogue reader is the more common one, so the fixed clocks are not a
+conservative default for the audience; they are the wrong number, rendered daily, to most of it.
+
+**Why the first review was wrong, recorded because the reversal is the useful part.** The objection
+was that a picker gives false confirmation of fit to someone who does not know their insulin differs.
+That compares the proposal against an ideal informed reader rather than against the shipped screen —
+which renders mis-timed advice at the moment of action to everyone, corrected only by prose read
+once. And the rationale in `copy.ts` (a setting "would change a label while leaving the advice it
+implies untouched") was written against a LABEL-ONLY setting. This changes the behaviour with the
+label, so that objection does not reach it.
+
+**One correction to the framing that must not calcify: the eat delay is not secondary.** A rapid
+analogue injected 20–30 minutes early is acting before food arrives — the one Humulin-R-specific
+behaviour that fails toward hypoglycaemia. The stacking windows fail the other way, holding
+corrections longer than needed, which §2.1 treats as the tolerable direction. So "the timing is
+secondary" is true of the windows and false of the delay — which is precisely why this is worth
+building, and why its numbers need the rigour the dose arithmetic got.
+
+#### The shape
+
+1. **A required question at setup. No default, and no prefill.** The app does not prefill ISF, ICR or
+   target — `config.ts` deleted `PRESCRIBED_*` on the ruling that *"a prefilled 150 is a prescription
+   wearing the clothes of a default"*. An insulin is the same category. A required question also has
+   no tap-through, which is what removes the false-confirmation risk entirely. **No migration value
+   either**: an existing install answers the question on next open like everyone else.
+
+2. **Grouped by CLASS, never an alphabetical brand list.** HumuLIN / HumaLOG is on ISMP's confused
+   drug names list, as are NovoLIN / NovoLOG and both premix pairs — an alphabetical list seats them
+   in consecutive rows, and ISMP's own mitigation is to stop look-alike names appearing
+   consecutively. Class headers do that structurally. A WITHIN-class mispick is harmless: tap Humalog
+   while taking NovoRapid and every timing shown is still right. Only cross-class picks matter, and
+   the grouping is what defends them — helped by a confirmation echo stating class facts and the
+   clear-or-cloudy check against the vial in the reader's hand.
+
+3. **Premix and NPH are IN the list, and route to an honest exit.** Not omitted. A NovoMix 30 user
+   who cannot find their insulin taps the nearest-looking name and receives a carb-counted dose that
+   means nothing for a fixed twice-daily regimen. They are not a wrong-timings case, they are
+   **out of model**: premix has no per-meal ratio arithmetic to be correct for, and NPH's 4–12-hour
+   peak breaks the stacking model whatever the constants say.
+
+   **And this is a real population here, not a theoretical one.** In the ICMR-YDR registry
+   **52.8% of Indian type 1 youth were on once- or twice-daily regimens** — the premix/split-mix
+   pattern — against 2.0% in the US SEARCH registry. ISPAD's limited-resource chapter discusses
+   premix in type 1 directly, noting some regions receive only premixed insulin. Pakistan's public
+   sector supplies **premixed, regular and NPH only**, with analogues unavailable free. The premix
+   reader is plausibly more common here than the analogue one.
+
+4. **"I don't know, or mine isn't listed"** suppresses the timing lines, says to ask the doctor, and
+   links the feedback form on the blog. That path is today's `insulinAssumption` advice minus the
+   wrongly-rendered wait. **The form does not substitute for points 3 and 4**: it catches people who
+   KNOW the app does not handle them, and a premix user picking a look-alike does not know.
+
+5. **The eat delay is editable, prefilled from the class. The stacking windows are not editable by
+   anyone.** §8.1 is advice — a wrong value mis-times one correct dose and shows as a pattern §7.8
+   exists to surface. §7.4 is a GATE, and `T14`'s ketone row already ruled this shape: the person
+   most likely to shorten it is the person it exists to catch. The gate has a designed escape —
+   §7.4.1's override is per-dose, states its consequence in the reader's own units, and is **recorded
+   on the row as `overrodeStacking`**. A shortened window is a permanent override that no row
+   records. Worked, using §7.4.1's own decay figures: a window cut to one hour lands a full
+   correction on a dose with 150–180 mg/dL of its 180 still pending, and it compounds across a sick
+   day.
+
+6. **The label names the insulin.** "units of your mealtime insulin" becomes "units of NovoRapid",
+   from the list entry rather than free text.
+
+7. **Both exports record it, and this stands alone.** §1.3 records the basal so the stored picture is
+   "the whole regimen rather than half of it" — yet the record names the basal it does NOT log and
+   omits the mealtime insulin **every logged row is a dose of**. §7.8's hypo patterns are read
+   through kinetics: a low at hour three means something different under regular than under aspart.
+   Worth doing even before any behaviour changes.
+
+8. **The class joins `SettingsPeriod`**, beside target/isf/icr/mode — a value, not prose, like
+   everything else there. §7.7's revision machinery exists because current settings are not the
+   settings that produced a historical row, and an insulin switch is exactly such a change.
+
+9. **Switch-day rule, designed in rather than retrofitted.** The stacking windows model insulin
+   ALREADY ON BOARD, so the first calculation after a change must key on the previous injection's
+   insulin. Selecting a fast analogue must not shrink the window while regular insulin from lunch is
+   still acting. Until the last pre-change dose ages past the advise window, the gate uses the
+   **longer** of old and new.
+
+#### What a build touches, so nobody undercounts it
+
+`check-plan.py`'s CANONICAL pins (all three constants, plus the `DELETE_CONFIRM_WINDOW_HOURS`
+derivation), §11.2's snapshot and `settingsRevision`, §13.2's golden cases, §7.4.1's invalidation
+list, both exports, and `copy.ts`'s two interpolating strings. The canonical machinery is the awkward
+part: there stops being "the" value for the checker to assert, so the check has to move from a
+constant to a per-class table.
+
+#### Sequencing — RULED 2026-09-20 [Momin]
+
+**Build the mechanism first and prefill every class from published figures**, rather than holding the
+whole thing until a prescriber rules. The values are not invented: onset, peak and duration come from
+the manufacturers' own prescribing information, which is the same kind of source `CLINICAL.md` cites
+for every other number. Humulin R's values are the ones already shipped and already reasoned about;
+the rest are label-derived and **say so on screen** — one line telling the reader where the number
+came from and to check it against their own prescription.
+
+This ships the export, the label, the premix exit and the honest not-listed path immediately, all of
+which are improvements today. **Blocked on nothing; the clinical question below runs alongside it**,
+and a ruling tightens the numbers rather than unblocking the work.
+
 ### 24. URL routes for the four screens that are not the calculator — DONE 2026-09-17
 
 **WHEN THIS LANDS, THE SITEMAP AND THE SERVICE WORKER BOTH NEED IT.** Flagged by Momin 2026-09-14,

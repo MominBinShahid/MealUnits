@@ -1069,16 +1069,40 @@ export const COPY = {
      * reader who skipped the explainer, and this loses them that.
      */
     stackingOverridden: 'stacking check overridden',
-    historyIntake: (reading: string, carbs: string): string =>
-      `${reading} \u00b7 ${carbs}\u00A0g of carbohydrate`,
+    /**
+     * The history row's two lines, as NAMED PARTS rather than one sentence.
+     *
+     * A row is scanned, not read: the eye is looking for the numbers, and in a
+     * run of identical grey lines it has to find them by counting words. The
+     * figures are emphasised so they can be found at a glance — the same reason
+     * `explain.audienceBody` names its bold part instead of finding it by
+     * position. The NAME is why it is bold, and a screen reader gets the parts
+     * in order either way.
+     *
+     * Still strings, not JSX. §10.2's single-file copy audit depends on these
+     * being readable here, and a copy function returning markup ends that.
+     */
+    historyIntake: (reading: string, carbs: string): readonly {
+      readonly value: string;
+      readonly rest: string;
+    }[] => [
+      { value: reading, rest: ' \u00b7 ' },
+      { value: `${carbs}\u00A0g`, rest: ' of carbohydrate' },
+    ],
     readingOnly: (reading: string, note: string): string =>
       `${reading}\u00A0mg/dL \u2014 reading only, no dose${note}`,
     dosingAnsweredAt: (at: string): string =>
       `Answered ${at}. Editing it replaces the answer and re-dates it.`,
     mealCheckNeeds: (meals: string): string =>
       `It needs ${meals} logged meals before it can say anything.`,
-    historyDose: (calculated: string, injected: string): string =>
-      `calculated ${calculated} \u00b7 injected ${injected}`,
+    /** Label, then figure — the word says which number this is, the figure is what is sought. */
+    historyDose: (calculated: string, injected: string): readonly {
+      readonly label: string;
+      readonly value: string;
+    }[] => [
+      { label: 'calculated ', value: calculated },
+      { label: ' \u00b7 injected ', value: injected },
+    ],
     outsideStackingWindow: 'This entry is older than anything the stacking check looks at.',
     delete: 'Delete',
     yourAnswer: 'Your answer',

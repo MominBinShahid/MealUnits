@@ -560,3 +560,45 @@ NICE and Diabetes UK material is quoted with citation here and **must not be cop
 9. **Not a question — an observation, and it stays one.** Long-acting insulin is 36 units of a daily
    total of 84–111 — **32–43%**, against a commonly cited 40–50%. That is arithmetic from his own figures, recorded so it reaches you, and not a
    recommendation.
+
+10. **The two timing clocks are Humulin R's. What may a patient on a different mealtime insulin
+    change, and inside what bounds?** This is the other half of question 8, from the opposite side:
+    question 8 asks whether the SENTENCE says the right thing, this asks what the app should
+    actually DO. **Momin has ruled that it will be built** (`BACKLOG.md` entry 26); these questions
+    tighten the numbers rather than deciding whether it happens.
+
+    The dose arithmetic does not involve the insulin — target, ISF and ICR are yours to set and they
+    already account for whatever the patient takes. Only two things do: the **20–30 minutes before
+    eating**, and the **4-hour and 12-hour stacking windows**. Today both are Humulin R's, rendered
+    to everyone, and a patient on a rapid analogue is told to wait 20–30 minutes when their insulin
+    is already working — which is the one place this app can push somebody low.
+
+    The planned shape: the patient names their mealtime insulin at setup, chosen from a list grouped
+    by class; the eat delay is prefilled per class from the manufacturers' prescribing information
+    and is **editable**; the stacking windows move by class but **nobody can edit them**, because
+    that is a gate rather than advice and the app already offers a per-dose override that is
+    recorded on the row.
+
+    Four asks:
+
+    a. **Is class the right resolution**, or does anything clinically relevant differ by brand
+       within a class — regular, rapid analogue (aspart, lispro, glulisine), ultra-rapid (faster
+       aspart, lispro-aabc)?
+
+    b. **Safe hard bounds for a prescriber-supplied pre-meal wait, per class.** We render 20–30
+       minutes for regular. Analogue guidance runs roughly 0–15, and ultra-rapid labels permit
+       injection at the start of the meal or shortly after. **Is zero an acceptable floor**, and
+       should the app refuse anything above some ceiling?
+
+    c. **May the 4-hour suppression and the 12-hour advisory shorten for a rapid analogue, and to
+       what?** Note §3 records that our 4 is itself an extrapolation — no source states a number for
+       regular insulin specifically. A shorter window grants corrections sooner; a longer one holds
+       them back and runs high.
+
+    d. **Premixed insulin and NPH.** The plan is to name them in the list and say plainly that this
+       calculator does not fit them — premix is a fixed twice-daily regimen with no per-meal ratio
+       arithmetic, and NPH's 4–12-hour peak is not what the stacking model describes. **Is that the
+       right thing to tell someone**, and is the wording above the right wording? This matters more
+       here than the guidelines suggest: in the Indian type 1 youth registry, **52.8%** were on
+       once- or twice-daily regimens against 2.0% in the American one, and Pakistan's public sector
+       supplies premixed, regular and NPH only.

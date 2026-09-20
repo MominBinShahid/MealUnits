@@ -459,10 +459,20 @@ export function SettingsScreen({
 
       {/* §8.5 — the assumption setup was always supposed to state. Placed here
           so it closes the ratios rather than opening the rounding question: the
-          modes decide how many units, this decides what a unit IS. */}
-      <p class="hint">{COPY.settings.unitAssumption}</p>
-      {/* §10.2 — the SAME string the how-it-works page renders, not a copy. */}
-      <p class="hint">{COPY.settings.insulinAssumption}</p>
+          modes decide how many units, this decides what a unit IS.
+
+          SET APART from the echo above it. `icrSentence` reads back the number
+          just typed and belongs to that field; these two belong to the ratios as
+          a whole. Run together as identical hints they read as one block, and the
+          assumptions look like more small print about the box above rather than
+          the conditions under which every number on this screen is wrong for
+          you. A lighter rule than `.basal`'s, because this divides a section
+          rather than starting one. */}
+      <div class="assumptions">
+        <p class="hint">{COPY.settings.unitAssumption}</p>
+        {/* §10.2 — the SAME string the how-it-works page renders, not a copy. */}
+        <p class="hint">{COPY.settings.insulinAssumption}</p>
+      </div>
 
       <h2>{COPY.settings.sectionRounding}</h2>
       <div class="group-label" id="label-mode">{COPY.settings.modeQuestion}</div>
@@ -597,9 +607,9 @@ export function SettingsScreen({
               interrupted; they should not stop being able to find out where
               they stand, which is why the panel above survives the tap. */}
           {storageWarningOff ? (
-            <p class="hint">{COPY.storage.stoppedWarning}</p>
+            <p class="settled">{COPY.storage.stoppedWarning}</p>
           ) : (
-            <Button class="go quiet" onPress={onStopStorageWarning}>
+            <Button class="more" onPress={onStopStorageWarning}>
               {COPY.storage.stopWarning}
             </Button>
           )}
