@@ -1791,7 +1791,7 @@ That turned out to be benign — Google's own help lists "low crawl demand" as a
 status, and a live test returned "URL is available to Google" — but reading the apex `robots.txt` to
 rule it out is what surfaced the ownership question.
 
-### T21. `test/lint-config.test.ts` times out at 5 seconds under load
+### T21. `test/lint-config.test.ts` times out at 5 seconds under load — DONE 2026-09-20
 
 **Seen once, 2026-09-20**, while a mutation run and a browser were competing for the same cores:
 
@@ -1807,9 +1807,16 @@ It still matters, because this file is inside `npm run check`, which is a requir
 required job that fails on machine load fails for a reason the log does not name, and the reflex it
 trains is "re-run it", which is the reflex that hides a real one.
 
-**The fix is one argument** — an explicit timeout on that case, generous enough for a cold ESLint
-and stated as being about process start rather than about the assertion. Not done here because it is
-unrelated to the change it surfaced during, and a flake seen once deserves the note before the edit.
+**Seen again the same day, and then fixed.** The second sighting sharpened the diagnosis: the case
+passes in well under five seconds when the file runs ALONE, so it is not a cold start — it is
+contention with the other twenty-eight files sharing the cores during a full `vitest run`.
+
+`findings()` caches, so one case spawns ESLint and the other eleven read its result; that one case
+pays for the whole file. It now carries an explicit 30-second timeout, stated as being about process
+start rather than about the assertion — far past anything observed, far short of the run hanging.
+
+Fixed rather than left because it had begun failing the verification of other work, and a green run
+you cannot trust is worse than a red one.
 
 ---
 

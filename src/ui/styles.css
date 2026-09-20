@@ -562,6 +562,46 @@ body {
 }
 
 /*
+ * §10.6's red, and the only thing in the app that uses it.
+ *
+ * `--halt` and its two companions have existed since the first stylesheet and
+ * nothing rendered a panel in them — `.go.danger` borrows the ink for the clear
+ * button and that is all. Bands C and D are red-by-refusal rather than by
+ * panel: they replace the dose instead of sitting beside it.
+ *
+ * ONE thing earns this: "this is not a medical device", on the blocking gate.
+ * §10.5's budget is the reason it is one thing. Two reds is no red — the second
+ * one teaches that red is how this app writes, and then the first stops being
+ * read. The type-1 paragraph on the same screen is amber for exactly that
+ * reason, and it is the right way round: the device statement is what the
+ * reader must carry out of the screen, the regimen statement is what sends the
+ * wrong reader away.
+ */
+/*
+ * NAMED `stop`, NOT `halt`, and the name is the fix. `.halt` was already taken
+ * by §3's band C/D refusal — `flex: 1`, column, centred, 1.5rem padding — so
+ * `.flag.halt` inherited all of it and rendered a 360px panel with its three
+ * lines floating in the middle of it. Caught by looking at the screen; nothing
+ * in the type system or the linter can see two rules agreeing on a name.
+ *
+ * `.flag` and `.halt` are both real classes with real rules, and combining them
+ * was never going to mean "the flag, in red".
+ */
+.flag.stop {
+  background: var(--halt-bg);
+  border-color: var(--halt-line);
+}
+
+.flag.stop b {
+  color: var(--halt);
+}
+
+/* The footer rule belongs to whichever panel divides it. */
+.flag.stop .settled {
+  border-top-color: var(--halt-line);
+}
+
+/*
  * An advisory declares its own type scale, and its children have to honour it.
  * The global `p` rule is 0.9375rem against this block's 0.8125rem, so a
  * paragraph inside rendered LARGER than the heading above it — the heading
@@ -959,6 +999,19 @@ body {
   display: grid;
   gap: 0.125rem;
   justify-items: start;
+  /*
+   * CENTRE THE TRACK, not just the items. `.go` carries `min-height: 3.5rem`,
+   * so a one-line row has spare vertical space — and a grid's default
+   * `align-content: stretch` hands all of it to the row, which then stretches
+   * the span while the line box stays at its top. Measured: 15px above the
+   * glyphs and 22px below, in a 56px box.
+   *
+   * It was reported twice, and the first fix missed because the MEASUREMENT
+   * was wrong: `getBoundingClientRect()` on the stretched span returns the
+   * CELL, which really is centred, and says nothing about where the text sits
+   * inside it. A Range over the text node is what shows the 7px.
+   */
+  align-content: center;
   text-align: left;
   border-radius: 0.875rem;
   padding: 0.75rem 0.875rem;

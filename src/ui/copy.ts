@@ -643,21 +643,47 @@ export const COPY = {
   // ── §10.6 — first run and disclosure ──────────────────────────────────────
   firstRun: {
     disclaimerTitle: 'Read this before you use it.',
+    /**
+     * §10.6 item 1, RESHAPED 2026-09-20 [Momin] — the severity is carried by
+     * the FORM now, not only by the words.
+     *
+     * It was five paragraphs of identical grey prose, and the first two
+     * sentences of it are the whole legal position of this app. §12 already
+     * learned this lesson one screen over: "the form carries the severity, not
+     * just the words", and an advisory that looks like every other paragraph is
+     * read like every other paragraph.
+     *
+     * **ONE red panel, and §10.5's budget is why.** Two reds is no red — the
+     * second teaches that red is how this app writes, and then the first stops
+     * being read. So the device statement takes it, because it is what the
+     * reader must carry out of this screen, and the regimen statement is amber,
+     * because its job is to send the wrong reader away rather than to be
+     * remembered.
+     *
+     * The last two are plain prose on purpose. "It fills in none of them" and
+     * the non-endorsement line are FACTS about the app, not hazards to the
+     * reader, and panelling them would spend the budget on nothing.
+     */
+    notADevice: {
+      title: 'This is not a medical device',
+      body: 'It has no regulatory clearance and it has not been clinically validated. It does the arithmetic your doctor already prescribed — check every dose it gives you before you inject.',
+    },
+    // ADDED 2026-09-13. Until then the app never said which diabetes it was
+    // for, anywhere — the only mention of the condition at all was "diabetic
+    // ketoacidosis" inside the band E emergency wording. That was tolerable
+    // while one person used it. It is not tolerable for an app about to be
+    // made findable, because "insulin dose calculator" is searched by people
+    // with type 2 just as often, and their regimen is not what this
+    // arithmetic describes.
+    //
+    // Stated at the GATE rather than only in the reference, because §10.6
+    // makes this screen inescapable and note 59 keeps the acknowledgement in
+    // memory only — so it is read on every launch, before anything else.
+    typeOne: {
+      title: 'This is for type 1 diabetes',
+      body: 'It assumes you take a long-acting insulin every day and count carbohydrate at meals. A type 2 regimen works differently, and these numbers are not right for it.',
+    },
     disclaimerBody: [
-      'This is not a medical device and it has no regulatory clearance. It has not been clinically validated.',
-      'It does the arithmetic your doctor already prescribed. Check every dose it gives you before you inject.',
-      // ADDED 2026-09-13. Until then the app never said which diabetes it was
-      // for, anywhere — the only mention of the condition at all was "diabetic
-      // ketoacidosis" inside the band E emergency wording. That was tolerable
-      // while one person used it. It is not tolerable for an app about to be
-      // made findable, because "insulin dose calculator" is searched by people
-      // with type 2 just as often, and their regimen is not what this
-      // arithmetic describes.
-      //
-      // Stated at the GATE rather than only in the reference, because §10.6
-      // makes this screen inescapable and note 59 keeps the acknowledgement in
-      // memory only — so it is read on every launch, before anything else.
-      'This is for type 1 diabetes. It assumes you take a long-acting insulin every day and count carbohydrate at meals. A type 2 regimen works differently, and these numbers are not right for it.',
       'It works from three numbers your doctor gives you, and it fills in none of them. Another person’s numbers are wrong for you.',
       'MealUnits is not endorsed by, and has no connection with, the makers of your meter or your insulin.',
     ],

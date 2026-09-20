@@ -1445,3 +1445,69 @@ by running it rather than by reading it.
   NAMES — nearest word wins, which matters because "ultra-rapid" contains "rapid" and because a
   ±90-character window reaches into the paragraph next door. A rapid row stating 20–30 is still a
   finding, which is the case that matters: it is the wrong number in the hypo direction.
+
+---
+
+## 79. Three alignment bugs, two measurements, and a class name that was already taken
+
+Four small things from the built insulin screen and §10.6's disclaimer, 2026-09-20. They are
+together because they share one lesson: **the type system and the linter cannot see any of them**,
+and three of the four were found by looking at the screen rather than by reading the code.
+
+### The row that was reported twice, and why the first fix missed
+
+Momin said the "I don't know" row was not centred. It was left-aligned among a column of brands, so
+the first fix centred it horizontally — `justify-items: center` — and a measurement said the
+vertical was already fine: `getBoundingClientRect()` on the `.brand` span gave 13px above and 13px
+below in a 56px box.
+
+**The measurement was of the wrong thing.** `.go.insulin` is a grid, and with the default
+`align-content: stretch` the row takes all the spare height, so the span stretches to fill the cell
+while its line box stays at the top. The rect describes the STRETCHED CELL, which really is centred,
+and says nothing about where the glyphs are.
+
+A `Range` over the text node says what the eye said: **15px above, 22px below**. Seven pixels high.
+`align-content: center` fixed it — 18/18 on the one-line row, 15/15 on the two-line ones.
+
+The lesson is not about grid. It is that a measurement can agree with the code and disagree with the
+screen, and when a person says a thing looks wrong twice, the measurement is the suspect.
+
+### `.flag.halt` inherited a panel that already existed
+
+The disclaimer's red panel was written as `.flag.halt` — `.flag` for the shape, `halt` for the
+colour. `.halt` has been a class since the first stylesheet: §3's band C and D refusal, with
+`flex: 1`, `display: flex`, `justify-content: center` and 1.5rem of padding.
+
+So the panel rendered **360 pixels tall with three lines floating in the middle of it**. Not subtly
+wrong — obviously wrong, the moment anyone looked, and invisible to everything that does not look.
+It is `.flag.stop` now.
+
+Two classes that each have rules do not compose into "the first one, but the second one's colour".
+That is worth saying because the naming reads as though they should.
+
+### One red, and the argument against a second
+
+The `--halt` tokens had existed with no panel using them, which is why the name was free to collide
+with. Bands C and D are red by REFUSAL — they replace the dose rather than sitting beside it — so
+nothing had ever needed a red advisory.
+
+The disclaimer gets exactly one, and §10.5's budget is the whole reason. Two reds is no red: the
+second teaches that red is how this app writes, and then the first stops being read. The type-1
+paragraph is amber on the same screen, and the split is by JOB rather than by importance — the
+device statement is what every reader must carry out of the screen, the regimen statement exists to
+send the wrong reader away.
+
+The two remaining paragraphs stay plain prose. "It fills in none of them" and the non-endorsement
+line are facts about the app rather than hazards to the reader, and panelling them would spend the
+budget on nothing.
+
+### And a flake that had started hiding real results
+
+`test/lint-config.test.ts` timed out at vitest's default five seconds, twice, during full runs. It
+passes in well under five when the file runs alone — so it is contention with the other
+twenty-eight files, not a cold start. `findings()` caches, so one case spawns ESLint and the other
+eleven read its result; that one case pays for the whole file.
+
+Fixed rather than deferred because it had begun failing the verification of other work, and **a
+green run you cannot trust is worse than a red one.** Thirty seconds, stated at the line as being
+about process start rather than about the assertion.
