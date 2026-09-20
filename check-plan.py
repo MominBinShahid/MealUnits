@@ -1329,8 +1329,21 @@ def check_ui_text_outside_copy(_plan):
 # the build to make the service worker's precache — so anything added here is
 # downloaded to every phone on install unless it is excluded there. Pinned by
 # name so a new file forces the decision rather than defaulting to "ship it".
-PUBLIC_PRECACHED = {"fonts", "icons", "manifest.webmanifest"}
-PUBLIC_CRAWLER_ONLY = {"social", "robots.txt", "404.html"}
+# `manifest.webmanifest` LEFT THIS SET on 2026-09-21 (T15). It is generated into
+# `dist` from `BASE` now rather than copied verbatim, so it is not a `public/`
+# asset at all — `check_generated_manifest` pins it instead.
+PUBLIC_PRECACHED = {"fonts", "icons"}
+# `robots.txt` LEFT THIS SET on 2026-09-21 (T15), for the same reason the
+# manifest left PUBLIC_PRECACHED: it is generated into `dist` from BASE and
+# SITE_URL now, so it is no longer a `public/` asset. The worker's walk still
+# excludes it by name — a crawler file has no business on a phone's install
+# path — and `check_generated_manifest` pins the generation.
+PUBLIC_CRAWLER_ONLY = {"social", "404.html"}
+
+# Crawler-only files the BUILD writes, which therefore never appear in `public/`
+# but are every bit as much not-the-app. The worker must keep both out of the
+# precache and out of the shell fallback.
+GENERATED_CRAWLER_ONLY = {"sitemap.xml", "robots.txt"}
 
 
 def check_public_assets_classified(_plan):
@@ -1509,9 +1522,17 @@ def check_worker_knows_non_app_files(_plan):
     listed = set(re.findall(r"__SCOPE_PATH__\}([^`]+)`", m.group(1)))
 
     expected = {name if name != "social" else "social/" for name in PUBLIC_CRAWLER_ONLY}
-    # The sitemap is generated into the build rather than living in public/, so
-    # it is not in the public pin but is just as much not-the-app.
-    expected.add("sitemap.xml")
+    # GENERATED into the build rather than living in public/, so neither is in
+    # the public pin — and both are just as much not-the-app. `robots.txt`
+    # joined the sitemap here on 2026-09-21 when T15 moved it out of `public/`
+    # so its `Sitemap:` address could come from BASE.
+    #
+    # Worth stating because the classification and the WORKER RULE came apart
+    # for a moment when it moved: dropping it from `PUBLIC_CRAWLER_ONLY` left
+    # `src/sw.ts` excluding a file nothing vouched for, which this check
+    # reported immediately. The file's job did not change; only where it is
+    # written did.
+    expected.update(GENERATED_CRAWLER_ONLY)
 
     for name in sorted(expected - listed):
         out.append("%s is served from this app's scope but src/sw.ts's NOT_THE_APP does not"
@@ -3671,6 +3692,77 @@ def check_persisted_names(corpus):
     return out
 
 
+def check_generated_manifest(corpus):
+    """32. The manifest and robots.txt are GENERATED from `BASE`, not hand-written.
+
+    `T15`: the deployed path was stated eighteen times and guarded three. The
+    manifest held three of them — `id`, `start_url` and `scope` — in `public/`,
+    which the build copies verbatim, so nothing rewrote them and nothing
+    compared them to anything.
+
+    **A wrong `scope` orphans an app somebody has already installed.** The icon
+    on their home screen stops matching the site it came from, the install
+    quietly stops being the install, and nothing says so: it survives a green
+    build, a passing suite and a successful deploy. That is why this one moved
+    first rather than riding along with the rest of T15.
+
+    Three things, because each fails differently:
+      * the hand-written file must NOT come back to `public/`, where nothing
+        would rewrite it;
+      * the three base-carrying fields must read `BASE` rather than a literal;
+      * the icon paths must stay RELATIVE — a manifest resolves them against
+        its own URL, so writing the base into them would be three more copies
+        to keep in step, which is the defect rather than the fix.
+    """
+    out = []
+    if os.path.exists(os.path.join(HERE, "public", "manifest.webmanifest")):
+        out.append("public/manifest.webmanifest is back. `public/` is copied "
+                   "verbatim, so every deployed path in it is unguarded — T15's "
+                   "whole point. Generate it from BASE in vite.config.ts")
+    try:
+        config = load(os.path.join(HERE, "vite.config.ts"))
+    except (IOError, OSError):
+        return out
+
+    block = re.search(r"const manifest = \{(.*?)\n      \};", config, re.S)
+    if not block:
+        out.append("vite.config.ts: no generated `manifest` object — T15 moved "
+                   "the web manifest out of public/ so its deployed paths come "
+                   "from BASE; without it they are unguarded again")
+        return out
+    body = block.group(1)
+    for field in ("id", "start_url", "scope"):
+        stated = re.search(r"^\s*%s: (.+?),$" % re.escape(field), body, re.M)
+        if not stated:
+            out.append("vite.config.ts: the generated manifest has no `%s`; a "
+                       "manifest without one is not an installable app" % field)
+        elif stated.group(1).strip() != "BASE":
+            out.append("vite.config.ts: the manifest's `%s` is %s rather than "
+                       "BASE — a literal here is a deployed path nothing "
+                       "rewrites, and a wrong `scope` orphans an existing "
+                       "install silently" % (field, stated.group(1).strip()))
+    icons = re.search(r"icons: \[(.*?)\n        \]", body, re.S)
+    if icons and "BASE" in icons.group(1):
+        out.append("vite.config.ts: an icon path carries BASE. Manifest icon "
+                   "paths resolve against the manifest's own URL, so they are "
+                   "already correct relative — adding the base makes three more "
+                   "copies to keep in step")
+
+    # `robots.txt` went the same way, and its one address is a `Sitemap:` line.
+    # The failure is quieter than the manifest's — a stale URL is a 404 that a
+    # crawler reports to nobody — but it is the same unguarded copy.
+    if os.path.exists(os.path.join(HERE, "public", "robots.txt")):
+        out.append("public/robots.txt is back. Its `Sitemap:` line is a "
+                   "deployed address, and `public/` is copied verbatim — T15 "
+                   "moved it so the address comes from SITE_URL and BASE")
+    if not re.search(r"Sitemap: \$\{SITE_URL\}\$\{BASE\}sitemap\.xml", config):
+        out.append("vite.config.ts: the generated robots.txt no longer builds "
+                   "its `Sitemap:` line from SITE_URL and BASE — a literal "
+                   "there is an address that survives a domain move by being "
+                   "silently wrong")
+    return out
+
+
 def check_period_comparison(corpus):
     """30. §7.7's no-change rule covers every field `settingsHistory` declares.
 
@@ -3757,6 +3849,7 @@ CHECKS = [
     ("§8.5's per-class clocks", check_insulin_timing, "corpus"),
     ("§7.7's no-change comparison vs the store", check_period_comparison, "corpus"),
     ("persisted names vs the domain rename", check_persisted_names, "corpus"),
+    ("the web manifest is generated from BASE", check_generated_manifest, "corpus"),
     ("BACKLOG stale against PLAN", check_cross_document, "backlog"),
     ("BLOG-FIX names the app path", check_blogfix, "blogfix"),
     ("checker describing retired things", check_tool_rot, "plan"),
@@ -4081,6 +4174,15 @@ SELF_TESTS = [
     ("rename: parseEnvelope stops accepting the old spelling", "src/storage/envelope.ts",
      lambda t: t.replace("settingsRaw.roundingMode ?? settingsRaw.mode",
                          "settingsRaw.roundingMode")),
+    # T15's generated files. Both hold a deployed address that nothing would
+    # rewrite if it went back to being written by hand.
+    ("T15: the manifest scope written as a literal again", "vite.config.ts",
+     lambda t: t.replace("        scope: BASE,", "        scope: '/MealUnits/',")),
+    ("T15: the manifest start_url written as a literal again", "vite.config.ts",
+     lambda t: t.replace("        start_url: BASE,", "        start_url: '/MealUnits/',")),
+    ("T15: robots.txt's sitemap address stops following BASE", "vite.config.ts",
+     lambda t: t.replace("`Sitemap: ${SITE_URL}${BASE}sitemap.xml`",
+                         "'Sitemap: https://mominbinshahid.github.io/MealUnits/sitemap.xml'")),
     # T18's comparison, which decides whether a settings commit starts a new
     # prescription period. Both failures are silent and both misattribute doses.
     ("T18: a prescription field dropped from the period comparison",
@@ -4364,7 +4466,7 @@ def self_test():
     # mutate what the harness does not hold, and a seed that cannot find its
     # file reports "missing", which the runner counts as an ESCAPE.
     for rel in ("src/storage/repo.ts", "src/storage/schema.ts",
-                "src/storage/envelope.ts"):
+                "src/storage/envelope.ts", "vite.config.ts"):
         full = os.path.join(HERE, *rel.split("/"))
         if os.path.exists(full):
             base[rel] = load(full)

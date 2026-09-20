@@ -151,6 +151,92 @@ function sitemap(outDir: string): Plugin {
         '',
       ].join('\n');
       writeFileSync(join(outDir, 'sitemap.xml'), xml, 'utf8');
+
+      /**
+       * `T15` — THE MANIFEST IS GENERATED, and it is the item that entry names
+       * as the one worth moving first.
+       *
+       * It held `/MealUnits/` three times, by hand, in `public/` — which is
+       * copied verbatim, so nothing rewrote them and nothing checked them.
+       * **A wrong `scope` orphans an app somebody has already installed**: the
+       * icon on their home screen stops matching the site it came from, the
+       * install silently stops being the install, and nobody is told. It
+       * survives a green build, a passing suite and a successful deploy, which
+       * is the shape every item in `T15` shares and the reason this one goes
+       * first rather than riding along with something else.
+       *
+       * Emitted HERE rather than in its own plugin because the order matters
+       * and is not obvious: `serviceWorker` walks `outDir` for its precache, so
+       * the manifest has to exist before that runs. It does — `sitemap` is
+       * ahead of it in the plugin array, and both write at `closeBundle`.
+       *
+       * The icon paths stay RELATIVE. A manifest resolves them against its own
+       * URL, so `icons/icon-192.png` is already correct under any base and
+       * writing the base into them would be three more copies to keep in step.
+       */
+      const manifest = {
+        id: BASE,
+        name: 'MealUnits',
+        short_name: 'MealUnits',
+        description:
+          'Works out a mealtime insulin dose from a blood sugar reading and a carbohydrate amount, for people with type 1 diabetes. Not a medical device.',
+        start_url: BASE,
+        scope: BASE,
+        display: 'standalone',
+        orientation: 'portrait',
+        background_color: '#f7f8fa',
+        theme_color: '#0b1220',
+        lang: 'en',
+        dir: 'ltr',
+        icons: [
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          {
+            src: 'icons/icon-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      };
+      writeFileSync(
+        join(outDir, 'manifest.webmanifest'),
+        `${JSON.stringify(manifest, null, 2)}\n`,
+        'utf8',
+      );
+
+      /**
+       * `T15` — and `robots.txt` goes the same way, for the same reason and one
+       * of its own.
+       *
+       * It carried the last unguarded deployed path in `public/`: a `Sitemap:`
+       * line naming an absolute URL that nothing rewrote. The failure there is
+       * quieter than the manifest's — a stale sitemap URL is a 404 a crawler
+       * reports to nobody — but it is the same shape.
+       *
+       * And this file is INERT where it currently ships, which is exactly why
+       * generating it matters. `T16`: crawlers read robots.txt only from a
+       * host's root, and this app sits on a path, so the file obeyed today
+       * belongs to another repository. Momin ruled on 2026-09-14 that it ships
+       * regardless — *"move this repository to its own domain and the file is
+       * already right, whereas leaving it out means the move silently drops a
+       * directive nobody remembers was being inherited."* A file kept for the
+       * day of a move is precisely a file whose addresses must survive one.
+       */
+      const robots = [
+        '# Read only when this app is served from a host ROOT. Today it sits on',
+        '# a path, so the file crawlers obey belongs to another repository —',
+        '# see BACKLOG T16. Shipped anyway, and GENERATED rather than written,',
+        '# so the day this moves to its own domain the addresses are already',
+        '# right. See T15.',
+        '',
+        'User-agent: *',
+        'Allow: /',
+        '',
+        `Sitemap: ${SITE_URL}${BASE}sitemap.xml`,
+        '',
+      ].join('\n');
+      writeFileSync(join(outDir, 'robots.txt'), robots, 'utf8');
     },
   };
 }
