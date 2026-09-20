@@ -348,7 +348,7 @@ building, and why its numbers need the rigour the dose arithmetic got.
 
 5. **The eat delay is editable, prefilled from the class. The stacking windows are not editable by
    anyone.** §8.1 is advice — a wrong value mis-times one correct dose and shows as a pattern §7.8
-   exists to surface. §7.4 is a GATE, and `T14`'s ketone row already ruled this shape: the person
+   exists to surface. §7.4 is a GATE, and `T5`'s ketone row already ruled this shape: the person
    most likely to shorten it is the person it exists to catch. The gate has a designed escape —
    §7.4.1's override is per-dose, states its consequence in the reader's own units, and is **recorded
    on the row as `overrodeStacking`**. A shortened window is a permanent override that no row
@@ -398,122 +398,32 @@ and a ruling tightens the numbers rather than unblocking the work.
 
 ### 24. URL routes for the four screens that are not the calculator — DONE 2026-09-17
 
-**WHEN THIS LANDS, THE SITEMAP AND THE SERVICE WORKER BOTH NEED IT.** Flagged by Momin 2026-09-14,
-before the work starts, so it is not discovered afterwards.
+**PRUNED 2026-09-21 (T17).** The design lives in code now and is better documented there than it
+was here: `src/routes.ts` is the single source for path-to-screen and carries the reasoning in its
+own header, PLAN §11.5 states the rule as *no URL state*, and `vite.config.ts` shows the route-file
+emission. What survives is the part no file shows.
 
-- **`vite.config.ts`'s `sitemap()` generates ONE url**, because today every screen is reached by
-  tapping. Each new route is a new `<loc>`, and each needs its own `lastmod` — the build date is
-  correct for all of them only while they ship together.
-- **`src/sw.ts`'s navigation branch answers the shell for every path in scope**, which is exactly
-  what real routes want — but `NOT_THE_APP` must stay accurate, or a new route named like a file
-  breaks, and a new file named like a route silently becomes the app. That pairing is checked by
-  `check_worker_knows_non_app_files`.
-- **`index.html`'s canonical is a single URL.** Per-screen routes need per-screen canonicals, or
-  every route reports itself as the front door and they compete.
+**The test that admitted a screen, and it is the whole rule:** *a screen that means the same thing
+whenever you open it.* A link is opened days later by somebody with no context, so every routable
+screen has to be safe to arrive at cold.
 
-**AGREED BY MOMIN 2026-09-09, in conversation. Recorded 2026-09-13, four days late.** It lived
-only in a session transcript until then, and in the meantime a reader of these documents — including
-me, on 2026-09-13 — would have concluded from §11.5's *"Routing: None"* that the question had been
-settled the other way. **An agreement that exists only in a conversation is not an agreement the
-project has.**
+**The exclusions are a SAFETY exclusion rather than a scoping one**, and that is the sentence worth
+keeping. The calculator is absent because §8.2 expires a result — a URL that can restore a screen is
+a URL that can restore a dose, and a link is exactly the artefact that gets opened next week. Export
+is absent because it is an action, not a place. The two first-run screens are gates, and a link past
+a disclaimer defeats the disclaimer.
 
-**The problem it solves,** in Momin's words: *"if I wanted to guide someone to history page I
-can't."* There is no way to send anyone a link to anything except the app's front door.
+**No router library.** `machine.ts` already owns where the app is, and a router wants to own it too.
 
-**The four destinations.** Momin named Settings and History; "How this works" was added in the same
-exchange as the one you would most want to send someone; **Food list was added 2026-09-13.**
+**`hardwareBack` was NOT deleted**, which was the prediction when this was costed. The browser's
+back button now moves between routed screens, but the wizard's own back is a different thing and the
+safety exclusion above is why: the calculator has no address, so nothing in the URL can carry you
+back through a dose.
 
-| Screen | Why it qualifies |
-|---|---|
-| Settings | Shows your prescription. Same thing whenever opened |
-| History | Shows your record. Same thing whenever opened |
-| How this works | Static prose |
-| Food list | A reference table. Reads the same to everyone |
-
-**The test that admitted them, and it is the whole rule:** *a screen that means the same thing
-whenever you open it.* None of the four holds a calculation, and none can be made to.
-
-**What is excluded, and this is a safety exclusion rather than a scoping one.**
-
-- **The calculator.** §8.2 expires a result after `RESULT_EXPIRY_MINUTES` — 15 — because a stale dose
-  on screen is the hazard that rule exists for. A URL that can restore a screen is a URL that can
-  restore a dose, and a link is exactly the artifact that gets opened days later. **No route may
-  reach a calculation.**
-- **Export.** An action, not a place. A URL that performs an action on open is a different and worse
-  idea.
-
-**Blocked on `T3` (Preact).** A router belongs to the component tree; bolting one onto the
-hand-rolled shell means hand-syncing the URL against `machine.ts`, which already owns "where the
-app is" — two sources of truth, the bug class this project keeps refusing. Writing it before `T3`
-also means writing it twice.
-
-**What it would delete, which is the part worth knowing before costing it.** `hardwareBack` in
-`src/main.ts` — a sentinel history entry pushed so the Android back gesture means "back inside the
-app" instead of closing it. It exists *because* there is no routing, it carries a documented defect
-it already caused (`history.back()` on its own bookkeeping navigated the app to `about:blank` while
-a row was being written, about one time in three), and real routes make the browser do its job
-natively. Like entry 23's dropped `timeZone`, this change removes a mechanism rather than adding one.
-
-**Two things that must move with it:**
-
-1. **§11.5's table says `Routing: None`**, and `src/state/machine.ts:32` repeats it in a comment
-   (*"Not a route: §11.5 rules out routing entirely"*). Both become false the day this lands.
-   §11.5's real intent — **no URL state** — survives and should be restated that way, since the
-   §10.7 back-gesture sentinel already lives inside that reading.
-2. **`start_url` stays `/MealUnits/`.** An installed app must open to the calculator. A bookmarkable
-   `/history` is fine; an install that launches into history is not.
-
-**How the installed app still opens at the calculator.** The icon and a link are different entry
-paths and they answer different questions.
-
-| Entry path | What decides where it lands |
-|---|---|
-| Home-screen icon | The manifest's `start_url` — `/MealUnits/`, a fixed property of the install. Routes cannot change it |
-| A link to `/MealUnits/history` | The link. That is the whole feature |
-
-So the icon opens the calculator however many routes exist. **And this is precisely why the
-exclusion above is a safety rule:** because a link can drop someone into a screen cold, every
-routable screen has to be safe to arrive at with no context — which is the same test that admitted
-the four.
-
-#### What it turned out to be, 2026-09-17
-
-**The blocker was not in this entry.** `/MealUnits/history` returns **404** on GitHub Pages, which
-serves files and has no such file. The worker answers in-scope navigations with the shell — but only
-once it is installed, and a stranger opening a shared link has no worker. So the naive
-implementation breaks precisely the case this entry exists for. The build now emits a real
-`index.html` per route, generated from the built shell with its own title, description, canonical
-and `og:url`; a link is a 200 on a first visit, with no JavaScript and no redirect. Those heads are
-built from `SITE_URL` and `BASE`, so four pages added **zero** new copies of the deployed path —
-see `T15`.
-
-**`hardwareBack` was NOT deleted, and the reason is the safety exclusion above.** This entry
-expected real routes to make the browser do the work. They do, for the four screens that have
-addresses. The calculator's steps deliberately have none, so back INSIDE the wizard still needs an
-entry that carries no address — the same mechanism, now also pushing a real path when the address
-changes. The function it replaces kept its push-only shape, so the defect this entry attributes to
-it is not inherited.
-
-**No router library.** `machine.ts` already owns where the app is, and a router wants to own it too;
-the URL is written as a projection of `state.screen` and read back only as which screen to open.
-§11.5's row was restated from "Routing: None" to **no URL state**, which is what it always meant,
-and `machine.ts`'s comment with it.
-
-**The four excluded screens are not three.** `loading` and `fail_closed` are states rather than
-destinations, and both first-run screens are gates — a link past a disclaimer defeats the
-disclaimer. A link during first run is spent: boot lands on the gate and the landing only moves the
-app on from the ordinary front door. Tested both ways.
-
-**`check_routes_do_not_collide` is new**, because this entry's own warning — a route named like a
-file, a file named like a route — was a thing nothing checked. Two seeds, one per direction.
-
-**One thing to verify before building, not to assume.** iOS Safari's *Add to Home Screen* has
-historically bookmarked the CURRENT page URL rather than honouring `start_url`. If that still holds,
-a person who installs while sitting on `/history` gets an icon that opens history for ever. Android
-bakes `start_url` into the WebAPK and is not affected. **Check this against a current iOS before
-writing any route** — if it is true, the fix is a redirect on load when the app is launched
-standalone at a non-calculator route, and that is design work, not a line.
-
+**What it cost elsewhere, flagged before the work started and true:** the sitemap gained four `<loc>`
+entries, and the service worker had to learn that every in-scope navigation is answered with the
+SHELL — so the route files reach only first visits and crawlers, and the app sets `document.title`
+itself.
 ### 1. Blood-sugar plausibility advisory
 **What:** the mirror of §6.5 for the blood-sugar field — 350 typed as 530, or as 150.
 
@@ -1100,188 +1010,26 @@ five independent maintainers with no corporate guarantor; React is Meta and Verc
 exist in ten years. The counterweight is that Preact's entire source is ~12 KB of readable code this
 project could vendor and patch indefinitely — an option `react-dom`'s ~600 KB source does not offer.
 
-**Why the rewrite is lower-risk than it sounds — RECOUNTED 2026-09-14, and the old claim was wrong.**
-This said "66 assertions on rendered text and **0** on DOM structure". There are **15 structural
-queries** (14 at the recount, plus one added 2026-09-19), not zero: selectors that depend on markup
-shape — `#app`, `.ask`, `[role="group"]`, `#label-mode`, `#food-search`, `.entry .n` twice,
-`[data-field="foodQuery"]`, `.flag` twice — plus the `label.parentElement.querySelector('input')`
-traversal this entry already names.
+**The count that a check still reads from this entry, and therefore stays.** There are **15 structural
+queries** in `test/integration.test.ts` — selectors depending on a class, id, attribute or descendant
+combinator, plus `parentElement` traversals. They are the assertions that constrain what a port may
+change: class names, element ids and the `.entry .n` nesting have to survive one.
 
-**The fifteenth is deliberate and is the exception that shows the rule.** §12's storage section takes
-`.flag` only when the browser has NOT promised to keep the record, and plain text for the other two
-answers — the form carries the severity, so that an amber panel never appears on an answer that is
-not a problem. What is under test there IS the markup: no assertion on rendered text can tell you
-which treatment a paragraph received. A structural query is the honest tool for a structural claim,
-and the count is kept true rather than the query avoided. Queries by element
-type alone (`button`, `label`, `p`, `b`, `input`) are not counted: they survive any faithful port.
+The figure is here rather than only in the test file because `check_structural_query_count` compares
+the two, and it exists because this number DRIFTED once — T3 claimed zero, a commit added
+`[data-field="foodQuery"]`, and nobody recounted, because a number written in prose has nothing
+watching it. Now something does.
 
-**The correction makes the safety net BETTER understood, not weaker.** Most of those survive a
-faithful port untouched, because Preact renders the same classes and ids — but they are a constraint
-on it, and the constraint is the useful part: **the port must preserve class names, element ids, and
-the `.entry .n` nesting.** Only two are genuinely fragile — `label.parentElement.querySelector` and
-`.entry .n` — and both depend on markup shape rather than on the framework.
+**What the migration itself cost, kept as one line because it is spent:** fifteen integration cases
+covered the rewrite, the recount of them was wrong once and corrected on 2026-09-14, and §12's
+storage section is the deliberate exception that takes its own path. The work is done; the count is
+in `git log` and the cases are in `test/integration.test.ts`, which is where a count belongs.
 
-The bulk of the suite does find things by label and button text, which is framework-agnostic, and it
-stays green throughout the migration. **A count nobody recounted is how "0" survived `62bf677`
-adding one**, which is why `check-plan.py` now pins this number.
-
-**Carry these into PLAN.md when it lands** — they are spec, not notes:
-
-- **§11 gains the rule** that the view layer preserves DOM identity across renders, so focus, caret,
-  scroll and composition survive a state change.
-- **§11 also gains the composition rule, and it is NOT implied by the one above.** Keyed
-  reconciliation is necessary but **not sufficient** for IME: a controlled input whose `value` is
-  rewritten *during* a composition session can still break it, on a node that was never destroyed.
-  So: **never write back to a controlled input's value while a composition is in flight.** Preact
-  has had exactly one IME regression (issue #4008, introduced 10.14.1, fixed within days) and the
-  fix was making that pattern work. This matters beyond Urdu — see the mobile dropped-keystroke
-  report of 2026-09-14, which is a NEW symptom no prior record predicts. Momin narrowed it the same
-  day: **every text field, not one screen** — setup and the food search alike — which points at the
-  render path they share, not at any single call site.
-- **The `value` attribute-versus-property hazard, which nobody has ever written down.** `dom.ts`'s
-  `h()` ends in `node.setAttribute(key, String(value))`, so an input's value is set as the **content
-  attribute** — the element's *default* value — not as the property. That is harmless **only**
-  because `replaceChildren` hands every render a brand-new element whose dirty-value flag is unset,
-  so attribute and property agree. **Preserving node identity is exactly what removes that
-  guarantee.** Preact sets `value` as a property on reused nodes and is correct; the danger is this
-  entry's own promise that *"every existing call site stays as written"*. A half-migrated path that
-  keeps `setAttribute` on a reused node gives an input whose displayed value silently stops tracking
-  state the moment the user types into it.
-- **§13 gains an interaction-continuity requirement, which it does not have today.** §13 has no
-  mention of focus, caret, keystrokes or scroll anywhere — which is precisely why 541 tests and a
-  100% mutation score missed both symptoms.
-
-  **CORRECTED 2026-09-14: this entry said `typeInto` "sets `input.value` in one assignment and fires
-  one `input` event". That was false on the day it was written** — `typeInto` already typed one
-  character at a time into `document.activeElement` in the same commit, deliberately, so that the
-  whole suite would fail if focus continuity broke. The sentence described the pre-fix state as
-  though it were current and was never corrected. **`tools/smoke.mjs` is the one that still types in
-  one shot** (`i.value = …; dispatchEvent(new Event('input'))`) — so the only layer that types like a
-  person is not a browser, and the only layer that is a browser does not type like a person.
-
-#### What the port actually found, 2026-09-14
-
-Everything above is the plan. Four things came out of doing it, and the plan predicted two.
-
-**1. Predicted, and it held.** The attribute-versus-property hazard never materialised, because no
-path stayed half-migrated: `dom.ts` was deleted in the same change that removed its last caller, so
-there was never a reused node still being written with `setAttribute`. The way to get this right was
-to make the old thing impossible rather than to remember not to use it.
-
-**2. Predicted, and it needed more than the framework.** Keyed reconciliation alone does not carry
-IME, exactly as this entry says. The rule is implemented as one shared `TextInput` in
-`src/ui/components.tsx`: while a composition is in flight it passes `value={undefined}`, which is the
-one thing Preact's value sync treats as *do not touch this input*. Every text field in the app goes
-through it — the four that exist, and any that are added. The window is real and arrives unprompted:
-§8.2's expiry tick fires a render every minute and on every return to visibility, and between
-`compositionstart` and the first `input` event the DOM holds the IME's preview while the app still
-holds the last committed value.
-
-**3. NOT predicted — `onCompositionStart` does not work in Preact, in any engine.** Preact infers an
-event's real name by probing the DOM: `if (lowerCaseName in dom) name = lowerCaseName.slice(2); else
-name = name.slice(2)`. **Nothing exposes `oncompositionstart` as a property**, so the camelCase form
-registers a listener for the event type `"CompositionStart"` — capital C — which nothing ever fires.
-No error, no warning, a handler that is simply never called. Measured rather than assumed, because
-the first instinct was that this was a jsdom gap:
-
-| | `'oncompositionstart' in <input>` |
-|---|---|
-| jsdom 30 | `false` |
-| Chrome 152 | `false` |
-| Chrome 152, on `document.body` and on `window` | `false` |
-
-All-lowercase the probe still fails, but `name.slice(2)` then yields `compositionstart`, which is
-right. **So the lowercase spelling is correct in both environments and the camelCase spelling is
-correct in neither.** `src/env.d.ts` declares the working spelling, because Preact's own types ship
-only the broken one. This would have shipped as a guard that silently did nothing; the continuity
-test written before the port is what caught it.
-
-**Confirmed upstream after the fact, and it is not a bug we are routing around.** preactjs/preact
-[#3003](https://github.com/preactjs/preact/issues/3003), opened 2021-02-11, names these exact three
-handlers; it was closed 2025-08-06 as a duplicate of
-[#1978](https://github.com/preactjs/preact/issues/1978) with *"will be fixed in v11"* — so v10 will
-not change, and pinning 10.29.8 means living with it. The maintainer's position on v10 is explicit:
-*"Preact has always and will always support attaching event handlers with the exact casing defined
-in the HTML/DOM specs. That is the lowercase variants all work."* The lowercase form is the
-SUPPORTED one; what is wrong is the camelCase typing, and the issue thread says so.
-
-**It generalises, which is the part worth carrying.** The rule is not about composition — ANY event
-whose `on*` property the DOM does not expose takes the same path, and #3003 names `focusin`,
-`focusout` and `beforeinput` in the same breath. `beforeinput` in particular is the one a future
-input-handling change would reach for. Before adding a handler for an event not already used here,
-check `'on' + name in element` and spell it lowercase if that is false.
-
-**4. NOT predicted — `@preact/preset-vite` cannot be installed here.** It peer-deps `@babel/core`
-7.x and Stryker 10 already pins `@babel/core` 8; npm refuses outright and the only way through is a
-forced duplicate Babel tree. Not taken. JSX is transformed by **oxc**, which is what Vite 8 uses,
-configured as `oxc.jsx` in `vite.config.ts` — setting the `esbuild` block instead is silently ignored
-and prints a warning on every run. **No Babel in the toolchain at all.** What is lost is Prefresh,
-which preserves component state across a dev edit.
-
-**The lint plugins looked like the same wall and were not, and the first answer here was wrong.**
-`eslint-plugin-jsx-a11y` (`^3 .. ^9`) and `eslint-plugin-react` (`^3 .. ^9.7`) both declare peer
-ranges that exclude this repository's eslint 10, and npm refuses both. They were dropped on the
-reasoning that a lint plugin which half-works reports clean on rules it never ran — true in general,
-and **not tested**. Tested afterwards, because Momin asked whether the answer was to downgrade
-eslint: **both load and both report correctly under eslint 10.** The ranges are stale, not accurate,
-and no downgrade is needed. `package.json` states the relaxation declaratively — `overrides` maps
-each plugin's `eslint` peer to `$eslint` — rather than through a global `--legacy-peer-deps`, so it
-is scoped to the two packages it is true of.
-
-Both are in. `jsx-a11y` reports **zero findings** on the ported tree, which is the first automated
-confirmation the app's accessibility discipline holds. From `eslint-plugin-react`, three rules:
-`jsx-key` — which guards the keys this port introduced and which `test/keys.test.ts` cannot see,
-since a data test pins that key VALUES are unique and says nothing about a key being absent —
-plus `no-children-prop` and `jsx-no-duplicate-props`. The plugin is not extended wholesale: most of
-what it carries is advice about a library this project does not use.
-
-`eslint-plugin-react-hooks@7.1.1` declares `^10` and needed no override. It earned its place
-immediately, catching a ref read during render and a ref not named `*Ref`.
-
-`eslint-config-preact` is still out, and on its merits rather than on its peer range: it bundles
-`eslint-plugin-react-hooks` at `^5.2.0` against the `^7.1.1` above and pins `@eslint/js` to `^9`, so
-adopting it would downgrade the one plugin that never needed an override to gain rules already
-listed.
-
-The two rules wanted from `eslint-plugin-react` — no inline `style`, no `dangerouslySetInnerHTML` —
-are still hand-written `no-restricted-syntax` JSX selectors rather than `forbid-dom-props` and
-`no-danger`, because the hand-written ones carry §11.5's `style-src` and §7.7.1's escaping rule in
-the message a reader actually gets. They live in the same array as §11.8's, because flat config
-REPLACES a rule's options rather than merging them and a second block would have switched §11.8 off
-for every ported file while reporting clean.
-
-**Cost.** 117.50 kB raw / 36.86 kB gzip before, 135.03 kB / 42.38 kB after: **+5.5 kB gzipped**,
-against the ~4 kB estimated. As a proportion that is +15% of the JavaScript, or +12.8% of the whole
-page gzipped — the absolute number is the small one, and both are worth quoting.
-
-**What review caught that nothing else did.** A second opinion on the finished port found one real
-regression: the new shared `TextField` wrapped its input in a `<div>`, and the two §1.3 basal fields
-had had theirs as a DIRECT CHILD of `div.field.wide`. `.field` is `display: grid` and nothing sets an
-input's width, so those two were full width by being grid items — measured in Chrome, they went
-**440px to 223px** while every test stayed green. Build note 68 has the full account. The fix removed
-the wrapper rather than adding CSS, because the old tree is the one that had been looked at on a
-real device; the check added with it asserts the SHAPE the width depends on, which jsdom can see
-even though it cannot lay out a page.
-
-The same review found four blind spots in the JSX arms of `check_ui_text_outside_copy` as first
-written — multi-line text children (the dominant shape in this tree), text beside an expression, a
-double-quoted string inside an expression container, and **any non-Latin prose**, because the word
-test was `[A-Za-z]{2,}`. That last one would have reported clean over an entire Urdu screen, in the
-checker written to protect `10a`. All four are fixed and seeded; the self-test is 117/117.
-
-**What `check-plan.py` needed, and why it is the part worth remembering.**
-`check_ui_text_outside_copy` filtered on `name.endswith(".ts")`. Renaming eight files to `.tsx` would
-have left it matching nothing and reporting clean over an entire app's worth of text sitting outside
-`copy.ts` — with `10a` then handing a translator a file that no longer held the words. It failed
-loudly in exactly one place, the retired-phrase sweep, and only because that one pins a NON-ZERO
-count. **A check that expects zero findings cannot tell you it has stopped looking.** Fixed in the
-same change as the rename: both filters take `.tsx`, the sweep reads JSX text nodes and
-double-quoted attributes as well as quoted and backticked strings, JSX `{/* */}` comments are
-stripped first (their continuation lines carry no marker the old prefix test could see), and the
-check reads through `load()` so `--self-test` can seed a defect into a `.tsx` file. Three seeded
-mutations, all caught; 113/113.
-
----
+**PRUNED 2026-09-21 (T17).** What survives above is the SELECTION — why Preact rather than React,
+Vue, Svelte, Lit, Solid or a hand-rolled keyed diff, and why the version is pinned. None of that is
+visible from `import { render } from 'preact'`, and removing it would mean re-litigating the whole
+comparison the next time somebody proposes a change. The migration mechanics went, because the
+migration happened.
 
 ### T4. The in-app update prompt — CLOSED 2026-09-09, IT WORKS
 
@@ -1398,6 +1146,20 @@ reads), `README.md`, `CLAUDE.md`, and `docs/PLAN.md` §1.
 **Trigger: before the app is promoted anywhere.** Deploying it at a URL is not promotion; item 4a's
 search work is.
 
+**What the 2026-09-13 research settled about the defaults, with sources in `CLINICAL.md` section
+2.4 and its source list.** The question Momin raised — *set a standard, then let the user adjust* —
+turns out to have a different answer per number, and one of them inverts:
+
+| Number | Kind | What follows |
+|---|---|---|
+| Target, ISF, ICR | **Individualised.** No citable universal default exists — ISPAD's 500/1800 rules derive from the person's own total daily dose, which this app does not collect | Ship them **empty**. Both the MiniMed 780G and t:slim require a clinician to supply them and prefill nothing. A prefilled 150 is a prescription wearing the clothes of a default |
+| Hypo 70 and 54 | **Universal floor.** ADA Standards of Care 2026 Table 6.4; no guidance individualises them downward | Stay absolute and uneditable. These are the best-supported constants in the app |
+| Ketone advisory | **Universal in character** — no source makes it patient-adjustable — **but the value is contested** | Must NOT become user-configurable, which is the one place "give the user a config" would be the unsafe answer: the person most likely to raise a ketone threshold is the person it exists to catch |
+| Max dose / confirmation threshold | **Hybrid, and the comparators split it the same way** | An absolute ceiling nobody can raise, plus an adjustable check beneath it. The 780G caps the bolus at 25 units and has a clinician-set maximum under that. This is a precedent for T5's "made relative" plan |
+
+**So the T5 plan is supported by published practice on every count**, and the one addition the
+research argues for is that the ketone threshold be explicitly excluded from anything user-editable.
+
 ### T14. Vitest is pinned to 4.x, and the pin is not ours to lift
 **Trigger: when `@stryker-mutator/vitest-runner`'s own devDependency moves past vitest 4.**
 
@@ -1417,20 +1179,6 @@ not the score. 1.28 means the mutants are not being activated; 9.05 is the healt
 point at — the pin lived only in a build note and in `package.json`'s caret. Same class as the carbs
 phases: a constraint with no home is a constraint nobody will find.
 
-**What the 2026-09-13 research settled about the defaults, with sources in `CLINICAL.md` section
-2.4 and its source list.** The question Momin raised — *set a standard, then let the user adjust* —
-turns out to have a different answer per number, and one of them inverts:
-
-| Number | Kind | What follows |
-|---|---|---|
-| Target, ISF, ICR | **Individualised.** No citable universal default exists — ISPAD's 500/1800 rules derive from the person's own total daily dose, which this app does not collect | Ship them **empty**. Both the MiniMed 780G and t:slim require a clinician to supply them and prefill nothing. A prefilled 150 is a prescription wearing the clothes of a default |
-| Hypo 70 and 54 | **Universal floor.** ADA Standards of Care 2026 Table 6.4; no guidance individualises them downward | Stay absolute and uneditable. These are the best-supported constants in the app |
-| Ketone advisory | **Universal in character** — no source makes it patient-adjustable — **but the value is contested** | Must NOT become user-configurable, which is the one place "give the user a config" would be the unsafe answer: the person most likely to raise a ketone threshold is the person it exists to catch |
-| Max dose / confirmation threshold | **Hybrid, and the comparators split it the same way** | An absolute ceiling nobody can raise, plus an adjustable check beneath it. The 780G caps the bolus at 25 units and has a clinician-set maximum under that. This is a precedent for T5's "made relative" plan |
-
-**So the T5 plan is supported by published practice on every count**, and the one addition the
-research argues for is that the ketone threshold be explicitly excluded from anything user-editable.
-
 ### T6. Search Console — DONE 2026-09-14. Its analytics half moved to item 12
 
 **Trigger: alongside item 4a, once the audience change (T5) is ruled on.** Both happened.
@@ -1448,7 +1196,7 @@ does.
 
 ---
 
-### T14. Lighthouse, and what it is actually worth here
+### T23. Lighthouse, and what it is actually worth here
 
 **REQUESTED BY MOMIN 2026-09-13, alongside `4a` and `T6`.** Run Lighthouse — or an equivalent — over
 the deployed app and act on what it finds.
@@ -2051,7 +1799,34 @@ to.
 
 ---
 
-### T17. Prune the long documents again, after this round
+### T17. Prune the long documents again, after this round — FIRST PASS 2026-09-21
+
+**FIRST PASS DONE 2026-09-21.** `BACKLOG.md` went from 2,233 lines across 55 entries to about 1,950.
+What moved, and what deliberately did not:
+
+| Entry | Was | Is | Why |
+|---|---|---|---|
+| `T3` Preact | 310 | 138 | The SELECTION survives — why Preact rather than React, Vue, Svelte, Lit, Solid or a hand-rolled diff, and why the version is pinned. None of that is visible from `import { render } from 'preact'`, and removing it means re-litigating the comparison next time somebody proposes a change. The migration MECHANICS went, because the migration happened |
+| `24` routes | 118 | 28 | The design is better documented in `src/routes.ts`'s own header than it was here. What survives is the safety exclusion — why the calculator has no address — which no file states |
+
+**Two things this pass found that a prune was not looking for.**
+
+`T5`'s research table had been appended to the Vitest entry under no heading, concluding *"so the
+`T5` plan is supported by published practice on every count"* from inside an entry about a
+test-runner pin — and a citation elsewhere already pointed at "`T14`'s ketone row" as a result.
+Moved back, citation corrected. The duplicate `T14` that led there was cosmetic; this was not.
+
+And cutting T3's migration half removed a figure that `check_structural_query_count` reads FROM THIS
+FILE and compares against `test/integration.test.ts`. The checker reported it immediately. The count
+is back with the reason it is written down at all — it drifted once, silently, which is why the
+check exists.
+
+**What was deliberately left.** Entries 26, T18, T19, T20 and T21 all closed within the last two
+days; a note is hardest to judge while the work it describes is still warm, which is this entry's own
+rule. `BUILD-NOTES.md` was not touched — 3a's pass established that every note NUMBER survives even
+where its body does not, because many are cited from source and tests, so pruning it is a
+citation-checking job rather than a reading one. `PLAN.md` was not touched either: it is the
+specification, `check-plan.py` reads it, and §20.3 freezes its file list.
 
 **Momin, 2026-09-18.** `BUILD-NOTES.md`, `BACKLOG.md` and `PLAN.md` have grown through a week of
 work. Review them and remove pointers that are done and no longer needed **even for future
@@ -2071,8 +1846,15 @@ does not show: note 77 records a premise invalidated by a decision made three se
 sense that makes it disposable. The test is whether removing it would let the same mistake happen
 again unnoticed.
 
-**And one piece of housekeeping to fold in:** two entries in this file are both numbered `T14` —
-the Vitest pin and the Lighthouse question. Citations to "T14" are ambiguous today.
+**And one piece of housekeeping to fold in — DONE 2026-09-21.** Two entries were both numbered
+`T14`; Lighthouse is `T23` now. Chasing it turned up a worse defect underneath: **`T5`'s
+research table had been appended to the Vitest entry**, under no heading of its own. It concludes
+*"so the `T5` plan is supported by published practice on every count"* while sitting inside an entry
+about a test-runner pin, and one citation elsewhere in this file already pointed at "`T14`'s ketone
+row" as a result. Moved back to `T5`, and the citation with it.
+
+That is the argument for doing this prune rather than skipping it: a duplicate number is cosmetic,
+and the thing it was hiding was not.
 
 ### T10. A sanity suite, separate from smoke — decide whether two files are worth it
 
