@@ -203,6 +203,45 @@ export interface SettingsCommit {
   readonly nowMs: number;
 }
 
+/**
+ * §7.7 — does this commit change anything a prescription PERIOD records?
+ *
+ * **Derived from the stored row's own keys rather than from a list here**, and
+ * that is the whole design. The obvious version is a hand-written list — *did
+ * target, isf, icr, mode or insulin change?* — and it rots in the unsafe
+ * direction: the day a sixth field joins `settingsHistory` and nobody adds it
+ * here, a real prescription change stops starting a new period and the export
+ * attributes doses to settings that did not produce them. Silently, and with no
+ * test to notice, because the tests would have been written against the five
+ * fields that existed at the time.
+ *
+ * Reading the row's keys means adding a field to the type joins this
+ * comparison automatically. `check-plan.py` asserts that the two agree, with a
+ * seeded mutation proving it fails when one is missed.
+ *
+ * `revision`, `changedAtMs` and `imported` are excluded because they are
+ * PROVENANCE about the row rather than the prescription it records — comparing
+ * them would make every commit look like a change, which is the behaviour this
+ * replaces.
+ */
+const PERIOD_PROVENANCE: readonly (keyof SettingsHistoryRow)[] = ['revision', 'changedAtMs', 'imported'];
+
+function sameProvenance(previous: SettingsHistoryRow, commit: SettingsCommit): boolean {
+  const proposed: SettingsHistoryRow = {
+    revision: previous.revision,
+    changedAtMs: previous.changedAtMs,
+    target: commit.target,
+    isf: commit.isf,
+    icr: commit.icr,
+    mode: commit.mode,
+    insulinId: commit.insulinId,
+    imported: previous.imported,
+  };
+  return (Object.keys(proposed) as (keyof SettingsHistoryRow)[])
+    .filter((field) => !PERIOD_PROVENANCE.includes(field))
+    .every((field) => proposed[field] === previous[field]);
+}
+
 function recoveryFor(commit: SettingsCommit): RecoveryBlock {
   // §11.3 — fixed field names and EXPLICIT UNITS, versioned independently of the
   // evolving payload. "A parsed integer does not reveal whether 150 means units,
@@ -238,11 +277,34 @@ function recoveryFor(commit: SettingsCommit): RecoveryBlock {
  * ADOPTION ALLOCATES: adopting an imported setting is a settings commit and
  * takes a fresh revision, because the imported entry carries another install's
  * `changedAtMs` and `settingsHistory` is never adopted.
+ *
+ * **A commit that changes nothing `settingsHistory` records keeps the current
+ * revision** — `BACKLOG` T18. §7.7 has said so since v10 ("a threshold-only
+ * change does not bump it") and nothing implemented it, so editing only the
+ * threshold, the basal block, the reader's name or §8.5's pre-meal wait started
+ * a fresh prescription period identical to the one before it. §7.7.1's export
+ * then printed two sections with the same ratios and the doses split between
+ * them, in the document whose whole argument is that it does not misstate what
+ * produced a row.
+ *
+ * Nothing about a dose was ever wrong: the row stamp stayed accurate and every
+ * period it could point at held identical ratios. It was noise, in a clinical
+ * document.
  */
 export function commitSettings(db: IDBDatabase, commit: SettingsCommit): Promise<number> {
   return runTransaction(db, SETTINGS_SCOPE, 'readwrite', async (tx) => {
+    const current = await get<SettingsRow>(tx, STORE.settings, SETTINGS_KEY);
+    const previous =
+      current === undefined
+        ? undefined
+        : await get<SettingsHistoryRow>(tx, STORE.settingsHistory, current.revision);
+    const unchanged = previous !== undefined && sameProvenance(previous, commit);
+
     const highest = await maxKey(tx, STORE.settingsHistory);
-    const revision = (highest ?? NO_REVISION) + 1;
+    // The current revision when nothing the history records moved. `current`
+    // is non-undefined whenever `unchanged` is, which the narrowing above
+    // establishes and this expression relies on.
+    const revision = unchanged ? (current?.revision ?? NO_REVISION) : (highest ?? NO_REVISION) + 1;
 
     const settings: SettingsRow = {
       k: SETTINGS_KEY,
@@ -262,17 +324,20 @@ export function commitSettings(db: IDBDatabase, commit: SettingsCommit): Promise
     await put(tx, STORE.settings, settings);
 
     // `add`, never `put`, so an allocation bug fails loud instead of silently
-    // rewriting provenance.
-    await add(tx, STORE.settingsHistory, {
-      revision,
-      changedAtMs: commit.nowMs,
-      target: commit.target,
-      isf: commit.isf,
-      icr: commit.icr,
-      mode: commit.mode,
-      insulinId: commit.insulinId,
-      imported: false,
-    } satisfies SettingsHistoryRow);
+    // rewriting provenance — which is also why the no-change case must not
+    // reach it at all: `add` on an existing key rejects, and it should.
+    if (!unchanged) {
+      await add(tx, STORE.settingsHistory, {
+        revision,
+        changedAtMs: commit.nowMs,
+        target: commit.target,
+        isf: commit.isf,
+        icr: commit.icr,
+        mode: commit.mode,
+        insulinId: commit.insulinId,
+        imported: false,
+      } satisfies SettingsHistoryRow);
+    }
 
     // The recovery block is kept synchronised with committed settings, in the
     // same transaction, so the fail-closed screen can never show a stale
