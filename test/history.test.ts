@@ -21,7 +21,7 @@ function injection(overrides: Partial<Injection> = {}): Injection {
     timestamp: NOW - HOUR,
     bloodSugar: 200,
     carbs: 60,
-    units: 600,
+    calculatedUnits: 600,
     injectedUnits: 600,
     settingsRevision: 1,
     overrodeStacking: false,
@@ -96,7 +96,7 @@ describe('§8.5 lastDose carries the insulin ITS OWN revision was given under', 
 
 describe('§11.2 lastDose reads the INJECTED amount', () => {
   it('takes injectedUnits, never units — the round-9 blocking finding', () => {
-    const row = injection({ units: 1100, injectedUnits: 2500 });
+    const row = injection({ calculatedUnits: 1100, injectedUnits: 2500 });
     const derived = deriveHistory([row], CONTEXT);
     expect(derived.lastDose?.injectedHundredths).toBe(2500);
     expect(derived.lastDose?.injectedHundredths).not.toBe(1100);

@@ -3860,9 +3860,21 @@ key-set assertion caught it. It is `ExportedSettings` now, declared independentl
 reason `ExportedSettingsHistory` always was: **a serialisation format that is an `Omit<>` of a live
 type is a format that moves when the type moves.**
 
+**Two more went with it, on the same licence.**
+
+| Was | Is | Why it was wrong |
+|---|---|---|
+| `lastLocalWriteAtMs` | `lastLocalInjectionAtMs` | Only an injection stamps it — `appendReading` used to and must not, per §7.8. The domain had been translating around the stored name purely to avoid a migration |
+| `Injection.units` | `Injection.calculatedUnits` | It sat directly beside `injectedUnits`, and §11.2 carries a paragraph about how nearly that cost: a reviewer pinning `lastDose {units, atMs}` would have pinned the wrong figure into §7.4's gate — §13.7's wrong-oracle class, the one mutation testing cannot catch |
+
+`readInjection` accepts a dose row written as `units`. That fallback matters more than the others:
+§11.3 re-validates on load and DROPS a row it cannot read, so without it an old dose would vanish
+from the history that feeds §7.4's gate — silently, and in the dose-raising direction.
+
 **Every persisted name is listed in §11.3's schema block**, which is the place to look before
 renaming one. The question to ask is not "is this name good" but "who already has data under it" —
-and today, for this app, the answer happens to be nobody.
+and today, for this app, the answer happens to be nobody. That will stop being true, and these
+renames are cheap only until it does.
 
 #### Reference data is not configuration — RULED BY MOMIN 2026-09-12
 

@@ -350,7 +350,7 @@ describe('§7.2 the commit is the SECOND tap', () => {
       timestamp: NOW,
       bloodSugar: 330,
       carbs: 50,
-      units: 1100,
+      calculatedUnits: 1100,
       injectedUnits: 2500,
       settingsRevision: 1,
       overrodeStacking: false,
@@ -378,7 +378,7 @@ describe('§7.2 a failed() write does not un-inject anything', () => {
     timestamp: NOW,
     bloodSugar: 330,
     carbs: 50,
-    units: 1100,
+    calculatedUnits: 1100,
     injectedUnits: 1100,
     settingsRevision: 1,
     overrodeStacking: false,
@@ -708,7 +708,7 @@ describe('§13.4 — the reducer seams the mutation gate now covers', () => {
 
   it('§7.2 — a PENDING save survives invalidation; a finished one does not', () => {
     const payload: FrozenLogPayload = {
-      id: 'd', timestamp: NOW, bloodSugar: 330, carbs: 50, units: 1100,
+      id: 'd', timestamp: NOW, bloodSugar: 330, carbs: 50, calculatedUnits: 1100,
       injectedUnits: 1100, settingsRevision: 1, overrodeStacking: false,
       timingAdvice: 'before', advisoryFlagged: false,
     };
@@ -819,7 +819,7 @@ describe('§13.4 — the reducer seams the mutation gate now covers', () => {
   it('§7.4 — the gate prefers whichever dose is NEWER', () => {
     const payload: FrozenLogPayload = {
       id: 'd', timestamp: NOW - 3 * 60 * 60 * 1000, bloodSugar: 330, carbs: 50,
-      units: 1100, injectedUnits: 1100, settingsRevision: 1, overrodeStacking: false,
+      calculatedUnits: 1100, injectedUnits: 1100, settingsRevision: 1, overrodeStacking: false,
       timingAdvice: 'before', advisoryFlagged: false,
     };
     const recorded: RecordContext = { ...RECORD, lastDose: { injectedHundredths: 200, atMs: NOW - 60 * 60 * 1000, insulinClass: 'regular' as const } };
@@ -888,7 +888,7 @@ describe('§13.4 — the remaining reducer branches', () => {
 
   it('§7.2 — the gate takes the pending dose only while the save is pending', () => {
     const payload: FrozenLogPayload = {
-      id: 'd', timestamp: NOW - HOUR, bloodSugar: 330, carbs: 50, units: 1100,
+      id: 'd', timestamp: NOW - HOUR, bloodSugar: 330, carbs: 50, calculatedUnits: 1100,
       injectedUnits: 1100, settingsRevision: 1, overrodeStacking: false,
       timingAdvice: 'before', advisoryFlagged: false,
     };
@@ -940,7 +940,7 @@ describe('§13.4 — the remaining reducer branches', () => {
     // so a strict `>` (recorded must be STRICTLY newer to displace it) is the
     // rule. `>=` would hand the gate the storage copy instead.
     const payload: FrozenLogPayload = {
-      id: 'd', timestamp: NOW - HOUR, bloodSugar: 330, carbs: 50, units: 1100,
+      id: 'd', timestamp: NOW - HOUR, bloodSugar: 330, carbs: 50, calculatedUnits: 1100,
       injectedUnits: 1100, settingsRevision: 1, overrodeStacking: false,
       timingAdvice: 'before', advisoryFlagged: false,
     };

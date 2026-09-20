@@ -135,7 +135,7 @@ function doseRows(group: PeriodGroup, timeZone: string): string {
         <td class="t">${escapeHtml(formatClockTime(dose.timestamp, timeZone))}</td>
         <td class="n">${reading}</td>
         <td class="n">${escapeHtml(String(dose.carbs))}&nbsp;g</td>
-        <td class="n">${escapeHtml(formatHundredths(dose.units))}&nbsp;units</td>
+        <td class="n">${escapeHtml(formatHundredths(dose.calculatedUnits))}&nbsp;units</td>
         <td class="n">${escapeHtml(formatHundredths(dose.injectedUnits))}&nbsp;units${override}</td>
       </tr>`;
     })

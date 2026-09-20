@@ -13,7 +13,7 @@ const injection: Injection = {
   timestamp: 1_757_000_000_000,
   bloodSugar: 200,
   carbs: 60,
-  units: 600,
+  calculatedUnits: 600,
   injectedUnits: 600,
   settingsRevision: 1,
   overrodeStacking: false,

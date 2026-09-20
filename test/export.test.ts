@@ -62,7 +62,7 @@ function injection(overrides: Partial<Injection> = {}): Injection {
     timestamp: NOW - HOUR,
     bloodSugar: 330,
     carbs: 50,
-    units: 1100,
+    calculatedUnits: 1100,
     injectedUnits: 1100,
     settingsRevision: 1,
     overrodeStacking: false,
@@ -291,7 +291,7 @@ describe('§11.3 import validates before it commits', () => {
       readings: [],
       log: [
         { ...injection(), injectedUnits: 999999 }, // 9,999.99 units
-        { ...injection(), units: 999999 }, // past §6.4's absolute ceiling of 406
+        { ...injection(), calculatedUnits: 999999 }, // past §6.4's absolute ceiling of 406
         { ...injection({ id: 'good' }) },
       ],
     });
@@ -312,7 +312,7 @@ describe('§11.3 import validates before it commits', () => {
       readings: [],
       log: [
         { ...injection(), injectedUnits: 25.5 },
-        { ...injection(), units: 25.5 },
+        { ...injection(), calculatedUnits: 25.5 },
         { ...injection({ id: 'good' }) },
       ],
     });
@@ -338,7 +338,7 @@ describe('§11.3 import validates before it commits', () => {
         { ...injection({ id: 'quarter' }), injectedUnits: 25 }, // 0.25 units
         { ...injection({ id: 'floor' }), injectedUnits: 1 }, // 0.01 units, the floor
         { ...injection({ id: 'cap' }), injectedUnits: 10000 }, // 100 units, the cap
-        { ...injection({ id: 'zero-calculated' }), units: 0 }, // legal: §7.2 governs `units` at commit, not here
+        { ...injection({ id: 'zero-calculated' }), calculatedUnits: 0 }, // legal: §7.2 governs `units` at commit, not here
         { ...injection({ id: 'past-cap' }), injectedUnits: 10001 },
         { ...injection({ id: 'zero-injected' }), injectedUnits: 0 },
       ],

@@ -1745,7 +1745,48 @@ price attached before anyone decides it is cheap.
 
 ### T16. This app's crawlability belongs to a repository it does not control
 
-**Recorded 2026-09-18, for book-keeping. Nothing is wrong today.**
+**Recorded 2026-09-18. VERIFIED 2026-09-21 against live fetches and RFC 9309** — Momin asked for
+the claim to be checked rather than repeated, and the check corrected its headline.
+
+**What is actually served right now**, all HTTP 200, fetched 2026-09-21:
+
+- `mominbinshahid.github.io/robots.txt` — one group, `User-agent: *` / `Allow: /`, no `Disallow`
+  anywhere on the host, and it advertises `.../MealUnits/sitemap.xml` by name. **So this app is
+  crawlable and its indexing is not suppressed.** Confirmed to come from the `gh-pages` branch of
+  the separate `MominBinShahid.github.io` repository: that path is 200 there and 404 on `main` and
+  `master`.
+- `mominbinshahid.github.io/MealUnits/robots.txt` — 200, and a real text file rather than a soft
+  404. Two bogus paths under `/MealUnits/` return genuine 404s, so the 200 here means the file is
+  really being served. It is still read by nobody; the file's own header says so.
+- `/MealUnits/sitemap.xml` — 200, five URLs, `lastmod 2026-09-20`.
+- The app's own `<head>` carries a canonical link and **no** `<meta name="robots">`, and there is no
+  `X-Robots-Tag` header.
+
+**The per-host rule is confirmed from the specification, not assumed.** RFC 9309 §2.3: *"The rules
+MUST be accessible in a file named '/robots.txt' (all lowercase) in the top-level path of the
+service"*, with the URI template `scheme:[//authority]/robots.txt` — no path component. A file at a
+subpath is not a robots.txt under the spec, and the RFC defines no per-directory mechanism at all.
+
+**But the original framing was too strong, and this is the correction.** "Nothing in this repository
+can change it" is false as written. The apex file governs **crawling**; **indexing** is also
+governed by `<meta name="robots">`, which ships from this repo and is already used here —
+`public/404.html` line 9 carries `noindex` and it is honoured. Google and Bing both support the tag.
+
+What is genuinely true is narrower and still worth the entry: **the control is one-directional.** A
+meta tag can only restrict. It cannot override a `Disallow`, because the page has to stay crawlable
+for the tag to be read at all — Google: *"If a page is disallowed from crawling through the
+robots.txt file, then any information about indexing or serving rules will not be found and will
+therefore be ignored."* So if the blog repo ever added `Disallow: /MealUnits/`, this repository
+would have no remedy. **That** is the invisible cross-repo dependency.
+
+**And there is exactly one way out, verified:** a custom domain on THIS repository makes it the root
+of its own host, at which point `public/robots.txt` becomes the authority-root file and starts being
+obeyed. Inheriting the user site's domain does not help — that still yields a path on somebody
+else's host. There is no `CNAME` in `public/` or `dist/` today, which is precisely the migration the
+inert `public/robots.txt` was kept for.
+
+**Nothing to do here.** The edit, if it is ever needed, is one line in `robots.txt` on the
+`gh-pages` branch of `MominBinShahid/MominBinShahid.github.io`.
 
 `robots.txt` is defined per HOST, not per path. There is exactly one per origin, at `/robots.txt`,
 and it governs every path on that host. Crawlers do not look for `/MealUnits/robots.txt`, there is no

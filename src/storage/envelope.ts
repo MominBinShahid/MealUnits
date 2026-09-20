@@ -218,7 +218,13 @@ function readInjection(value: Record<string, unknown>): Injection | null {
   // §11.3 — RE-VALIDATE ON EVERY LOAD AND IMPORT: type, presence, finiteness,
   // precision, range. A row that fails is dropped rather than repaired, because
   // repairing it would invent a dose.
-  const { id, timestamp, bloodSugar, carbs, units, injectedUnits, settingsRevision } = value;
+  const { id, timestamp, bloodSugar, carbs, injectedUnits, settingsRevision } = value;
+  // Either spelling. `calculatedUnits` is what this build writes; `units` is
+  // what a row or a file written before 2026-09-21 carries, and the two sat
+  // next to `injectedUnits` for long enough that §11.2 has a paragraph about a
+  // reviewer nearly pinning the wrong one. That ambiguity is the whole reason
+  // for the rename, and one `??` is the whole cost of not losing old rows.
+  const units = value.calculatedUnits ?? value.units;
   if (typeof id !== 'string' || id === '') return null;
   if (!finiteNumber(timestamp)) return null;
   if (bloodSugar !== null && !inHardRange(bloodSugar, 'bloodSugar')) return null;
@@ -240,7 +246,7 @@ function readInjection(value: Record<string, unknown>): Injection | null {
     timestamp,
     bloodSugar: bloodSugar === null ? null : bloodSugar,
     carbs,
-    units,
+    calculatedUnits: units,
     injectedUnits,
     settingsRevision,
     overrodeStacking: value.overrodeStacking === true,
