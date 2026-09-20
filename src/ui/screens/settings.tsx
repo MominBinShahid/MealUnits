@@ -25,7 +25,7 @@ export interface SettingsDraft {
   readonly target: string;
   readonly isf: string;
   readonly icr: string;
-  readonly mode: RoundingMode;
+  readonly roundingMode: RoundingMode;
   /**
    * §8.5 — answered on its own screen, and held here because on a FIRST RUN
    * there is nowhere else for it to live: `commitSettings` needs the three
@@ -62,7 +62,7 @@ export function draftFrom(settings: Settings | null): SettingsDraft {
       target: '',
       isf: '',
       icr: '',
-      mode: DEFAULT_MODE,
+      roundingMode: DEFAULT_MODE,
       insulinId: '',
       eatDelay: '',
       threshold: '',
@@ -76,7 +76,7 @@ export function draftFrom(settings: Settings | null): SettingsDraft {
     target: String(settings.target),
     isf: String(settings.isf),
     icr: String(settings.icr),
-    mode: settings.mode,
+    roundingMode: settings.roundingMode,
     insulinId: settings.insulinId,
     // §4.1 — null is "not given" and 0 is a real answer (an ultra-rapid
     // analogue is injected at the start of the meal). `String(0)` is "0" and
@@ -426,7 +426,7 @@ export function SettingsScreen({
       : null;
   const blocking = problems.filter((problem) => !problem.confirmable);
   const deltas = deltasFor(settings, draft);
-  const needsCeilAck = modeNeedsAcknowledgement(draft.mode) && !handlers.ceilAcknowledged;
+  const needsCeilAck = modeNeedsAcknowledgement(draft.roundingMode) && !handlers.ceilAcknowledged;
 
   return (
     <div class="screen">
@@ -599,6 +599,10 @@ export function SettingsScreen({
         {ownWait === null ? null : <p class="settled">{ownWait}</p>}
       </div>
 
+      {/* §8.5's concentration warning stays a HINT, and the amber panel it
+          wore for one local build is recorded in `BACKLOG.md` rather than
+          shipped. Momin's question was the right one — why is this important
+          NOW — and the research done for entry 26 answers it against me. */}
       <div class="assumptions">
         <p class="hint">{COPY.settings.unitAssumption}</p>
         {/* §10.2 — the SAME string the how-it-works page renders, not a copy. */}
@@ -614,16 +618,16 @@ export function SettingsScreen({
           paragraphs here. */}
       <p class="hint">{COPY.settings.modeHint}</p>
       <div class="list" role="group" aria-labelledby="label-mode">
-        {MODES.map(({ mode, name }) => (
+        {MODES.map(({ roundingMode, name }) => (
           <Button
-            key={mode}
-            class={draft.mode === mode ? 'go' : 'go quiet'}
+            key={roundingMode}
+            class={draft.roundingMode === roundingMode ? 'go' : 'go quiet'}
             // The boolean, not `String(...)`. Preact renders `aria-*={false}`
             // as the attribute "false" rather than dropping it — the one
             // exception to its remove-on-false rule, and it exists for exactly
             // this. The same two attribute values reach the DOM as before.
-            aria-pressed={draft.mode === mode}
-            onPress={() => { handlers.onChange('mode', mode); }}
+            aria-pressed={draft.roundingMode === roundingMode}
+            onPress={() => { handlers.onChange('roundingMode', roundingMode); }}
           >
             {name}
           </Button>

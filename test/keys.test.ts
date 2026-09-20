@@ -41,7 +41,7 @@ describe('every list key the interface uses is unique within its list', () => {
   });
 
   it('rounding modes, keyed on the mode', () => {
-    expect(duplicates(COPY.rounding.modes.map((entry) => entry.mode))).toEqual([]);
+    expect(duplicates(COPY.rounding.modes.map((entry) => entry.roundingMode))).toEqual([]);
   });
 
   // The prose lists are keyed on the paragraph itself: there is no id to key on,

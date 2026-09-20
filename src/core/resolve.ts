@@ -102,7 +102,7 @@ function settingsErrors(settings: Settings): FieldError[] {
   // Guards against a corrupted or hand-edited store, not against the type
   // system: §11.3 re-validates on every load, and an unknown mode would fall
   // through `roundToHundredths`'s switch with no case to answer it.
-  if (!(settings.mode in INCREMENT)) errors.push({ field: 'mode', reason: 'missing' });
+  if (!(settings.roundingMode in INCREMENT)) errors.push({ field: 'mode', reason: 'missing' });
   return errors;
 }
 
@@ -301,12 +301,12 @@ export function resolve(snapshot: Snapshot): Outcome {
   // Stryker restore all
 
   // ── step 10. Round the clamped total. No intermediate quantization.
-  const doseHundredths = roundToHundredths(applied.clamped, settings.mode);
+  const doseHundredths = roundToHundredths(applied.clamped, settings.roundingMode);
 
   // The secondary half of §6.4: a one-increment allowance so rounding cannot
   // make an attainable maximum look impossible.
   // Stryker disable all: the same identity, one increment wider. See above.
-  if (exceedsBound(applied.clamped, doseHundredths, settings, incrementHundredths(settings.mode))) {
+  if (exceedsBound(applied.clamped, doseHundredths, settings, incrementHundredths(settings.roundingMode))) {
     return { kind: 'bound_failure', boundUnits: boundUnits(settings) };
   }
   // Stryker restore all
@@ -397,7 +397,7 @@ export function resolve(snapshot: Snapshot): Outcome {
 
   // §7.4.1 — the override candidate is the dose with the correction applied.
   const overrideCandidateHundredths = stacking.suppressPositiveCorrection
-    ? roundToHundredths(unsuppressed.clamped, settings.mode)
+    ? roundToHundredths(unsuppressed.clamped, settings.roundingMode)
     : null;
   // v3's button printed the resulting total unconditionally. At blood sugar 600
   // with 200 g the override candidate is past the threshold, so the button

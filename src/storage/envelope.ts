@@ -18,7 +18,8 @@ export interface ExportedSettingsHistory {
   readonly target: number;
   readonly isf: number;
   readonly icr: number;
-  readonly mode: RoundingMode;
+  /** §5's rounding mode. Renamed from `mode` on 2026-09-21; `parseEnvelope` still accepts either. */
+  readonly roundingMode: RoundingMode;
   /** §8.5 — the insulin in force for this period. `''` when none was recorded. */
   readonly insulinId: string;
 }
@@ -42,6 +43,37 @@ function readInsulinId(value: unknown): string {
   return INSULINS.some((row) => row.id === value) ? value : '';
 }
 
+/**
+ * The settings block AS WRITTEN TO A FILE, declared independently of `Settings`
+ * rather than derived from it.
+ *
+ * It used to be `Omit<Settings, 'revision'>`, which made the file format track
+ * the domain type — rename a field and every export silently changes shape,
+ * with nothing failing until somebody tried to import an old file. That is the
+ * lesson rather than the rename: **a serialisation format that is an `Omit<>`
+ * of a live type is a format that changes when the type does.**
+ * `ExportedSettingsHistory` was already written this way; this one was not, and
+ * that asymmetry was the bug.
+ *
+ * The 2026-09-21 rename DID reach the file, deliberately — Momin's ruling, on
+ * the grounds that nobody is using the app yet, so a name people can read is
+ * worth more than compatibility with files that do not exist. `parseEnvelope`
+ * accepts either spelling anyway; it costs one `??`.
+ */
+export interface ExportedSettings {
+  readonly target: number;
+  readonly isf: number;
+  readonly icr: number;
+  readonly roundingMode: RoundingMode;
+  readonly threshold: number;
+  readonly basalName: string;
+  readonly basalUnits: number;
+  readonly basalTiming: string;
+  readonly insulinId: string;
+  readonly eatDelayMinutes: number | null;
+  readonly personName: string;
+}
+
 export interface Envelope {
   readonly schemaVersion: number;
   /**
@@ -50,7 +82,7 @@ export interface Envelope {
    * specified the block unconditionally without saying what it holds, leaving
    * the test to a judgement call.
    */
-  readonly settings: Omit<Settings, 'revision'> | Record<string, never>;
+  readonly settings: ExportedSettings | Record<string, never>;
   /**
    * §6.7 — present ONLY when the state is `answered`. Absent for `unanswered`
    * and `declined`, and the STATE ITSELF is never exported: a refusal recorded on
@@ -86,7 +118,7 @@ export function buildEnvelope(input: ExportInput): Envelope {
           target: input.settings.target,
           isf: input.settings.isf,
           icr: input.settings.icr,
-          mode: input.settings.mode,
+          roundingMode: input.settings.roundingMode,
           threshold: input.settings.threshold,
           basalName: input.settings.basalName,
           basalUnits: input.settings.basalUnits,
@@ -107,7 +139,7 @@ export function buildEnvelope(input: ExportInput): Envelope {
       target: period.target,
       isf: period.isf,
       icr: period.icr,
-      mode: period.mode,
+      roundingMode: period.roundingMode,
       insulinId: period.insulinId,
     })),
     readings: input.readings,
@@ -282,7 +314,9 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
     Object.keys(settingsRaw).length === 0
       ? {}
       : (() => {
-          const mode = settingsRaw.mode;
+          // Either spelling. `roundingMode` is what this build writes; `mode` is what a
+          // file written before 2026-09-21 carries, and there is no reason to refuse one.
+          const mode = settingsRaw.roundingMode ?? settingsRaw.mode;
           if (
             !inHardRange(settingsRaw.target, 'target') ||
             !inHardRange(settingsRaw.isf, 'isf') ||
@@ -297,7 +331,7 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
             target: settingsRaw.target,
             isf: settingsRaw.isf,
             icr: settingsRaw.icr,
-            mode: mode as RoundingMode,
+            roundingMode: mode as RoundingMode,
             threshold: settingsRaw.threshold,
             basalName: typeof settingsRaw.basalName === 'string' ? settingsRaw.basalName : '',
             basalUnits: inHardRange(settingsRaw.basalUnits, 'basalUnits') ? settingsRaw.basalUnits : 0,
@@ -325,7 +359,7 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
   const settingsHistory: ExportedSettingsHistory[] = [];
   for (const entry of historyRaw) {
     if (!isRecord(entry)) continue;
-    const mode = entry.mode;
+    const mode = entry.roundingMode ?? entry.mode;
     if (
       !Number.isInteger(entry.revision) ||
       !finiteNumber(entry.changedAtMs) ||
@@ -343,7 +377,7 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
       target: entry.target,
       isf: entry.isf,
       icr: entry.icr,
-      mode: mode as RoundingMode,
+      roundingMode: mode as RoundingMode,
       insulinId: readInsulinId(entry.insulinId),
     });
   }

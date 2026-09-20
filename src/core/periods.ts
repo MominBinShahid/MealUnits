@@ -28,7 +28,7 @@ export interface SettingsPeriod {
   readonly target: number;
   readonly isf: number;
   readonly icr: number;
-  readonly mode: RoundingMode;
+  readonly roundingMode: RoundingMode;
   /**
    * §8.5 — the mealtime insulin in force for this period, as a row id from
    * `src/data/insulins.ts` or one of `core/insulin.ts`'s two sentinels.

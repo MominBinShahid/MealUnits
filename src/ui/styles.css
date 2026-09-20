@@ -377,6 +377,25 @@ body {
   gap: var(--gap);
 }
 
+/*
+ * A SHEET INSIDE A PANEL IS NOT AT THE SCREEN EDGE, and `.sheet` is written for
+ * one that is: `margin-top: auto` to push it down a flex column, and a bottom
+ * padding of `max(0.75rem, env(safe-area-inset-bottom))` to clear the iPhone
+ * home indicator.
+ *
+ * Both are wrong in here. The panel already has its own padding, so the
+ * safe-area clearance stacked on top of it — measured at 24px below the
+ * button against the 11px the panel itself provides, and on a device with a
+ * home indicator it would be worse. Reported by Momin off the setup card.
+ *
+ * The top keeps a small gap, because the button does need separating from the
+ * sentence above it. The bottom is the panel's job.
+ */
+.flag .sheet {
+  margin-top: 0;
+  padding: 0.5rem 0 0;
+}
+
 .go {
   min-height: var(--touch-key);
   border: 1px solid transparent;
@@ -644,8 +663,25 @@ body {
    sits beneath. A filled button there would make "turn this off" look like the
    thing to do, which is the same mistake as a cyan dismissal. */
 .flag .more {
-  margin-top: 0.375rem;
   color: var(--warn);
+  /*
+   * §10.7's 48px touch floor is NOT NEGOTIABLE, and it is also not a spacing
+   * instruction. `.more` is a text link with a 48px hit area, so 14px of that
+   * height is empty on each side of the glyphs — and the surrounding margins
+   * were being added on top of it. Measured in the panel: 21px above the link
+   * text and 28px below it, against the 10px this panel's paragraphs sit at.
+   *
+   * So the HIT AREA stays 48px and only its visual footprint shrinks: the
+   * negative margins cancel the dead space, leaving the gaps the eye reads.
+   * Derived from the tokens rather than typed as two magic numbers, so raising
+   * `--touch` cannot silently reintroduce the gap.
+   *
+   * The bottom one pulls past the panel's content box by a few pixels, which is
+   * invisible — the control has no background — and keeps the hit area whole.
+   */
+  --more-dead-space: calc((var(--touch) - 1.25rem) / 2);
+  margin-top: calc(0.625rem - var(--more-dead-space));
+  margin-bottom: calc(0rem - var(--more-dead-space));
 }
 
 /* §10.5 — band E de-escalates in FORM only. Same words, same rank, never

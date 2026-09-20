@@ -1791,6 +1791,29 @@ That turned out to be benign — Google's own help lists "low crawl demand" as a
 status, and a live test returned "URL is available to Google" — but reading the apex `robots.txt` to
 rule it out is what surfaced the ownership question.
 
+### T22. The U-100 warning was promoted to an advisory, and put back — 2026-09-21
+
+**Built locally, shown to Momin, reverted on his question.** It is here because the question was the
+right one and the answer is not obvious from the screen.
+
+The case for promoting it: a U-40 vial dosed on this app's numbers is out by **2.5 times**, nothing
+downstream catches it, and the sentence sat in grey small print between two other hints.
+
+**The case against, which is stronger, and which came from this project's own research.** Entry 26's
+concentration work queried DRAP's register: 94 insulin registrations in Pakistan, **none at
+40 IU/ml**. And U-200 — Humalog and Lyumjev — is pen-only, where the pen doses in units and the
+concentration never reaches the reader at all. So the population this panel would shout at is
+narrow: a vet U-40 syringe, or cross-border Indian supply.
+
+Meanwhile the setup screen already carries a red panel, an amber panel, a required insulin question
+and three ratios. §10.5's budget is not an abstract rule there — it is the reason the red one still
+reads as red. Spending an amber on the least likely hazard present is how the budget gets lost.
+
+**What would change this**: a reader actually turning up with a U-40 vial, or DRAP registering one.
+Both are in `CLINICAL.md` §4.2's "what would change this answer" list already.
+
+---
+
 ### T21. `test/lint-config.test.ts` times out at 5 seconds under load — DONE 2026-09-20
 
 **Seen once, 2026-09-20**, while a mutation run and a browser were competing for the same cores:
@@ -1817,6 +1840,13 @@ start rather than about the assertion — far past anything observed, far short 
 
 Fixed rather than left because it had begun failing the verification of other work, and a green run
 you cannot trust is worse than a red one.
+
+**A SECOND test in the same family, seen 2026-09-21 and NOT fixed.**
+`test/integration.test.ts`'s "follows the browser BACK out of a route, and FORWARD into one" failed
+once inside a full `vitest run` and passed on two full re-runs and two file-only runs immediately
+after. Same shape as this one — a timing-sensitive case losing a race under contention — but it is
+an ASSERTION rather than a timeout, so the fix is not a number and it needs looking at rather than
+raising. Recorded so the next sighting is a second data point rather than a first.
 
 ---
 

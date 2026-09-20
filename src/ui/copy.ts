@@ -1550,12 +1550,12 @@ export const COPY = {
      * defect, so the pairing is written down instead of counted.
      */
     modes: [
-      { mode: 'nearest', name: 'Whole units', what: 'To the nearest whole unit, so 4.4 becomes 4 and 4.6 becomes 5. Exactly half rounds away from zero: 4.5 becomes 5. This is right for an ordinary U-100 syringe, which is marked in whole units.' },
-      { mode: 'half', name: 'Half units', what: 'To the nearest half, so 4.37 becomes 4.5. Choose this only if your pen or syringe actually has half-unit markings — a NovoPen Echo or a Humalog Junior KwikPen. On a whole-unit syringe it asks you to measure something you cannot see.' },
-      { mode: 'ceil', name: 'Always round up', what: 'To the next whole unit, so 4.1 becomes 5. This adds insulin on every single dose, always in the direction of low blood sugar. If one unit brings you down 30\u00A0mg/dL, that is up to 30\u00A0mg/dL of extra drop you did not intend — on a 1-unit correction it doubles the dose. The app asks you to confirm this one before it will use it.' },
-      { mode: 'floor', name: 'Always round down', what: 'To the whole unit below, so 4.9 becomes 4. This gives slightly less insulin every time, which errs toward higher blood sugar. Some doctors ask for this deliberately.' },
-      { mode: 'off', name: 'Show the exact number', what: 'No rounding — 4.37 stays 4.37. This is for reading the true figure, not for measuring: a syringe cannot draw 4.37. Use it to see what the app really worked out.' },
-    ] as const satisfies readonly { readonly mode: RoundingMode; readonly name: string; readonly what: string }[],
+      { roundingMode: 'nearest', name: 'Whole units', what: 'To the nearest whole unit, so 4.4 becomes 4 and 4.6 becomes 5. Exactly half rounds away from zero: 4.5 becomes 5. This is right for an ordinary U-100 syringe, which is marked in whole units.' },
+      { roundingMode: 'half', name: 'Half units', what: 'To the nearest half, so 4.37 becomes 4.5. Choose this only if your pen or syringe actually has half-unit markings — a NovoPen Echo or a Humalog Junior KwikPen. On a whole-unit syringe it asks you to measure something you cannot see.' },
+      { roundingMode: 'ceil', name: 'Always round up', what: 'To the next whole unit, so 4.1 becomes 5. This adds insulin on every single dose, always in the direction of low blood sugar. If one unit brings you down 30\u00A0mg/dL, that is up to 30\u00A0mg/dL of extra drop you did not intend — on a 1-unit correction it doubles the dose. The app asks you to confirm this one before it will use it.' },
+      { roundingMode: 'floor', name: 'Always round down', what: 'To the whole unit below, so 4.9 becomes 4. This gives slightly less insulin every time, which errs toward higher blood sugar. Some doctors ask for this deliberately.' },
+      { roundingMode: 'off', name: 'Show the exact number', what: 'No rounding — 4.37 stays 4.37. This is for reading the true figure, not for measuring: a syringe cannot draw 4.37. Use it to see what the app really worked out.' },
+    ] as const satisfies readonly { readonly roundingMode: RoundingMode; readonly name: string; readonly what: string }[],
     closing:
       'If you are not sure, leave it on whole units. It is what an ordinary syringe measures, and it is the app\u2019s default for that reason.',
   },

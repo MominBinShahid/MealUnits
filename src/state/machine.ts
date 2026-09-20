@@ -262,7 +262,7 @@ export type Action =
 /**
  * §4.3 step 1, in ONE function so no branch can forget a target.
  *
- * "Any change to any input, setting, mode, threshold, LOG REVISION, a readings
+ * "Any change to any input, setting, roundingMode, threshold, LOG REVISION, a readings
  * write, or STACKING OVERRIDE clears all previous dose output and cancels any
  * pending confirmation."
  *

@@ -53,7 +53,7 @@ const PRESCRIPTION = {
   target: 150,
   isf: 30,
   icr: 10,
-  mode: 'nearest' as const,
+  roundingMode: 'nearest' as const,
   threshold: 20,
   basalName: 'Lantus',
   basalUnits: 36,
@@ -222,13 +222,13 @@ describe('§7.7 a commit that changes no prescription field keeps its revision',
   /** Every field `settingsHistory` records, one at a time. */
   // `Partial<SettingsCommit>` rather than `Partial<typeof PRESCRIPTION>`: the
   // fixture is an object literal, so its inferred field types are the LITERALS
-  // it happens to hold — `mode: 'nearest'` and `eatDelayMinutes: null` — and a
+  // it happens to hold — `roundingMode: 'nearest'` and `eatDelayMinutes: null` — and a
   // case changing either would not typecheck against itself.
   const CHANGES: readonly (readonly [string, Partial<SettingsCommit>])[] = [
     ['the target', { target: 140 }],
     ['the sensitivity', { isf: 40 }],
     ['the carbohydrate ratio', { icr: 12 }],
-    ['the rounding mode', { mode: 'half' as const }],
+    ['the rounding mode', { roundingMode: 'half' as const }],
     ['the insulin', { insulinId: 'novorapid', insulinName: 'NovoRapid' }],
   ];
 
@@ -308,7 +308,7 @@ describe('§7.7 a commit that changes no prescription field keeps its revision',
         target: 150,
         isf: 30,
         icr: 12,
-        mode: 'nearest',
+        roundingMode: 'nearest',
         insulinId: 'humulin-r',
         imported: true,
       } satisfies SettingsHistoryRow));
@@ -339,7 +339,7 @@ describe('§11.3 the allocation rule', () => {
           target: 150,
           isf: 30,
           icr: 12,
-          mode: 'nearest',
+          roundingMode: 'nearest',
           insulinId: 'humulin-r',
           imported: true,
         } satisfies SettingsHistoryRow));
@@ -370,7 +370,7 @@ describe('§11.3 the allocation rule', () => {
           target: 150,
           isf: 30,
           icr: 10,
-          mode: 'nearest',
+          roundingMode: 'nearest',
             insulinId: 'humulin-r',
             imported: false,
           } satisfies SettingsHistoryRow),
@@ -426,7 +426,7 @@ describe('a failed write rejects with the cause, not with a second failure', () 
           target: 150,
           isf: 30,
           icr: 10,
-          mode: 'nearest',
+          roundingMode: 'nearest',
           insulinId: 'humulin-r',
           imported: false,
         } satisfies SettingsHistoryRow),
@@ -652,7 +652,7 @@ describe('§7.9 clearing the record', () => {
     const db = await open();
     await commitSettings(db, {
       ...PRESCRIPTION,
-      mode: 'ceil',
+      roundingMode: 'ceil',
       acknowledged: ['disclaimer', 'mode:ceil', 'setting:target:150'],
     });
     await appendInjection(db, injection(), NOW);
@@ -663,7 +663,7 @@ describe('§7.9 clearing the record', () => {
 
     const state = await readAll(db, NOW);
     expect(state.settings?.target).toBe(150);
-    expect(state.settings?.mode).toBe('ceil');
+    expect(state.settings?.roundingMode).toBe('ceil');
     expect(state.settingsHistory).toHaveLength(1);
     // §7.9 v23 — `acks` is bound to settings and to the app, never to the
     // record. Dropping the acknowledgement of a `ceil` mode or a target that

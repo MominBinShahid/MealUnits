@@ -189,7 +189,18 @@ export interface SettingsRow {
   readonly target: number;
   readonly isf: number;
   readonly icr: number;
-  readonly mode: RoundingMode;
+  /**
+   * §5's rounding mode. **Renamed from `mode` on 2026-09-21 [Momin]**, stored
+   * key included — *"nobody is using this right now"*, and a name nobody can
+   * read from is worth more than compatibility with rows that do not exist.
+   *
+   * `readAll` still accepts a row written as `mode`. That is three characters
+   * of fallback against losing somebody's prescription, and the one device that
+   * does hold data is Hasham's.
+   */
+  readonly roundingMode: RoundingMode;
+  /** The pre-2026-09-21 spelling. Read, never written. See `roundingMode`. */
+  readonly mode?: RoundingMode;
   readonly threshold: number;
   readonly basalName: string;
   readonly basalUnits: number;
@@ -229,7 +240,10 @@ export interface SettingsHistoryRow {
   readonly target: number;
   readonly isf: number;
   readonly icr: number;
-  readonly mode: RoundingMode;
+  /** See `SettingsRow.roundingMode` — renamed with it, fallback and all. */
+  readonly roundingMode: RoundingMode;
+  /** The pre-2026-09-21 spelling. Read, never written. */
+  readonly mode?: RoundingMode;
   /**
    * §8.5 — present for the same reason the ratios are and `threshold` is not:
    * it changes what a dose came out as, through §7.4's gate. `eatDelayMinutes`
@@ -277,8 +291,10 @@ export const ACK_KEY = {
   storageEviction: 'storage-eviction',
 } as const;
 
-export function ackKeyForMode(mode: RoundingMode): string {
-  return `mode:${mode}`;
+export function ackKeyForMode(roundingMode: RoundingMode): string {
+  // `mode:` — a PERSISTED ACK KEY. Renaming it would silently re-ask §5.1's
+  // ceil acknowledgement of every reader who had already given it.
+  return `roundingMode:${roundingMode}`;
 }
 
 /** §4.5's confirm-once, bound to the exact value confirmed. */

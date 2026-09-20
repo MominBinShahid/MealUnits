@@ -42,7 +42,7 @@ const PRESCRIPTION = {
   target: 150,
   isf: 30,
   icr: 10,
-  mode: 'nearest' as const,
+  roundingMode: 'nearest' as const,
   threshold: 20,
   basalName: 'Lantus',
   basalUnits: 36,
@@ -77,7 +77,7 @@ const SETTINGS: Settings = {
   target: 150,
   isf: 30,
   icr: 10,
-  mode: 'nearest',
+  roundingMode: 'nearest',
   threshold: 20,
   basalName: 'Lantus',
   basalUnits: 36,
@@ -93,7 +93,7 @@ function period(overrides: Partial<SettingsPeriod> = {}): SettingsPeriod {
     target: 150,
     isf: 30,
     icr: 10,
-    mode: 'nearest',
+    roundingMode: 'nearest',
     insulinId: 'humulin-r',
     imported: false,
     ...overrides,
@@ -128,6 +128,70 @@ describe('§7.7 the envelope', () => {
     expect('settings' in envelope).toBe(true);
   });
 
+  /**
+   * `mode` became `roundingMode` on 2026-09-21, the file format included —
+   * Momin's ruling, on the grounds that nobody is using the app yet.
+   *
+   * These two cases pin both halves of that. The file writes the new name, and
+   * an older file written under the old one still imports, because the fallback
+   * costs one `??` and the alternative is somebody's saved record refusing to
+   * open.
+   *
+   * The format is declared as `ExportedSettings` rather than
+   * `Omit<Settings, 'revision'>`, which is what it used to be — so the rename
+   * changed the file by accident before it changed it on purpose. A
+   * serialisation format that is an `Omit<>` of a live type is a format that
+   * moves when the type does.
+   */
+  it('§7.7 — writes `roundingMode`, the name the code uses', () => {
+    const envelope = buildEnvelope({
+      settings: SETTINGS,
+      settingsHistory: [period()],
+      log: [],
+      readings: [],
+      dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
+    });
+    expect(Object.keys(envelope.settings)).toContain('roundingMode');
+    expect(envelope.settings).toMatchObject({ roundingMode: SETTINGS.roundingMode });
+    expect(Object.keys(envelope.settingsHistory[0] ?? {})).toContain('roundingMode');
+  });
+
+  it('§7.7 — and still reads a file written under the OLD spelling', () => {
+    // `parseEnvelope` takes the PARSED object, not the text.
+    const parsed = parseEnvelope(
+      {
+        schemaVersion: 1,
+        settings: {
+          target: 150,
+          isf: 30,
+          icr: 10,
+          mode: 'half',
+          threshold: 20,
+          basalName: 'Lantus',
+          basalUnits: 36,
+          basalTiming: 'early morning',
+          personName: '',
+        },
+        settingsHistory: [
+          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, mode: 'ceil' },
+        ],
+        readings: [],
+        log: [],
+      },
+    );
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    // A file that predates BOTH the rename and §8.5 — no `insulinId` either.
+    // Written as `mode`, read as `roundingMode`. One `??` at the boundary, and
+    // the reason it is there at all: an export already saved to somebody's
+    // phone should not stop importing because a name got clearer.
+    expect(parsed.envelope.settings).toMatchObject({ roundingMode: 'half' });
+    expect(parsed.envelope.settingsHistory[0]).toMatchObject({
+      roundingMode: 'ceil',
+      insulinId: '',
+    });
+  });
+
   it('omits `threshold` and `imported` from the history, and carries the insulin', () => {
     // §7.7 [R1] — `threshold` never changes a dose value, so no consumer needs
     // its historical setting and an identical-values row would be noise.
@@ -145,7 +209,7 @@ describe('§7.7 the envelope', () => {
       dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
     });
     expect(Object.keys(envelope.settingsHistory[0] ?? {}).sort()).toEqual(
-      ['changedAtMs', 'icr', 'insulinId', 'isf', 'mode', 'revision', 'target'].sort(),
+      ['changedAtMs', 'icr', 'insulinId', 'isf', 'revision', 'roundingMode', 'target'].sort(),
     );
   });
 
@@ -352,8 +416,8 @@ describe('§7.7 revision remapping', () => {
         schemaVersion: 1,
         settings: {},
         settingsHistory: [
-          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, mode: 'nearest', insulinId: 'humulin-r' },
-          { revision: 2, changedAtMs: AUG_18 + DAY, target: 150, isf: 30, icr: 12, mode: 'nearest', insulinId: 'humulin-r' },
+          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, roundingMode: 'nearest', insulinId: 'humulin-r' },
+          { revision: 2, changedAtMs: AUG_18 + DAY, target: 150, isf: 30, icr: 12, roundingMode: 'nearest', insulinId: 'humulin-r' },
         ],
         readings: [],
         log: [injection({ id: 'a', settingsRevision: 2 })],
@@ -376,8 +440,8 @@ describe('§7.7 revision remapping', () => {
         schemaVersion: 1,
         settings: {},
         settingsHistory: [
-          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, mode: 'nearest', insulinId: 'humulin-r' },
-          { revision: 2, changedAtMs: AUG_18 + DAY, target: 150, isf: 30, icr: 12, mode: 'nearest', insulinId: 'humulin-r' },
+          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, roundingMode: 'nearest', insulinId: 'humulin-r' },
+          { revision: 2, changedAtMs: AUG_18 + DAY, target: 150, isf: 30, icr: 12, roundingMode: 'nearest', insulinId: 'humulin-r' },
         ],
         readings: [],
         log: [injection({ id: 'a', settingsRevision: 1 }), injection({ id: 'b', settingsRevision: 2 })],
@@ -400,7 +464,7 @@ describe('§7.7 revision remapping', () => {
         schemaVersion: 1,
         settings: {},
         settingsHistory: [
-          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, mode: 'nearest', insulinId: 'humulin-r' },
+          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, roundingMode: 'nearest', insulinId: 'humulin-r' },
         ],
         readings: [],
         log: [],
@@ -425,7 +489,7 @@ describe('§13.3 the composed case v12 lacked', () => {
       schemaVersion: 1,
       settings: {},
       settingsHistory: [
-        { revision: 1, changedAtMs: AUG_18 - 365 * DAY, target: 150, isf: 30, icr: 8, mode: 'nearest', insulinId: 'humulin-r' },
+        { revision: 1, changedAtMs: AUG_18 - 365 * DAY, target: 150, isf: 30, icr: 8, roundingMode: 'nearest', insulinId: 'humulin-r' },
       ],
       readings: [],
       log: [injection({ id: 'old', settingsRevision: 1, timestamp: AUG_18 - 300 * DAY })],

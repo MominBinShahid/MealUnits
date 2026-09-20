@@ -3594,6 +3594,78 @@ def check_insulin_timing(corpus):
     return out
 
 
+def check_persisted_names(corpus):
+    """31. A persisted name is renameable ONLY while nobody holds data.
+
+    2026-09-21 renamed `mode` to `roundingMode` everywhere — the stored rows,
+    the export format and §5.1's acknowledgement key included. Momin's ruling:
+    nobody is using the app yet, so a name people can read is worth more than
+    compatibility with rows that do not exist.
+
+    What this pins is not the name. It is the TWO THINGS that made the rename
+    safe, because the next one will not have this licence:
+
+      * the reads accept the OLD spelling, so a row or a file written before
+        the rename still opens. It costs one `??` and the alternative is
+        somebody's prescription refusing to load.
+      * the exported settings block is its OWN type rather than an `Omit<>` of
+        a live one. It used to be the latter, which is how this rename reached
+        the file format BEFORE anybody decided it should — a serialisation
+        format derived from a domain type moves when the type moves, silently.
+
+    The second is the one worth keeping forever. The first can go the day
+    somebody decides those fallbacks have outlived the data.
+    """
+    out = []
+    try:
+        schema = load(os.path.join(HERE, "src", "storage", "schema.ts"))
+        envelope = load(os.path.join(HERE, "src", "storage", "envelope.ts"))
+        repo = load(os.path.join(HERE, "src", "storage", "repo.ts"))
+    except (IOError, OSError):
+        return out
+
+    for name in ("SettingsRow", "SettingsHistoryRow"):
+        block = re.search(r"export interface %s \{(.*?)\n\}" % name, schema, re.S)
+        if not block:
+            out.append("src/storage/schema.ts: could not find %s — the parser "
+                       "needs updating (maintenance obligation)" % name)
+            continue
+        body = block.group(1)
+        if not re.search(r"^\s*readonly roundingMode\s*:", body, re.M):
+            out.append("src/storage/schema.ts: %s does not declare "
+                       "`roundingMode`; §5's rounding mode has to be stored "
+                       "somewhere" % name)
+        if not re.search(r"^\s*readonly mode\?\s*:", body, re.M):
+            out.append("src/storage/schema.ts: %s no longer declares the legacy "
+                       "`mode?` — a row written before 2026-09-21 would load "
+                       "with no rounding mode at all. Drop it only when the "
+                       "fallback in `readAll` goes with it" % name)
+
+    if not re.search(r"settingsRow\.roundingMode \?\? settingsRow\.mode", repo):
+        out.append("src/storage/repo.ts: `readAll` no longer falls back to the "
+                   "legacy `mode` for the settings row — a row written before "
+                   "2026-09-21 loses its rounding mode silently")
+    if not re.search(r"row\.roundingMode \?\? mode", repo):
+        out.append("src/storage/repo.ts: `readAll` no longer falls back to the "
+                   "legacy `mode` for a history row — an old prescription "
+                   "period loses the rounding mode it was calculated under")
+
+    if re.search(r"readonly settings:\s*Omit<Settings", envelope):
+        out.append("src/storage/envelope.ts: the exported settings block is an "
+                   "`Omit<>` of the live `Settings` type, so renaming a domain "
+                   "field silently changes the FILE FORMAT — which is how the "
+                   "2026-09-21 rename reached it before anybody decided it "
+                   "should. Declare it separately")
+    if not re.search(r"settingsRaw\.roundingMode \?\? settingsRaw\.mode", envelope):
+        out.append("src/storage/envelope.ts: `parseEnvelope` no longer accepts "
+                   "the legacy `mode` in the settings block — an export saved "
+                   "before 2026-09-21 would import with no rounding mode")
+    if not re.search(r"entry\.roundingMode \?\? entry\.mode", envelope):
+        out.append("src/storage/envelope.ts: `parseEnvelope` no longer accepts "
+                   "the legacy `mode` in a history entry")
+    return out
+
+
 def check_period_comparison(corpus):
     """30. §7.7's no-change rule covers every field `settingsHistory` declares.
 
@@ -3679,6 +3751,7 @@ CHECKS = [
     ("§11.8 constants and ranges", check_constants, "corpus"),
     ("§8.5's per-class clocks", check_insulin_timing, "corpus"),
     ("§7.7's no-change comparison vs the store", check_period_comparison, "corpus"),
+    ("persisted names vs the domain rename", check_persisted_names, "corpus"),
     ("BACKLOG stale against PLAN", check_cross_document, "backlog"),
     ("BLOG-FIX names the app path", check_blogfix, "blogfix"),
     ("checker describing retired things", check_tool_rot, "plan"),
@@ -3985,6 +4058,20 @@ SELF_TESTS = [
      lambda t: t.replace(
          "| Regular human insulin | 20\u201330 minutes",
          "| Regular human insulin | 25\u201335 minutes")),
+    # The 2026-09-21 rename, and the three boundaries it stopped at. Each of
+    # these loses or re-asks for data that is already on somebody's device.
+    ("rename: a stored row drops its legacy fallback", "src/storage/schema.ts",
+     lambda t: t.replace("  readonly mode?: RoundingMode;\n  readonly threshold: number;",
+                         "  readonly threshold: number;")),
+    ("rename: readAll stops accepting the old settings spelling", "src/storage/repo.ts",
+     lambda t: t.replace("settingsRow.roundingMode ?? settingsRow.mode",
+                         "settingsRow.roundingMode")),
+    ("rename: the file format tracks the live type again", "src/storage/envelope.ts",
+     lambda t: t.replace("readonly settings: ExportedSettings | Record<string, never>;",
+                         "readonly settings: Omit<Settings, 'revision'> | Record<string, never>;")),
+    ("rename: parseEnvelope stops accepting the old spelling", "src/storage/envelope.ts",
+     lambda t: t.replace("settingsRaw.roundingMode ?? settingsRaw.mode",
+                         "settingsRaw.roundingMode")),
     # T18's comparison, which decides whether a settings commit starts a new
     # prescription period. Both failures are silent and both misattribute doses.
     ("T18: a prescription field dropped from the period comparison",
@@ -4267,7 +4354,8 @@ def self_test():
     # check, ADDED 2026-09-20 — same reason as every file above: a seed cannot
     # mutate what the harness does not hold, and a seed that cannot find its
     # file reports "missing", which the runner counts as an ESCAPE.
-    for rel in ("src/storage/repo.ts", "src/storage/schema.ts"):
+    for rel in ("src/storage/repo.ts", "src/storage/schema.ts",
+                "src/storage/envelope.ts"):
         full = os.path.join(HERE, *rel.split("/"))
         if os.path.exists(full):
             base[rel] = load(full)
