@@ -91,7 +91,7 @@ export interface StackingDecision {
   /** §7.4.1 — offered only when a correction was actually held back. */
   readonly overrideAvailable: boolean;
   /**
-   * §7.4.1's ceiling in his own units: `injected units x ISF`, rounded to a
+   * §7.4.1's ceiling in his own calculatedUnits: `injected units x ISF`, rounded to a
    * whole mg/dL. It is a CEILING and the copy says so — at two hours into a
    * ~6 hour profile about 110-135 mg/dL genuinely remains, and by 3.5 hours
    * only 65-90. Overstating it discourages a correction that is actually

@@ -3663,6 +3663,11 @@ def check_persisted_names(corpus):
     if not re.search(r"entry\.roundingMode \?\? entry\.mode", envelope):
         out.append("src/storage/envelope.ts: `parseEnvelope` no longer accepts "
                    "the legacy `mode` in a history entry")
+    if not re.search(r"value\.calculatedUnits \?\? value\.units", envelope):
+        out.append("src/storage/envelope.ts: `readInjection` no longer accepts "
+                   "the legacy `units` — a dose row written before 2026-09-21 "
+                   "would be DROPPED by §11.3's re-validation, which is a "
+                   "silently shorter history feeding §7.4's gate")
     return out
 
 
@@ -4069,6 +4074,10 @@ SELF_TESTS = [
     ("rename: the file format tracks the live type again", "src/storage/envelope.ts",
      lambda t: t.replace("readonly settings: ExportedSettings | Record<string, never>;",
                          "readonly settings: Omit<Settings, 'revision'> | Record<string, never>;")),
+    ("rename: a dose row written under the old field name is dropped",
+     "src/storage/envelope.ts",
+     lambda t: t.replace("value.calculatedUnits ?? value.units",
+                         "value.calculatedUnits")),
     ("rename: parseEnvelope stops accepting the old spelling", "src/storage/envelope.ts",
      lambda t: t.replace("settingsRaw.roundingMode ?? settingsRaw.mode",
                          "settingsRaw.roundingMode")),

@@ -44,7 +44,7 @@ async function readLogRevisionRow(tx: IDBTransaction): Promise<LogRevisionRow> {
       k: META_KEY.logRevision,
       n: NO_REVISION,
       lastImportAtMs: null,
-      lastLocalWriteAtMs: null,
+      lastLocalInjectionAtMs: null,
     }
   );
 }
@@ -167,12 +167,11 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
         logRevision: revision.n,
         installedAtMs: install?.installedAtMs ?? nowMs,
         lastImportAtMs: revision.lastImportAtMs,
-        // THE BOUNDARY. The stored key is `lastLocalWriteAtMs` and stays that
-        // way — renaming it would need a schema migration for a cosmetic gain.
-        // The DOMAIN name says what the value means after note 7's fix: only
-        // an injection append stamps it, so "write" was false the moment
-        // `appendReading` stopped.
-        lastLocalInjectionAtMs: revision.lastLocalWriteAtMs,
+        // No translation here any more. The stored key WAS `lastLocalWriteAtMs`
+        // and this line existed to rename it on the way past; the store says
+        // `lastLocalInjectionAtMs` now, which is what note 7 established the
+        // value actually means — only an injection append stamps it.
+        lastLocalInjectionAtMs: revision.lastLocalInjectionAtMs,
         acks: new Set(acks.map((row) => row.k)),
         // §6.7 v19 — A MISSING ROW READS AS `unanswered`. The row is not seeded
         // at database creation: an install predating the feature, or a partial
@@ -410,7 +409,7 @@ export async function appendInjection(
       return { kind: 'already_written', logRevision: revision.n } satisfies LogWriteOutcome;
     }
     await add(tx, STORE.log, row);
-    const logRevision = await bumpLogRevision(tx, { lastLocalWriteAtMs: nowMs });
+    const logRevision = await bumpLogRevision(tx, { lastLocalInjectionAtMs: nowMs });
     return { kind: 'written', logRevision } satisfies LogWriteOutcome;
   });
 }
@@ -523,7 +522,7 @@ export function clearTheRecord(db: IDBDatabase): Promise<number> {
       lastJsonExportAtMs: null,
     } satisfies BackupRow);
     // The provenance stamps go with the rows they described.
-    return bumpLogRevision(tx, { lastImportAtMs: null, lastLocalWriteAtMs: null });
+    return bumpLogRevision(tx, { lastImportAtMs: null, lastLocalInjectionAtMs: null });
   });
 }
 

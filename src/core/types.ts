@@ -296,9 +296,20 @@ export interface Injection {
   /** §4.6 — an explicit "not entered" marker, never a substituted zero. */
   readonly bloodSugar: number | null;
   readonly carbs: number;
-  /** The calculated dose, in hundredths (§2.2). */
-  readonly units: number;
-  /** What he actually injected, in hundredths. Defaults to `units` (§7.1). */
+  /**
+   * The CALCULATED dose, in hundredths (§2.2) — what the app worked out, not
+   * what went in.
+   *
+   * **Called `units` until 2026-09-21**, sitting directly beside
+   * `injectedUnits`, and §11.2 carries a whole paragraph about how nearly that
+   * cost: a reviewer pinning `lastDose {units, atMs}` would have pinned the
+   * wrong figure into §7.4's gate, which is §13.7's wrong-oracle class — the
+   * one mutation testing cannot catch. The names say which is which now.
+   *
+   * `readInjection` still accepts a row written as `units`.
+   */
+  readonly calculatedUnits: number;
+  /** What he actually injected, in hundredths. Defaults to the calculated figure (§7.1). */
   readonly injectedUnits: number;
   readonly settingsRevision: number;
   readonly overrodeStacking: boolean;

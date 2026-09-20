@@ -73,7 +73,7 @@ function injection(overrides: Partial<Injection> = {}): Injection {
     timestamp: NOW - HOUR,
     bloodSugar: 330,
     carbs: 50,
-    units: 1100,
+    calculatedUnits: 1100,
     injectedUnits: 1100,
     settingsRevision: 1,
     overrodeStacking: false,

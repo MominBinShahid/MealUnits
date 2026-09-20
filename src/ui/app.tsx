@@ -488,7 +488,7 @@ export async function start(host: Host): Promise<void> {
       timestamp,
       bloodSugar: reading.state === 'valid' ? reading.value : null,
       carbs: carbs.state === 'valid' ? carbs.value : 0,
-      units: outcome.hundredths,
+      calculatedUnits: outcome.hundredths,
       injectedUnits: injected,
       // §11.3's ROW STAMP — from the committed SNAPSHOT, never a fresh read of
       // the store. Cross-tab those diverge inside the poll window.

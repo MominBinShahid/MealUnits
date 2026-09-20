@@ -142,7 +142,7 @@ export interface BackupRow {
  * `meta`, which is exactly why it survived: a missing declaration that everyone
  * guesses correctly reads as a decision.
  *
- * `lastImportAtMs` and `lastLocalWriteAtMs` ride alongside because §7.5's
+ * `lastImportAtMs` and `lastLocalInjectionAtMs` ride alongside because §7.5's
  * provenance rule needs both and neither belongs to a single row.
  */
 export interface LogRevisionRow {
@@ -150,14 +150,17 @@ export interface LogRevisionRow {
   readonly n: number;
   readonly lastImportAtMs: number | null;
   /**
-   * THE PERSISTED KEY, deliberately not renamed. The domain calls this
-   * `lastLocalInjectionAtMs` (`StoredState`, `HistoryContext`) because after
-   * note 7's fix only an injection append stamps it — `appendReading` used to
-   * and must not, per §7.8. Renaming the stored key would mean the app's
-   * first data migration for a cosmetic gain, so the translation lives at
-   * `readAll` instead and is commented there.
+   * When this install last appended an INJECTION — not a reading. After note
+   * 7's fix only `appendInjection` stamps it; `appendReading` used to and must
+   * not, per §7.8, because §7.5 asks whether a DOSE is missing.
+   *
+   * Was `lastLocalWriteAtMs` until 2026-09-21, and the domain had been
+   * translating around it at `readAll` purely to avoid a migration. Renamed
+   * with everything else on Momin's ruling that nobody holds data yet — the
+   * name now says what note 7 established, rather than what the field meant
+   * before it.
    */
-  readonly lastLocalWriteAtMs: number | null;
+  readonly lastLocalInjectionAtMs: number | null;
 }
 
 /** When this install first ran. §7.5: a log predating it is suspect. */

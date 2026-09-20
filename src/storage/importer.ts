@@ -91,10 +91,10 @@ export function importEnvelope(
     // INJECTION of its own. Corrected from "writes a row" with note 7's fix:
     // §7.8 forbids a reading being an input to anything in §11.2's snapshot, and
     // provenance is one, so `appendReading` no longer stamps. The stored key is
-    // still `lastLocalWriteAtMs` (see `schema.ts`); it is deliberately left
+    // still `lastLocalInjectionAtMs` (see `schema.ts`); it is deliberately left
     // alone here, which is what keeps a prior injection's stamp from being
     // erased by a restore.
-    const revision = await get<{ n: number; lastLocalWriteAtMs: number | null }>(
+    const revision = await get<{ n: number; lastLocalInjectionAtMs: number | null }>(
       tx,
       STORE.meta,
       META_KEY.logRevision,
@@ -104,7 +104,7 @@ export function importEnvelope(
       k: META_KEY.logRevision,
       n: nextRevision,
       lastImportAtMs: nowMs,
-      lastLocalWriteAtMs: revision?.lastLocalWriteAtMs ?? null,
+      lastLocalInjectionAtMs: revision?.lastLocalInjectionAtMs ?? null,
     });
 
     return {

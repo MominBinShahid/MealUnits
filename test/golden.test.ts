@@ -30,6 +30,7 @@ const NOW_MS = 1_757_000_000_000; // 2025-09-04T15:33:20Z, arbitrary and fixed
 const MS_PER_HOUR = 3_600_000;
 
 interface GoldenLastDose {
+  /** Mirrors `cases.json`, which §13.8 gates — see `GoldenCase.mode`. */
   units: number;
   atHoursAgo: number;
 }

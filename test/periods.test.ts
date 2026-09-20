@@ -30,7 +30,7 @@ function dose(revision: number, timestamp: number): Injection {
     timestamp,
     bloodSugar: 200,
     carbs: 60,
-    units: 600,
+    calculatedUnits: 600,
     injectedUnits: 600,
     settingsRevision: revision,
     overrodeStacking: false,

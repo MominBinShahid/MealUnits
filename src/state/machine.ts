@@ -182,7 +182,7 @@ export interface FrozenLogPayload {
   readonly timestamp: number;
   readonly bloodSugar: number | null;
   readonly carbs: number;
-  readonly units: number;
+  readonly calculatedUnits: number;
   readonly injectedUnits: number;
   readonly settingsRevision: number;
   readonly overrodeStacking: boolean;

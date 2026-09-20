@@ -128,7 +128,7 @@ function DoseRow({
           ))}
         </div>
         <div>
-          {COPY.screens.historyDose(units(row.units), units(row.injectedUnits)).map((part) => (
+          {COPY.screens.historyDose(units(row.calculatedUnits), units(row.injectedUnits)).map((part) => (
             <Fragment key={part.label}>
               {part.label}
               <b class="fig">{part.value}</b>
