@@ -18,7 +18,7 @@
     "test:watch": "vitest",
     "mutate": "stryker run",
     "check": "npm run typecheck && npm run lint && npm run test",
-    "smoke": "SMOKE_LAN_URL=${SMOKE_LAN_URL:-http://127.0.0.1:4173/MealUnits/} node tools/smoke.mjs"
+    "smoke": "node tools/smoke.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
