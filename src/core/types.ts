@@ -57,7 +57,7 @@ export interface DosingSettings {
   readonly target: number;
   readonly isf: number;
   readonly icr: number;
-  readonly mode: RoundingMode;
+  readonly roundingMode: RoundingMode;
   /**
    * §8.5 — a row id from `src/data/insulins.ts`, or one of the two sentinels in
    * `core/insulin.ts`. `''` means the question has not been asked; `'unknown'`

@@ -32,13 +32,13 @@ export function request<T>(req: IDBRequest<T>): Promise<T> {
 export function runTransaction<T>(
   db: IDBDatabase,
   stores: readonly string[],
-  mode: IDBTransactionMode,
+  roundingMode: IDBTransactionMode,
   work: (tx: IDBTransaction) => Promise<T> | T,
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     let tx: IDBTransaction;
     try {
-      tx = db.transaction([...stores], mode);
+      tx = db.transaction([...stores], roundingMode);
     } catch (cause: unknown) {
       reject(cause instanceof Error ? cause : new Error(String(cause)));
       return;

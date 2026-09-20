@@ -46,7 +46,7 @@ export function stateToken(logRevision: number, settings: Settings | null): stri
     settings.target,
     settings.isf,
     settings.icr,
-    settings.mode,
+    settings.roundingMode,
     settings.threshold,
   ]
     .map((part) => String(part))

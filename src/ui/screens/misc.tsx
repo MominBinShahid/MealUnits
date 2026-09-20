@@ -755,8 +755,8 @@ export function HowItWorksScreen({
       <h2>{COPY.rounding.title}</h2>
       <p>{COPY.rounding.intro}</p>
       <ul class="list">
-        {COPY.rounding.modes.map(({ mode, name, what }) => (
-          <li key={mode} class="li">
+        {COPY.rounding.modes.map(({ roundingMode, name, what }) => (
+          <li key={roundingMode} class="li">
             <div class="k">
               <b>{name}</b>
               {what}
@@ -775,13 +775,13 @@ export function HowItWorksScreen({
 
 /**
  * The mode's DISPLAY name, not its key. Until 2026-09-14 this screen rendered
- * `settings.mode` raw, so the page built to be photographed and handed to a
+ * `settings.roundingMode` raw, so the page built to be photographed and handed to a
  * doctor read "Doses are rounded to — ceil". The one reader who most needs the
  * setting to be legible got the enum.
  */
-function roundingName(mode: Settings['mode']): string {
-  const found = COPY.rounding.modes.find((entry) => entry.mode === mode);
-  return found === undefined ? mode : found.name;
+function roundingName(roundingMode: Settings['roundingMode']): string {
+  const found = COPY.rounding.modes.find((entry) => entry.roundingMode === roundingMode);
+  return found === undefined ? roundingMode : found.name;
 }
 
 /** §10.6 item 4 — "show my settings as text", made to be photographed. */
@@ -809,7 +809,7 @@ export function SettingsAsTextScreen({
         </li>
         <li class="li">
           <div class="k">{COPY.screens.asTextRounding}</div>
-          <div class="v">{roundingName(settings.mode)}</div>
+          <div class="v">{roundingName(settings.roundingMode)}</div>
         </li>
         <li class="li">
           <div class="k">{COPY.screens.asTextThreshold}</div>

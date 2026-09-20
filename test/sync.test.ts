@@ -15,7 +15,7 @@ const SETTINGS: Settings = {
   target: 150,
   isf: 30,
   icr: 10,
-  mode: 'nearest',
+  roundingMode: 'nearest',
   threshold: 20,
   basalName: 'Lantus',
   basalUnits: 36,
@@ -38,7 +38,7 @@ describe('§11.3 layer 2 polls a TOKEN, not the log revision', () => {
     expect(stateToken(1, { ...SETTINGS, icr: 15 })).not.toBe(base);
     expect(stateToken(1, { ...SETTINGS, isf: 50 })).not.toBe(base);
     expect(stateToken(1, { ...SETTINGS, target: 140 })).not.toBe(base);
-    expect(stateToken(1, { ...SETTINGS, mode: 'half' })).not.toBe(base);
+    expect(stateToken(1, { ...SETTINGS, roundingMode: 'half' })).not.toBe(base);
     expect(stateToken(1, { ...SETTINGS, revision: 2 })).not.toBe(base);
     // §4.3 step 1 lists the threshold explicitly, even though §7.7 keeps it out
     // of `settingsHistory`: it changes whether the dose is shown at all.

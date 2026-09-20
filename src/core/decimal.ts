@@ -9,7 +9,7 @@
  * scaling does not make binary division exact, and it can push a value across a
  * boundary in either direction.
  *
- * §5.2 then pins the answer this module has to give: under the `off` mode,
+ * §5.2 then pins the answer this module has to give: under the `off` roundingMode,
  * -1.495 rounds to -1.50. Scaling by 100 gives exactly -149.5, and `Math.round`
  * breaks that tie toward +infinity, producing -1.49. So the plan's own worked
  * value requires rounding the decimal the number prints as.
@@ -80,7 +80,7 @@ export function toPlainDecimal(value: number): PlainDecimal {
  * result already scaled to an integer — so the caller never has to divide by a
  * power of ten and reintroduce a float (§5.3).
  *
- * §2.2's tie rule, stated once and applied to every mode: whole unit, half unit
+ * §2.2's tie rule, stated once and applied to every roundingMode: whole unit, half unit
  * and the hundredths quantization in `off` all break ties half away from zero.
  */
 export function roundScaledHalfAwayFromZero(value: number, decimals: number): number {

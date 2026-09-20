@@ -34,11 +34,11 @@ function noNegativeZero(hundredths: number): number {
  *            truncating a negative correction makes it LESS negative and
  *            therefore INCREASES the combined dose.
  */
-export function roundToHundredths(units: number, mode: RoundingMode): number {
+export function roundToHundredths(units: number, roundingMode: RoundingMode): number {
   if (!Number.isFinite(units)) {
     throw new RangeError('roundToHundredths received a non-finite value');
   }
-  switch (mode) {
+  switch (roundingMode) {
     case 'nearest':
       return noNegativeZero(
         roundScaledHalfAwayFromZero(units, WHOLE_UNIT_DIGITS) * HUNDREDTHS_SCALE,
@@ -61,8 +61,8 @@ export function roundToHundredths(units: number, mode: RoundingMode): number {
  * §6.4's one-increment allowance, in hundredths, so rounding cannot make an
  * attainable maximum look impossible.
  */
-export function incrementHundredths(mode: RoundingMode): number {
-  switch (mode) {
+export function incrementHundredths(roundingMode: RoundingMode): number {
+  switch (roundingMode) {
     case 'nearest':
     case 'ceil':
     case 'floor':
@@ -81,6 +81,6 @@ export function incrementHundredths(mode: RoundingMode): number {
  * EVERY dose, always toward low blood sugar. On a 20-unit meal dose that is 5%
  * and irrelevant; on a 1-unit correction it is a 100% overdose.
  */
-export function modeNeedsAcknowledgement(mode: RoundingMode): boolean {
-  return mode === 'ceil';
+export function modeNeedsAcknowledgement(roundingMode: RoundingMode): boolean {
+  return roundingMode === 'ceil';
 }

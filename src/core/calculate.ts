@@ -5,7 +5,7 @@
  *   meal       = carbs / ICR                     // exact, never negative, NOT quantized
  *   total      = correction + meal               // exact
  *   clamped    = max(0, total)                   // clamp the TOTAL, never the correction
- *   dose       = roundToIncrement(clamped, mode) // see §5
+ *   dose       = roundToIncrement(clamped, roundingMode) // see §5
  *
  * §2.1's non-negotiable rules, in the order they bite:
  *   1. The correction may be negative and is SUBTRACTED from the meal dose.

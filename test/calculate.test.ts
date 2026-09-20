@@ -9,7 +9,7 @@ const PRESCRIPTION: DosingSettings = {
   target: 150,
   isf: 30,
   icr: 10,
-  mode: 'nearest',
+  roundingMode: 'nearest',
   insulinId: 'humulin-r',
 };
 const NO_SUPPRESSION = false;

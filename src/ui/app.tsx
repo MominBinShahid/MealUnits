@@ -385,7 +385,7 @@ export async function start(host: Host): Promise<void> {
       return parsed.state === 'valid' ? parsed.value : null;
     };
     const acknowledged: string[] = [];
-    if (modeNeedsAcknowledgement(draft.mode)) acknowledged.push(ackKeys.forMode(draft.mode));
+    if (modeNeedsAcknowledgement(draft.roundingMode)) acknowledged.push(ackKeys.forMode(draft.roundingMode));
     for (const field of ['target', 'isf', 'icr', 'threshold', 'basalUnits'] as const) {
       acknowledged.push(ackKeys.forSetting(field, numeric(field, draft[field])));
     }
@@ -393,7 +393,7 @@ export async function start(host: Host): Promise<void> {
       target: numeric('target', draft.target),
       isf: numeric('isf', draft.isf),
       icr: numeric('icr', draft.icr),
-      mode: draft.mode,
+      roundingMode: draft.roundingMode,
       insulinId: draft.insulinId,
       insulinName: brandFor(draft.insulinId),
       // §4.1 — empty means "use the class range" and 0 means "at the start of
@@ -719,7 +719,7 @@ export async function start(host: Host): Promise<void> {
           target: current.target,
           isf: current.isf,
           icr: current.icr,
-          mode: current.mode,
+          roundingMode: current.roundingMode,
           insulinId: id,
           insulinName: brandFor(id),
           // The reader's own wait belonged to the OLD insulin. Cleared rather
@@ -854,10 +854,10 @@ export async function start(host: Host): Promise<void> {
             view.pendingInsulin = null;
             dispatch({ type: 'go', screen: 'insulin_setup' });
           },
-          ceilAcknowledged: stored?.acks.has(ackKeys.forMode(view.draft.mode)) ?? false,
+          ceilAcknowledged: stored?.acks.has(ackKeys.forMode(view.draft.roundingMode)) ?? false,
           advisoryStatus: advisoryStatus(),
           onChange: (field, value) => {
-            view.draft = { ...view.draft, [field]: field === 'mode' ? (value as RoundingMode) : value };
+            view.draft = { ...view.draft, [field]: field === 'roundingMode' ? (value as RoundingMode) : value };
             // §6.2's threshold is DERIVED from the three ratios rather than
             // shipped as one person's 20 — see `deriveThreshold`. It fills in as
             // soon as the three are readable, and stops doing so the moment the
@@ -869,7 +869,7 @@ export async function start(host: Host): Promise<void> {
             // place. Once it is theirs it stays theirs, even if they go back and
             // change a ratio.
             if (field === 'threshold') view.thresholdIsDerived = false;
-            else if (view.thresholdIsDerived && field !== 'mode') {
+            else if (view.thresholdIsDerived && field !== 'roundingMode') {
               const derived = derivedThresholdFor(view.draft);
               view.draft = {
                 ...view.draft,
@@ -880,7 +880,7 @@ export async function start(host: Host): Promise<void> {
           },
           onSave: () => { void saveSettings(); },
           onAcknowledgeCeil: () => {
-            if (db !== null) void acknowledge(db, ackKeys.forMode(view.draft.mode), host.now()).then(refresh);
+            if (db !== null) void acknowledge(db, ackKeys.forMode(view.draft.roundingMode), host.now()).then(refresh);
           },
           onOpenClear: () => { dispatch({ type: 'go', screen: 'export' }); view.clearConfirming = null; showClear = true; render(); },
           onOpenExport: () => { showClear = false; dispatch({ type: 'go', screen: 'export' }); },

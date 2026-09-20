@@ -800,7 +800,7 @@ describe('§10.6 back from "How this works" returns where you came from', () => 
   });
 
   it('prints the rounding mode by name, not by its key', async () => {
-    // The screen made to be PHOTOGRAPHED for a doctor rendered `settings.mode`
+    // The screen made to be PHOTOGRAPHED for a doctor rendered `settings.roundingMode`
     // raw until 2026-09-14, so it read "Doses are rounded to — nearest", and on
     // the two modes that matter most "— ceil" and "— off". The one reader who
     // most needs the setting to be legible got the enum.

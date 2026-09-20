@@ -76,6 +76,13 @@ interface GoldenCase {
   name: string;
   note: string;
   input: GoldenInput;
+  /**
+   * `mode`, NOT `roundingMode`. This mirrors `test/golden/cases.json`, which is
+   * a stored fixture format like the export envelope — renaming the domain
+   * field does not rename a file on disk, and §13.8 gates any edit to that file
+   * behind a GOLDEN-CHANGE rationale. A key rename would be exactly such an
+   * edit, for no gain: nobody reads this name looking for the rounding rule.
+   */
   mode: string;
   expected: GoldenExpected;
 }
@@ -97,7 +104,7 @@ function buildSnapshot(input: GoldenInput, mode: string): Snapshot {
     target: input.target,
     isf: input.isf,
     icr: input.icr,
-    mode: mode as RoundingMode,
+    roundingMode: mode as RoundingMode,
     threshold: input.threshold,
     basalName: input.basalName ?? 'Lantus',
     basalUnits: input.basalUnits ?? 36,

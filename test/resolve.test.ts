@@ -19,7 +19,7 @@ function settings(overrides: Partial<Settings> = {}): Settings {
     target: 150,
     isf: 30,
     icr: 10,
-    mode: 'nearest',
+    roundingMode: 'nearest',
     threshold: 20,
     basalName: 'Lantus',
     basalUnits: 36,
@@ -105,7 +105,7 @@ describe('§4.4 the settings gate refuses to calculate, field by field', () => {
 
   it('rejects a rounding mode the store should never have held', () => {
     const outcome = resolve(
-      snapshot('200', '60', { settings: settings({ mode: 'closest' as RoundingMode }) }),
+      snapshot('200', '60', { settings: settings({ roundingMode: 'closest' as RoundingMode }) }),
     );
     expect(outcome.kind).toBe('invalid_settings');
     if (outcome.kind !== 'invalid_settings') return;
@@ -155,7 +155,7 @@ describe('§6.2 the operand is EITHER the exact total OR the rounded dose', () =
     // threshold 20.5, mode floor. carbs 205 gives a meal of exactly 20.5 and no
     // correction, so the exact total REACHES 20.5 while floor rounds to 20 and
     // does not. Without the exact-total operand this reveals 20 units silently.
-    const s = settings({ threshold: 20.5, mode: 'floor' });
+    const s = settings({ threshold: 20.5, roundingMode: 'floor' });
     const withGate = resolve(snapshot('150', '205', { settings: s, largeDoseConfirmed: false }));
     expect(withGate.kind).toBe('confirm_required');
 
@@ -168,14 +168,14 @@ describe('§6.2 the operand is EITHER the exact total OR the rounded dose', () =
   it('fires on the rounded dose when the exact total alone would not', () => {
     // threshold 20, mode ceil. carbs 191 gives an exact total of 19.1, which
     // does not reach 20 — but ceil rounds it to 20, which does.
-    const s = settings({ mode: 'ceil' });
+    const s = settings({ roundingMode: 'ceil' });
     expect(resolve(snapshot('150', '191', { settings: s, largeDoseConfirmed: false })).kind).toBe(
       'confirm_required',
     );
   });
 
   it('does not fire one hundredth below the threshold on either operand', () => {
-    const s = settings({ threshold: 20.5, mode: 'floor' });
+    const s = settings({ threshold: 20.5, roundingMode: 'floor' });
     expect(resolve(snapshot('150', '204.9', { settings: s, largeDoseConfirmed: false })).kind).toBe(
       'dose',
     );

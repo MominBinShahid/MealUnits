@@ -113,7 +113,10 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
               target: settingsRow.target,
               isf: settingsRow.isf,
               icr: settingsRow.icr,
-              mode: settingsRow.mode,
+              // `?? settingsRow.mode` is the ONLY thing left of the old
+              // spelling: a row written before 2026-09-21 still opens. Three
+              // characters against losing a prescription.
+              roundingMode: settingsRow.roundingMode ?? settingsRow.mode,
               threshold: settingsRow.threshold,
               basalName: settingsRow.basalName,
               basalUnits: settingsRow.basalUnits,
@@ -150,7 +153,14 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
         // to every historical period. A prescription from before the question
         // existed genuinely has no insulin recorded, and `''` is how the export
         // prints "not recorded" rather than attributing one.
-        settingsHistory: history.map((row) => ({ ...row, insulinId: row.insulinId ?? '' })),
+        // THE BOUNDARY, for both fields: the stored row says `mode` and carries
+        // no `insulinId` before 2026-09-20; the domain says `roundingMode` and
+        // reads a missing insulin as "never asked".
+        settingsHistory: history.map(({ mode, ...row }) => ({
+          ...row,
+          roundingMode: row.roundingMode ?? mode,
+          insulinId: row.insulinId ?? '',
+        })),
         log: validated,
         droppedStoredRows: log.length - validated.length,
         readings,
@@ -185,7 +195,7 @@ export interface SettingsCommit {
   readonly target: number;
   readonly isf: number;
   readonly icr: number;
-  readonly mode: RoundingMode;
+  readonly roundingMode: RoundingMode;
   /** §8.5 — a row id from `src/data/insulins.ts`, or one of the two sentinels. */
   readonly insulinId: string;
   /** §8.5 — the brand in words, for the recovery block a human copies down. */
@@ -233,7 +243,7 @@ function sameProvenance(previous: SettingsHistoryRow, commit: SettingsCommit): b
     target: commit.target,
     isf: commit.isf,
     icr: commit.icr,
-    mode: commit.mode,
+    roundingMode: commit.roundingMode,
     insulinId: commit.insulinId,
     imported: previous.imported,
   };
@@ -313,7 +323,7 @@ export function commitSettings(db: IDBDatabase, commit: SettingsCommit): Promise
       target: commit.target,
       isf: commit.isf,
       icr: commit.icr,
-      mode: commit.mode,
+      roundingMode: commit.roundingMode,
       threshold: commit.threshold,
       basalName: commit.basalName,
       basalUnits: commit.basalUnits,
@@ -333,7 +343,7 @@ export function commitSettings(db: IDBDatabase, commit: SettingsCommit): Promise
         target: commit.target,
         isf: commit.isf,
         icr: commit.icr,
-        mode: commit.mode,
+        roundingMode: commit.roundingMode,
         insulinId: commit.insulinId,
         imported: false,
       } satisfies SettingsHistoryRow);

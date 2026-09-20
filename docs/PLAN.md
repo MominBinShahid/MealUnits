@@ -3833,6 +3833,37 @@ export const RECOVERY_FORMAT = 2;
 
 Every value carries a comment naming what it does and which section decided it.
 
+#### `mode` became `roundingMode` EVERYWHERE — 2026-09-21 [Momin]
+
+*"Call it `roundingMode` I guess, because I will never be able to get it from `mode` only."*
+
+It reaches every type, screen and test, **and the stored rows, the export format and §5.1's
+acknowledgement key with them.** The first attempt stopped at those three boundaries on §11.3's
+`lastLocalWriteAtMs` precedent — *"renaming the stored key would mean the app's first data
+migration for a cosmetic gain"* — and Momin overruled it on a fact that precedent did not have:
+**nobody is using the app yet.** A name people can read is worth more than compatibility with rows
+that do not exist.
+
+| Renamed | New name | Safety net |
+|---|---|---|
+| `SettingsRow`, `SettingsHistoryRow` | `roundingMode` | `readAll` accepts a row written as `mode` |
+| The export envelope | `roundingMode` | `parseEnvelope` accepts either spelling |
+| §5.1's acknowledgement | `roundingMode:` | **None, on purpose** — a reader who had accepted the ceiling gate is asked once more, which is the safe direction for a safety gate and one tap |
+
+The fallbacks cost one `??` each and are the difference between a clearer name and somebody's
+prescription refusing to load. They can go the day that data is gone.
+
+**THE LESSON IS NOT THE RENAME.** The file format reached for it *before anybody decided it should*:
+`Envelope['settings']` was `Omit<Settings, 'revision'>`, so it tracked the domain type — rename the
+field and every export silently changes shape, with nothing failing until an old file is opened. A
+key-set assertion caught it. It is `ExportedSettings` now, declared independently, for the same
+reason `ExportedSettingsHistory` always was: **a serialisation format that is an `Omit<>` of a live
+type is a format that moves when the type moves.**
+
+**Every persisted name is listed in §11.3's schema block**, which is the place to look before
+renaming one. The question to ask is not "is this name good" but "who already has data under it" —
+and today, for this app, the answer happens to be nobody.
+
 #### Reference data is not configuration — RULED BY MOMIN 2026-09-12
 
 **His ruling, on being asked where a food table belongs:** *"these are not configurations but just
