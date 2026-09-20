@@ -21,6 +21,9 @@ import { formatClockTime } from '../../core/calendar.js';
 import { formatHundredths } from '../../core/decimal.js';
 import { elapsedHours } from '../../core/stacking.js';
 import { eatWindow } from '../../core/timing.js';
+import { classOf, eatDelayFor } from '../../core/insulin.js';
+import type { EatDelay } from '../../core/insulin.js';
+import { INSULINS } from '../../data/insulins.js';
 import type { JSX } from 'preact';
 import { COPY, units } from '../copy.js';
 import { Advisories, Button, Keypad, Readout, StepDots } from '../components.js';
@@ -532,6 +535,29 @@ function BoundFailure({ handlers }: { readonly handlers: CalculatorHandlers }): 
   );
 }
 
+/**
+ * §8.5 — the wait this reader should be shown, or null when the app must not
+ * name one.
+ *
+ * Read off the SNAPSHOT wherever there is one. §11.2's rule is that a result is
+ * derived from a committed snapshot and from nothing else, and the wait is part
+ * of the result: a settings change between working the dose out and injecting
+ * it must not move the clock underneath the number already on screen.
+ */
+function eatDelayOf(state: AppState): EatDelay | null {
+  const settings = state.snapshot?.settings ?? state.settings;
+  if (settings === null || settings === undefined) return null;
+  const insulinClass = state.snapshot?.insulinClass ?? classOf(INSULINS, settings.insulinId);
+  return eatDelayFor(insulinClass, settings.eatDelayMinutes);
+}
+
+/** The name on the vial, for the label under the dose. Null for "I don't know". */
+function brandOf(state: AppState): string | null {
+  const settings = state.snapshot?.settings ?? state.settings;
+  if (settings === null || settings === undefined) return null;
+  return INSULINS.find((row) => row.id === settings.insulinId)?.brand ?? null;
+}
+
 function TimingLine({
   state,
   outcome,
@@ -551,23 +577,36 @@ function TimingLine({
   // distracted, inject at 7:35, eat at the displayed 7:40 — a five-minute lag
   // instead of thirty, and nothing on screen would indicate the number went
   // stale.
+  const delay = eatDelayOf(state);
   if (state.committing === null) {
-    return (
+    // §8.5 — with no insulin named there is no wait to state, and the app says
+    // so instead of rendering one insulin's clock to everyone. It still says
+    // "inject now", because the dose in front of the reader is theirs.
+    return delay === null ? (
       <div class="flag mint">
-        <b>{COPY.timing.before}</b>
+        <b>{COPY.timing.beforeUnknown}</b>
+        {COPY.timing.beforeUnknownDetail}
+      </div>
+    ) : (
+      <div class="flag mint">
+        <b>{COPY.timing.before(delay)}</b>
         {COPY.timing.beforeDetail}
       </div>
     );
   }
-  const window = eatWindow(state.committing.timestamp);
+  const injectedAt = formatClockTime(state.committing.timestamp, timeZone);
+  if (delay === null) {
+    return <div class="flag mint"><b>{COPY.timing.injectedAtOnly(injectedAt)}</b></div>;
+  }
+  // A zero-width window is an instruction, not a time to wait for: "eat around
+  // 7:35" beside "injected 7:35" reads as a coincidence rather than as advice.
+  if (delay[1] === 0) {
+    return <div class="flag mint"><b>{COPY.timing.injectedAtEatNow(injectedAt)}</b></div>;
+  }
+  const window = eatWindow(state.committing.timestamp, delay);
   return (
     <div class="flag mint">
-      <b>
-        {COPY.timing.injectedAt(
-          formatClockTime(state.committing.timestamp, timeZone),
-          formatClockTime(window.toMs, timeZone),
-        )}
-      </b>
+      <b>{COPY.timing.injectedAt(injectedAt, formatClockTime(window.toMs, timeZone))}</b>
     </div>
   );
 }
@@ -595,7 +634,7 @@ function ResultScreen({
       <div role="status">
         <Readout
           value={formatHundredths(outcome.hundredths)}
-          unit={COPY.calculator.doseUnit}
+          unit={COPY.calculator.doseUnit(brandOf(state))}
           stale={state.expired}
         />
         {state.expired ? (
@@ -791,7 +830,8 @@ function LoggedScreen({
   readonly handlers: CalculatorHandlers;
 }): JSX.Element {
   const payload = state.committing;
-  const window = payload === null ? null : eatWindow(payload.timestamp);
+  const delay = eatDelayOf(state);
+  const window = payload === null || delay === null ? null : eatWindow(payload.timestamp, delay);
   return (
     <div class="screen">
       <StepDots current={TOTAL_STEPS} total={TOTAL_STEPS} label={COPY.calculator.stepLogged} />
@@ -805,9 +845,15 @@ function LoggedScreen({
           </div>
           {/* §7.2 — the timer starts REGARDLESS of the write, because the
               injection happened and he still needs the eat-at guidance. */}
+          {/* §8.5 — no window, no line. A zero-width one is "eat now" rather
+              than a clock time identical to the injection's. */}
           {window !== null && payload.timingAdvice === 'before' ? (
             <div class="flag mint">
-              <b>{COPY.calculator.eatAround(formatClockTime(window.toMs, handlers.timeZone))}</b>
+              <b>
+                {window.toMs === payload.timestamp
+                  ? COPY.calculator.eatNow
+                  : COPY.calculator.eatAround(formatClockTime(window.toMs, handlers.timeZone))}
+              </b>
             </div>
           ) : null}
           {state.save.kind === 'pending' ? <div class="flag">{COPY.log.pending}</div> : null}

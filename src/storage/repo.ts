@@ -5,7 +5,7 @@
  * on `log`, so it cannot clobber settings and settings cannot clobber it."
  */
 
-import { DELETE_CONFIRM_WINDOW_HOURS, SCHEMA_VERSION } from '../config.js';
+import { DELETE_CONFIRM_WINDOW_HOURS, RECOVERY_FORMAT, SCHEMA_VERSION } from '../config.js';
 import { isInjection } from '../core/types.js';
 import type { Injection, LogRow, Reading, RoundingMode, Settings, Tombstone } from '../core/types.js';
 import type { SettingsPeriod } from '../core/periods.js';
@@ -118,6 +118,16 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
               basalName: settingsRow.basalName,
               basalUnits: settingsRow.basalUnits,
               basalTiming: settingsRow.basalTiming,
+              // §8.5 — a row written before 2026-09-20 has no insulin on it,
+              // and `''` is `UNANSWERED_INSULIN`: the state that MAKES THE APP
+              // ASK. That is the entire migration for this field, and it is the
+              // behaviour §8.5 asked for — an existing install answers the
+              // question on next open like everyone else.
+              insulinId: settingsRow.insulinId ?? '',
+              // Null is this field's own "not given", so a missing one reads
+              // back as the class range standing. Same shape, one level of
+              // optionality rather than two.
+              eatDelayMinutes: settingsRow.eatDelayMinutes ?? null,
               // §11.3 re-validates on every load, and a row written before this
               // field existed has no name on it. `?? ''` is the SAME empty
               // state the field already models, not a fallback inventing data.
@@ -136,7 +146,11 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
 
       return {
         settings,
-        settingsHistory: history,
+        // §8.5 — the same missing-field read as the settings row above, applied
+        // to every historical period. A prescription from before the question
+        // existed genuinely has no insulin recorded, and `''` is how the export
+        // prints "not recorded" rather than attributing one.
+        settingsHistory: history.map((row) => ({ ...row, insulinId: row.insulinId ?? '' })),
         log: validated,
         droppedStoredRows: log.length - validated.length,
         readings,
@@ -172,6 +186,12 @@ export interface SettingsCommit {
   readonly isf: number;
   readonly icr: number;
   readonly mode: RoundingMode;
+  /** §8.5 — a row id from `src/data/insulins.ts`, or one of the two sentinels. */
+  readonly insulinId: string;
+  /** §8.5 — the brand in words, for the recovery block a human copies down. */
+  readonly insulinName: string;
+  /** §8.5 — the reader's own pre-meal wait, or null for the class range. */
+  readonly eatDelayMinutes: number | null;
   readonly threshold: number;
   readonly basalName: string;
   readonly basalUnits: number;
@@ -188,7 +208,7 @@ function recoveryFor(commit: SettingsCommit): RecoveryBlock {
   // evolving payload. "A parsed integer does not reveal whether 150 means units,
   // hundredths or mg/dL."
   return {
-    recoveryFormat: 1,
+    recoveryFormat: RECOVERY_FORMAT,
     // §11.3 — the recovery block is what he copies down off the fail-closed
     // screen, so whose record it is belongs on it.
     personName: commit.personName,
@@ -198,6 +218,11 @@ function recoveryFor(commit: SettingsCommit): RecoveryBlock {
     basalInsulinName: commit.basalName,
     basalUnitsPerDay: commit.basalUnits,
     basalTiming: commit.basalTiming,
+    // The BRAND, not the id. This block is read off a screen and typed back in
+    // by a person; `novorapid` is not what the box says and not what they would
+    // recognise, which is the same reason the units are spelled out beside
+    // every number above.
+    mealtimeInsulin: commit.insulinName,
   };
 }
 
@@ -231,6 +256,8 @@ export function commitSettings(db: IDBDatabase, commit: SettingsCommit): Promise
       basalName: commit.basalName,
       basalUnits: commit.basalUnits,
       basalTiming: commit.basalTiming,
+      insulinId: commit.insulinId,
+      eatDelayMinutes: commit.eatDelayMinutes,
     };
     await put(tx, STORE.settings, settings);
 
@@ -243,6 +270,7 @@ export function commitSettings(db: IDBDatabase, commit: SettingsCommit): Promise
       isf: commit.isf,
       icr: commit.icr,
       mode: commit.mode,
+      insulinId: commit.insulinId,
       imported: false,
     } satisfies SettingsHistoryRow);
 

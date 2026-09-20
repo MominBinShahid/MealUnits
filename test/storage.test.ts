@@ -56,6 +56,9 @@ const PRESCRIPTION = {
   basalName: 'Lantus',
   basalUnits: 36,
   basalTiming: 'early morning, before breakfast', personName: '',
+  insulinId: 'humulin-r',
+  insulinName: 'Humulin R',
+  eatDelayMinutes: null,
   acknowledged: [],
   nowMs: NOW,
 };
@@ -225,6 +228,7 @@ describe('§11.3 the allocation rule', () => {
           isf: 30,
           icr: 12,
           mode: 'nearest',
+          insulinId: 'humulin-r',
           imported: true,
         } satisfies SettingsHistoryRow));
       }
@@ -255,6 +259,7 @@ describe('§11.3 the allocation rule', () => {
           isf: 30,
           icr: 10,
           mode: 'nearest',
+            insulinId: 'humulin-r',
             imported: false,
           } satisfies SettingsHistoryRow),
         ),
@@ -271,8 +276,16 @@ describe('§11.3 the allocation rule', () => {
     );
     // §11.3 — fixed field names and EXPLICIT UNITS, so an older build cannot
     // read 150 and guess what it counts.
+    //
+    // §8.5 added `mealtimeInsulin` and the format went to 2 with it, which is
+    // what "versioned independently of the evolving payload" is FOR: an older
+    // build reading a 2 refuses to present the numbers as verified settings
+    // rather than rendering a block it only partly understands. The value is
+    // the BRAND, because this block is copied off a screen by a person and
+    // `humulin-r` is not what the box says.
     expect(envelope?.recovery).toEqual({
-      recoveryFormat: 1,
+      recoveryFormat: 2,
+      mealtimeInsulin: 'Humulin R',
       targetMgDl: 150,
       oneUnitLowersMgDl: 30,
       oneUnitCoversGramsCarbohydrate: 10,
@@ -302,6 +315,7 @@ describe('a failed write rejects with the cause, not with a second failure', () 
           isf: 30,
           icr: 10,
           mode: 'nearest',
+          insulinId: 'humulin-r',
           imported: false,
         } satisfies SettingsHistoryRow),
       ),

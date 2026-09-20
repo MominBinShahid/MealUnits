@@ -18,14 +18,9 @@
  * board.
  */
 
-import {
-  CLOCK_SKEW_TOLERANCE_HOURS,
-  HUNDREDTHS_SCALE,
-  MS_PER_HOUR,
-  STACK_ADVISE_HOURS,
-  STACK_SUPPRESS_HOURS,
-} from '../config.js';
+import { CLOCK_SKEW_TOLERANCE_HOURS, HUNDREDTHS_SCALE, MS_PER_HOUR } from '../config.js';
 import { roundScaledHalfAwayFromZero } from './decimal.js';
+import type { StackWindows } from './insulin.js';
 import type { LastDose } from './types.js';
 
 /**
@@ -40,11 +35,11 @@ import type { LastDose } from './types.js';
  * suppressed is applied in full on top of about 6 units still on board.
  */
 export type ElapsedCase =
-  /** 0 to 4 h. §7.4's suppression branch. */
+  /** Inside the suppression window. §7.4's suppression branch. */
   | 'within_suppress_window'
-  /** 4 to 12 h inclusive. Applied in full, informational line. */
+  /** Past suppression, up to and including the advise window. Applied in full, informational line. */
   | 'within_advise_window'
-  /** Over 12 h. Applied in full, no line. */
+  /** Past the advise window. Applied in full, no line. */
   | 'too_old'
   /** -1 h to 0. Small forward skew, treated as elapsed zero. Safe direction. */
   | 'skewed_to_zero'
@@ -53,11 +48,18 @@ export type ElapsedCase =
   /** There is no record at all. */
   | 'no_record';
 
-const SUPPRESS_MS = STACK_SUPPRESS_HOURS * MS_PER_HOUR;
-const ADVISE_MS = STACK_ADVISE_HOURS * MS_PER_HOUR;
 const SKEW_TOLERANCE_MS = CLOCK_SKEW_TOLERANCE_HOURS * MS_PER_HOUR;
 
-export function classifyElapsed(lastDose: LastDose | null, nowMs: number): ElapsedCase {
+/**
+ * @param windows §8.5 — the windows for the insulin actually on board, from
+ *   `effectiveWindows`. They used to be module constants holding Humulin R's
+ *   four and twelve hours, applied to every reader.
+ */
+export function classifyElapsed(
+  lastDose: LastDose | null,
+  nowMs: number,
+  windows: StackWindows,
+): ElapsedCase {
   if (lastDose === null) return 'no_record';
   if (!Number.isFinite(lastDose.atMs) || !Number.isFinite(nowMs)) return 'excluded_future';
 
@@ -68,8 +70,8 @@ export function classifyElapsed(lastDose: LastDose | null, nowMs: number): Elaps
   // suppression branch. That is the safe direction, and it is a decision rather
   // than an accident of a sign.
   if (elapsed < 0) return 'skewed_to_zero';
-  if (elapsed < SUPPRESS_MS) return 'within_suppress_window';
-  if (elapsed <= ADVISE_MS) return 'within_advise_window';
+  if (elapsed < windows.suppressMs) return 'within_suppress_window';
+  if (elapsed <= windows.adviseMs) return 'within_advise_window';
   return 'too_old';
 }
 
@@ -111,8 +113,9 @@ export function decideStacking(
   exactCorrectionUnits: number,
   isf: number,
   stackingOverride: boolean,
+  windows: StackWindows,
 ): StackingDecision {
-  const elapsedCase = classifyElapsed(lastDose, nowMs);
+  const elapsedCase = classifyElapsed(lastDose, nowMs, windows);
   const inSuppressWindow =
     elapsedCase === 'within_suppress_window' || elapsedCase === 'skewed_to_zero';
 

@@ -13,13 +13,14 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { ConfigValues } from '../src/config.js';
+import type { ClassTiming, ConfigValues } from '../src/config.js';
 import {
   DEFAULT_MODE,
   DELETE_CONFIRM_WINDOW_HOURS,
   HYPO_LEVEL_1,
   HYPO_LEVEL_2,
   INCREMENT,
+  INSULIN_TIMING,
   KETONE_ADVISORY,
   RANGE,
   STACK_ADVISE_HOURS,
@@ -31,6 +32,21 @@ import {
   checkConfig,
   configSelfCheck,
 } from '../src/config.js';
+
+/**
+ * §8.5's table, built ROW BY ROW rather than spread from `SHIPPED`.
+ *
+ * `INSULIN_TIMING` is imported directly for the same module-scope reason the
+ * cases below spell their rows out: these live outside any `it`, and a property
+ * access on a mutated `SHIPPED` is an import-time TypeError, which loads no
+ * tests and reads as a surviving mutant rather than a killed one.
+ */
+const TIMING = INSULIN_TIMING;
+const timing = (
+  eatDelayMinutes: readonly [number, number],
+  stackSuppressHours: number,
+  stackAdviseHours: number,
+): ClassTiming => ({ eatDelayMinutes, stackSuppressHours, stackAdviseHours });
 
 describe('§11.8 the config self-check', () => {
   it('reports nothing on the shipped configuration', () => {
@@ -205,7 +221,55 @@ describe('§11.8 the self-check catches what it claims to catch', () => {
     [
       'the eat-delay window reversed',
       { ...SHIPPED, eatDelayMinutes: [30, 20] as const },
-      /not an ordered positive pair/,
+      /is not INSULIN_TIMING.regular's/,
+    ],
+    // §8.5 — the rows are written out in full rather than spread from
+    // `SHIPPED.insulinTiming`. This array is built at MODULE SCOPE, and a
+    // property access on it turns a mutated `SHIPPED` into an import-time
+    // TypeError: the file then loads no tests at all, which the mutation
+    // runner reports as SURVIVED rather than killed. Spreads are safe
+    // (`{...undefined}` is `{}`); `SHIPPED.insulinTiming.rapid` is not.
+    [
+      '§8.5 — a CLASS whose eat delay is reversed',
+      { ...SHIPPED, insulinTiming: { ...TIMING, rapid: timing([10, 5], 4, 12) } },
+      /INSULIN_TIMING.rapid: eat delay is not an ordered non-negative pair/,
+    ],
+    [
+      '§8.5 — a class range the reader could not type back in',
+      { ...SHIPPED, insulinTiming: { ...TIMING, regular: timing([20, 90], 4, 12) } },
+      /escapes RANGE.eatDelay/,
+    ],
+    [
+      '§8.5 — a class whose stacking windows are the wrong way round',
+      { ...SHIPPED, insulinTiming: { ...TIMING, ultra_rapid: timing([0, 0], 12, 4) } },
+      /INSULIN_TIMING.ultra_rapid: stacking windows are out of order/,
+    ],
+    [
+      '§8.5 — a class whose stacking windows are EQUAL, which is not ordered',
+      { ...SHIPPED, insulinTiming: { ...TIMING, rapid: timing([5, 10], 12, 12) } },
+      /INSULIN_TIMING.rapid: stacking windows are out of order/,
+    ],
+    // The alias checks, one side at a time. Changing BOTH ends of the pair at
+    // once cannot tell which half of the comparison is live.
+    [
+      '§8.5 — the eat-delay alias with only its LOWER end moved',
+      { ...SHIPPED, eatDelayMinutes: [25, 30] as const },
+      /is not INSULIN_TIMING.regular's/,
+    ],
+    [
+      '§8.5 — the eat-delay alias with only its UPPER end moved',
+      { ...SHIPPED, eatDelayMinutes: [20, 35] as const },
+      /is not INSULIN_TIMING.regular's/,
+    ],
+    [
+      '§8.5 — only the suppression constant re-pointed away from the regular row',
+      { ...SHIPPED, stackSuppressHours: 2 },
+      /are not INSULIN_TIMING.regular's/,
+    ],
+    [
+      '§8.5 — only the advise constant re-pointed away from the regular row',
+      { ...SHIPPED, stackAdviseHours: 10, deleteConfirmWindowHours: 10 },
+      /are not INSULIN_TIMING.regular's/,
     ],
     [
       'a low divisor that would fire on every meal',
@@ -338,17 +402,49 @@ describe('§11.8 the self-check is exact at every boundary it compares on', () =
     expect(checkConfig(justAbove).join(' ')).not.toMatch(/zero divisor/);
   });
 
-  it('an eat-delay lower end of exactly zero is not positive', () => {
-    expect(checkConfig({ ...SHIPPED, eatDelayMinutes: [0, 30] as const }).join(' ')).toMatch(
-      /not an ordered positive pair/,
-    );
-    expect(checkConfig({ ...SHIPPED, eatDelayMinutes: [1, 30] as const })).toEqual([]);
+  /**
+   * §8.5 INVERTED THESE TWO, and the inversion is the point rather than a
+   * relaxation.
+   *
+   * The check used to demand `lo > 0 && lo < hi`, which was right when there
+   * was one row and it was Humulin R's. Both halves are now wrong about a real
+   * label: Fiasp and Lyumjev say "at the start of the meal", which is the pair
+   * [0, 0] — zero AND equal. A check that rejected it would reject the one
+   * instruction that states an exact moment.
+   *
+   * What replaces them is `0 <= lo <= hi`, plus the bound that the pair must
+   * fit inside the field the reader can edit. The cases above show both
+   * failing.
+   */
+  it('§8.5 — an eat delay of exactly zero is an INSTRUCTION, not a missing value', () => {
+    const atTheMeal = {
+      ...SHIPPED,
+      insulinTiming: { ...TIMING, ultra_rapid: timing([0, 0], 4, 12) },
+    };
+    expect(checkConfig(atTheMeal)).toEqual([]);
+    // And that is what ships, rather than a value the test invented.
+    expect(SHIPPED.insulinTiming.ultra_rapid.eatDelayMinutes).toEqual([0, 0]);
   });
 
-  it('an eat-delay pair whose ends are EQUAL is not ordered', () => {
-    expect(checkConfig({ ...SHIPPED, eatDelayMinutes: [30, 30] as const }).join(' ')).toMatch(
-      /not an ordered positive pair/,
-    );
+  it('§8.5 — a class range that ends exactly ON the editable ceiling is fine', () => {
+    // The boundary the `escapes RANGE.eatDelay` case sits just outside. A `>=`
+    // here would refuse a prefill the reader's own field accepts.
+    const [, ceiling] = SHIPPED.range.eatDelay.hard;
+    expect(
+      checkConfig({
+        ...SHIPPED,
+        insulinTiming: { ...TIMING, regular: timing([20, ceiling], 4, 12) },
+      }).join(' '),
+    ).not.toMatch(/escapes RANGE.eatDelay/);
+  });
+
+  it('§8.5 — a negative eat delay is still refused', () => {
+    expect(
+      checkConfig({
+        ...SHIPPED,
+        insulinTiming: { ...TIMING, rapid: timing([-1, 10], 4, 12) },
+      }).join(' '),
+    ).toMatch(/not an ordered non-negative pair/);
   });
 
   it('a minimum eligible count of exactly zero is reported', () => {

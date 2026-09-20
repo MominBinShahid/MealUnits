@@ -196,6 +196,80 @@ practice. No source states a number for regular insulin specifically.
 The label says inject about 30 minutes before meals; ISPAD says 20–30. **This is the largest practical
 difference from a rapid analog, and advice written for analogs is wrong here.**
 
+### 4.1 The wait is the patient's insulin's — changed 2026-09-20
+
+Until that date the app rendered the 20–30 minutes above to **every** reader, including the ones on a
+rapid analogue whose insulin is already working. That is the one place this app can push somebody
+low, and it was doing it daily. The patient is now asked which mealtime insulin they inject, from a
+list grouped by class, and the wait follows the answer.
+
+| Class | Wait shown | Source |
+|---|---|---|
+| Regular human insulin | 20–30 minutes | ISPAD 2024 ch. 9: *"If regular insulin is used as prandial insulin, it should be administered 20–30 min before each main meal."* Humulin R's own label says *"approximately 30 minutes"*, a point value rather than a range |
+| Rapid analogue (aspart, lispro, glulisine) | 10–15 minutes | ISPAD 2024 ch. 9, **grade [A]**: *"RAI should be given ideally 10–15 min before meals or, at least, immediately before meals, given the strong evidence that the rapid action not only reduces postprandial hyperglycemia but nocturnal hypoglycemia may also be reduced."* The lispro and glulisine labels permit up to 15 |
+| Ultra-rapid analogue (faster aspart, lispro-aabc) | at the start of the meal | Fiasp and Lyumjev US PI both state injection *"at the start of a meal or within 20 minutes after starting a meal"* |
+
+**The rule is: a guideline recommendation where one exists, the label where one does not.** Both
+rows above that carry a range carry ISPAD's; the ultra-rapid row has no guideline figure and takes
+the labels, which agree with each other word for word.
+
+**Verified twice, from the primary documents, on 2026-09-20.** Two independent research passes on
+different models each downloaded the Karger PDF of ISPAD 2024 chapter 9 and the DailyMed and EMA
+label texts. The grade letter, the chapter and the wording above are quoted rather than paraphrased.
+
+### The rapid row shipped at 5–10 minutes for a few hours, and the error is recorded here
+
+It was derived as the intersection of what the three rapid-analogue labels permit — NovoLog *"within
+5-10 minutes before"*, Humalog and Apidra both *"within 15 minutes before"*. The arithmetic is
+correct and the result is meaningless, for three reasons that are each worth stating separately.
+
+1. **A minimum taken over heterogeneous regulatory filings is a fact about the documents, not about
+   insulin.** The 10-minute ceiling came entirely from one label, and that label's EU twin —
+   NovoRapid, same molecule, same manufacturer — says *"immediately before a meal"* instead.
+2. **The safety argument was inverted.** It ran: eating sooner than optimal runs high, which section
+   2.1 tolerates, while eating later than the insulin's onset ends in a hypo — so the narrower,
+   earlier-eating answer is the safe one. ISPAD's grade [A] finding is the opposite for this
+   interval: the LONGER pre-bolus is what reduces nocturnal hypoglycaemia. Slattery et al. 2018 and
+   Mozzillo et al. 2022 both report the earlier bolus improving postprandial control without
+   increasing hypoglycaemia.
+3. **It was incoherent with the row above it**, which already took ISPAD's number. A guideline for
+   one class and a label intersection for the next is two habits rather than a rule.
+
+**A within-class mispick still changes nothing** — tapping Humalog while taking NovoRapid leaves
+every timing correct — which is what the grouped list is for. One outlier is recorded rather than
+accommodated: **Insuman Rapid's SmPC says 15 to 20 minutes**, shorter than the class figure. It
+keeps the class figure, because ISPAD gives 20–30 for regular insulin as a class and preferring one
+manufacturer's filing over a graded guideline is exactly the mistake described above. The Insuman
+reader is served by the editable field.
+
+**One citation corrected in the same pass.** Actrapid's operative SmPC sentence is *"An injection
+should be followed within 30 minutes by a meal or snack containing carbohydrates"* — a deadline on
+when to EAT, not an instruction to inject thirty minutes early. Its patient leaflet is unambiguous:
+*"Eat a meal or snack containing carbohydrates within 30 minutes of the injection **to avoid low
+blood sugar**."* This document previously cited it the other way round. The number does not move —
+20–30 is ISPAD's — but the meal-side framing is worth noting for its own sake: it is the only
+published construct that bounds the gap between injection and food AND names hypoglycaemia as the
+reason.
+
+**The patient may replace the range with their own prescriber's single number**, 0 to 45 minutes.
+Those bounds are **provisional** and are section 14 question 10b. Zero is permitted because an
+ultra-rapid label states it; the ceiling sits above regular insulin's own 30 with room for a
+prescriber who wants longer.
+
+**With no insulin named — "I don't know, or mine isn't listed" — the app states no wait at all.** It
+says it cannot tell them when to eat and to ask their doctor. An absence is never rendered as a fact.
+
+**The stacking windows did NOT move with this.** Section 3's 4 and 12 hours are still applied to
+every class, pending question 10c. Shortening a gate is the dose-raising direction, and holding a
+correction longer than an analogue needs runs high — which section 2.1 tolerates, and which §7.4.1's
+recorded per-dose override releases.
+
+**Premixed insulin, NPH and long-acting analogues are named in the list and route to an exit** that
+says plainly that this calculator does not fit them. Premix has no per-meal carbohydrate ratio for
+the arithmetic to apply to; NPH's 4–12 hour peak is not what the stacking model describes; a
+long-acting analogue is the background insulin section 1.3 already records separately. Omitting them
+would not protect those patients — it would send them to the nearest-looking name on the list.
+
 **The clock starts at the injection, not at the calculation.** An earlier design computed an absolute
 eat-time from the calculation clock, which breaks silently: work the dose out at 7:10, get distracted,
 inject at 7:35, eat at the displayed 7:40 — a five-minute lead instead of thirty, so the meal absorbs
@@ -211,7 +285,80 @@ of the two applies.
 **Correcting at two hours is wrong for this insulin.** Humulin R peaks around three hours, so a
 two-hour correction lands on the rising limb of the meal dose.
 
-**Source:** Humulin R FDA label; ISPAD 2024.
+### 4.2 Concentration — U-100 assumed, stated, and never a setting
+
+**Researched and verified 2026-09-20**, because the app now names a brand and the old sentence
+("the standard strength, and what Humulin R is") stopped being true for most readers.
+
+**The decision is unchanged: assume U-100, warn, offer no setting.** What changed is that there are
+now two independent arguments for it rather than one.
+
+The argument this app has always made: a strength setting that can be set wrong produces exactly the
+2.5-fold error it exists to prevent, and the person most likely to mis-set it is the person it is
+protecting.
+
+The argument the research added, which is stronger: **a patient with a U-40 vial and a matching U-40
+syringe needs no conversion at all.** They dial the number the calculator prints. Conversion is only
+ever needed when vial and syringe MISMATCH — which is the error state, not a mode to support. A
+concentration setting would therefore have to output a volume in millilitres, and every concentrated
+insulin label forbids that: dose is expressed in units, never converted, never transferred between
+devices. So the setting would be inert for correctly-paired patients and harmful for everyone else.
+
+**Seven devices were checked and none offers a concentration setting** — Medtronic MiniMed, Tandem
+t:slim X2, Insulet Omnipod 5, Omnipod DASH, Ypsomed mylife YpsoPump, Accu-Chek Aviva Expert, and the
+CE-marked mySugr Bolus Calculator. Six warn that only U-100 may be used; one is silent.
+
+**There is no published guidance on the question at all, and that absence is demonstrated rather
+than assumed.** It is missing from Huckvale et al. 2015 (*BMC Medicine* 13:106), from Walsh,
+Freckmann, Roberts and Heinemann, "Bolus Calculator Safety Mandates a Need for Standards" (*JDST*
+2017;11(1):3–6) — a paper explicitly about what bolus calculators should standardise — from the
+MHRA's stand-alone software guidance, and from the FDA's device-software guidance.
+
+#### Why the warning is still there, and what it should and should not claim
+
+A query of DRAP's registered-product database returned **94 insulin registrations in Pakistan and
+none at 40 IU/ml**, across twelve companies. **The app's copy previously said "U-40 is still sold in
+this region", and that claim is not supported by Pakistan's own regulator.** It has been removed.
+
+The warning stays, on three grounds that were verified:
+
+1. **WHO has not retired U-40.** The 2025 Essential Medicines List still lists short-acting human
+   insulin at *"40 IU per mL in 10 mL vial"* alongside 100 IU per mL, on both the adult and the
+   children's lists. U-40 is current, not legacy.
+2. **Veterinary U-40 keeps U-40 syringes obtainable in any market.** Vetsulin and ProZinc both carry
+   the label line *"USE OF A SYRINGE OTHER THAN A U-40 SYRINGE WILL RESULT IN INCORRECT DOSING"*,
+   and there is a published human case — Barrera and Murvelashvili, *Case Reports in Endocrinology*
+   2019;2019:7916435 — of a patient using veterinary U-40 syringes with prescribed U-100 insulin,
+   delivering *"2.5 times greater concentration than the intended dose"*, with repeated
+   hypoglycaemia. The exact hazard, in a clean-registry market.
+3. **India does sell it**, in named products — Actrapid 40 IU, Huminsulin R and N 40 IU, Wosulin,
+   Insugen — and ISPAD's limited-resource chapter says plainly that where both concentrations exist
+   U-40 *"can be a source of error in dosing"*, naming why families prefer it: lower cost per
+   purchase, no refrigeration needed, finer increments for a small child.
+
+**U-200 is confirmed and matters more than U-40 for analogue users.** Humalog U-200 and Lyumjev
+U-200 are the only two mealtime insulins sold at 200 units/mL, both lispro, both Lilly, both
+pen-only, and both labels say *"Do NOT perform dose conversion"*. This is why the app names the
+BRAND on the dose rather than the concentration: the pen abstracts concentration away, and a
+sentence saying "the standard strength, and what your insulin is" would be false for precisely the
+reader holding a 200-unit pen.
+
+#### What would change this answer
+
+Recorded so the next person checks four things rather than repeating the research:
+
+- a U-40 product appearing on DRAP's register;
+- WHO removing U-40 from the Essential Medicines List;
+- any regulated pump or bolus calculator shipping a concentration setting;
+- a published dosing incident traced to concentration in a market with no registered U-40.
+
+**One caveat on the DRAP finding.** It came from a research pass that queried the registry directly
+but was not re-run independently, and a registry absence is not a street absence — no study
+quantifies informal cross-border supply into Pakistan. It is enough to stop the app asserting local
+availability; it is not enough to drop the warning.
+
+**Source:** Humulin R FDA label; ISPAD 2024; and for the per-class waits, the US prescribing
+information for NovoLog, Humalog, Apidra, Fiasp and Lyumjev, named per row in the table above.
 
 ---
 
@@ -561,7 +708,71 @@ NICE and Diabetes UK material is quoted with citation here and **must not be cop
    total of 84–111 — **32–43%**, against a commonly cited 40–50%. That is arithmetic from his own figures, recorded so it reaches you, and not a
    recommendation.
 
-10. **The two timing clocks are Humulin R's. What may a patient on a different mealtime insulin
+10. **BUILT 2026-09-20, AND 10c IS ANSWERED — by evidence rather than by ruling.**
+
+    **10c asked whether the 4-hour suppression and 12-hour advisory may shorten for a rapid
+    analogue. They should not.** Researched and verified the same day:
+
+    - Every regulated device that ships a duration-of-insulin-action default lands on 4 hours or
+      above: Medtronic MiniMed 670G and 780G both 4 (range 2–8, 15-minute increments), Accu-Chek
+      Aviva Expert 4, mySugr 4.5, and Tandem's Control-IQ forces 5.
+    - The bolus-calculator literature argues for longer, and names the candidate as the hazard.
+      Walsh et al. 2014: a duration *"too short such as 3 hours can hide insulin stacking and lead
+      to hypoglycemic events that are then compensated for by incorrectly adjusting other pump
+      settings."*
+    - The premise that analogues are cleared by 4 hours is weaker than it looks: about 40% of
+      aspart's activity remains at 3 hours, ISPAD's own table gives glulisine ~5.3 hours, and both
+      ultra-rapid analogues ~5–7 — **longer** than aspart, because "ultra-rapid" describes onset and
+      not offset.
+    - The only citable FLOOR is 3 hours, from ISPAD 2024's *"less than 2–3 h intervals"* and ADA's
+      Safe at School material. Both are written for people reasoning WITHOUT a decay model, and a
+      pump may bolus at any moment because it subtracts insulin-on-board continuously. This app has
+      no decay model by design, so it is in the first category, where the time gate is the whole
+      protection.
+
+    **Present to the prescriber as: the evidence supports keeping 4, tolerates 3, and supports
+    nothing shorter.** That is a narrower question than the one originally asked.
+
+    Two things landed in the app's favour on the way. ADA's Safe at School case study describes this
+    app's rule in words — *"the student would only receive insulin for the carbohydrates they are
+    eating per the insulin-to-carb ratio"* — and Medtronic's Bolus Wizard implements the same clamp
+    in an FDA-cleared pump: if subtracting active insulin from the correction gives a negative
+    number, *"the total bolus estimate is based only on the food estimate."* The SHAPE of §7.4 is
+    standard; only its threshold was extrapolated, and that extrapolation now has company.
+
+    **10a is answered too: class is the right resolution.** Per-brand waits would destroy the reason
+    the list is grouped — that a within-class mispick leaves every timing correct — and would mean
+    preferring one manufacturer's filing over a graded guideline, which is the error section 4.1
+    records. Insuman Rapid's 15–20 is the one outlier and is served by the editable field.
+
+    **10b is partly answered and partly not.** The per-class waits now rest on ISPAD rather than on
+    label arithmetic (section 4.1). The editable field's 0–45 minute bound remains **unsupported in
+    both directions**: no source endorses 45 and none forbids it, because no label, guideline or
+    study states a maximum safe pre-meal wait at all. The nearest published bounds are the labels'
+    own dosing windows, all of which close at 30 minutes or less. The confirm-once band at 30 is
+    therefore doing the real work — anything beyond the longest instruction any label gives is
+    queried before it is accepted.
+
+    **10d is answered for premix and CORRECTED for NPH.** Refusing premix is supported by the
+    labels' own *Limitations of Use* wording, by ISPAD 2024, by ISPAD 2022's grade E, by IDF, and by
+    two CE-marked bolus calculators that refuse it too. **Refusing NPH on the same grounds was
+    wrong.** NPH is a basal insulin that ADA, ISPAD and its own label expect to pair with a
+    separately-dosed prandial insulin — and ISPAD's limited-resource chapter actively recommends NPH
+    twice daily plus regular insulin before meals as the affordable regimen for this region. That
+    reader has a perfectly good carbohydrate ratio for the regular insulin they inject at meals, and
+    refusing them blocks exactly the patient that chapter exists to create. The app now treats a
+    background insulin as a WRONG TURN — it asks which one is injected at meals — rather than as a
+    dead end.
+
+    **The original question, kept for the appointment:** The mechanism shipped: the patient names
+    their mealtime insulin at setup, the pre-meal wait follows the class and is editable, and the
+    stacking windows are keyed by class in shape while holding the same values for every one of them.
+    Section 4.1 above carries what ships and the label each figure came from. **The four asks below
+    are unchanged and are what tightens it** — a, b and d bear on values that are live on screen
+    today; c bears on values deliberately held. Nothing waits on the answers, and an answer changes
+    data rather than code.
+
+    **The two timing clocks were Humulin R's. What may a patient on a different mealtime insulin
     change, and inside what bounds?** This is the other half of question 8, from the opposite side:
     question 8 asks whether the SENTENCE says the right thing, this asks what the app should
     actually DO. **Momin has ruled that it will be built** (`BACKLOG.md` entry 26); these questions

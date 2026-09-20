@@ -29,6 +29,21 @@ export interface SettingsPeriod {
   readonly isf: number;
   readonly icr: number;
   readonly mode: RoundingMode;
+  /**
+   * §8.5 — the mealtime insulin in force for this period, as a row id from
+   * `src/data/insulins.ts` or one of `core/insulin.ts`'s two sentinels.
+   *
+   * It belongs here for the same reason the ratios do: §7.7's machinery exists
+   * because the settings in force now are not the settings that produced a
+   * historical row, and an insulin switch is exactly such a change. §7.8's hypo
+   * patterns are read through kinetics — a low at hour three means one thing
+   * under regular insulin and another under aspart — so a record that omits it
+   * cannot be read that way at all.
+   *
+   * A row written before the field existed reads back as `''`, which prints as
+   * "not recorded" rather than as a guess.
+   */
+  readonly insulinId: string;
   readonly imported: boolean;
 }
 

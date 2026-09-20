@@ -6,6 +6,8 @@
  * to an unquestioned elapsed number.
  */
 
+import type { InsulinClass } from './insulin.js';
+
 export type RoundingMode = 'nearest' | 'half' | 'ceil' | 'floor' | 'off';
 
 /** §3's bands. C and D are terminal; B and E can co-occur with nothing else. */
@@ -41,12 +43,27 @@ export type LexicalReason =
   | 'signed'
   | 'non_ascii_digits';
 
-/** The settings that change a dose. §7.7: `threshold` is deliberately not among them. */
+/**
+ * The settings that change a dose. §7.7: `threshold` is deliberately not among
+ * them.
+ *
+ * **`insulinId` IS among them, and that is not obvious.** The insulin changes
+ * no arithmetic — target, ISF and ICR do all of it. What it changes is §7.4's
+ * gate, and a suppressed correction is a different dose. §8.5's switch-day rule
+ * turns on knowing which insulin produced a historical row, which is why this
+ * sits here rather than beside the basal fields it superficially resembles.
+ */
 export interface DosingSettings {
   readonly target: number;
   readonly isf: number;
   readonly icr: number;
   readonly mode: RoundingMode;
+  /**
+   * §8.5 — a row id from `src/data/insulins.ts`, or one of the two sentinels in
+   * `core/insulin.ts`. `''` means the question has not been asked; `'unknown'`
+   * means it was asked and answered "I don't know, or mine isn't listed".
+   */
+  readonly insulinId: string;
 }
 
 /**
@@ -63,6 +80,21 @@ export interface Settings extends DosingSettings {
   readonly basalName: string;
   readonly basalUnits: number;
   readonly basalTiming: string;
+  /**
+   * §8.5 — the reader's own prescriber's answer to "how long before a meal",
+   * in minutes, replacing the class range entirely. `null` means they have not
+   * given one and the class range stands.
+   *
+   * A SINGLE number against the class's pair, because that is the shape of the
+   * answer a doctor gives. Zero is a legitimate value and not an empty one: an
+   * ultra-rapid analogue is injected at the start of the meal.
+   *
+   * Not in `DosingSettings` and not in `settingsHistory`, on the same test that
+   * excludes `threshold` from both: it changes what the reader is TOLD TO DO,
+   * never what the app calculates, so no historical row needs its value to be
+   * attributed truthfully.
+   */
+  readonly eatDelayMinutes: number | null;
   /**
    * Whose record this is. OPTIONAL, and the empty string is a first-class value
    * meaning "not given" — §4.1's rule about not collapsing states applies to
@@ -98,6 +130,20 @@ export type HistoryProvenance = 'trusted' | 'suspect';
 export interface LastDose {
   readonly injectedHundredths: number;
   readonly atMs: number;
+  /**
+   * §8.5's switch-day rule — the class of the insulin THIS dose was, resolved
+   * from the prescription period that stamped it and never from the settings in
+   * force now.
+   *
+   * It lives on this object rather than beside it in the snapshot so the two
+   * cannot describe different rows. The gate models insulin already on board;
+   * the amount and the class are one fact about one injection.
+   *
+   * Null when the stamping revision is unknown or its insulin was never
+   * recorded, which `windowsFor` answers with the most conservative windows in
+   * the table.
+   */
+  readonly insulinClass: InsulinClass | null;
 }
 
 /**
@@ -116,6 +162,16 @@ export interface Snapshot {
   readonly eligibleEntryCount: number;
   readonly historyProvenance: HistoryProvenance;
   readonly lastDose: LastDose | null;
+  /**
+   * §8.5 — the class of `settings.insulinId`, resolved when the snapshot was
+   * frozen.
+   *
+   * The id is stored and the CLASS is what the two clocks read, and the lookup
+   * between them needs `src/data/insulins.ts` — which §13.1 keeps out of the
+   * core the same way it keeps the clock out. Resolving it into the snapshot is
+   * how the core gets the answer without acquiring the table.
+   */
+  readonly insulinClass: InsulinClass | null;
   readonly bandEFullCardShownRecently: boolean;
   /** §7.6 — how many rows were dropped for an implausible timestamp. */
   readonly excludedTimeRecords: number;

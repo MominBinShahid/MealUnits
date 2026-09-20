@@ -17,12 +17,24 @@ import type { JSX } from 'preact';
 import { COPY } from '../copy.js';
 import { Button, TextInput } from '../components.js';
 import type { RoundingMode, Settings } from '../../core/types.js';
+import { classEatDelay } from '../../core/insulin.js';
+import { INSULINS } from '../../data/insulins.js';
+import { waitInWords } from './insulin.js';
 
 export interface SettingsDraft {
   readonly target: string;
   readonly isf: string;
   readonly icr: string;
   readonly mode: RoundingMode;
+  /**
+   * §8.5 — answered on its own screen, and held here because on a FIRST RUN
+   * there is nowhere else for it to live: `commitSettings` needs the three
+   * ratios, and the insulin question is asked before them. An existing install
+   * commits the answer immediately instead and this only mirrors the store.
+   */
+  readonly insulinId: string;
+  /** §8.5 — the reader's own doctor's wait, in minutes. Empty means the class range. */
+  readonly eatDelay: string;
   readonly threshold: string;
   readonly basalName: string;
   readonly basalUnits: string;
@@ -51,6 +63,8 @@ export function draftFrom(settings: Settings | null): SettingsDraft {
       isf: '',
       icr: '',
       mode: DEFAULT_MODE,
+      insulinId: '',
+      eatDelay: '',
       threshold: '',
       basalName: '',
       basalUnits: '',
@@ -63,6 +77,11 @@ export function draftFrom(settings: Settings | null): SettingsDraft {
     isf: String(settings.isf),
     icr: String(settings.icr),
     mode: settings.mode,
+    insulinId: settings.insulinId,
+    // §4.1 — null is "not given" and 0 is a real answer (an ultra-rapid
+    // analogue is injected at the start of the meal). `String(0)` is "0" and
+    // only null becomes the empty field.
+    eatDelay: settings.eatDelayMinutes === null ? '' : String(settings.eatDelayMinutes),
     threshold: String(settings.threshold),
     basalName: settings.basalName,
     basalUnits: String(settings.basalUnits),
@@ -85,6 +104,24 @@ const NUMERIC: readonly (keyof SettingsDraft & keyof typeof RANGE)[] = [
   'threshold',
   'basalUnits',
 ];
+
+/**
+ * §8.5 — checked when filled, accepted when empty.
+ *
+ * The one optional number on this screen, and it needs its own list rather than
+ * an exception inside the loop: every field in `NUMERIC` is REQUIRED, and a
+ * conditional inside that loop would be the place a future required field
+ * quietly became optional. Empty here means "use the class range", which is a
+ * real answer and the default one.
+ *
+ * The draft key and the `RANGE` key differ — `eatDelay` on both sides, but the
+ * pairing is spelled out because `parseField` and `withinHardRange` are keyed
+ * by the RANGE name and nothing would notice a mismatch.
+ */
+const OPTIONAL_NUMERIC: readonly {
+  readonly field: keyof SettingsDraft;
+  readonly range: keyof typeof RANGE;
+}[] = [{ field: 'eatDelay', range: 'eatDelay' }];
 
 export function checkDraft(draft: SettingsDraft): FieldProblem[] {
   const problems: FieldProblem[] = [];
@@ -120,6 +157,27 @@ export function checkDraft(draft: SettingsDraft): FieldProblem[] {
       // alarm: the out-of-range prompt on the physician's own target is worded
       // as a ONE-TIME ACKNOWLEDGEMENT OF AN UNUSUAL-BUT-INTENDED VALUE, not a
       // warning." His target of 150 sits outside 90-140 on purpose.
+      problems.push({ field, message: COPY.settings.softConfirm, confirmable: true });
+    }
+  }
+  for (const { field, range } of OPTIONAL_NUMERIC) {
+    const parsed = parseField(draft[field], range);
+    if (parsed.state === 'empty') continue;
+    if (parsed.state === 'invalid') {
+      problems.push({ field, message: COPY.lexical(parsed.reason), confirmable: false });
+      continue;
+    }
+    const value = parsed.state === 'zero' ? 0 : parsed.value;
+    if (!withinHardRange(value, range)) {
+      const [lo, hi] = RANGE[range].hard;
+      problems.push({
+        field,
+        message: COPY.settings.outOfHardRange(String(lo), String(hi)),
+        confirmable: false,
+      });
+      continue;
+    }
+    if (!withinSoftBand(value, range)) {
       problems.push({ field, message: COPY.settings.softConfirm, confirmable: true });
     }
   }
@@ -165,6 +223,8 @@ export function deltasFor(settings: Settings | null, draft: SettingsDraft): Delt
 
 export interface SettingsHandlers {
   readonly onChange: (field: keyof SettingsDraft, value: string) => void;
+  /** §8.5 — opens the picker. The answer comes back into the draft. */
+  readonly onChangeInsulin: () => void;
   readonly onSave: () => void;
   readonly onAcknowledgeCeil: () => void;
   readonly onOpenClear: () => void;
@@ -352,6 +412,18 @@ export function SettingsScreen({
   const problems = checkDraft(draft);
   const problemFor = (field: keyof SettingsDraft): FieldProblem | undefined =>
     problems.find((problem) => problem.field === field);
+  // §8.5 — read off the DRAFT rather than off `settings`, so on a first run the
+  // answer given two screens ago is visible before anything has been stored.
+  const insulin = INSULINS.find((row) => row.id === draft.insulinId);
+  const insulinBrand = insulin?.brand ?? null;
+  const insulinMolecule = insulin?.molecule ?? null;
+  const insulinClass = insulin === undefined ? null : insulin.insulinClass;
+  const classWait = waitInWords(classEatDelay(insulinClass));
+  const ownParsed = parseField(draft.eatDelay, 'eatDelay');
+  const ownWait =
+    ownParsed.state === 'valid' || ownParsed.state === 'zero'
+      ? COPY.insulin.waitOwnSet(String(ownParsed.value))
+      : null;
   const blocking = problems.filter((problem) => !problem.confirmable);
   const deltas = deltasFor(settings, draft);
   const needsCeilAck = modeNeedsAcknowledgement(draft.mode) && !handlers.ceilAcknowledged;
@@ -468,10 +540,70 @@ export function SettingsScreen({
           the conditions under which every number on this screen is wrong for
           you. A lighter rule than `.basal`'s, because this divides a section
           rather than starting one. */}
+      {/* §8.5 — the answer, what it decides, and the way to change it.
+          ONE selection gave both halves: the list is grouped by class but the
+          reader taps a BRAND, so the app has the name for the dose label and
+          the class for the two clocks without asking twice. */}
+      <div class="basal">
+        <h2>{COPY.insulin.settingsLabel}</h2>
+        {/* `.li` — the app's existing label-and-value row, which is what this
+            is. `.row` exists only inside `.working`. */}
+        {/* The SAME two-line shape as the row that was tapped in the picker —
+            brand in full weight, molecule under it. Momin, off a screenshot:
+            one small line in a tall card read as an unfilled field. What you
+            chose and what you see afterwards should look like one thing. */}
+        <div class="li insulin-chosen">
+          {/* Three states, not two (§4.1). "I don't know" is an ANSWER and
+              says so; `Not recorded` is for a prescription period that
+              predates the question. Showing one as the other tells a reader
+              who answered that the app lost it. */}
+          <div class="k">
+            <span class="brand">
+              {insulinBrand ?? COPY.insulin.notKnownLabel(draft.insulinId)}
+            </span>
+            {insulinMolecule === null ? null : <span class="molecule">{insulinMolecule}</span>}
+          </div>
+          <Button class="more" onPress={handlers.onChangeInsulin}>
+            {COPY.insulin.settingsChange}
+          </Button>
+        </div>
+        {insulinClass === null ? (
+          // No class, so no prefilled wait to state — and nothing is stated,
+          // which is §8.5's point. The FIELD still appears below: for this
+          // reader a prescriber's number is the only wait there could be, and
+          // `insulinNote` sends them here to put it. Hiding it was the first
+          // version of this screen, and it promised somewhere to write an
+          // answer and then had nowhere.
+          ownWait === null ? <p class="hint">{COPY.insulin.settingsTimingUnknown}</p> : null
+        ) : (
+          <>
+            <p class="hint">{COPY.insulin.settingsTiming(classWait ?? '')}</p>
+            {/* Where the prefilled number came from, on screen rather than in
+                a document nobody opens. The values ship ahead of a prescriber's
+                ruling, so the screen says whose they are. */}
+            <p class="hint">{COPY.insulin.waitSource(insulinClass)}</p>
+          </>
+        )}
+        <NumberField
+          id="eatDelay"
+          label={COPY.insulin.waitOwnLabel}
+          value={draft.eatDelay}
+          problem={problemFor('eatDelay')}
+          onChange={handlers.onChange}
+          decimal={false}
+          suffix="minutes"
+        />
+        <p class="hint">
+          {insulinClass === null ? COPY.insulin.waitOwnHintUnknown : COPY.insulin.waitOwnHint}
+        </p>
+        {ownWait === null ? null : <p class="settled">{ownWait}</p>}
+      </div>
+
       <div class="assumptions">
         <p class="hint">{COPY.settings.unitAssumption}</p>
         {/* §10.2 — the SAME string the how-it-works page renders, not a copy. */}
-        <p class="hint">{COPY.settings.insulinAssumption}</p>
+        <p class="hint">{COPY.settings.insulinNote(insulinBrand)}</p>
+        <p class="hint">{COPY.settings.stackingWindowsNote}</p>
       </div>
 
       <h2>{COPY.settings.sectionRounding}</h2>

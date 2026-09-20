@@ -258,10 +258,35 @@ added after its absence caused harm."
 forward. The app is now for anyone with type 1, and the reader who has never been told what ISF
 means is the reader it was widened for.
 
-### 26. The two clocks are Humulin R's, and the reader has nowhere to put their own
+### 26. The two clocks are Humulin R's, and the reader has nowhere to put their own — DONE 2026-09-20
 
-**RULED 2026-09-20 [Momin]: build it.** The shape below is his, after two rounds of review that first
-argued against it and then withdrew the argument.
+**RULED 2026-09-20 [Momin]: build it. BUILT the same day**, in the shape below, all nine points. The
+shape is his, after two rounds of review that first argued against it and then withdrew the argument.
+
+**What shipped, against the nine points.** 1, 2, 3, 4, 6, 7, 8 and 9 in full. Point 5 shipped in two
+halves that are not the same: the eat delay is editable and prefilled per class from the labels, and
+the stacking windows are keyed by class **in shape and not yet in value** — every row declares the
+same 4 and 12 hours, pending `CLINICAL.md` question 10c. That is a hold rather than an omission, and
+the entry itself argues for it: the windows fail toward running high, which §2.1 tolerates, while the
+eat delay fails toward hypoglycaemia. Shortening a gate is the dose-raising direction and §20.1.1
+forbids taking that number off a reading of the literature, so the mechanism ships complete and the
+ruling becomes a one-line data edit. `test/insulin.test.ts` pins the hold from the outside, so
+changing it is a deliberate act with a test to update.
+
+**Where it lives.** `INSULIN_TIMING` in `src/config.ts` (the clocks), `src/data/insulins.ts` (which
+brand is which class), `src/core/insulin.ts` (the gate, the lookups, `effectiveWindows`),
+`src/ui/screens/insulin.tsx` (the picker, the echo, the exit). PLAN §8.5.1 is the specification;
+`CLINICAL.md` section 4.1 carries the per-class waits and the label each came from.
+
+**All nine points are now built.** Point 4's feedback link shipped once Momin supplied the address:
+the dead-end exit carries both a link to the contact form and a `mailto:` with the subject
+pre-written, because the reader on that screen is the one the project most needs to hear from and
+the one least likely to push through friction.
+
+**Two things this changed that the entry did not predict.** The `settings` row's missing field turned
+out to BE the migration — `''` reads as "never asked", so an existing install meets the same required
+question on its next open, and no `DATABASE_VERSION` bump was needed. And `RECOVERY_FORMAT` went to 2,
+because the mealtime insulin belongs on the block that is copied off the fail-closed screen by hand.
 
 **The problem.** The dose arithmetic is insulin-agnostic — `DosingSettings` is `{target, isf, icr,
 mode}` and the app does not know which mealtime insulin is in the pen. The molecule reaches exactly
@@ -1765,6 +1790,106 @@ blog changing. Worth knowing before trusting it.
 That turned out to be benign — Google's own help lists "low crawl demand" as a cause of that exact
 status, and a live test returned "URL is available to Google" — but reading the apex `robots.txt` to
 rule it out is what surfaced the ownership question.
+
+### T20. The 12-hour advisory ceiling is shorter than the label it was reasoned from
+
+**Found by research, 2026-09-20, verified from the label.** Not part of entry 26 and not changed
+with it — this is its own PR, because it drags §7.3 in behind it.
+
+**The finding.** §7.4's advisory window is 12 hours: between 4 and 12 hours after a dose, a
+correction is applied in full and the app says the last dose may still be acting; past 12 it says
+nothing. Humulin R's own label, section 12.2: *"terminates after approximately 8 hours (range: 3 to
+14 hours). In a study that administered 50 and 100 units doses subcutaneously to obese subjects,
+mean time of termination of effect was prolonged to approximately **18 hours (range approximately
+12-24 hours)**."* Hasham injects 24–25 units a meal. **The advisory expires while the label still
+says insulin is acting.**
+
+**Why this is safe to widen.** §7.4 already says the quiet part: *"twelve is chosen because the line
+is informational only, so erring long is free."* No dose changes on either side of that boundary —
+only whether a sentence appears. And 18 is quoted off a label rather than derived, which is the same
+standing as the 20–30.
+
+**Proposed.** Per class, like the eat delay: regular 18, analogues stay at 12. Every analogue is
+done inside 5–7 hours by its own label, so widening theirs would only add furniture.
+
+**Two knock-ons, which are why it is not folded into entry 26.**
+
+1. **`DELETE_CONFIRM_WINDOW_HOURS` is currently *defined* as equal to this number** (§7.3), and
+   `checkConfig` asserts the equality. Per-class windows break that. The honest replacement is the
+   LONGEST of them — a deleted dose should leave a tombstone for at least as long as any insulin
+   could still matter — so the assertion becomes "equals the maximum" rather than "equals the
+   constant".
+2. **It changes when §7.5's caveat fires.** A 15-hour-old dose becomes a usable record, so "no
+   recent dose recorded" appears less often. That is correct — there IS a record — but it is a real
+   behaviour change next to the gate, and it deserves its own tests rather than riding along.
+
+---
+
+### T19. `npm run smoke` reports two failures on a clean tree, and they are the harness
+
+**Measured 2026-09-20.** `npm run smoke` ends with:
+
+    smoke: 2 FAILURE(S): and logging it says so,
+           insecure origin: AND IT LOGS — the defect this run exists for
+
+**The app is not doing this.** Both were reproduced by hand in Chrome against the same served
+build, over `localhost` AND over `http://192.168.1.10:4173/` — a genuinely insecure origin, with
+`isSecureContext === false` and `crypto.randomUUID` undefined, which is the case that run exists
+for. The dose logs and the screen reads *"Logged 2 units at 5:40 PM"* both times.
+
+**And it is not this change.** `HEAD` (`be8fac8`) was extracted with `git archive`, built and
+smoke-tested on its own: identical two failures. It has been reporting them for at least one commit.
+
+**The likely cause, from reading the harness.** `tap` is `…find(…)?.click()` — OPTIONAL chaining,
+so a button that has not rendered yet is a silent no-op — and the log step waits a fixed 500 ms
+between "I injected this" and "Log this injection". The amount screen is a full re-render; if it is
+not up inside that window the second tap hits nothing, and the 6-second poll that follows then
+waits for a commit that was never started. Every other step in the file polls with `until`; these
+two do not.
+
+**Two things to decide.** Whether `tap` should fail loudly when it finds no button — a helper that
+silently does nothing turns "the button moved" into "the feature broke", three screens away from
+the cause — and whether the log step should poll for the amount screen instead of sleeping.
+
+**One more thing found on the way.** `SMOKE_LAN_URL` defaults to `127.0.0.1`, which Chrome treats
+as a secure context exactly like `localhost` — so the "insecure origin" half of the run silently
+tests nothing at the default. Two of its checks (`isSecureContext`, `crypto.randomUUID`) fail at
+that default rather than passing vacuously, which is the only reason this was visible. It needs a
+real LAN address: `SMOKE_LAN_URL="http://$(ipconfig getifaddr en0):4173/MealUnits/" npm run smoke`.
+
+---
+
+### T18. §7.7's "a threshold-only change does not bump it" is not implemented — ASKING, not fixing
+
+**Found 2026-09-20 while building entry 26, in a browser, and NOT touched.** §20.1.1's rule is that
+where the plan and the code disagree, only Momin can say which was meant.
+
+**What the plan says.** §7.7: *"A threshold-only change does not bump it [the settings revision] —
+`settingsHistory` carries no `threshold`, so an identical-values row would be noise."*
+
+**What the code does.** `commitSettings` allocates a fresh revision on EVERY save, unconditionally.
+There is no comparison anywhere in `app.tsx` or `repo.ts`. Changing only the threshold, only the
+basal block, only the name — or, since entry 26, only the pre-meal wait — writes a `settingsHistory`
+row identical to the one before it in every field that store holds.
+
+**What it costs.** §7.7.1's export groups by prescription period, so two identical periods print as
+two sections with the same ratios and the doses split between them. Not wrong, but noise in the
+document whose whole argument is that it does not misstate what produced a row. Nothing about a dose
+changes: the row stamp is still accurate, and every period it can point at has identical ratios.
+
+**Why it was not fixed here.** Three readings, and they are not the same change:
+
+1. **Suppress the bump when no `settingsHistory` field moved.** What §7.7 literally says. It makes
+   the revision mean "the prescription changed", which is what the export reads it as.
+2. **Suppress the append, keep the bump.** Keeps the counter as a change marker for §11.3's
+   cross-tab layer while keeping the export clean. More code, two meanings for one number.
+3. **Leave it.** An extra period is cosmetic, and the guard is a comparison that has to stay in step
+   with the field list — the class of thing that rots silently in the unsafe direction.
+
+The gap predates entry 26 by every revision; `eatDelayMinutes` simply joined the fields it applies
+to. **Momin's call.**
+
+---
 
 ### T17. Prune the long documents again, after this round
 

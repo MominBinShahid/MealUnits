@@ -925,6 +925,116 @@ body {
   border-top: 1px solid var(--line);
 }
 
+/* ── §8.5's insulin picker ──────────────────────────────────────────────── */
+
+/*
+ * The grouping is the safety mechanism, so it has to LOOK like grouping.
+ *
+ * HumuLIN and HumaLOG are on ISMP's confused-drug-names list, and its own
+ * mitigation is to stop look-alike names appearing in consecutive rows. Class
+ * headers do that — but only if the header reads as a boundary rather than as
+ * one more line of text, which is what the rule above each one is for.
+ */
+.insulin-group {
+  margin-top: 1.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.insulin-group h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.insulin-group .list {
+  margin-top: 0.625rem;
+}
+
+/*
+ * A row, not a pill. `.go.quiet` is the app's neutral button and gives the
+ * border and the surface; this makes it a two-line left-aligned row, because
+ * the molecule under the brand is what a reader compares against their own box.
+ */
+.go.insulin {
+  display: grid;
+  gap: 0.125rem;
+  justify-items: start;
+  text-align: left;
+  border-radius: 0.875rem;
+  padding: 0.75rem 0.875rem;
+}
+
+.go.insulin .brand {
+  font-weight: 700;
+}
+
+.go.insulin .molecule {
+  font-weight: 400;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+/*
+ * Settings' chosen-insulin row, matching the picker rows it came from. `.li`
+ * is a flex row pairing a label with a value; the brand and its molecule stack
+ * inside the label half rather than becoming two rows.
+ */
+.insulin-chosen .k {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.insulin-chosen .brand {
+  font-weight: 700;
+}
+
+.insulin-chosen .molecule {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+/*
+ * `.go` ON AN ANCHOR, which needs its own rule and did not get one at first.
+ *
+ * `.go` sets `min-height` and padding and nothing else about layout, which is
+ * enough for a `<button>` — buttons centre their own content and honour a
+ * height. An `<a>` is `display: inline`, so it ignores the height entirely and
+ * renders as a short strip of text with a coloured background behind one line.
+ *
+ * This is the third time this exact shape has bitten: `.link` on an anchor
+ * rendered as bare text, and before that a control that was only styled as one
+ * by accident. The lesson recorded each time is the same — a class written for
+ * one element does not transfer to another by looking similar.
+ */
+a.go {
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+  text-align: center;
+}
+
+/*
+ * The sentence that says nothing has happened to the record, on the screens
+ * where that is the reader's first fear: the 404 page and §8.5's exit. Full
+ * ink, against the muted `p` around it — it is the one line on the screen that
+ * has to be read rather than skimmed.
+ */
+p.keep {
+  color: var(--ink);
+}
+
+/*
+ * `.settled` outside a `.flag`: same shape, ordinary rule colour. The panel
+ * version below keeps `--warn-line`, because there it belongs to the panel it
+ * divides.
+ */
+.settled {
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.5rem;
+  color: var(--ink-3);
+}
+
 .basal h2 {
   font-size: 1rem;
   margin: 0;

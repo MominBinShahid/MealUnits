@@ -47,6 +47,9 @@ const PRESCRIPTION = {
   basalName: 'Lantus',
   basalUnits: 36,
   basalTiming: 'early morning', personName: '',
+  insulinId: 'humulin-r',
+  insulinName: 'Humulin R',
+  eatDelayMinutes: null,
   acknowledged: [],
   nowMs: NOW,
 };
@@ -79,6 +82,8 @@ const SETTINGS: Settings = {
   basalName: 'Lantus',
   basalUnits: 36,
   basalTiming: 'early morning, before breakfast', personName: '',
+  insulinId: 'humulin-r',
+  eatDelayMinutes: null,
 };
 
 function period(overrides: Partial<SettingsPeriod> = {}): SettingsPeriod {
@@ -89,6 +94,7 @@ function period(overrides: Partial<SettingsPeriod> = {}): SettingsPeriod {
     isf: 30,
     icr: 10,
     mode: 'nearest',
+    insulinId: 'humulin-r',
     imported: false,
     ...overrides,
   };
@@ -122,10 +128,15 @@ describe('§7.7 the envelope', () => {
     expect('settings' in envelope).toBe(true);
   });
 
-  it('omits `threshold` and `imported` from the history, on purpose', () => {
+  it('omits `threshold` and `imported` from the history, and carries the insulin', () => {
     // §7.7 [R1] — `threshold` never changes a dose value, so no consumer needs
     // its historical setting and an identical-values row would be noise.
     // `imported` is LOCAL provenance and cannot mean anything in a file.
+    //
+    // §8.5 — `insulinId` is here and `eatDelayMinutes` is NOT, and the two sit
+    // on opposite sides of that same test. The insulin changes §7.4's gate, and
+    // a suppressed correction is a different dose; the reader's own pre-meal
+    // wait changes what they were told to do and never what came out.
     const envelope = buildEnvelope({
       settings: SETTINGS,
       settingsHistory: [period({ imported: true })],
@@ -134,7 +145,7 @@ describe('§7.7 the envelope', () => {
       dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
     });
     expect(Object.keys(envelope.settingsHistory[0] ?? {}).sort()).toEqual(
-      ['changedAtMs', 'icr', 'isf', 'mode', 'revision', 'target'].sort(),
+      ['changedAtMs', 'icr', 'insulinId', 'isf', 'mode', 'revision', 'target'].sort(),
     );
   });
 
@@ -341,8 +352,8 @@ describe('§7.7 revision remapping', () => {
         schemaVersion: 1,
         settings: {},
         settingsHistory: [
-          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, mode: 'nearest' },
-          { revision: 2, changedAtMs: AUG_18 + DAY, target: 150, isf: 30, icr: 12, mode: 'nearest' },
+          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, mode: 'nearest', insulinId: 'humulin-r' },
+          { revision: 2, changedAtMs: AUG_18 + DAY, target: 150, isf: 30, icr: 12, mode: 'nearest', insulinId: 'humulin-r' },
         ],
         readings: [],
         log: [injection({ id: 'a', settingsRevision: 2 })],
@@ -365,8 +376,8 @@ describe('§7.7 revision remapping', () => {
         schemaVersion: 1,
         settings: {},
         settingsHistory: [
-          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, mode: 'nearest' },
-          { revision: 2, changedAtMs: AUG_18 + DAY, target: 150, isf: 30, icr: 12, mode: 'nearest' },
+          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, mode: 'nearest', insulinId: 'humulin-r' },
+          { revision: 2, changedAtMs: AUG_18 + DAY, target: 150, isf: 30, icr: 12, mode: 'nearest', insulinId: 'humulin-r' },
         ],
         readings: [],
         log: [injection({ id: 'a', settingsRevision: 1 }), injection({ id: 'b', settingsRevision: 2 })],
@@ -389,7 +400,7 @@ describe('§7.7 revision remapping', () => {
         schemaVersion: 1,
         settings: {},
         settingsHistory: [
-          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, mode: 'nearest' },
+          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, mode: 'nearest', insulinId: 'humulin-r' },
         ],
         readings: [],
         log: [],
@@ -414,7 +425,7 @@ describe('§13.3 the composed case v12 lacked', () => {
       schemaVersion: 1,
       settings: {},
       settingsHistory: [
-        { revision: 1, changedAtMs: AUG_18 - 365 * DAY, target: 150, isf: 30, icr: 8, mode: 'nearest' },
+        { revision: 1, changedAtMs: AUG_18 - 365 * DAY, target: 150, isf: 30, icr: 8, mode: 'nearest', insulinId: 'humulin-r' },
       ],
       readings: [],
       log: [injection({ id: 'old', settingsRevision: 1, timestamp: AUG_18 - 300 * DAY })],

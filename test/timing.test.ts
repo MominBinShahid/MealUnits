@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  EAT_DELAY_RANGE_MINUTES,
   decideTimingAdvice,
   eatWindow,
   isResultExpired,
 } from '../src/core/timing.js';
+import { classEatDelay } from '../src/core/insulin.js';
 import { formatClockTime } from '../src/core/calendar.js';
 
 const KARACHI = 'Asia/Karachi';
@@ -45,15 +45,23 @@ describe('§8.1 band-aware timing', () => {
   });
 });
 
+/**
+ * §8.5 — the delay is an ARGUMENT now, and this file's cases are regular human
+ * insulin's. `EAT_DELAY_RANGE_MINUTES` used to be a module constant here and
+ * this file pinned its value; that pin moved to `test/insulin.test.ts`, which
+ * asserts the whole per-class table rather than one row of it.
+ */
+const REGULAR = classEatDelay('regular');
+
 describe('§8.1 the window opens at the INJECTION, never at the calculation', () => {
   it('is the 20-30 minute range the label and ISPAD give', () => {
-    expect(EAT_DELAY_RANGE_MINUTES).toEqual([20, 30]);
+    expect(REGULAR).toEqual([20, 30]);
   });
 
   it('renders §8.1s own worked example', () => {
     // "Injected 7:35 PM -> eat around 8:05 PM"
     const injectedAt = Date.parse('2026-09-06T14:35:00Z'); // 7:35 PM Karachi
-    const window = eatWindow(injectedAt);
+    const window = eatWindow(injectedAt, [20, 30]);
     expect(formatClockTime(injectedAt, KARACHI)).toBe('7:35 PM');
     expect(formatClockTime(window.fromMs, KARACHI)).toBe('7:55 PM');
     expect(formatClockTime(window.toMs, KARACHI)).toBe('8:05 PM');
@@ -65,8 +73,8 @@ describe('§8.1 the window opens at the INJECTION, never at the calculation', ()
     // minutes — the meal absorbing ahead of the insulin's onset.
     const calculatedAt = Date.parse('2026-09-06T14:10:00Z');
     const injectedAt = Date.parse('2026-09-06T14:35:00Z');
-    const version1 = eatWindow(calculatedAt).toMs;
-    const correct = eatWindow(injectedAt).toMs;
+    const version1 = eatWindow(calculatedAt, [20, 30]).toMs;
+    const correct = eatWindow(injectedAt, [20, 30]).toMs;
     expect((version1 - injectedAt) / MINUTE).toBe(5);
     expect((correct - injectedAt) / MINUTE).toBe(30);
   });

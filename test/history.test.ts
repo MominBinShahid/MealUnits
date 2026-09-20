@@ -53,6 +53,9 @@ const CONTEXT: HistoryContext = {
   lastImportAtMs: null,
   lastLocalInjectionAtMs: NOW - HOUR,
   droppedStoredRows: 0,
+  // §8.5 — revision 1 is regular human insulin here, which is what every
+  // stacking assertion in this file has always assumed.
+  classByRevision: new Map([[1, 'regular' as const]]),
 };
 
 describe('§7.6 the future-dated predicate', () => {
@@ -60,6 +63,34 @@ describe('§7.6 the future-dated predicate', () => {
     expect(isImplausiblyFutureDated(NOW + HOUR, NOW)).toBe(false);
     expect(isImplausiblyFutureDated(NOW + HOUR + 1, NOW)).toBe(true);
     expect(isImplausiblyFutureDated(NOW - HOUR, NOW)).toBe(false);
+  });
+});
+
+describe('§8.5 lastDose carries the insulin ITS OWN revision was given under', () => {
+  it('reads the class from the stamping revision, not from the settings in force', () => {
+    // The switch-day rule's input. A row stamped under a revision whose
+    // insulin was a rapid analogue must say so however the settings have
+    // moved since — that is what stops the gate shrinking under a dose of
+    // yesterday's insulin.
+    const context = {
+      ...CONTEXT,
+      classByRevision: new Map([
+        [1, 'regular' as const],
+        [2, 'rapid' as const],
+      ]),
+    };
+    const older = injection({ timestamp: NOW - 5 * HOUR, settingsRevision: 1 });
+    const newer = injection({ timestamp: NOW - 2 * HOUR, settingsRevision: 2 });
+    expect(deriveHistory([older], context).lastDose?.insulinClass).toBe('regular');
+    expect(deriveHistory([older, newer], context).lastDose?.insulinClass).toBe('rapid');
+  });
+
+  it('answers null for a revision with no insulin recorded, never a guess', () => {
+    // `windowsFor` turns that null into the LONGEST windows in the table, which
+    // is the conservative direction. A row that reported the current class
+    // instead would be the app inventing provenance.
+    const row = injection({ timestamp: NOW - HOUR, settingsRevision: 99 });
+    expect(deriveHistory([row], CONTEXT).lastDose?.insulinClass).toBeNull();
   });
 });
 

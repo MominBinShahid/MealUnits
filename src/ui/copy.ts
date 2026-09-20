@@ -16,7 +16,6 @@
  */
 
 import {
-  EAT_DELAY_MINUTES,
   FAST_CARB_GRAMS,
   HYPO_LEVEL_1,
   KETONE_ADVISORY,
@@ -27,9 +26,9 @@ import {
   STACK_SUPPRESS_HOURS,
 } from '../config.js';
 import { formatHundredths } from '../core/decimal.js';
+import type { EatDelay, InsulinClass } from '../core/insulin.js';
 import type { LexicalReason, RoundingMode } from '../core/types.js';
 
-const [EAT_MIN, EAT_MAX] = EAT_DELAY_MINUTES;
 const [MIN_BLOOD_SUGAR, MAX_BLOOD_SUGAR] = RANGE.bloodSugar.hard;
 const [, MAX_INJECTED] = RANGE.injected.hard;
 
@@ -243,12 +242,41 @@ export const COPY = {
 
   // ── §8.1's timing ─────────────────────────────────────────────────────────
   timing: {
-    before: `Inject ${String(EAT_MIN)}–${String(EAT_MAX)} minutes before eating.`,
+    /**
+     * §8.5 — THE WAIT IS THE READER'S INSULIN'S, and three shapes is not one
+     * shape too many.
+     *
+     * A range is what a class label states. A single number is what a
+     * prescriber says, so `[n, n]` renders as one number rather than as "20 to
+     * 20 minutes". And zero is an instruction in its own right — Fiasp and
+     * Lyumjev are both labelled for injection at the start of the meal —
+     * so "wait 0 minutes" would be the app rendering a sentence nobody means.
+     */
+    before: (delay: EatDelay): string => {
+      const [lo, hi] = delay;
+      if (hi === 0) return 'Inject at the start of your meal.';
+      if (lo === hi) return `Inject ${String(lo)} minutes before eating.`;
+      return `Inject ${String(lo)}\u2013${String(hi)} minutes before eating.`;
+    },
+    /**
+     * When the app does not know which insulin is in the pen.
+     *
+     * It says nothing about a wait, and that silence is the point: this app
+     * rendered Humulin R's twenty-to-thirty minutes to every reader until
+     * 2026-09-20, including the ones whose insulin starts working in five. §7.5's
+     * rule — an absence must never be rendered as a fact — applied to a clock.
+     */
+    beforeUnknown: 'Inject now.',
+    beforeUnknownDetail:
+      'This app does not know which insulin you take, so it cannot tell you how long to wait before eating. Ask your doctor, and you can enter their answer in Settings.',
     beforeDetail:
       'The clock starts when you confirm the amount on the next screen — not now, and not when the dose was worked out.',
     // §8.1 — band B INVERTS it. A 30-minute fast at 71 mg/dL is wrong.
     eatFirst: 'You are low-ish — eat first, then inject.',
     injectedAt: (at: string, eatBy: string): string => `Injected ${at} → eat around ${eatBy}.`,
+    /** A zero-width window: the instruction is a moment, not a span. */
+    injectedAtEatNow: (at: string): string => `Injected ${at} → eat now.`,
+    injectedAtOnly: (at: string): string => `Injected ${at}.`,
   },
 
   // ── §4.2's lexical messages ───────────────────────────────────────────────
@@ -759,6 +787,267 @@ export const COPY = {
   installSteps: (touchPoints: number): string =>
     touchPoints > 0 ? COPY.storage.addToHomeScreen : COPY.storage.addToDock,
 
+  /**
+   * §8.5 — which mealtime insulin is in the pen.
+   *
+   * Every string here exists because the app used to answer this question by
+   * assuming. It named Humulin R in four places as though it were the reader's,
+   * rendered Humulin R's pre-meal wait after every dose, and ended its one
+   * disclosure with *"ask your doctor how long before a meal to inject"* —
+   * then gave the answer nowhere to live.
+   *
+   * **The question is required and has no default.** `src/config.ts` records
+   * why the three ratios stopped being prefilled — *"a prefilled 150 is a
+   * prescription wearing the clothes of a default"* — and an insulin is the
+   * same category. A required question also has no tap-through, which is the
+   * whole answer to the objection that a picker gives false confirmation of fit
+   * to someone who does not know their insulin differs: they cannot pass it
+   * without reading it.
+   */
+  insulin: {
+    title: 'Which insulin do you inject at meals?',
+    /**
+     * Says what turns on the answer AND what does not, in that order. Someone
+     * who thinks this changes their dose will worry about getting it wrong in
+     * the wrong way; the dose is theirs either way, and the two clocks are not.
+     */
+    intro:
+      'This does not change your dose — that comes from your own target, ISF and ICR, whatever insulin you take. It changes two things: how long to wait before eating, and how long the app waits between corrections.',
+    whereToLook:
+      'It is on the pen or the vial. The large name is the brand; the smaller one under it is the insulin itself, and either will find it below.',
+    /** No skip, and the screen says so rather than just having no button. */
+    required: 'There is no default for this one, and no way past it. An answer that is wrong about your insulin is worse than no app at all.',
+    /**
+     * The headings. Grouping is the safety mechanism, not the tidiness: HumuLIN
+     * and HumaLOG are on ISMP’s confused-drug-names list, as are NovoLIN and
+     * NovoLOG, and an alphabetical list seats each pair in consecutive rows.
+     */
+    classHeading: (insulinClass: InsulinClass): string => {
+      switch (insulinClass) {
+        case 'rapid':
+          return 'Rapid-acting';
+        case 'ultra_rapid':
+          return 'Ultra-rapid';
+        case 'regular':
+          return 'Regular human insulin';
+        case 'premix':
+          return 'Premixed';
+        case 'intermediate':
+          return 'Intermediate-acting';
+        case 'long':
+          return 'Long-acting';
+      }
+    },
+    /** One line per heading, so a reader can recognise their class without knowing the word. */
+    classNote: (insulinClass: InsulinClass): string => {
+      switch (insulinClass) {
+        case 'rapid':
+          return 'Starts working in about fifteen minutes. Injected just before a meal.';
+        case 'ultra_rapid':
+          return 'Starts working faster still. Injected at the start of the meal.';
+        case 'regular':
+          return 'Starts working slowly and lasts longer. Injected well before a meal.';
+        case 'premix':
+          return 'Two insulins in one pen, on a fixed twice-daily schedule. This app cannot work these out.';
+        case 'intermediate':
+          return 'Background insulin, taken once or twice a day. Not a meal-by-meal dose.';
+        case 'long':
+          return 'Background insulin, usually once a day. Not what you inject for a meal.';
+      }
+    },
+    alsoSoldAs: (name: string): string => `also sold as ${name}`,
+    unknownHeading: 'Not sure',
+    unknownLabel: "I don't know, or mine isn't listed",
+    unknownNote:
+      'The app keeps working and your dose is unaffected. It stops telling you when to eat, because it would be guessing.',
+
+    // ── the confirmation echo ───────────────────────────────────────────────
+    /**
+     * Shown after the tap, before it is saved. It restates the CLASS FACTS
+     * rather than the name just tapped, because a reader re-reading their own
+     * choice learns nothing — the facts are what a cross-class mispick
+     * contradicts.
+     */
+    confirmTitle: (brand: string): string => `You take ${brand}`,
+    confirmClass: (heading: string, note: string): string => `${heading}. ${note}`,
+    /**
+     * The physical check, and it is the one that catches the dangerous mistake.
+     *
+     * Rapid, ultra-rapid and regular insulins are all clear solutions. NPH and
+     * every premix containing it are SUSPENSIONS — visibly cloudy, and their
+     * labels require resuspension before each dose for that reason. So "is it
+     * clear?" does not tell a Humalog user from a NovoRapid user, and does not
+     * need to: a within-class mispick changes nothing. It tells a premix user
+     * that they are on the wrong screen, which is the only pick that matters.
+     */
+    confirmClear:
+      'Mealtime insulin is clear, like water. If yours looks cloudy or milky, or says to roll it before you inject, it is a premixed or background insulin — go back and look again.',
+    confirmWait: (wait: string): string => `After a dose, the app will tell you: ${wait}`,
+    confirmWaitEditable: 'You can replace that with your own doctor’s number in Settings.',
+    confirmYes: 'Yes, that’s mine',
+    confirmChange: 'Pick a different one',
+
+    // ── the two exits, which are not the same ──────────────────────────────
+    /**
+     * §8.5 — a DEAD END. Premix only.
+     *
+     * Not a warning that can be tapped through. §7.4's gate has a designed
+     * override because the reader can know better on the day; this has none,
+     * because there is no dose here to be right about.
+     */
+    unsupportedTitle: (brand: string): string => `This app cannot work out ${brand} doses`,
+    unsupportedBody:
+      'A premixed insulin is two insulins in a fixed ratio, taken on a fixed schedule — usually the same number of units at the same two times every day. The labels say so themselves: the proportions are fixed and do not allow the mealtime part to be adjusted on its own. So there is no per-meal carbohydrate ratio for this app to be right about, and a number worked out from your carbohydrate would mean nothing.',
+    /**
+     * §8.5 — the most useful thing this screen can say to a reader HERE, and it
+     * is not about the app at all.
+     *
+     * ISPAD's limited-resource chapter — written for exactly this region, with
+     * a Rawalpindi co-author — carries a grade E recommendation that premixed
+     * insulins "should only be used until other alternatives can be obtained",
+     * and in the same section: "Since the cost per unit of insulin of Regular
+     * Insulin, NPH and pre-mixed insulins is similar, donations of Regular and
+     * NPH insulins should be insisted upon." Verified from the chapter PDF by
+     * two independent research passes.
+     *
+     * So a reader on premix may be on it because it was what was available,
+     * not because it was cheaper — and the alternative is a regimen this app
+     * DOES work for. Telling them costs one sentence.
+     *
+     * **It stops at "ask".** The chapter also says how a total daily dose might
+     * be divided across three meals; that is a prescribing instruction and it
+     * stays out of this app. Naming the question is the reader's to take to
+     * their doctor; answering it is not ours.
+     */
+    unsupportedAlternative:
+      'One thing worth asking your doctor about: a separate long-acting insulin with a fast one before meals costs about the same per unit, and gives you a dose that follows what you actually eat. International guidance for places where insulin is hard to get recommends it over a premix wherever it can be arranged — and this app works with it.',
+
+    /**
+     * §8.5 — a WRONG TURN. A background insulin, named in answer to a
+     * question about meals.
+     *
+     * SEPARATED FROM THE DEAD END on Momin's question, 2026-09-20. The first
+     * version gave both the same screen, so somebody on Lantus plus NovoRapid
+     * — a regimen this app fits perfectly — was told "this app cannot
+     * work out Lantus doses". It can. They answered with the wrong half of
+     * their own regimen, and this screen's job is to ask for the other half
+     * rather than to conclude anything.
+     *
+     * **NPH moved here from the dead end, and that was a real correction.** It
+     * is never a mealtime insulin, so naming it is always a wrong turn —
+     * but it has two readings and the body carries both. ISPAD's
+     * limited-resource chapter actively recommends NPH twice daily plus regular
+     * insulin before meals as the affordable regimen for this region; refusing
+     * on "NPH" would block exactly the reader that chapter exists to create,
+     * and that reader has a perfectly good carbohydrate ratio for the regular
+     * insulin they inject at meals.
+     */
+    wrongTurnTitle: (brand: string): string => `${brand} is your background insulin`,
+    wrongTurnBody: (insulinClass: InsulinClass): string => {
+      switch (insulinClass) {
+        case 'intermediate':
+          return 'NPH works over eight to twelve hours. It covers you BETWEEN meals rather than at them, so it is not a dose worked out from what is on your plate. If you also inject something before you eat — usually regular insulin — that is the one to name here.';
+        case 'long':
+          return 'This one covers the whole day rather than a meal. Whatever you inject before you eat is the one to name here.';
+        default:
+          return 'This one covers the background rather than a meal. Whatever you inject before you eat is the one to name here.';
+      }
+    },
+    /** The honest tail for NPH, whose second reading really is a dead end. */
+    wrongTurnNoMealtime: (insulinClass: InsulinClass): string | null =>
+      insulinClass === 'intermediate'
+        ? 'If this is the only insulin you take, on the same two doses every day, then this calculator does not fit that regimen — it works out one meal at a time.'
+        : null,
+    wrongTurnBasalNote:
+      'Nothing is lost by telling us. Your background insulin has its own place in Settings, under the three ratios — record it there so your doctor sees the whole regimen.',
+    wrongTurnAction: 'Choose the one I inject at meals',
+    /**
+     * What is NOT taken away, said before what is. Someone months into their
+     * own record must not read this as the app locking them out of it.
+     */
+    unsupportedRecord:
+      'Nothing has happened to your record. Everything you have logged is still here, you can still read it, and you can still save a copy to give your doctor.',
+    unsupportedChange: 'Pick a different insulin',
+    unsupportedOpenRecord: 'Open my record',
+    unsupportedFeedback:
+      'If this is wrong — if you inject this before meals and count carbohydrate for it — please say so. That is exactly the kind of thing worth knowing about.',
+    /**
+     * TWO ways to reach a person, because the reader on this screen is the one
+     * the app most needs to hear from and the one least likely to persist.
+     * A form to fill in, or a mail app that opens with the subject already
+     * written — whichever is less effort for them.
+     */
+    contactForm: 'Open the contact form',
+    contactEmail: 'Send an email instead',
+    /** The subject line, pre-written so a reply is findable rather than untitled. */
+    contactSubject: 'MealUnits — ',
+
+    // ── how the answer is shown and changed afterwards ──────────────────────
+    settingsLabel: 'Mealtime insulin',
+    settingsChange: 'Change',
+    notRecorded: 'Not recorded',
+    /** §4.1 — an answered "I don't know" is not the same as never having asked. */
+    notKnownLabel: (id: string): string =>
+      id === 'unknown' ? 'Not known' : 'Not recorded',
+    /**
+     * What Settings shows beside the brand, so the two clocks are not
+     * invisible.
+     *
+     * "After a dose it says", NOT "wait before eating": the phrase it wraps
+     * already ends in *before eating*, and the first version rendered
+     * "Wait before eating: 5\u201310 minutes before eating". It also says the
+     * true thing, which is where the reader will actually meet this — on the
+     * result screen after they log a dose.
+     */
+    settingsTiming: (wait: string): string => `After a dose it says: ${wait}.`,
+    settingsTimingUnknown:
+      'The app is not telling you when to eat, because it does not know which insulin you take.',
+    /**
+     * Where the prefilled number came from, on screen. The sequencing ruling
+     * required this: the values ship before a prescriber has ruled on them, so
+     * the screen says whose numbers they are rather than presenting them as
+     * this app’s judgement.
+     */
+    /**
+     * WHERE THE NUMBER CAME FROM, per class — and it stopped being one sentence
+     * on 2026-09-20 when the rapid row moved to ISPAD's recommendation. Saying
+     * "the manufacturers label this wait" over a figure that is a guideline's
+     * and not a label's would be the app citing the wrong authority for its own
+     * advice, which is the failure §10.2 exists to prevent one level up.
+     *
+     * The rapid line carries ISPAD's own fallback — *"or, at least, immediately
+     * before meals"* — because the graded recommendation contains it and a
+     * reader who cannot manage ten minutes should not be left thinking they are
+     * doing it wrong.
+     */
+    waitSource: (insulinClass: InsulinClass): string => {
+      switch (insulinClass) {
+        case 'rapid':
+          return 'This is what ISPAD recommends for rapid-acting insulin, and the strongest evidence they grade. If ten minutes is not possible, injecting immediately before eating is still fine. Check it against your own prescription.';
+        case 'regular':
+          return 'This is what ISPAD recommends for regular human insulin, and close to what the makers print on the box. Check it against your own prescription.';
+        case 'ultra_rapid':
+          return 'This is what the makers print on the box for this insulin. Check it against your own prescription.';
+        default:
+          return 'Check this against your own prescription.';
+      }
+    },
+    waitOwnLabel: 'Your doctor’s answer, in minutes',
+    waitOwnHint:
+      'Leave this empty to use the wait above. If your doctor gave you a number, put it here and the app will use that instead.',
+    /**
+     * The same field, for the reader who has no class wait above it. There is
+     * nothing to fall back to here, so the hint says what the empty field
+     * means rather than what it overrides.
+     */
+    waitOwnHintUnknown:
+      'Leave this empty and the app says nothing about when to eat. If your doctor gave you a number, put it here and the app will use it.',
+    waitOwnSet: (minutes: string): string => `Using your own answer: ${minutes} minutes before eating.`,
+    waitZero: 'at the start of the meal',
+    waitRange: (lo: string, hi: string): string => `${lo}\u2013${hi} minutes before eating`,
+    waitSingle: (minutes: string): string => `${minutes} minutes before eating`,
+  },
+
   settings: {
     targetQuestion: 'What should a correction aim for?',
     /** The target had no explanatory line at all, only the question. */
@@ -798,8 +1087,32 @@ export const COPY = {
      * It sits after the ratios and before rounding because that is where the
      * numbers stop and the word "unit" starts doing the work.
      */
+    /**
+     * REWRITTEN 2026-09-20, because §8.5.1 made the old sentence false for most
+     * readers. It said "the standard strength, and what Humulin R is" — a claim
+     * about the reader's own insulin, written when the app assumed there was
+     * only one.
+     *
+     * **It is not parameterised by brand, and that is the safety decision.**
+     * "The standard strength, and what NovoRapid is" would be true; the same
+     * sentence with Humalog or Lyumjev in it would not, because both are also
+     * sold at 200 units/mL. A sentence that is right for most brands and wrong
+     * for two is worse than one that names none — it would tell exactly the
+     * reader holding a 200-unit pen that their strength had been checked.
+     *
+     * So it points at the box instead, which is the one thing the reader can
+     * actually verify — the same move §8.5 made when it asked for the brand on
+     * the dose rather than the concentration.
+     *
+     * **U-40 stays named and keeps the 2.5-times figure.** It is not a museum
+     * piece here: U-40 human insulin with matching syringes is still sold
+     * across South Asia, which is this app's own region. U-200 is the newer
+     * hazard and is named alongside it. The multiplier belongs to U-40 and is
+     * attached to it rather than left floating, because "2.5 times" against a
+     * sentence that also mentions U-200 would be wrong about one of them.
+     */
     unitAssumption:
-      'These are units of U-100 insulin — the standard strength, and what Humulin R is. There is deliberately no setting for other strengths: a strength setting chosen wrong would cause the exact 2.5-times error it exists to prevent. If your insulin is not U-100, these numbers are not right for it.',
+      'These are units of U-100 insulin — 100\u00A0units in every millilitre. The strength is printed on the box and on the pen, and it is worth one look: a few analogue pens are U-200, and U-40 is still made and still on the WHO essential medicines list. If yours does not say 100\u00A0units/mL, none of these numbers are right for it — U-40 would put every dose out by 2.5 times. There is deliberately no setting for other strengths: a strength setting chosen wrong would cause the exact 2.5-times error it exists to prevent.',
     /**
      * §1.3 — visually separated, and labelled so it cannot read as a dose.
      *
@@ -817,32 +1130,44 @@ export const COPY = {
      * the name is already the first row of the list underneath.
      */
     /**
-     * §8.1 and §3's windows are calibrated for ONE insulin, and until
-     * 2026-09-13 nothing on screen said so — the app named Humulin R in four
-     * places as though it were the reader's, which is a different claim from
-     * the true one.
+     * §8.5 — what the reader's answer changes, and what it does not.
      *
-     * `CLINICAL.md` §4: "This is the largest practical difference from a rapid
-     * analog, and advice written for analogs is wrong here." §3: Humulin R
-     * lasts 5-8 hours against 3-5 for an analog, and "that longer tail is why
-     * this table's windows are what they are."
+     * THIS USED TO BE A DISCLOSURE AND IS NOW A DESCRIPTION, which is the whole
+     * of what entry 26 changed. The old string said the timing was built around
+     * Humulin R, listed the analogues it was wrong for, and ended "ask your
+     * doctor how long before a meal to inject" — sound advice with nowhere to
+     * put the answer, under a screen that went on rendering the Humulin R wait
+     * after every dose. The app now asks, so this states.
      *
-     * So BOTH the pre-meal wait and the stacking windows are wrong for a
-     * reader on a rapid analog, and they are the more common reader now that
-     * `T5` widened the audience. This states it rather than adding a setting,
-     * for `unitAssumption`'s reason: a setting that could be wrong causes the
-     * error it was meant to prevent, and here it would change a label while
-     * leaving the advice it implies untouched.
+     * Three things it must keep doing, all of them lessons from the version it
+     * replaces:
      *
-     * The arithmetic is NOT disclaimed, and that is deliberate. ISF and ICR are
-     * prescribed for the insulin the reader actually takes, so the dose is
-     * theirs whatever is in the pen. Only the two clocks are not.
+     * 1. **Say the dose is unaffected.** Without it, "the timings depend on
+     *    your insulin" reads as "this app is wrong for you", and a reader who
+     *    distrusts arithmetic that is correct for them is the worse outcome.
+     *    Hedged as *can still be* on the 2026-09-14 review's point: it is false
+     *    for a reader who switched insulins and kept stale ratios.
+     * 2. **Say the stacking windows are still the same for everybody**, because
+     *    a reader who has just named a rapid analogue will reasonably expect
+     *    them to have moved. They have not, the direction of the error is
+     *    stated, and `CLINICAL.md` question 10c is why.
+     * 3. **Not be a copy.** §10.2 — the how-it-works page and Settings render
+     *    this same string, not two versions of it.
      *
-     * **The wording is not yet signed off by a prescriber.** `CLINICAL.md` §14
-     * carries it as an open question.
+     * **The wording is not signed off by a prescriber.** `CLINICAL.md` §14
+     * questions 8 and 10 carry it.
      */
-    insulinAssumption:
-      `The timing here is built around Humulin R — regular human insulin, which starts working slowly and lasts a long time. Two things depend on that: the ${String(EAT_MIN)}\u2013${String(EAT_MAX)} minutes to wait before eating, and the ${String(STACK_SUPPRESS_HOURS)}-hour and ${String(STACK_ADVISE_HOURS)}-hour windows the stacking check uses. If you take a rapid-acting insulin — NovoRapid, Humalog, Apidra — it starts sooner and clears sooner, and both of those timings are wrong for you. The dose itself is still yours, because your ISF and ICR were set for your own insulin. Ask your doctor how long before a meal to inject, and how long to leave between corrections.`,
+    insulinNote: (brand: string | null): string =>
+      brand === null
+        ? `You have not told the app which insulin you inject at meals, so it does not tell you when to eat — that would be a guess, and guessing early is how an app like this pushes somebody low. Your dose is unaffected: it comes from your own target, ISF and ICR. Ask your doctor how long before a meal to inject, and Settings has a place for their answer.`
+        : `Two things here are ${brand}'s: how long to wait before eating, and the ${String(STACK_SUPPRESS_HOURS)}-hour and ${String(STACK_ADVISE_HOURS)}-hour windows the stacking check uses. The dose itself can still be yours whatever is in the pen — target, ISF and ICR come from your own prescription, for the insulin you actually take.`,
+    /**
+     * The second half, kept SEPARATE so it can be shown beside the first
+     * without being part of a sentence about the reader's own insulin. It is an
+     * admission about the app, not a fact about them.
+     */
+    stackingWindowsNote:
+      `Those ${String(STACK_SUPPRESS_HOURS)} and ${String(STACK_ADVISE_HOURS)} hours are the same for every insulin at the moment. They are set for the slowest one, so a correction is held back longer than a fast insulin needs rather than sooner — and "Why is this smaller?" on the result screen gives it back when you need it.`,
     /**
      * The settings SCREEN's own words, moved here on 2026-09-13. They rendered
      * from literals in `screens/settings.ts` until then, which made this file's
@@ -994,6 +1319,8 @@ export const COPY = {
     meterHiLoHint: (maxReading: string): string =>
       `Meter showing HI? Enter ${maxReading}. Showing LO? Don't enter a number — treat first.`,
     eatAround: (at: string): string => `Eat around ${at}.`,
+    /** §8.5 — an ultra-rapid analogue's wait is zero, and zero is an instruction. */
+    eatNow: 'Eat now.',
     /**
      * The working's own sentences. They were template literals in
      * `screens/calculator.ts` until 2026-09-14, which is how they survived both
@@ -1034,8 +1361,21 @@ export const COPY = {
     withheldBoth: 'Both figures are large enough to need a second look, so neither is shown here.',
     keepSmaller: 'Keep the smaller dose',
     openHistory: 'History',
-    /** The label under the dose. Not a brand — see `settings.insulinAssumption`. */
-    doseUnit: 'units of your mealtime insulin',
+    /**
+     * The label under the dose, and §8.5 asked for the BRAND all along.
+     *
+     * It was generic until 2026-09-20 for an honest reason — the app did not
+     * know the insulin, and "units of Humulin R" would have been a claim about
+     * the reader rather than a fact. It knows now, so the label names what is
+     * in the pen: `units of NovoRapid` is checkable against the box in their
+     * hand, which is the property §8.5 wanted and the reason it asked for a
+     * name rather than a class word.
+     *
+     * The generic form survives for the reader who answered "I don't know",
+     * where it is still the only true thing to say.
+     */
+    doseUnit: (brand: string | null): string =>
+      brand === null ? 'units of your mealtime insulin' : `units of ${brand}`,
   },
 
   /**

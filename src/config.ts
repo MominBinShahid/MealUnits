@@ -105,7 +105,128 @@ export const HUNDREDTHS_SCALE = 100; // §2.2 integer representation
 
 // ─── CLOCK AND TIMING (§7.6, §8.1) ─────────────────────────
 export const CLOCK_SKEW_TOLERANCE_HOURS = 1; // §7.6 future-timestamp bound
-export const EAT_DELAY_MINUTES = [20, 30] as const; // §8.1 pre-meal window
+
+// ─── THE TWO CLOCKS, PER INSULIN CLASS (§8.1, §7.4, §8.5) ──
+// DO NOT CHANGE WITHOUT CLINICAL REVIEW. Until 2026-09-20 there was one row
+// here and it was Humulin R's, rendered to everyone — which since the audience
+// change is the wrong number, shown daily, to most readers.
+//
+// Only two things in this app depend on WHICH insulin is in the pen. The dose
+// arithmetic does not: target, ISF and ICR are the reader's own and already
+// account for their insulin. These two do.
+//
+// `src/data/insulins.ts` says which class a brand belongs to. This table says
+// what a class means. The split is §11.8's: that file holds facts about the
+// world, this one holds the decisions taken from them.
+//
+// ## The pre-meal wait, and why each range is what it is
+//
+// This is the one that fails toward HYPOGLYCAEMIA. A rapid analogue injected
+// twenty minutes early is acting before the food arrives, and §2.1 calls that
+// the unsafe direction — which is why these are label-derived rather than
+// reasoned from onset curves.
+//
+// Each range is a GUIDELINE recommendation where one exists, and the label
+// where one does not. That rule was arrived at the hard way — see below.
+//
+//   regular      20-30   ISPAD 2024, chapter 9: "If regular insulin is used as
+//                        prandial insulin, it should be administered 20-30 min
+//                        before each main meal." Humulin R's own label says
+//                        "approximately 30 minutes", a point rather than a
+//                        range; the range is ISPAD's.
+//   rapid        10-15   ISPAD 2024, chapter 9, GRADE [A]: "RAI should be given
+//                        ideally 10-15 min before meals or, at least,
+//                        immediately before meals, given the strong evidence
+//                        that the rapid action not only reduces postprandial
+//                        hyperglycemia but nocturnal hypoglycemia may also be
+//                        reduced." Verified from the Karger PDF by two
+//                        independent research passes, 2026-09-20.
+//   ultra_rapid    0-0   Fiasp and Lyumjev are both labelled for injection at
+//                        the START of the meal. Zero is the instruction, not a
+//                        missing value, and the interface says so in words
+//                        rather than rendering "wait 0 minutes".
+//
+// ## The rapid row shipped at 5-10 for a few hours, and that was wrong twice
+//
+// **The derivation was wrong.** 5-10 was the INTERSECTION of what the three
+// rapid-analogue labels permit: NovoLog says "within 5-10 minutes", Humalog and
+// Apidra say "within 15 minutes before". 5-10 does sit inside all three, and
+// the arithmetic is sound. It is still meaningless — a minimum taken over
+// heterogeneous regulatory filings is an artefact of the documents, not a fact
+// about insulin. The ceiling came entirely from ONE label, and that label's EU
+// twin (NovoRapid, same molecule, same manufacturer) says "immediately before a
+// meal" instead. Label-permitted is not the same question as recommended.
+//
+// **The safety reasoning was backwards.** The rationale written alongside it
+// was that eating sooner than optimal runs high, which §2.1 tolerates, while
+// eating later than onset ends in a hypo — so the narrower, earlier-eating
+// answer was the safe one. ISPAD's grade [A] finding is that the LONGER
+// pre-bolus reduces nocturnal hypoglycaemia, and two independent reviews report
+// no added hypo risk. The asymmetry runs the other way for this interval.
+//
+// **And it was incoherent.** The regular row already took ISPAD's number.
+// Taking a guideline for one class and a label intersection for another is not
+// a rule, it is two habits.
+//
+// ## One outlier, recorded rather than accommodated
+//
+// Insuman Rapid's SmPC says "15 to 20 minutes before a meal" — shorter than the
+// class figure. It stays at the class figure: ISPAD gives 20-30 for regular
+// insulin as a CLASS, and preferring one manufacturer's filing over a graded
+// guideline is the exact mistake the rapid row just made. Per-brand waits would
+// also destroy the reason the list is grouped — that a within-class mispick
+// leaves every timing correct. The Insuman reader is served by the editable
+// field: their prescriber's number overrides the class.
+//
+// The reader may replace the range with a single number from their own
+// prescriber — see `RANGE.eatDelay`. That is the answer §8.5 used to ask for
+// and then give nowhere to live.
+//
+// ## The stacking windows, and why they are IDENTICAL in every row
+//
+// They move by class in the SHAPE of this table and not yet in its values, and
+// that is a deliberate hold rather than an oversight. CLINICAL.md question 10c
+// asks the prescriber whether the 4-hour suppression and 12-hour advisory may
+// shorten for a rapid analogue and to what. Nobody has answered.
+//
+// Shortening a gate is the dose-RAISING direction, and §20.1.1 forbids picking
+// a clinical number off a reading of the literature. Holding a correction
+// longer than an analogue needs runs high, which §2.1 tolerates, and §7.4.1's
+// per-dose override — recorded on the row as `overrodeStacking` — is the
+// designed escape for the reader who knows better on the day.
+//
+// **RESEARCHED 2026-09-20, and the answer is: do not shorten them.** Every
+// regulated device that ships a duration-of-insulin-action default lands on 4
+// hours or above — Medtronic 670G and 780G both 4 (range 2-8), Accu-Chek 4,
+// mySugr 4.5, Tandem's Control-IQ forced to 5. The bolus-calculator literature
+// argues for longer rather than shorter, and names this exact candidate as the
+// hazard: Walsh 2014, that a duration "too short such as 3 hours can hide
+// insulin stacking and lead to hypoglycemic events that are then compensated
+// for by incorrectly adjusting other pump settings". The only citable FLOOR is
+// 3 hours, from ISPAD 2024's "less than 2-3 h intervals" and ADA's Safe at
+// School material — both written for people reasoning without a decay model,
+// which is a different situation from a calculator that has none by design.
+//
+// So the values stay, and `CLINICAL.md` now says why rather than saying nobody
+// has looked. `effectiveWindows` in `core/insulin.ts` already handles the
+// switch day if a prescriber ever does move one.
+//
+// WHEN THESE STOP BEING EQUAL: `COPY.explain.stackingWindows` and
+// `COPY.explain.stackingHold` interpolate the shipped pair as though there were
+// one, which is true today and false the moment a row changes. They must take
+// the reader's class. Recorded here because this comment is what the person
+// making that edit will be reading.
+export const INSULIN_TIMING = {
+  regular: { eatDelayMinutes: [20, 30], stackSuppressHours: 4, stackAdviseHours: 12 },
+  rapid: { eatDelayMinutes: [10, 15], stackSuppressHours: 4, stackAdviseHours: 12 },
+  ultra_rapid: { eatDelayMinutes: [0, 0], stackSuppressHours: 4, stackAdviseHours: 12 },
+} as const;
+
+// §8.1's pre-meal window, and it is REGULAR HUMAN INSULIN'S — an alias onto the
+// table above rather than a second copy, so the two cannot drift. Everything
+// that still reads this constant is describing Humulin R specifically: the
+// timing tests' fixture, and the prose in `CLINICAL.md` section 4.
+export const EAT_DELAY_MINUTES = INSULIN_TIMING.regular.eatDelayMinutes;
 
 // ─── DIVERGENCE CONFIRMATION (§7.1) ────────────────────────
 export const DIVERGE_MIN_UNITS = 5; // absolute floor
@@ -127,11 +248,30 @@ export const RANGE = {
   // a 61 against a calculated 12 is not, and only the divergence check can
   // tell those apart. `bloodSugar` and `carbs` carry no soft band either.
   injected: { hard: [0.01, 100] },
+  // §8.5 — the pre-meal wait, when the reader replaces the class range with
+  // their own prescriber's single number.
+  //
+  // ZERO IS A LEGITIMATE FLOOR, not a missing value: Fiasp and Lyumjev are both
+  // labelled for injection at the start of the meal, so a hard floor above zero
+  // would refuse an instruction printed on a label. §4.1's rule that a zero is
+  // not an empty applies here as much as to a reading.
+  //
+  // The ceiling is 45 and it is PROVISIONAL — CLINICAL.md question 10b asks the
+  // prescriber for the real bounds. It sits above regular human insulin's own
+  // 30 with room for a prescriber who wants longer, and stops well short of the
+  // waits that turn a pre-meal dose into an unaccompanied one. The confirm-once
+  // band closes at 30 for the same reason: past the longest wait any mealtime
+  // label states, a typed 40 is more likely a slip than a prescription.
+  eatDelay: { hard: [0, 45], soft: [0, 30] },
 } as const;
 
 // ─── STACKING (§7.4) ───────────────────────────────────────
-export const STACK_SUPPRESS_HOURS = 4;
-export const STACK_ADVISE_HOURS = 12;
+// Aliases onto `INSULIN_TIMING`, for the same reason `EAT_DELAY_MINUTES` is
+// one. Every class currently declares the same pair, so these are still "the"
+// windows — but they are regular human insulin's windows, and naming them from
+// that row is what stops a future per-class edit leaving a second copy behind.
+export const STACK_SUPPRESS_HOURS = INSULIN_TIMING.regular.stackSuppressHours;
+export const STACK_ADVISE_HOURS = INSULIN_TIMING.regular.stackAdviseHours;
 // Declared after STACK_ADVISE_HOURS deliberately — v9 printed this above it,
 // which is a TDZ ReferenceError if transcribed literally [R1].
 export const DELETE_CONFIRM_WINDOW_HOURS = STACK_ADVISE_HOURS; // §7.3
@@ -257,6 +397,12 @@ export const UPDATE_LOOK_INTERVAL_MS = 1000;
 
 // ─── SCHEMA (§11.3) ────────────────────────────────────────
 export const SCHEMA_VERSION = 1;
+// §11.3's recovery block, VERSIONED INDEPENDENTLY of the payload above — which
+// is the point of it: an older build reading a version it does not know must
+// refuse to present the numbers as verified prescription settings rather than
+// render the half it recognises. Went to 2 on 2026-09-20 when §8.5's mealtime
+// insulin joined the block.
+export const RECOVERY_FORMAT = 2;
 
 /**
  * §11.8's self-consistency test, as an executable assertion rather than a
@@ -283,8 +429,17 @@ export interface RangeSpec {
 }
 export type RangeTable = Readonly<Record<keyof typeof RANGE, RangeSpec>>;
 
+/** One class's two clocks. See `INSULIN_TIMING`. */
+export interface ClassTiming {
+  readonly eatDelayMinutes: readonly [number, number];
+  readonly stackSuppressHours: number;
+  readonly stackAdviseHours: number;
+}
+export type InsulinTimingTable = Readonly<Record<keyof typeof INSULIN_TIMING, ClassTiming>>;
+
 export interface ConfigValues {
   readonly range: RangeTable;
+  readonly insulinTiming: InsulinTimingTable;
   readonly thresholdMealGrams: number;
   readonly thresholdHighReading: number;
   readonly thresholdMultiple: number;
@@ -308,6 +463,7 @@ export interface ConfigValues {
 /** The values this build actually ships. */
 export const SHIPPED: ConfigValues = {
   range: RANGE,
+  insulinTiming: INSULIN_TIMING,
   thresholdMealGrams: THRESHOLD_MEAL_GRAMS,
   thresholdHighReading: THRESHOLD_HIGH_READING,
   thresholdMultiple: THRESHOLD_MULTIPLE,
@@ -420,9 +576,61 @@ export function checkConfig(values: ConfigValues): string[] {
     }
   }
 
-  const [eatLo, eatHi] = values.eatDelayMinutes;
-  if (!(eatLo > 0 && eatLo < eatHi)) {
-    problems.push(`EAT_DELAY_MINUTES is not an ordered positive pair (${eatLo}, ${eatHi})`);
+  // §8.5 — the per-class clocks, checked as a TABLE. There stopped being "the"
+  // eat delay on 2026-09-20, so a check written against one pair stopped being
+  // able to see the other two — which is the shape of every gap §20.3 records.
+  const [delayFloor, delayCeiling] = values.range.eatDelay.hard;
+  for (const [name, timing] of Object.entries(values.insulinTiming)) {
+    const [eatLo, eatHi] = timing.eatDelayMinutes;
+    // `<=`, not `<`. An ultra-rapid analogue's instruction is "at the start of
+    // the meal", which is the pair [0, 0] — a point rather than a range, and a
+    // check demanding a width would reject the one label that states an exact
+    // moment.
+    if (!(eatLo >= 0 && eatLo <= eatHi)) {
+      problems.push(`INSULIN_TIMING.${name}: eat delay is not an ordered non-negative pair (${eatLo}, ${eatHi})`);
+    }
+    // The prefill has to be enterable. A class range outside the bounds the
+    // reader's own field accepts would prefill a value the same screen refuses,
+    // and the reader would have no way to put it back.
+    //
+    // Stryker disable next-line ConditionalExpression,EqualityOperator: the
+    // `eatLo < delayFloor` half is unreachable while `RANGE.eatDelay`'s floor
+    // is zero — anything below it is negative, and the check above reports that
+    // first with a better message. It is written out rather than dropped
+    // because the floor is a value someone may move (CLINICAL.md question 10b
+    // asks for the real bounds), and a one-sided check would then silently stop
+    // covering half of what it claims to.
+    if (eatLo < delayFloor || eatHi > delayCeiling) {
+      problems.push(
+        `INSULIN_TIMING.${name}: eat delay [${eatLo}, ${eatHi}] escapes RANGE.eatDelay [${delayFloor}, ${delayCeiling}]`,
+      );
+    }
+    if (!(timing.stackSuppressHours < timing.stackAdviseHours)) {
+      problems.push(
+        `INSULIN_TIMING.${name}: stacking windows are out of order (${timing.stackSuppressHours}, ${timing.stackAdviseHours})`,
+      );
+    }
+  }
+  // The three surviving single-value constants are ALIASES onto the regular
+  // row. Asserting that rather than trusting it is what stops an alias being
+  // quietly re-pointed at another class — the constants are what `CLINICAL.md`
+  // section 4's Humulin R prose and `check-plan.py`'s pins both name.
+  const regular = values.insulinTiming.regular;
+  if (
+    values.eatDelayMinutes[0] !== regular.eatDelayMinutes[0] ||
+    values.eatDelayMinutes[1] !== regular.eatDelayMinutes[1]
+  ) {
+    problems.push(
+      `EAT_DELAY_MINUTES [${values.eatDelayMinutes[0]}, ${values.eatDelayMinutes[1]}] is not INSULIN_TIMING.regular's [${regular.eatDelayMinutes[0]}, ${regular.eatDelayMinutes[1]}]`,
+    );
+  }
+  if (
+    values.stackSuppressHours !== regular.stackSuppressHours ||
+    values.stackAdviseHours !== regular.stackAdviseHours
+  ) {
+    problems.push(
+      `the stacking constants (${values.stackSuppressHours}, ${values.stackAdviseHours}) are not INSULIN_TIMING.regular's (${regular.stackSuppressHours}, ${regular.stackAdviseHours})`,
+    );
   }
 
   // §6.5's triggers must be able to fire at all — the lesson from v3's

@@ -7,6 +7,7 @@ import {
   needsInvalidTimeLine,
   needsMissingHistoryCaveat,
 } from '../src/core/stacking.js';
+import { windowsFor } from '../src/core/insulin.js';
 import type { LastDose } from '../src/core/types.js';
 
 const NOW = 1_757_000_000_000;
@@ -14,32 +15,40 @@ const HOUR = 3_600_000;
 const dose = (hoursAgo: number, units = 6): LastDose => ({
   injectedHundredths: units * 100,
   atMs: NOW - hoursAgo * HOUR,
+  insulinClass: 'regular',
 });
+
+/**
+ * §8.5 — the windows are an ARGUMENT now, so every case here has to name the
+ * insulin it is about. These are regular human insulin's four and twelve
+ * hours: the pair this file has always asserted, said out loud.
+ */
+const W = windowsFor('regular');
 
 describe('§7.6 the elapsed cases, and every boundary between them', () => {
   it('classifies the four windows', () => {
-    expect(classifyElapsed(dose(0), NOW)).toBe('within_suppress_window');
-    expect(classifyElapsed(dose(3.99), NOW)).toBe('within_suppress_window');
-    expect(classifyElapsed(dose(4), NOW)).toBe('within_advise_window');
-    expect(classifyElapsed(dose(12), NOW)).toBe('within_advise_window');
-    expect(classifyElapsed(dose(12.001), NOW)).toBe('too_old');
-    expect(classifyElapsed(null, NOW)).toBe('no_record');
+    expect(classifyElapsed(dose(0), NOW, W)).toBe('within_suppress_window');
+    expect(classifyElapsed(dose(3.99), NOW, W)).toBe('within_suppress_window');
+    expect(classifyElapsed(dose(4), NOW, W)).toBe('within_advise_window');
+    expect(classifyElapsed(dose(12), NOW, W)).toBe('within_advise_window');
+    expect(classifyElapsed(dose(12.001), NOW, W)).toBe('too_old');
+    expect(classifyElapsed(null, NOW, W)).toBe('no_record');
   });
 
   it('is exact at four hours to the millisecond', () => {
-    expect(classifyElapsed({ injectedHundredths: 600, atMs: NOW - 4 * HOUR + 1 }, NOW)).toBe(
+    expect(classifyElapsed({ injectedHundredths: 600, atMs: NOW - 4 * HOUR + 1, insulinClass: 'regular' as const }, NOW, W)).toBe(
       'within_suppress_window',
     );
-    expect(classifyElapsed({ injectedHundredths: 600, atMs: NOW - 4 * HOUR }, NOW)).toBe(
+    expect(classifyElapsed({ injectedHundredths: 600, atMs: NOW - 4 * HOUR, insulinClass: 'regular' as const }, NOW, W)).toBe(
       'within_advise_window',
     );
   });
 
   it('is exact at twelve hours to the millisecond', () => {
-    expect(classifyElapsed({ injectedHundredths: 600, atMs: NOW - 12 * HOUR }, NOW)).toBe(
+    expect(classifyElapsed({ injectedHundredths: 600, atMs: NOW - 12 * HOUR, insulinClass: 'regular' as const }, NOW, W)).toBe(
       'within_advise_window',
     );
-    expect(classifyElapsed({ injectedHundredths: 600, atMs: NOW - 12 * HOUR - 1 }, NOW)).toBe(
+    expect(classifyElapsed({ injectedHundredths: 600, atMs: NOW - 12 * HOUR - 1, insulinClass: 'regular' as const }, NOW, W)).toBe(
       'too_old',
     );
   });
@@ -48,22 +57,22 @@ describe('§7.6 the elapsed cases, and every boundary between them', () => {
     // §7.6's traced failure: he injects 6 units with the clock an hour fast,
     // the clock corrects, and the row is future-dated. Excluding it lets a
     // correction be applied over ~6 units still on board. So it suppresses.
-    expect(classifyElapsed(dose(-0.5), NOW)).toBe('skewed_to_zero');
-    expect(classifyElapsed(dose(-1), NOW)).toBe('skewed_to_zero');
+    expect(classifyElapsed(dose(-0.5), NOW, W)).toBe('skewed_to_zero');
+    expect(classifyElapsed(dose(-1), NOW, W)).toBe('skewed_to_zero');
     expect(isUsableRecord('skewed_to_zero')).toBe(true);
   });
 
   it('excludes an implausibly future-dated row, and never silently', () => {
-    expect(classifyElapsed(dose(-1.001), NOW)).toBe('excluded_future');
-    expect(classifyElapsed(dose(-48), NOW)).toBe('excluded_future');
+    expect(classifyElapsed(dose(-1.001), NOW, W)).toBe('excluded_future');
+    expect(classifyElapsed(dose(-48), NOW, W)).toBe('excluded_future');
     expect(isUsableRecord('excluded_future')).toBe(false);
   });
 
   it('excludes a non-finite timestamp the same way', () => {
-    expect(classifyElapsed({ injectedHundredths: 600, atMs: Number.NaN }, NOW)).toBe(
+    expect(classifyElapsed({ injectedHundredths: 600, atMs: Number.NaN, insulinClass: 'regular' as const }, NOW, W)).toBe(
       'excluded_future',
     );
-    expect(classifyElapsed(dose(2), Number.NaN)).toBe('excluded_future');
+    expect(classifyElapsed(dose(2), Number.NaN, W)).toBe('excluded_future');
   });
 
   it('knows which cases give the gate something to reason from', () => {
@@ -76,30 +85,30 @@ describe('§7.6 the elapsed cases, and every boundary between them', () => {
 
 describe('§7.4 the corrected suppression rule', () => {
   it('suppresses a positive correction inside the window', () => {
-    const decision = decideStacking(dose(2), NOW, 6, 30, false);
+    const decision = decideStacking(dose(2), NOW, 6, 30, false, W);
     expect(decision.suppressPositiveCorrection).toBe(true);
     expect(decision.overrideAvailable).toBe(true);
   });
 
   it('NEVER suppresses a negative correction — the round-2 critical', () => {
-    const decision = decideStacking(dose(2), NOW, -1.6666666666666667, 30, false);
+    const decision = decideStacking(dose(2), NOW, -1.6666666666666667, 30, false, W);
     expect(decision.suppressPositiveCorrection).toBe(false);
     // And no override is offered, because nothing is being held back.
     expect(decision.overrideAvailable).toBe(false);
   });
 
   it('does not suppress a correction of exactly zero', () => {
-    expect(decideStacking(dose(2), NOW, 0, 30, false).suppressPositiveCorrection).toBe(false);
+    expect(decideStacking(dose(2), NOW, 0, 30, false, W).suppressPositiveCorrection).toBe(false);
   });
 
   it('does not suppress outside the window', () => {
-    expect(decideStacking(dose(5), NOW, 6, 30, false).suppressPositiveCorrection).toBe(false);
-    expect(decideStacking(dose(20), NOW, 6, 30, false).suppressPositiveCorrection).toBe(false);
-    expect(decideStacking(null, NOW, 6, 30, false).suppressPositiveCorrection).toBe(false);
+    expect(decideStacking(dose(5), NOW, 6, 30, false, W).suppressPositiveCorrection).toBe(false);
+    expect(decideStacking(dose(20), NOW, 6, 30, false, W).suppressPositiveCorrection).toBe(false);
+    expect(decideStacking(null, NOW, 6, 30, false, W).suppressPositiveCorrection).toBe(false);
   });
 
   it('the override cancels suppression entirely', () => {
-    const decision = decideStacking(dose(2), NOW, 6, 30, true);
+    const decision = decideStacking(dose(2), NOW, 6, 30, true, W);
     expect(decision.suppressPositiveCorrection).toBe(false);
     expect(decision.overrideAvailable).toBe(false);
   });
@@ -107,27 +116,27 @@ describe('§7.4 the corrected suppression rule', () => {
 
 describe('§7.4.1 the ceiling is injected units x sensitivity', () => {
   it('gives 180 mg/dL for 6 units at a sensitivity of 30', () => {
-    expect(decideStacking(dose(2, 6), NOW, 6, 30, false).ceilingMgDl).toBe(180);
+    expect(decideStacking(dose(2, 6), NOW, 6, 30, false, W).ceilingMgDl).toBe(180);
   });
 
   it('reads the INJECTED amount, so 25 units gives 750', () => {
     // §11.2, blocking in round 9: a test author who pinned the CALCULATED
     // figure would have pinned the wrong gate input.
-    expect(decideStacking(dose(2, 25), NOW, 6, 30, false).ceilingMgDl).toBe(750);
+    expect(decideStacking(dose(2, 25), NOW, 6, 30, false, W).ceilingMgDl).toBe(750);
   });
 
   it('scales with the sensitivity', () => {
-    expect(decideStacking(dose(2, 6), NOW, 6, 50, false).ceilingMgDl).toBe(300);
-    expect(decideStacking(dose(2, 6), NOW, 6, 5, false).ceilingMgDl).toBe(30);
+    expect(decideStacking(dose(2, 6), NOW, 6, 50, false, W).ceilingMgDl).toBe(300);
+    expect(decideStacking(dose(2, 6), NOW, 6, 5, false, W).ceilingMgDl).toBe(30);
   });
 
   it('handles a half-unit injected amount without a float artifact', () => {
-    expect(decideStacking(dose(2, 6.5), NOW, 6, 30, false).ceilingMgDl).toBe(195);
+    expect(decideStacking(dose(2, 6.5), NOW, 6, 30, false, W).ceilingMgDl).toBe(195);
   });
 
   it('is absent outside the window, where there is nothing to state', () => {
-    expect(decideStacking(dose(5), NOW, 6, 30, false).ceilingMgDl).toBeNull();
-    expect(decideStacking(null, NOW, 6, 30, false).ceilingMgDl).toBeNull();
+    expect(decideStacking(dose(5), NOW, 6, 30, false, W).ceilingMgDl).toBeNull();
+    expect(decideStacking(null, NOW, 6, 30, false, W).ceilingMgDl).toBeNull();
   });
 });
 

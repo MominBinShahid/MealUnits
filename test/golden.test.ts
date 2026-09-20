@@ -22,6 +22,8 @@ import { describe, expect, it } from 'vitest';
 import cases from './golden/cases.json' with { type: 'json' };
 import { resolve } from '../src/core/resolve.js';
 import type { Outcome, RoundingMode, Settings, Snapshot } from '../src/core/types.js';
+import { MEALTIME_CLASSES } from '../src/core/insulin.js';
+import type { InsulinClass } from '../src/core/insulin.js';
 
 /** A fixed decision time. Nothing in these tests reads a real clock. */
 const NOW_MS = 1_757_000_000_000; // 2025-09-04T15:33:20Z, arbitrary and fixed
@@ -100,12 +102,15 @@ function buildSnapshot(input: GoldenInput, mode: string): Snapshot {
     basalName: input.basalName ?? 'Lantus',
     basalUnits: input.basalUnits ?? 36,
     basalTiming: input.basalTiming ?? 'early morning, before breakfast',
+    insulinId: 'humulin-r',
+    eatDelayMinutes: null,
   };
   const lastDose = input.lastDose
     ? {
         // §11.2 — this is the INJECTED amount, in hundredths.
         injectedHundredths: Math.round(input.lastDose.units * 100),
         atMs: NOW_MS - input.lastDose.atHoursAgo * MS_PER_HOUR,
+        insulinClass: 'regular' as const,
       }
     : null;
 
@@ -119,6 +124,11 @@ function buildSnapshot(input: GoldenInput, mode: string): Snapshot {
     eligibleEntryCount: input.eligibleEntryCount ?? 0,
     historyProvenance: input.historyProvenance ?? 'trusted',
     lastDose,
+    // §8.5 — the golden cases are REGULAR HUMAN INSULIN's, and always were:
+    // the four and twelve hour windows every stacking case here asserts are
+    // that class's. Saying so is the difference between a fixture that states
+    // its premise and one that inherits it from a module constant.
+    insulinClass: 'regular',
     bandEFullCardShownRecently: input.bandEFullCardShownRecently ?? false,
     excludedTimeRecords: input.excludedTimeRecords ?? 0,
     blankReadingAcknowledged: input.blankReadingAcknowledged ?? false,
@@ -224,5 +234,51 @@ describe('§1.3 the basal regimen never touches a calculated dose', () => {
     expect(resolve(buildSnapshot(withBasal, 'nearest'))).toStrictEqual(
       resolve(buildSnapshot(base, 'nearest')),
     );
+  });
+});
+
+/**
+ * §8.5 — the claim the whole entry rests on, as a case rather than a sentence.
+ *
+ * The insulin reaches exactly two clocks and NEITHER of them is arithmetic. If
+ * this ever fails, the answer to "does naming my insulin change my dose?" — the
+ * question the setup screen answers with "no" — has quietly become yes.
+ */
+describe('§8.5 the mealtime insulin never touches the arithmetic', () => {
+  const base: GoldenInput = {
+    bloodSugar: 330,
+    carbs: 200,
+    target: 150,
+    isf: 30,
+    icr: 10,
+    threshold: 20,
+    largeDoseConfirmed: true,
+  };
+
+  it('gives the same dose under every class, with nothing on board', () => {
+    const under = (insulinClass: InsulinClass | null): Outcome =>
+      resolve({ ...buildSnapshot(base, 'nearest'), insulinClass });
+    const reference = under('regular');
+    for (const insulinClass of [...MEALTIME_CLASSES, null]) {
+      expect(under(insulinClass), String(insulinClass)).toStrictEqual(reference);
+    }
+  });
+
+  it('and the same dose under every class with a dose still in the window', () => {
+    // The one place a class COULD change a number today: §7.4's gate. It does
+    // not, because every row in `INSULIN_TIMING` declares the same windows
+    // while CLINICAL.md question 10c is open — so this case also pins that
+    // hold, from the outside, on a reading where the suppression actually bites.
+    const recent: GoldenInput = { ...base, lastDose: { units: 6, atHoursAgo: 2 } };
+    const under = (insulinClass: InsulinClass | null): Outcome =>
+      resolve({
+        ...buildSnapshot(recent, 'nearest'),
+        insulinClass,
+        lastDose: { injectedHundredths: 600, atMs: NOW_MS - 2 * MS_PER_HOUR, insulinClass },
+      });
+    expect(under('regular').kind).toBe('meal_only_suppressed');
+    for (const insulinClass of [...MEALTIME_CLASSES, null]) {
+      expect(under(insulinClass), String(insulinClass)).toStrictEqual(under('regular'));
+    }
   });
 });

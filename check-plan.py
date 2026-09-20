@@ -441,11 +441,18 @@ CONSTANTS = {
     "INCREMENT": "{ nearest: 1, half: 0.5, ceil: 1, floor: 1, off: 0.01 }",
     "HUNDREDTHS_SCALE": "100",
     "CLOCK_SKEW_TOLERANCE_HOURS": "1",
-    "EAT_DELAY_MINUTES": "[20, 30]",
+    # §8.5 — ALIASES onto INSULIN_TIMING's regular row, not literals. The
+    # values themselves are pinned by INSULIN_TIMINGS below, row by row, which
+    # is what "the check has to move from a constant to a per-class table"
+    # meant: there stopped being "the" eat delay on 2026-09-20, and a pin
+    # written against one pair would have stopped being able to see the other
+    # two. Pinning the ALIAS as well is what stops it being re-pointed at
+    # another class while every literal stays correct.
+    "EAT_DELAY_MINUTES": "INSULIN_TIMING.regular.eatDelayMinutes",
     "DIVERGE_MIN_UNITS": "5",
     "DIVERGE_RATIO": "3",
-    "STACK_SUPPRESS_HOURS": "4",
-    "STACK_ADVISE_HOURS": "12",
+    "STACK_SUPPRESS_HOURS": "INSULIN_TIMING.regular.stackSuppressHours",
+    "STACK_ADVISE_HOURS": "INSULIN_TIMING.regular.stackAdviseHours",
     "DELETE_CONFIRM_WINDOW_HOURS": "STACK_ADVISE_HOURS",
     "ADVISORY_MIN_ELIGIBLE": "10",
     "ADVISORY_WINDOW": "30",
@@ -453,11 +460,28 @@ CONSTANTS = {
     "ADVISORY_HIGH_MULTIPLE": "3",
     "RESULT_EXPIRY_MINUTES": "15",
     "POLL_INTERVAL_MS": "4000",
+    "SCHEMA_VERSION": "1",
+    "RECOVERY_FORMAT": "2",
+}
+
+# §8.5's per-class clocks, row by row. A table rather than three constants,
+# because there stopped being "the" eat delay the day the app started asking
+# which insulin is in the pen.
+#
+# The stacking windows are IDENTICAL on every row and that is a HOLD, not an
+# oversight: CLINICAL.md question 10c asks the prescriber whether they may
+# shorten for a rapid analogue and nobody has answered. Pinning them here means
+# the day somebody edits one, this file has to be edited in the same commit —
+# which is exactly the ceremony a clinical change deserves.
+INSULIN_TIMINGS = {
+    "regular": ("[20, 30]", "4", "12"),
+    "rapid": ("[10, 15]", "4", "12"),
+    "ultra_rapid": ("[0, 0]", "4", "12"),
 }
 
 # Names whose VALUE is a multi-line structure, checked elsewhere rather than as a
 # literal. RANGE is checked row by row against RANGES below.
-STRUCTURED_CONSTANTS = {"RANGE"}
+STRUCTURED_CONSTANTS = {"RANGE", "INSULIN_TIMING"}
 
 # §11.8's RANGE block. Every row, not just target — round 18 pinned the ceiling
 # because it had just changed, and left the other seven rows unpinned.
@@ -465,6 +489,7 @@ RANGES = {
     "bloodSugar": "[20, 600]", "carbs": "[0, 300]",
     "target": "[70, 200]", "isf": "[5, 200]", "icr": "[1, 100]",
     "threshold": "[10, 45]", "basalUnits": "[1, 150]", "injected": "[0.01, 100]",
+    "eatDelay": "[0, 45]",
 }
 
 # The confirm-once band. v23 declared only the hard bounds, so §4.5's third
@@ -474,6 +499,7 @@ RANGES = {
 SOFT_RANGES = {
     "target": "[90, 140]", "isf": "[20, 100]", "icr": "[5, 50]",
     "threshold": "[15, 35]", "basalUnits": "[5, 80]", "injected": "[0.5, 60]",
+    "eatDelay": "[0, 30]",
 }
 
 # Snapshot fields deliberately absent from §11.2, with the section that says so.
@@ -2631,9 +2657,18 @@ def check_prose_numbers(corpus):
     C = {k: v for k, v in CONSTANTS.items()}
     hypo1, hypo2 = int(C["HYPO_LEVEL_1"]), int(C["HYPO_LEVEL_2"])
     keto = int(C["KETONE_ADVISORY"])
-    advise, suppress = int(C["STACK_ADVISE_HOURS"]), int(C["STACK_SUPPRESS_HOURS"])
+    # §8.5 — the three timing constants became ALIASES onto INSULIN_TIMING's
+    # regular row on 2026-09-20, so their pins no longer hold a number. The
+    # values come from the per-class table, and REGULAR's row is the right one:
+    # every prose restatement this function hunts for is Humulin R's, because
+    # that is the insulin §8.1 and CLINICAL.md section 4 are written about.
+    #
+    # Resolved rather than re-pinned. A second copy of 20-30 here is exactly the
+    # drift this whole function exists to catch, one level up.
+    eat_regular, suppress_regular, advise_regular = INSULIN_TIMINGS["regular"]
+    advise, suppress = int(advise_regular), int(suppress_regular)
     bandb = C["BAND_B_CORRECTION_UNITS"]
-    eat = re.findall(r"\d+", C["EAT_DELAY_MINUTES"])
+    eat = re.findall(r"\d+", eat_regular)
 
     labels = {
         "blood sugar": "bloodSugar", "carbohydrates": "carbs",
@@ -2754,15 +2789,67 @@ def check_prose_numbers(corpus):
                            "declares STACK_SUPPRESS_HOURS %d and "
                            "STACK_ADVISE_HOURS %d"
                            % (at(m), m.group(1), m.group(2), suppress, advise))
-        # §8.1's eat delay, wherever it is restated
+        # §8.1's eat delay, wherever it is restated.
+        #
+        # THREE legitimate pairs since 2026-09-20, not one. A pin written
+        # against Humulin R's alone reported CLINICAL.md section 4.1's rapid row
+        # as drift on the day it was written — the exact "there stops being THE
+        # value for the checker to assert" that BACKLOG entry 26 flagged before
+        # the build.
+        #
+        # So the rule is class-aware rather than relaxed. Where the surrounding
+        # prose NAMES a class, that class's pair is the only right answer; where
+        # it names none, any declared pair passes and anything else is drift. A
+        # rapid row stating 20-30 is still caught, which is the case that
+        # matters — it is the wrong number in the hypo direction.
+        declared = {name: re.findall(r"\d+", row[0])
+                    for name, row in INSULIN_TIMINGS.items()}
+        class_words = {
+            # The bare word too. Without it CLINICAL.md's "we render 20-30
+            # minutes for regular" named no class at all, and the nearest word
+            # in the window was `ultra-rapid` from the sentence after it.
+            "regular": ("regular", "humulin r", "actrapid", "novolin r"),
+            "rapid": ("rapid analogue", "rapid-acting", "novorapid", "novolog",
+                      "humalog", "apidra", "aspart", "lispro", "glulisine"),
+            "ultra_rapid": ("ultra-rapid", "fiasp", "lyumjev", "faster aspart",
+                            "lispro-aabc"),
+        }
         for m in re.finditer(r"(\d+)\s*-\s*(\d+)\s*minutes", text):
             ctx = text[max(0, m.start() - 90):m.end() + 90].lower()
             if not any(w in ctx for w in ("inject", "eat", "before eating", "meal")):
                 continue
-            if [m.group(1), m.group(2)] != eat:
-                out.append("%s: the eat delay stated as %s-%s minutes; §11.8 "
-                           "declares EAT_DELAY_MINUTES [%s, %s]"
-                           % (at(m), m.group(1), m.group(2), eat[0], eat[1]))
+            pair = [m.group(1), m.group(2)]
+            # NEAREST class word wins, not the first found in some fixed
+            # order. A fixed order reported CLINICAL.md section 14's question
+            # 10b — "we render 20-30 minutes for regular" — as an ULTRA-RAPID
+            # statement, because question 10a two paragraphs above mentions
+            # ultra-rapid and fell inside the context window. Proximity is what
+            # actually says which class a sentence is about.
+            #
+            # `rapid` is excluded where it is the tail of `ultra-rapid`, which
+            # is the one case where two words occupy the same text and the
+            # inner one would otherwise sit closer to a following number.
+            here = m.start() - max(0, m.start() - 90)
+            named, best = None, None
+            for name, words in class_words.items():
+                for word in words:
+                    pattern = r"(?<!ultra-)rapid" if word == "rapid" else re.escape(word)
+                    for hit in re.finditer(pattern, ctx):
+                        distance = min(abs(hit.start() - here), abs(hit.end() - here))
+                        if best is None or distance < best:
+                            named, best = name, distance
+            if named is not None:
+                if pair != declared[named]:
+                    out.append("%s: the %s eat delay stated as %s-%s minutes; "
+                               "§11.8 declares [%s, %s]"
+                               % (at(m), named, pair[0], pair[1],
+                                  declared[named][0], declared[named][1]))
+            elif pair not in declared.values():
+                out.append("%s: an eat delay stated as %s-%s minutes, which is no "
+                           "class's; §11.8 declares %s"
+                           % (at(m), pair[0], pair[1],
+                              ", ".join("%s [%s, %s]" % (n, v[0], v[1])
+                                        for n, v in sorted(declared.items()))))
     return out
 
 
@@ -3342,6 +3429,142 @@ def check_next_steps(plan):
             "set too, and §20.5 must list it. Delete it, or add it to both."]
 
 
+def check_insulin_timing(corpus):
+    """29. §8.5's per-class clocks, in the code, in §11.8 and in §8.1's table.
+
+    The awkward part of entry 26, flagged in BACKLOG.md before the build:
+    "there stops being 'the' value for the checker to assert, so the check has
+    to move from a constant to a per-class table."
+
+    The three single-value constants became ALIASES onto the regular row, so
+    CONSTANTS now pins the alias SPELLING and this pins the numbers. Both halves
+    are load-bearing: without the alias pin a row could be re-pointed at another
+    class with every literal still correct, and without this one every literal
+    could move with the aliases still spelled right.
+
+    Three places have to agree, because all three are read by somebody:
+      * `src/config.ts`, which is what compiles;
+      * §11.8's block, which is what a reader of the plan believes;
+      * §8.1's class table, which is the clinical statement of the same numbers
+        and the one a prescriber would be handed.
+    """
+    out = []
+    plan = corpus.get("PLAN.md", "")
+    config_src = corpus.get("src/config.ts", "")
+    if not config_src:
+        try:
+            config_src = load(os.path.join(HERE, "src", "config.ts"))
+        except (IOError, OSError):
+            config_src = ""
+
+    row = re.compile(
+        r"^\s*(\w+):\s*\{\s*eatDelayMinutes:\s*(\[[^\]]*\]),\s*"
+        r"stackSuppressHours:\s*(\d+),\s*stackAdviseHours:\s*(\d+)\s*\}",
+        re.M)
+
+    for label, text in (("src/config.ts", config_src), ("PLAN.md", plan)):
+        if not text:
+            continue
+        found = {}
+        for m in row.finditer(text):
+            found[m.group(1)] = (
+                re.sub(r"\s+", " ", m.group(2)).replace("[ ", "[").replace(" ]", "]"),
+                m.group(3), m.group(4),
+            )
+        for name in sorted(set(INSULIN_TIMINGS) - set(found)):
+            out.append("%s: INSULIN_TIMING has no `%s` row; check-plan.py declares "
+                       "one" % (label, name))
+        for name in sorted(set(found) - set(INSULIN_TIMINGS)):
+            out.append("%s: INSULIN_TIMING declares a `%s` row that check-plan.py "
+                       "does not pin — an unpinned clinical clock is what §8.5 "
+                       "existed to remove" % (label, name))
+        for name in sorted(set(found) & set(INSULIN_TIMINGS)):
+            want, got = INSULIN_TIMINGS[name], found[name]
+            if got != want:
+                out.append("%s: INSULIN_TIMING.%s is (%s, %s, %s); check-plan.py "
+                           "declares (%s, %s, %s) — if the change is intended, "
+                           "change both in one edit"
+                           % (label, name, got[0], got[1], got[2],
+                              want[0], want[1], want[2]))
+
+    # THE ALIASES, IN THE SHIPPING FILE.
+    #
+    # `check_constants` reads its declarations out of PLAN.md, so re-pointing
+    # `EAT_DELAY_MINUTES` at the rapid row in `src/config.ts` alone passed every
+    # check while the document still said `regular` — caught by the seeded
+    # mutation below rather than by reading this file, which is the only way a
+    # hole in a checker has ever shown up here.
+    #
+    # It is not a hypothetical spelling error either. These three aliases are
+    # what `CLINICAL.md` section 4's Humulin R prose and §8.1's own worked
+    # example are written about; pointed at another class they would silently
+    # restate somebody else's insulin as the reference one.
+    for name in ("EAT_DELAY_MINUTES", "STACK_SUPPRESS_HOURS", "STACK_ADVISE_HOURS"):
+        want = CONSTANTS.get(name, "")
+        if not want.startswith("INSULIN_TIMING."):
+            continue
+        m = re.search(r"^export const %s = (.+?);" % re.escape(name), config_src, re.M)
+        if not m:
+            out.append("src/config.ts does not export %s; §11.8 declares it as "
+                       "`%s`" % (name, want))
+        elif m.group(1).strip() != want:
+            out.append("src/config.ts:%d: %s is `%s`; §11.8 declares `%s` — an "
+                       "alias pointed at another class restates a different "
+                       "insulin's clock as the reference one"
+                       % (line_of(config_src, m.start()), name,
+                          m.group(1).strip(), want))
+
+    # The class table, which states the same waits in words. BOTH documents
+    # carry one — §8.1 in the plan, section 4.1 in CLINICAL.md — and only the
+    # plan's was pinned until a seeded mutation walked straight through the
+    # other. The prose sweep could not see it either: its context window is 90
+    # characters, and CLINICAL.md's source column pushes every trigger word
+    # ("inject", "eat", "meal") out of reach of the number. A row whose own
+    # citation makes it invisible to the general check is exactly what a
+    # targeted pin is for.
+    #
+    # The ultra-rapid row deliberately carries no number in either document,
+    # because [0, 0] is an instruction and not a duration.
+    tables = {
+        "PLAN.md": ("§8.1", plan, {
+            "regular": "Regular human insulin",
+            "rapid": "Rapid analogue",
+            "ultra_rapid": "Ultra-rapid analogue",
+        }),
+        "CLINICAL.md": ("section 4.1", corpus.get("CLINICAL.md", ""), {
+            "regular": "Regular human insulin",
+            "rapid": "Rapid analogue (aspart, lispro, glulisine)",
+            "ultra_rapid": "Ultra-rapid analogue (faster aspart, lispro-aabc)",
+        }),
+    }
+    for rel, (section, text, labels) in sorted(tables.items()):
+        if not text:
+            continue
+        for name, label in sorted(labels.items()):
+            pattern = r"^\|\s*%s\s*\|\s*([^|]+?)\s*\|" % re.escape(label)
+            m = re.search(pattern, text, re.M)
+            if not m:
+                out.append("%s: %s's class table has no `%s` row; §11.8 declares "
+                           "a `%s` clock and a table that omits one is how a "
+                           "class ships with nobody having read its number"
+                           % (rel, section, label, name))
+                continue
+            stated = m.group(1).replace("\u2013", "-").replace("&ndash;", "-")
+            lo, hi = re.findall(r"\d+", INSULIN_TIMINGS[name][0])
+            if lo == hi == "0":
+                if re.search(r"\d", stated):
+                    out.append("%s: %s states a NUMERIC wait for %s; §11.8 "
+                               "declares [0, 0], which is \"at the start of the "
+                               "meal\" and not a duration" % (rel, section, label))
+                continue
+            got = re.findall(r"\d+", stated)
+            if got[:2] != [lo, hi]:
+                out.append("%s:%d: %s states the %s wait as %s; §11.8 declares "
+                           "[%s, %s]" % (rel, line_of(text, m.start()), section,
+                                         label, stated, lo, hi))
+    return out
+
+
 CHECKS = [
     ("retired phrases living as spec (ALL FILES)", check_retired, "corpus"),
     ("retired phrases living in src/**/*.ts", check_retired_in_source, "plan"),
@@ -3360,6 +3583,7 @@ CHECKS = [
     ("numbers contradicting canonical values", check_canonical, "corpus"),
     ("required rules deleted outright", check_required, "plan"),
     ("§11.8 constants and ranges", check_constants, "corpus"),
+    ("§8.5's per-class clocks", check_insulin_timing, "corpus"),
     ("BACKLOG stale against PLAN", check_cross_document, "backlog"),
     ("BLOG-FIX names the app path", check_blogfix, "blogfix"),
     ("checker describing retired things", check_tool_rot, "plan"),
@@ -3652,6 +3876,37 @@ SELF_TESTS = [
      lambda t: t.replace("Below 54 — band D", "Below 44 — band D")),
     ("design: the eat delay drifts in a mockup", "docs/design/step-flow.html",
      lambda t: t.replace("Inject 20&ndash;30", "Inject 10&ndash;20")),
+    # §8.5's per-class clocks. The class the entry was opened FOR — a rapid
+    # analogue reader told to wait Humulin R's twenty to thirty minutes is the
+    # one place this app can push somebody low — so the seed puts that exact
+    # wrong number back.
+    # The class-aware prose rule, both ways round: a class row restating
+    # another class's pair, and a pair that is nobody's.
+    ("§8.5: CLINICAL.md gives the rapid class Humulin R's wait", "CLINICAL.md",
+     lambda t: t.replace(
+         "| Rapid analogue (aspart, lispro, glulisine) | 10\u201315 minutes |",
+         "| Rapid analogue (aspart, lispro, glulisine) | 20\u201330 minutes |")),
+    ("§8.5: CLINICAL.md invents a wait no class declares", "CLINICAL.md",
+     lambda t: t.replace(
+         "| Regular human insulin | 20\u201330 minutes",
+         "| Regular human insulin | 25\u201335 minutes")),
+    ("§8.5: the rapid analogue wait widened to Humulin R's", "src/config.ts",
+     lambda t: t.replace("rapid: { eatDelayMinutes: [10, 15],",
+                         "rapid: { eatDelayMinutes: [20, 30],")),
+    ("§8.5: a stacking gate shortened for one class", "src/config.ts",
+     lambda t: t.replace(
+         "rapid: { eatDelayMinutes: [10, 15], stackSuppressHours: 4,",
+         "rapid: { eatDelayMinutes: [10, 15], stackSuppressHours: 2,")),
+    ("§8.5: an alias re-pointed at another class", "src/config.ts",
+     lambda t: t.replace(
+         "export const EAT_DELAY_MINUTES = INSULIN_TIMING.regular.eatDelayMinutes;",
+         "export const EAT_DELAY_MINUTES = INSULIN_TIMING.rapid.eatDelayMinutes;")),
+    ("§8.5: §8.1's table disagrees with the class it names", "PLAN.md",
+     lambda t: t.replace("| Rapid analogue | 10\u201315 minutes |",
+                         "| Rapid analogue | 15\u201320 minutes |")),
+    ("§8.5: the ultra-rapid row grew a wait its label does not have", "PLAN.md",
+     lambda t: t.replace("| Ultra-rapid analogue | at the start of the meal |",
+                         "| Ultra-rapid analogue | 10 minutes |")),
     ("design: §7.4.1's ceiling computed from the wrong operand",
      "docs/design/step-flow.html",
      lambda t: t.replace("up to <b>180 mg/dL</b>", "up to <b>80 mg/dL</b>")),
