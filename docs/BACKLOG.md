@@ -1894,7 +1894,7 @@ no second origin.
 
 ---
 
-### T18. §7.7's "a threshold-only change does not bump it" is not implemented — ASKING, not fixing
+### T18. §7.7's "a threshold-only change does not bump it" is not implemented — DONE 2026-09-20
 
 **Found 2026-09-20 while building entry 26, in a browser, and NOT touched.** §20.1.1's rule is that
 where the plan and the code disagree, only Momin can say which was meant.
@@ -1912,7 +1912,14 @@ two sections with the same ratios and the doses split between them. Not wrong, b
 document whose whole argument is that it does not misstate what produced a row. Nothing about a dose
 changes: the row stamp is still accurate, and every period it can point at has identical ratios.
 
-**Why it was not fixed here.** Three readings, and they are not the same change:
+**RULED by Momin: option 1, with his own requirement folded in.** He asked whether each field should
+carry a flag saying "this one bumps the revision" — the right instinct, because it makes the rule
+readable from the type. The problem with a separate flag table is that it is a SECOND list beside
+`settingsHistory`, and the two drift. So the explicitness went onto the type that already exists:
+the comparison builds the proposed history row and walks its own keys, so adding a field joins it
+automatically, and `check-plan.py` asserts the two agree with three seeded mutations behind it.
+
+**Three readings were considered, and they are not the same change:**
 
 1. **Suppress the bump when no `settingsHistory` field moved.** What §7.7 literally says. It makes
    the revision mean "the prescription changed", which is what the export reads it as.
@@ -1921,8 +1928,8 @@ changes: the row stamp is still accurate, and every period it can point at has i
 3. **Leave it.** An extra period is cosmetic, and the guard is a comparison that has to stay in step
    with the field list — the class of thing that rots silently in the unsafe direction.
 
-The gap predates entry 26 by every revision; `eatDelayMinutes` simply joined the fields it applies
-to. **Momin's call.**
+The gap predated entry 26 by every revision; `eatDelayMinutes` simply joined the fields it applied
+to.
 
 ---
 

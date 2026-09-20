@@ -3594,6 +3594,71 @@ def check_insulin_timing(corpus):
     return out
 
 
+def check_period_comparison(corpus):
+    """30. §7.7's no-change rule covers every field `settingsHistory` declares.
+
+    `BACKLOG` T18's fix decides whether a settings commit starts a new
+    prescription period by comparing the proposed history row against the
+    previous one. The obvious way to write that is a hand-kept list of field
+    names, and it rots in the UNSAFE direction: the day a field joins
+    `SettingsHistoryRow` and nobody adds it to the list, a real prescription
+    change stops starting a new period and §7.7.1's export attributes doses to
+    settings that did not produce them. Silently, and with no test to notice,
+    because the tests were written against the fields that existed then.
+
+    `sameProvenance` therefore builds the row and walks its OWN KEYS, so the
+    type is the list. This asserts that it still does — the property, not the
+    spelling — and that every declared field is either compared or named as
+    provenance, with nothing in between.
+    """
+    out = []
+    try:
+        repo = load(os.path.join(HERE, "src", "storage", "repo.ts"))
+        schema = load(os.path.join(HERE, "src", "storage", "schema.ts"))
+    except (IOError, OSError):
+        return out
+
+    block = re.search(r"export interface SettingsHistoryRow \{(.*?)\n\}", schema, re.S)
+    if not block:
+        out.append("src/storage/schema.ts: could not find SettingsHistoryRow — the "
+                   "parser needs updating (maintenance obligation)")
+        return out
+    declared = set(re.findall(r"^\s*readonly\s+(\w+)\s*:", block.group(1), re.M))
+
+    built = re.search(r"const proposed: SettingsHistoryRow = \{(.*?)\n  \};", repo, re.S)
+    if not built:
+        out.append("src/storage/repo.ts: `sameProvenance` no longer builds a whole "
+                   "SettingsHistoryRow — §7.7's no-change rule must compare every "
+                   "field the store declares, and a partial literal silently stops "
+                   "covering the ones it omits")
+        return out
+    compared = set(re.findall(r"^\s*(\w+):", built.group(1), re.M))
+
+    provenance = re.search(r"PERIOD_PROVENANCE: readonly \(keyof SettingsHistoryRow\)\[\] = \[([^\]]*)\]",
+                           repo)
+    excluded = set(re.findall(r"'(\w+)'", provenance.group(1))) if provenance else set()
+
+    for name in sorted(declared - compared):
+        out.append("src/storage/repo.ts: `sameProvenance` does not carry `%s`, which "
+                   "SettingsHistoryRow declares — a change to it would not start a "
+                   "new prescription period and §7.7.1 would attribute doses to "
+                   "settings that did not produce them" % name)
+    for name in sorted(compared - declared):
+        out.append("src/storage/repo.ts: `sameProvenance` carries `%s`, which "
+                   "SettingsHistoryRow does not declare" % name)
+    for name in sorted(excluded - declared):
+        out.append("src/storage/repo.ts: PERIOD_PROVENANCE names `%s`, which "
+                   "SettingsHistoryRow does not declare — the exclusion outlived "
+                   "the field" % name)
+    # The walk must read the object's keys rather than a written-out list.
+    if not re.search(r"Object\.keys\(proposed\)", repo):
+        out.append("src/storage/repo.ts: `sameProvenance` no longer walks "
+                   "`Object.keys(proposed)` — a hand-written field list is what "
+                   "T18's fix was shaped to avoid, because it rots toward "
+                   "attributing doses to the wrong prescription")
+    return out
+
+
 CHECKS = [
     ("retired phrases living as spec (ALL FILES)", check_retired, "corpus"),
     ("retired phrases living in src/**/*.ts", check_retired_in_source, "plan"),
@@ -3613,6 +3678,7 @@ CHECKS = [
     ("required rules deleted outright", check_required, "plan"),
     ("§11.8 constants and ranges", check_constants, "corpus"),
     ("§8.5's per-class clocks", check_insulin_timing, "corpus"),
+    ("§7.7's no-change comparison vs the store", check_period_comparison, "corpus"),
     ("BACKLOG stale against PLAN", check_cross_document, "backlog"),
     ("BLOG-FIX names the app path", check_blogfix, "blogfix"),
     ("checker describing retired things", check_tool_rot, "plan"),
@@ -3919,6 +3985,19 @@ SELF_TESTS = [
      lambda t: t.replace(
          "| Regular human insulin | 20\u201330 minutes",
          "| Regular human insulin | 25\u201335 minutes")),
+    # T18's comparison, which decides whether a settings commit starts a new
+    # prescription period. Both failures are silent and both misattribute doses.
+    ("T18: a prescription field dropped from the period comparison",
+     "src/storage/repo.ts",
+     lambda t: t.replace("    insulinId: commit.insulinId,\n    imported: previous.imported,",
+                         "    imported: previous.imported,")),
+    ("T18: the comparison hand-lists its fields instead of reading the type",
+     "src/storage/repo.ts",
+     lambda t: t.replace("(Object.keys(proposed) as (keyof SettingsHistoryRow)[])",
+                         "(['target', 'isf', 'icr'] as (keyof SettingsHistoryRow)[])")),
+    ("T18: an exclusion outlives the field it excluded", "src/storage/repo.ts",
+     lambda t: t.replace("= ['revision', 'changedAtMs', 'imported']",
+                         "= ['revision', 'changedAtMs', 'imported', 'usualDose']")),
     # T20's window, and §7.3's coupling to it.
     ("T20: the advise window narrowed back under the label it quotes", "src/config.ts",
      lambda t: t.replace("stackSuppressHours: 4, stackAdviseHours: 18 }",
@@ -4183,6 +4262,15 @@ def self_test():
     routes_full = os.path.join(HERE, "src", "routes.ts")
     if os.path.exists(routes_full):
         base["src/routes.ts"] = load(routes_full)
+
+    # `src/storage/repo.ts` and `src/storage/schema.ts` for T18's comparison
+    # check, ADDED 2026-09-20 — same reason as every file above: a seed cannot
+    # mutate what the harness does not hold, and a seed that cannot find its
+    # file reports "missing", which the runner counts as an ESCAPE.
+    for rel in ("src/storage/repo.ts", "src/storage/schema.ts"):
+        full = os.path.join(HERE, *rel.split("/"))
+        if os.path.exists(full):
+            base[rel] = load(full)
 
     # `public/404.html` likewise, for `check_404_paths_agree`.
     page_full = os.path.join(HERE, "public", "404.html")

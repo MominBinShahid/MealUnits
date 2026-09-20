@@ -1747,9 +1747,24 @@ that produced them" was false.**
 Each log row therefore carries the `settingsRevision` in force when it was calculated, and the
 envelope carries the revisions themselves. The settings store gains a `revision`, **allocated, owned and stamped
 per §11.3's three-part rule**, written in the same transaction as any calculation-affecting
-settings change and polled by the same `stateToken` layer 2 already uses. **A threshold-only
-change does not bump it** [R1] — `settingsHistory` carries no `threshold`, so an identical-values
-row would be noise.
+settings change and polled by the same `stateToken` layer 2 already uses. **A commit that changes
+nothing `settingsHistory` records does not bump it** [R1] — an identical-values row would be noise,
+and §7.7.1's export would print two prescription periods with the same ratios and the doses split
+between them.
+
+**Written since v10 and implemented 2026-09-20** (`BACKLOG` T18). Until then every save allocated,
+so editing only the threshold, the basal block, the reader's name or §8.5's pre-meal wait started a
+fresh identical period. Nothing about a dose was ever wrong — the row stamp stayed accurate and
+every period it could point at held identical ratios — but it was noise in a clinical document.
+
+**The comparison reads the stored row's OWN KEYS rather than a list in code**, and that is
+load-bearing rather than tidy. A hand-kept list rots in the unsafe direction: the day a field joins
+`settingsHistory` and nobody adds it, a real prescription change stops starting a period and the
+export attributes doses to settings that did not produce them — silently, with no test to notice,
+because the tests would have been written against the fields that existed then. `revision`,
+`changedAtMs` and `imported` are excluded by name as provenance ABOUT the row rather than the
+prescription it records. `check-plan.py` asserts that the comparison covers every declared field and
+that it still walks the type rather than a literal.
 
 **The `logRevision` analogy is deleted here, on the third attempt** [R1, R2 — both, twice]. v10
 wrote that this used "the same mechanism `logRevision` already uses"; §11.3 shows the analogy is

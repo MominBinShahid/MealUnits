@@ -14,6 +14,7 @@ import { DELETE_CONFIRM_WINDOW_HOURS } from '../src/config.js';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DATABASE_NAME, META_KEY, SETTINGS_KEY, STORE } from '../src/storage/schema.js';
 import type { EnvelopeRow, SettingsHistoryRow, SettingsRow } from '../src/storage/schema.js';
+import type { SettingsCommit } from '../src/storage/repo.js';
 import { deleteDatabase, openDatabase, readRecoveryBlock } from '../src/storage/open.js';
 import {
   appendInjection,
@@ -205,6 +206,116 @@ describe('§11.3 opening the database', () => {
       onVersionChange: () => undefined,
     });
     expect(outcome.kind).toBe('fail_closed');
+  });
+});
+
+/**
+ * §7.7 / `BACKLOG` T18 — a revision means "the prescription changed", and until
+ * 2026-09-20 it meant "somebody pressed save".
+ *
+ * The export groups doses by prescription period, so an identical consecutive
+ * period printed two sections with the same ratios and the doses split between
+ * them — noise in the document whose argument is that it does not misstate what
+ * produced a row.
+ */
+describe('§7.7 a commit that changes no prescription field keeps its revision', () => {
+  /** Every field `settingsHistory` records, one at a time. */
+  // `Partial<SettingsCommit>` rather than `Partial<typeof PRESCRIPTION>`: the
+  // fixture is an object literal, so its inferred field types are the LITERALS
+  // it happens to hold — `mode: 'nearest'` and `eatDelayMinutes: null` — and a
+  // case changing either would not typecheck against itself.
+  const CHANGES: readonly (readonly [string, Partial<SettingsCommit>])[] = [
+    ['the target', { target: 140 }],
+    ['the sensitivity', { isf: 40 }],
+    ['the carbohydrate ratio', { icr: 12 }],
+    ['the rounding mode', { mode: 'half' as const }],
+    ['the insulin', { insulinId: 'novorapid', insulinName: 'NovoRapid' }],
+  ];
+
+  it.each(CHANGES)('bumps when %s moves', async (_what, change) => {
+    const db = await open();
+    expect(await commitSettings(db, PRESCRIPTION)).toBe(1);
+    expect(await commitSettings(db, { ...PRESCRIPTION, ...change, nowMs: NOW + HOUR })).toBe(2);
+    db.close();
+  });
+
+  /** And everything it does NOT record, which is the half that was broken. */
+  const KEEPS: readonly (readonly [string, Partial<SettingsCommit>])[] = [
+    ['the threshold', { threshold: 25 }],
+    // §8.5 — it changes what the reader is TOLD TO DO, never what came out,
+    // which is the same test that keeps `threshold` out of the history.
+    ['the pre-meal wait', { eatDelayMinutes: 20 }],
+    ['the basal name', { basalName: 'Tresiba' }],
+    ['the basal dose', { basalUnits: 40 }],
+    ["the reader's own name", { personName: 'Ahmed' }],
+  ];
+
+  it.each(KEEPS)('keeps the revision when only %s moves', async (_what, change) => {
+    const db = await open();
+    expect(await commitSettings(db, PRESCRIPTION)).toBe(1);
+    expect(await commitSettings(db, { ...PRESCRIPTION, ...change, nowMs: NOW + HOUR })).toBe(1);
+    const state = await readAll(db, NOW);
+    // ONE period, not two identical ones.
+    expect(state.settingsHistory).toHaveLength(1);
+    db.close();
+  });
+
+  it('still STORES the new value, which is the part a no-bump could break', async () => {
+    // Keeping the revision must not mean discarding the edit. The settings row
+    // and the recovery block are written either way; only the history append
+    // is skipped.
+    const db = await open();
+    await commitSettings(db, PRESCRIPTION);
+    await commitSettings(db, {
+      ...PRESCRIPTION,
+      threshold: 25,
+      eatDelayMinutes: 20,
+      personName: 'Ahmed',
+      nowMs: NOW + HOUR,
+    });
+    const state = await readAll(db, NOW);
+    expect(state.settings?.threshold).toBe(25);
+    expect(state.settings?.eatDelayMinutes).toBe(20);
+    expect(state.settings?.personName).toBe('Ahmed');
+    expect(state.settings?.revision).toBe(1);
+    const envelope = await runTransaction(db, [STORE.meta], 'readonly', (tx) =>
+      get<EnvelopeRow>(tx, STORE.meta, META_KEY.envelope),
+    );
+    expect(envelope?.recovery?.personName).toBe('Ahmed');
+    db.close();
+  });
+
+  it('bumps again once a prescription field moves after a kept one', async () => {
+    // The sequence that would expose a latch: keep, keep, then change.
+    const db = await open();
+    await commitSettings(db, PRESCRIPTION);
+    await commitSettings(db, { ...PRESCRIPTION, threshold: 25, nowMs: NOW + HOUR });
+    await commitSettings(db, { ...PRESCRIPTION, threshold: 30, nowMs: NOW + 2 * HOUR });
+    expect(await commitSettings(db, { ...PRESCRIPTION, icr: 12, nowMs: NOW + 3 * HOUR })).toBe(2);
+    db.close();
+  });
+
+  it('allocates past IMPORTED revisions rather than reusing one', async () => {
+    // §7.7 appends imported history at max + 1 and leaves `settings.revision`
+    // alone. A no-change commit must return the revision IN FORCE, and a real
+    // change must still clear the imported keys.
+    const db = await open();
+    await commitSettings(db, PRESCRIPTION);
+    await runTransaction(db, [STORE.settingsHistory], 'readwrite', async (tx) => {
+      await request(tx.objectStore(STORE.settingsHistory).add({
+        revision: 2,
+        changedAtMs: NOW - 400 * 24 * HOUR,
+        target: 150,
+        isf: 30,
+        icr: 12,
+        mode: 'nearest',
+        insulinId: 'humulin-r',
+        imported: true,
+      } satisfies SettingsHistoryRow));
+    });
+    expect(await commitSettings(db, { ...PRESCRIPTION, threshold: 25, nowMs: NOW + HOUR })).toBe(1);
+    expect(await commitSettings(db, { ...PRESCRIPTION, icr: 15, nowMs: NOW + 2 * HOUR })).toBe(3);
+    db.close();
   });
 });
 
