@@ -539,6 +539,22 @@ body {
   color: var(--ink);
 }
 
+/*
+ * A figure inside a scanned line. History rows are looked THROUGH rather than
+ * read — the eye is hunting the numbers — and in a run of identical grey lines
+ * it has to find them by counting words. Weight and the app's own ink, against
+ * the `--ink-2` the surrounding prose carries, so the number is found without
+ * the line becoming loud.
+ *
+ * `tabular-nums` so figures line up down a column of rows: §10.4 asks for it
+ * wherever digits stack, and a history list is the clearest case of that.
+ */
+.fig {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .flag b {
   color: var(--warn);
   display: block;
@@ -877,10 +893,36 @@ body {
 
 /* §1.3 — the basal block is VISUALLY SEPARATED, because a second number
    labelled "units" is the confusion that section exists to prevent. */
+/*
+ * §8.5's assumptions, set apart from the field echo above them. Lighter than
+ * `.basal` below — 1px against 2px, and less air — because this divides a
+ * section rather than beginning one. Without it the assumptions run on from
+ * `icrSentence` as one undifferentiated block of hint text, and the conditions
+ * under which every number here is wrong for you read as small print about the
+ * box above.
+ */
+.assumptions {
+  margin-top: 1.25rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--line);
+}
+
+.assumptions p:first-child {
+  margin-top: 0;
+}
+
+/*
+ * ONE rule weight on this screen, and SPACING carries the hierarchy. This was
+ * 2px against `.assumptions`' 1px, and two different weights within a screen of
+ * each other read as arbitrary rather than as a hierarchy — the eye cannot tell
+ * whether a heavier line means a bigger break or just a different decision.
+ * Air is the better signal: 2rem above a section, 1.25rem above a division
+ * inside one.
+ */
 .basal {
   margin-top: 2rem;
   padding-top: 1.25rem;
-  border-top: 2px solid var(--line);
+  border-top: 1px solid var(--line);
 }
 
 .basal h2 {

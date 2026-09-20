@@ -8,6 +8,7 @@
  * that stays visible.
  */
 
+import { Fragment } from 'preact';
 import type { JSX } from 'preact';
 import {
   ADVISORY_MIN_ELIGIBLE,
@@ -88,8 +89,22 @@ function DoseRow({
         <b>
           {`${formatDate(row.timestamp, handlers.timeZone)}, ${formatClockTime(row.timestamp, handlers.timeZone)}`}
         </b>
-        {COPY.screens.historyIntake(reading, String(row.carbs))}
-        <div>{COPY.screens.historyDose(units(row.units), units(row.injectedUnits))}</div>
+        <div>
+          {COPY.screens.historyIntake(reading, String(row.carbs)).map((part) => (
+            <Fragment key={part.value}>
+              <b class="fig">{part.value}</b>
+              {part.rest}
+            </Fragment>
+          ))}
+        </div>
+        <div>
+          {COPY.screens.historyDose(units(row.units), units(row.injectedUnits)).map((part) => (
+            <Fragment key={part.label}>
+              {part.label}
+              <b class="fig">{part.value}</b>
+            </Fragment>
+          ))}
+        </div>
         {row.overrodeStacking ? <div>{COPY.screens.stackingOverridden}</div> : null}
         {asking ? (
           <div class="flag">

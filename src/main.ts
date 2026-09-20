@@ -15,6 +15,7 @@ import {
   UPDATE_LOOK_INTERVAL_MS,
 } from './config.js';
 import { COPY } from './ui/copy.js';
+import { createBarSlot } from './ui/bar-slot.js';
 
 /**
  * §12 — `persist()` is three lines: call it and SURFACE `persisted()` HONESTLY.
@@ -104,32 +105,27 @@ function pickFile(): Promise<string | null> {
  * That is the difference between overlaying the PAGE and overlaying a BUTTON.
  */
 /**
- * The close of the bar most recently raised, so a bar can be RETIRED by
- * whatever raised it rather than only by the person reading it.
- *
- * A single reference, not a list, because there is only ever meant to be one
- * bar: `promptBar` appends and every bar is `position: fixed; bottom: 0`, so a
- * second does not stack below the first — it is painted directly OVER it and
- * hides it completely. Turning that into one slot with a queue is its own
- * change; this holds the line until then.
+ * The slot itself lives in `bar-slot.ts`, free of the DOM: what is hard is the
+ * ORDER, and order is what a test can pin. This wires it to pixels.
  */
-let closeCurrent: (() => void) | null = null;
-
-function promptBar(options: {
+interface BarSpec {
   readonly text: string;
-  /**
-   * OPTIONAL, because not every bar has something to do. iOS cannot be offered
-   * an install programmatically, so its storage bar carries the three taps in
-   * its text and has nothing to put behind a button — and a button that only
-   * closed the bar, beside a dismiss that also closes it, is two controls for
-   * one outcome.
-   */
   readonly actionLabel?: string | undefined;
   readonly onAction?: (() => void) | undefined;
   readonly dismissLabel: string;
-  /** §10.5's advisory treatment, for a bar that is a warning rather than an offer. */
   readonly variant?: 'warn' | undefined;
-}): void {
+}
+
+const bars = createBarSlot<BarSpec>((spec, gone) => paintBar(spec, gone));
+
+/**
+ * Builds one bar and returns its close. Knows nothing about priority or the
+ * queue — `reconcileBar` owns which bar exists, this owns what it looks like.
+ *
+ * `onGone` fires when the bar leaves for ANY reason the reader caused, so the
+ * queue can hand the slot to the next one.
+ */
+function paintBar(options: BarSpec, onGone: () => void): () => void {
   const bar = document.createElement('div');
   bar.className = options.variant === undefined ? 'prompt-bar' : `prompt-bar ${options.variant}`;
 
@@ -154,12 +150,15 @@ function promptBar(options: {
 
   const close = (): void => {
     bar.remove();
+    // Only ever one bar, so the padding belongs to the slot and clearing it
+    // here is now correct. It was not when bars could overlap: whichever closed
+    // first un-padded the page while another was still on screen.
     document.documentElement.style.removeProperty('--prompt-h');
   };
-  closeCurrent = close;
 
   action?.addEventListener('click', () => {
     close();
+    onGone();
     options.onAction?.();
   });
   /**
@@ -171,12 +170,16 @@ function promptBar(options: {
    * And it costs nothing to omit: the waiting worker activates on the next full
    * restart regardless, so dismissing defers the tap rather than the update.
    */
-  dismiss.addEventListener('click', close);
+  dismiss.addEventListener('click', () => {
+    close();
+    onGone();
+  });
 
   bar.append(...(action === null ? [text, dismiss] : [text, action, dismiss]));
   document.body.append(bar);
   // Measured after insertion, because the text wraps differently by width.
   document.documentElement.style.setProperty('--prompt-h', `${String(bar.offsetHeight)}px`);
+  return close;
 }
 
 function registerServiceWorker(): void {
@@ -188,7 +191,7 @@ function registerServiceWorker(): void {
     // page grows a stack of identical bars.
     if (offered) return;
     offered = true;
-    promptBar({
+    bars.raise('update', {
       text: 'A newer version is ready.',
       actionLabel: 'Use it now',
       onAction: () => { waiting.postMessage({ type: 'SKIP_WAITING' }); },
@@ -377,7 +380,7 @@ function offerInstall(): { routine: () => void; atRisk: (show: boolean) => void 
       const prompt = pending;
       if (prompt === null || shown) return;
       shown = true;
-      promptBar({
+      bars.raise('install', {
         text: 'Add this to your home screen?',
         actionLabel: 'Add it',
         onAction: () => { void prompt.prompt(); },
@@ -387,8 +390,8 @@ function offerInstall(): { routine: () => void; atRisk: (show: boolean) => void 
     /**
      * §12 — the same offer, when the browser has not promised to keep the
      * record. `shown` is shared with `routine` deliberately: these are two
-     * shapes of one message, and `promptBar` APPENDS, so two of them would
-     * stack on a phone screen alongside the update prompt.
+     * shapes of one message, and the slot holds one bar, so raising both would
+     * mean the second displacing the first for no reason.
      *
      * Where a real install prompt exists, prefer it — one tap beats three.
      * Where it does not, which is every browser on an iPhone, the text carries
@@ -401,7 +404,7 @@ function offerInstall(): { routine: () => void; atRisk: (show: boolean) => void 
       // reader to the screen that explains it in full — the condition was
       // fixed and the state that outlives it was not.
       if (!show) {
-        if (shown) closeCurrent?.();
+        if (shown) bars.retire('install');
         return;
       }
       // `shown` is never reset: retiring it on Settings must not re-raise it
@@ -410,7 +413,7 @@ function offerInstall(): { routine: () => void; atRisk: (show: boolean) => void 
       shown = true;
       const prompt = pending;
       if (prompt !== null) {
-        promptBar({
+        bars.raise('install', {
           text: 'Add this to your home screen?',
           actionLabel: 'Add it',
           onAction: () => { void prompt.prompt(); },
@@ -418,7 +421,7 @@ function offerInstall(): { routine: () => void; atRisk: (show: boolean) => void 
         });
         return;
       }
-      promptBar({
+      bars.raise('install', {
         // The steps are in the TEXT. Behind a button they would need a second
         // bar, which is the stacking this arrangement exists to avoid — and on
         // WebKit there is nothing else a button could do.
@@ -543,7 +546,7 @@ if (root) {
     // than a line on the logged screen because `committing` outlives that
     // screen now: by the time this fires he may be two screens away.
     onSaveStuck: (amount, retry) => {
-      promptBar({
+      bars.raise('stuck', {
         text: COPY.log.stuck(amount),
         actionLabel: COPY.log.stuckAction,
         onAction: retry,
