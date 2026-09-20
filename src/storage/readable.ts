@@ -104,11 +104,11 @@ function prescriptionHeading(period: SettingsPeriod): string {
  * these readers did have an insulin — the app simply never asked.
  */
 function insulinLine(period: SettingsPeriod): string {
-  const insulin = INSULINS.find((row) => row.id === period.insulinId);
+  const insulin = INSULINS.find((row) => row.id === period.bolusId);
   if (insulin !== undefined) {
     return `Mealtime insulin: <strong>${escapeHtml(insulin.brand)}</strong> (${escapeHtml(insulin.molecule)})`;
   }
-  return period.insulinId === UNKNOWN_INSULIN
+  return period.bolusId === UNKNOWN_INSULIN
     ? 'Mealtime insulin: not known to the patient'
     : 'Mealtime insulin: not recorded';
 }

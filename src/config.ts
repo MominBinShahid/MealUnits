@@ -440,8 +440,9 @@ export const SCHEMA_VERSION = 1;
 // is the point of it: an older build reading a version it does not know must
 // refuse to present the numbers as verified prescription settings rather than
 // render the half it recognises. Went to 2 on 2026-09-20 when §8.5's mealtime
-// insulin joined the block.
-export const RECOVERY_FORMAT = 2;
+// insulin joined the block, and to 3 on 2026-09-21 when two of its fields were
+// renamed — a shape change is a shape change whether a field arrives or moves.
+export const RECOVERY_FORMAT = 3;
 
 /**
  * §11.8's self-consistency test, as an executable assertion rather than a

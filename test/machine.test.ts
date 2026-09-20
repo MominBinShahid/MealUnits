@@ -29,7 +29,7 @@ const SETTINGS: Settings = {
   basalName: 'Lantus',
   basalUnits: 36,
   basalTiming: 'early morning', personName: '',
-  insulinId: 'humulin-r',
+  bolusId: 'humulin-r',
   eatDelayMinutes: null,
 };
 
@@ -82,7 +82,7 @@ describe('§10.6 first run', () => {
 
   /**
    * §8.5's whole migration, as one case. A settings row written before the
-   * question existed reads back with `insulinId: ''`, and an install that has
+   * question existed reads back with `bolusId: ''`, and an install that has
    * been running for months therefore answers it on the next open exactly like
    * a fresh one. There is no migration value and no tap-through.
    */
@@ -90,7 +90,7 @@ describe('§10.6 first run', () => {
     const state = run([
       {
         type: 'loaded',
-        settings: { ...SETTINGS, insulinId: '' },
+        settings: { ...SETTINGS, bolusId: '' },
         record: RECORD,
         disclaimerAccepted: true,
       },
@@ -102,7 +102,7 @@ describe('§10.6 first run', () => {
     const state = run([
       {
         type: 'loaded',
-        settings: { ...SETTINGS, insulinId: 'novomix-30' },
+        settings: { ...SETTINGS, bolusId: 'novomix-30' },
         record: RECORD,
         disclaimerAccepted: true,
       },
@@ -114,7 +114,7 @@ describe('§10.6 first run', () => {
     const state = run([
       {
         type: 'loaded',
-        settings: { ...SETTINGS, insulinId: 'unknown' },
+        settings: { ...SETTINGS, bolusId: 'unknown' },
         record: RECORD,
         disclaimerAccepted: true,
       },
@@ -134,8 +134,8 @@ describe('§10.6 first run', () => {
    */
   it('§10.6 — no route reaches the calculator while a setup question is open', () => {
     const openScreens = [
-      [{ ...SETTINGS, insulinId: '' }, 'insulin_setup'],
-      [{ ...SETTINGS, insulinId: 'novomix-30' }, 'insulin_unsupported'],
+      [{ ...SETTINGS, bolusId: '' }, 'insulin_setup'],
+      [{ ...SETTINGS, bolusId: 'novomix-30' }, 'insulin_unsupported'],
       [null, 'insulin_setup'],
     ] as const;
     for (const [settings, expected] of openScreens) {
@@ -149,7 +149,7 @@ describe('§10.6 first run', () => {
         reduce(loaded, { type: 'go', screen: 'history' }),
         { type: 'go', screen: 'calculator' },
       );
-      expect(viaHistory.screen, String(settings?.insulinId)).toBe(expected);
+      expect(viaHistory.screen, String(settings?.bolusId)).toBe(expected);
     }
     // With every question answered it is the calculator, unchanged.
     const ready = run([{ type: 'loaded', settings: SETTINGS, record: RECORD, disclaimerAccepted: true }]);
@@ -162,7 +162,7 @@ describe('§10.6 first run', () => {
     // `settings_committed` would have got wrong.
     const state = reduce(
       run([{ type: 'loaded', settings: SETTINGS, record: RECORD, disclaimerAccepted: true }]),
-      { type: 'settings_committed', settings: { ...SETTINGS, insulinId: 'humulin-n' } },
+      { type: 'settings_committed', settings: { ...SETTINGS, bolusId: 'humulin-n' } },
     );
     expect(state.screen).toBe('insulin_unsupported');
   });
@@ -582,7 +582,7 @@ describe('§11.2 the snapshot is what the result came from', () => {
       eligibleEntryCount: 24,
       historyProvenance: 'suspect',
       lastDose: { injectedHundredths: 600, atMs: NOW - 2 * HOUR, insulinClass: 'regular' as const },
-      // §8.5 — resolved from `settings.insulinId` and frozen with the rest, so
+      // §8.5 — resolved from `settings.bolusId` and frozen with the rest, so
       // a result and the windows that produced it cannot come from different
       // answers to the same question.
       insulinClass: 'regular',

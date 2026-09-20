@@ -82,11 +82,18 @@ export const META_KEY = {
  * numbers as verified prescription settings.
  */
 export interface RecoveryBlock {
+  /**
+   * **3 since 2026-09-21.** The block renamed two of its fields —
+   * `mealtimeInsulin` to `bolusName`, `basalInsulinName` to `basalName` — and
+   * this number going up is exactly what independent versioning is for: a build
+   * that does not know the shape refuses rather than rendering the half it
+   * recognises. `readRecoveryBlock` accepts the old spellings.
+   */
   readonly recoveryFormat: typeof RECOVERY_FORMAT;
   readonly targetMgDl: number;
   readonly oneUnitLowersMgDl: number;
   readonly oneUnitCoversGramsCarbohydrate: number;
-  readonly basalInsulinName: string;
+  readonly basalName: string;
   readonly basalUnitsPerDay: number;
   readonly basalTiming: string;
   /**
@@ -98,13 +105,16 @@ export interface RecoveryBlock {
    * the numbers as verified settings, which is the behaviour §11.3 asks for and
    * the reason the field is versioned at all.
    */
-  readonly mealtimeInsulin: string;
+  readonly bolusName: string;
+  /** Pre-2026-09-21 spellings. Read, never written. */
+  readonly mealtimeInsulin?: string;
+  readonly basalInsulinName?: string;
   /** Optional; '' means not given. See `Settings.personName`. */
   readonly personName: string;
 }
 
 export interface EnvelopeRow {
-  readonly k: typeof META_KEY.envelope;
+  readonly key: typeof META_KEY.envelope;
   readonly schemaVersion: number;
   readonly recovery: RecoveryBlock | null;
 }
@@ -116,7 +126,7 @@ export interface EnvelopeRow {
  * restore, must ask rather than assume.
  */
 export interface DosingHistoryRow {
-  readonly k: typeof META_KEY.dosingHistory;
+  readonly key: typeof META_KEY.dosingHistory;
   readonly state: 'unanswered' | 'declined' | 'answered';
   readonly text: string;
   readonly answeredAtMs: number | null;
@@ -132,7 +142,7 @@ export interface DosingHistoryRow {
  * a false safety claim, which is the class §7.5 condemns.
  */
 export interface BackupRow {
-  readonly k: typeof META_KEY.backup;
+  readonly key: typeof META_KEY.backup;
   readonly lastJsonExportAtMs: number | null;
 }
 
@@ -146,8 +156,17 @@ export interface BackupRow {
  * provenance rule needs both and neither belongs to a single row.
  */
 export interface LogRevisionRow {
-  readonly k: typeof META_KEY.logRevision;
-  readonly n: number;
+  readonly key: typeof META_KEY.logRevision;
+  /**
+   * The counter the whole cross-tab correctness stack keys on. **Was `n`**
+   * until 2026-09-21 — one letter for the most load-bearing integer in the
+   * storage layer, which the domain had been calling `logRevision` all along
+   * and translating at `readAll`. Renamed with everything else on the ruling
+   * that nobody holds data yet.
+   */
+  readonly logRevision: number;
+  /** The pre-2026-09-21 spelling. Read, never written. */
+  readonly n?: number;
   readonly lastImportAtMs: number | null;
   /**
    * When this install last appended an INJECTION — not a reading. After note
@@ -165,7 +184,7 @@ export interface LogRevisionRow {
 
 /** When this install first ran. §7.5: a log predating it is suspect. */
 export interface InstallRow {
-  readonly k: typeof META_KEY.install;
+  readonly key: typeof META_KEY.install;
   readonly installedAtMs: number;
 }
 
@@ -187,7 +206,7 @@ export const SETTINGS_KEY = 'current';
  * different number — for the months until the next settings change.
  */
 export interface SettingsRow {
-  readonly k: typeof SETTINGS_KEY;
+  readonly key: typeof SETTINGS_KEY;
   readonly revision: number;
   readonly target: number;
   readonly isf: number;
@@ -217,7 +236,9 @@ export interface SettingsRow {
    * install. No `DATABASE_VERSION` bump: no store and no index changed, and the
    * one absent field already has a meaning.
    */
-  readonly insulinId: string;
+  readonly bolusId: string;
+  /** The pre-2026-09-21 spelling. Read, never written. */
+  readonly insulinId?: string;
   /** §8.5 — the reader's own pre-meal wait in minutes, or null for the class range. */
   readonly eatDelayMinutes: number | null;
   /** Optional; '' means not given. See `Settings.personName`. */
@@ -256,7 +277,9 @@ export interface SettingsHistoryRow {
    * A row written before the field existed reads back as `''` and prints as
    * "not recorded".
    */
-  readonly insulinId: string;
+  readonly bolusId: string;
+  /** The pre-2026-09-21 spelling. Read, never written. */
+  readonly insulinId?: string;
   readonly imported: boolean;
 }
 
@@ -306,7 +329,7 @@ export function ackKeyForSetting(field: string, value: number): string {
 }
 
 export interface AckRow {
-  readonly k: string;
+  readonly key: string;
   readonly acknowledgedAtMs: number;
 }
 

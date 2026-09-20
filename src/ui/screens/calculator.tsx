@@ -547,7 +547,7 @@ function BoundFailure({ handlers }: { readonly handlers: CalculatorHandlers }): 
 function eatDelayOf(state: AppState): EatDelay | null {
   const settings = state.snapshot?.settings ?? state.settings;
   if (settings === null || settings === undefined) return null;
-  const insulinClass = state.snapshot?.insulinClass ?? classOf(INSULINS, settings.insulinId);
+  const insulinClass = state.snapshot?.insulinClass ?? classOf(INSULINS, settings.bolusId);
   return eatDelayFor(insulinClass, settings.eatDelayMinutes);
 }
 
@@ -555,7 +555,7 @@ function eatDelayOf(state: AppState): EatDelay | null {
 function brandOf(state: AppState): string | null {
   const settings = state.snapshot?.settings ?? state.settings;
   if (settings === null || settings === undefined) return null;
-  return INSULINS.find((row) => row.id === settings.insulinId)?.brand ?? null;
+  return INSULINS.find((row) => row.id === settings.bolusId)?.brand ?? null;
 }
 
 function TimingLine({

@@ -16,7 +16,7 @@ function period(overrides: Partial<SettingsPeriod> = {}): SettingsPeriod {
     isf: 30,
     icr: 10,
     roundingMode: 'nearest',
-    insulinId: 'humulin-r',
+    bolusId: 'humulin-r',
     imported: false,
     ...overrides,
   };
@@ -98,7 +98,7 @@ describe('§7.7.1 the two placement rules', () => {
 describe('§7.7.1 periods are ordered by changedAtMs, NOT by revision key', () => {
   it('renders the storage-loss flow correctly — the v23 defect', () => {
     // §1.2's own recovery path: re-enter the settings by hand (local revisions
-    // 1..k with TODAY's timestamps), then import the backup (k+1..k+n with LAST
+    // 1..key with TODAY's timestamps), then import the backup (k+1..key+n with LAST
     // YEAR's timestamps). Ordering by key gives:
     //   period k   -> [recent, old) -> EMPTY
     //   period k+n -> [old, ->)     -> the open-ended one, swallowing the present

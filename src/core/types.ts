@@ -47,7 +47,7 @@ export type LexicalReason =
  * The settings that change a dose. §7.7: `threshold` is deliberately not among
  * them.
  *
- * **`insulinId` IS among them, and that is not obvious.** The insulin changes
+ * **`bolusId` IS among them, and that is not obvious.** The insulin changes
  * no arithmetic — target, ISF and ICR do all of it. What it changes is §7.4's
  * gate, and a suppressed correction is a different dose. §8.5's switch-day rule
  * turns on knowing which insulin produced a historical row, which is why this
@@ -63,7 +63,7 @@ export interface DosingSettings {
    * `core/insulin.ts`. `''` means the question has not been asked; `'unknown'`
    * means it was asked and answered "I don't know, or mine isn't listed".
    */
-  readonly insulinId: string;
+  readonly bolusId: string;
 }
 
 /**
@@ -163,7 +163,7 @@ export interface Snapshot {
   readonly historyProvenance: HistoryProvenance;
   readonly lastDose: LastDose | null;
   /**
-   * §8.5 — the class of `settings.insulinId`, resolved when the snapshot was
+   * §8.5 — the class of `settings.bolusId`, resolved when the snapshot was
    * frozen.
    *
    * The id is stored and the CLASS is what the two clocks read, and the lookup

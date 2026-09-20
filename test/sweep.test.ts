@@ -51,7 +51,7 @@ function settings(overrides: Partial<Settings> = {}): Settings {
     basalName: 'Lantus',
     basalUnits: 36,
     basalTiming: 'early morning', personName: '',
-    insulinId: 'humulin-r',
+    bolusId: 'humulin-r',
     eatDelayMinutes: null,
     ...overrides,
   };
@@ -146,7 +146,7 @@ describe('§13.5 the sweep — invariants a degenerate implementation breaks', (
     // The counter-intuitive property, asserted in both directions so that
     // "larger sensitivity means smaller dose" cannot be written as an
     // invariant by a later reader.
-    const above: DosingSettings = { target: 150, isf: 30, icr: 10, roundingMode: 'nearest', insulinId: 'humulin-r' };
+    const above: DosingSettings = { target: 150, isf: 30, icr: 10, roundingMode: 'nearest', bolusId: 'humulin-r' };
     const aboveWide: DosingSettings = { ...above, isf: 60 };
     // Above target: a bigger sensitivity SHRINKS the positive correction.
     expect(computeExact(330, 0, above, false).clamped).toBe(6);

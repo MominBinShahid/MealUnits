@@ -601,14 +601,14 @@ export function FailClosedScreen({
                 is that the settings survive a database this build cannot open.
                 A block written before the field existed has no value here and
                 shows nothing rather than an empty row. */}
-            {recovery.mealtimeInsulin === '' ? null : (
+            {recovery.bolusName === '' ? null : (
               <li class="li">
                 <div class="k">{COPY.insulin.settingsLabel}</div>
-                <div class="v">{recovery.mealtimeInsulin}</div>
+                <div class="v">{recovery.bolusName}</div>
               </li>
             )}
             <li class="li">
-              <div class="k">{recovery.basalInsulinName}</div>
+              <div class="k">{recovery.basalName}</div>
               <div class="v">{`${String(recovery.basalUnitsPerDay)}\u00A0units`}</div>
             </li>
           </ul>
@@ -791,7 +791,7 @@ export function SettingsAsTextScreen({
   readonly settings: Settings;
 }): JSX.Element {
   const waitText = waitInWords(
-    eatDelayFor(classOf(INSULINS, settings.insulinId), settings.eatDelayMinutes),
+    eatDelayFor(classOf(INSULINS, settings.bolusId), settings.eatDelayMinutes),
   );
   return (
     <div class="screen">
@@ -821,7 +821,7 @@ export function SettingsAsTextScreen({
         <li class="li">
           <div class="k">{COPY.insulin.settingsLabel}</div>
           <div class="v">
-            {INSULINS.find((row) => row.id === settings.insulinId)?.brand ??
+            {INSULINS.find((row) => row.id === settings.bolusId)?.brand ??
               COPY.insulin.notRecorded}
           </div>
         </li>

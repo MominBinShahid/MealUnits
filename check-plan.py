@@ -3656,11 +3656,34 @@ def check_persisted_names(corpus):
             out.append("src/storage/schema.ts: %s does not declare "
                        "`roundingMode`; §5's rounding mode has to be stored "
                        "somewhere" % name)
-        if not re.search(r"^\s*readonly mode\?\s*:", body, re.M):
-            out.append("src/storage/schema.ts: %s no longer declares the legacy "
-                       "`mode?` — a row written before 2026-09-21 would load "
-                       "with no rounding mode at all. Drop it only when the "
-                       "fallback in `readAll` goes with it" % name)
+        for legacy in ("mode", "insulinId"):
+            if not re.search(r"^\s*readonly %s\?\s*:" % legacy, body, re.M):
+                out.append("src/storage/schema.ts: %s no longer declares the "
+                           "legacy `%s?` — a row written before 2026-09-21 "
+                           "would load without it. Drop it only when the "
+                           "fallback in `readAll` goes too" % (name, legacy))
+
+    # The 2026-09-21 key rename, same shape and the same reason: each `??` is
+    # the difference between a clearer name and somebody's data refusing to
+    # load. The counter is the worst of them — a silent reset makes every other
+    # tab believe the record went backwards, which is §11.3's cross-tab
+    # correctness argument inverted.
+    for pattern, lost in (
+        (r"settingsRow\.bolusId \?\? settingsRow\.insulinId",
+         "a settings row written as `insulinId` loses its insulin, and §8.5's "
+         "required question is asked again"),
+        (r"row\.bolusId \?\? row\.insulinId",
+         "a prescription period written as `insulinId` loses the insulin it was "
+         "calculated under"),
+        (r"current\.logRevision \?\? current\.n",
+         "the log counter RESETS when a pre-rename row is read, so every other "
+         "tab believes the record went backwards"),
+        (r"revision\.logRevision \?\? revision\.n",
+         "the log counter reads as zero on load"),
+    ):
+        if not re.search(pattern, repo):
+            out.append("src/storage/repo.ts: a legacy-name fallback is gone — %s"
+                       % lost)
 
     if not re.search(r"settingsRow\.roundingMode \?\? settingsRow\.mode", repo):
         out.append("src/storage/repo.ts: `readAll` no longer falls back to the "
@@ -3681,6 +3704,24 @@ def check_persisted_names(corpus):
         out.append("src/storage/envelope.ts: `parseEnvelope` no longer accepts "
                    "the legacy `mode` in the settings block — an export saved "
                    "before 2026-09-21 would import with no rounding mode")
+    # The fail-closed screen's own block. Getting a name wrong here costs
+    # somebody their prescription at the moment they most need it.
+    try:
+        opener = load(os.path.join(HERE, "src", "storage", "open.ts"))
+    except (IOError, OSError):
+        opener = ""
+    if opener:
+        for pattern, field in (
+            (r"block\.bolusName \?\? block\.mealtimeInsulin", "bolusName"),
+            (r"block\.basalName \?\? block\.basalInsulinName", "basalName"),
+        ):
+            if not re.search(pattern, opener):
+                out.append("src/storage/open.ts: the recovery block no longer "
+                           "accepts the pre-2026-09-21 spelling of `%s` — the "
+                           "fail-closed screen would show a blank where a "
+                           "prescription should be, on the one screen that "
+                           "exists for when nothing else works" % field)
+
     if not re.search(r"entry\.roundingMode \?\? entry\.mode", envelope):
         out.append("src/storage/envelope.ts: `parseEnvelope` no longer accepts "
                    "the legacy `mode` in a history entry")
@@ -4174,6 +4215,19 @@ SELF_TESTS = [
     ("rename: parseEnvelope stops accepting the old spelling", "src/storage/envelope.ts",
      lambda t: t.replace("settingsRaw.roundingMode ?? settingsRaw.mode",
                          "settingsRaw.roundingMode")),
+    # The 2026-09-21 key rename. Each of these loses or resets data that is
+    # already on somebody's device, and none of them fails loudly.
+    ("rename: a settings row written as insulinId loses its insulin",
+     "src/storage/repo.ts",
+     lambda t: t.replace("settingsRow.bolusId ?? settingsRow.insulinId ?? ''",
+                         "settingsRow.bolusId ?? ''")),
+    ("rename: the log counter resets on a pre-rename row", "src/storage/repo.ts",
+     lambda t: t.replace("current.logRevision ?? current.n ?? 0",
+                         "current.logRevision ?? 0")),
+    ("rename: the fail-closed screen loses the insulin it should show",
+     "src/storage/open.ts",
+     lambda t: t.replace("block.bolusName ?? block.mealtimeInsulin ?? ''",
+                         "block.bolusName ?? ''")),
     # T15's generated files. Both hold a deployed address that nothing would
     # rewrite if it went back to being written by hand.
     ("T15: the manifest scope written as a literal again", "vite.config.ts",
@@ -4187,7 +4241,7 @@ SELF_TESTS = [
     # prescription period. Both failures are silent and both misattribute doses.
     ("T18: a prescription field dropped from the period comparison",
      "src/storage/repo.ts",
-     lambda t: t.replace("    insulinId: commit.insulinId,\n    imported: previous.imported,",
+     lambda t: t.replace("    bolusId: commit.bolusId,\n    imported: previous.imported,",
                          "    imported: previous.imported,")),
     ("T18: the comparison hand-lists its fields instead of reading the type",
      "src/storage/repo.ts",
@@ -4466,7 +4520,8 @@ def self_test():
     # mutate what the harness does not hold, and a seed that cannot find its
     # file reports "missing", which the runner counts as an ESCAPE.
     for rel in ("src/storage/repo.ts", "src/storage/schema.ts",
-                "src/storage/envelope.ts", "vite.config.ts"):
+                "src/storage/envelope.ts", "vite.config.ts",
+                "src/storage/open.ts"):
         full = os.path.join(HERE, *rel.split("/"))
         if os.path.exists(full):
             base[rel] = load(full)

@@ -3871,6 +3871,31 @@ type is a format that moves when the type moves.**
 §11.3 re-validates on load and DROPS a row it cannot read, so without it an old dose would vanish
 from the history that feeds §7.4's gate — silently, and in the dose-raising direction.
 
+#### And five more, 2026-09-21, on the same licence
+
+| Was | Is | Why |
+|---|---|---|
+| `k` | `key` | The IndexedDB `keyPath` on the single-row stores. Plumbing, and one letter of it |
+| `n` | `logRevision` | The counter the whole cross-tab correctness stack keys on, and the domain was already calling it this and translating at `readAll` |
+| `insulinId` | `bolusId` | Paired with `basalName`, which it did not read as paired with |
+| `RecoveryBlock.mealtimeInsulin` | `bolusName` | Four names for two things across two rows |
+| `RecoveryBlock.basalInsulinName` | `basalName` | Same |
+
+So it is `bolusId` / `bolusName` and `basalName` throughout. **`basal` and `bolus` are fine in code
+and stay out of the interface** — §10.2 bans them from what a reader sees, not from what a
+programmer reads, and `basalName` had been proving that for months.
+
+**`RECOVERY_FORMAT` went to 3**, because that block changed shape. A shape change is a shape change
+whether a field arrives or moves, and the whole point of versioning it independently is that an
+older build refuses rather than rendering the half it recognises.
+
+**Every read accepts the old spelling**, and one of them is not like the others. The log counter's
+fallback prevents a SILENT RESET: read a pre-rename row without it and the counter restarts at one,
+so every other tab concludes the record went backwards — §11.3's cross-tab correctness argument
+inverted. The recovery block's two are the fail-closed screen's, where a wrong name costs somebody
+their prescription at the moment they most need it. `check-plan.py` pins all six fallbacks with
+seeded mutations.
+
 **Every persisted name is listed in §11.3's schema block**, which is the place to look before
 renaming one. The question to ask is not "is this name good" but "who already has data under it" —
 and today, for this app, the answer happens to be nobody. That will stop being true, and these

@@ -21,7 +21,7 @@ export interface ExportedSettingsHistory {
   /** §5's rounding mode. Renamed from `mode` on 2026-09-21; `parseEnvelope` still accepts either. */
   readonly roundingMode: RoundingMode;
   /** §8.5 — the insulin in force for this period. `''` when none was recorded. */
-  readonly insulinId: string;
+  readonly bolusId: string;
 }
 
 /**
@@ -69,7 +69,7 @@ export interface ExportedSettings {
   readonly basalName: string;
   readonly basalUnits: number;
   readonly basalTiming: string;
-  readonly insulinId: string;
+  readonly bolusId: string;
   readonly eatDelayMinutes: number | null;
   readonly personName: string;
 }
@@ -123,7 +123,7 @@ export function buildEnvelope(input: ExportInput): Envelope {
           basalName: input.settings.basalName,
           basalUnits: input.settings.basalUnits,
           basalTiming: input.settings.basalTiming,
-          insulinId: input.settings.insulinId,
+          bolusId: input.settings.bolusId,
           eatDelayMinutes: input.settings.eatDelayMinutes,
           personName: input.settings.personName,
         };
@@ -140,7 +140,7 @@ export function buildEnvelope(input: ExportInput): Envelope {
       isf: period.isf,
       icr: period.icr,
       roundingMode: period.roundingMode,
-      insulinId: period.insulinId,
+      bolusId: period.bolusId,
     })),
     readings: input.readings,
     log: input.log,
@@ -342,7 +342,7 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
             basalName: typeof settingsRaw.basalName === 'string' ? settingsRaw.basalName : '',
             basalUnits: inHardRange(settingsRaw.basalUnits, 'basalUnits') ? settingsRaw.basalUnits : 0,
             basalTiming: typeof settingsRaw.basalTiming === 'string' ? settingsRaw.basalTiming : '',
-            insulinId: readInsulinId(settingsRaw.insulinId),
+            bolusId: readInsulinId(settingsRaw.bolusId),
             // §8.5 — the reader's own wait, range-checked like every other
             // number from a file. Anything outside the field's own bounds
             // becomes null, which is "the class range stands" and not a
@@ -384,7 +384,7 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
       isf: entry.isf,
       icr: entry.icr,
       roundingMode: mode as RoundingMode,
-      insulinId: readInsulinId(entry.insulinId),
+      bolusId: readInsulinId(entry.bolusId),
     });
   }
 
@@ -436,7 +436,7 @@ export interface MergePlan {
  * `settingsRevision` is a bare monotonic integer with no identity across
  * installs, and the plan's own recovery flow breaks it: §1.2 says storage loss
  * requires re-entering the settings, so the user re-enters them (producing local
- * revisions 1..k) and THEN imports the backup (carrying an unrelated 1..n).
+ * revisions 1..key) and THEN imports the backup (carrying an unrelated 1..n).
  * Merging by number collides and attributes rows to settings that never produced
  * them — the exact falsity this mechanism was added to remove, now in front of
  * the prescriber. Discarding the history instead leaves imported rows pointing

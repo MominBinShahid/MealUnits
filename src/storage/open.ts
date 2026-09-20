@@ -54,11 +54,11 @@ function factory(options: { readonly indexedDB?: IDBFactory | undefined }): IDBF
 
 /** Creates every store and index. Runs once per version, inside `onupgradeneeded`. */
 function createStores(db: IDBDatabase): void {
-  if (!db.objectStoreNames.contains(STORE.meta)) db.createObjectStore(STORE.meta, { keyPath: 'k' });
+  if (!db.objectStoreNames.contains(STORE.meta)) db.createObjectStore(STORE.meta, { keyPath: 'key' });
   if (!db.objectStoreNames.contains(STORE.settings)) {
-    db.createObjectStore(STORE.settings, { keyPath: 'k' });
+    db.createObjectStore(STORE.settings, { keyPath: 'key' });
   }
-  if (!db.objectStoreNames.contains(STORE.acks)) db.createObjectStore(STORE.acks, { keyPath: 'k' });
+  if (!db.objectStoreNames.contains(STORE.acks)) db.createObjectStore(STORE.acks, { keyPath: 'key' });
   if (!db.objectStoreNames.contains(STORE.log)) {
     const log = db.createObjectStore(STORE.log, { keyPath: 'id' });
     log.createIndex(TIMESTAMP_INDEX, 'timestamp');
@@ -88,14 +88,14 @@ export function openDatabase(options: OpenOptions): Promise<OpenOutcome> {
       if (transaction) {
         const meta = transaction.objectStore(STORE.meta);
         meta.put({
-          k: META_KEY.envelope,
+          key: META_KEY.envelope,
           schemaVersion: DATABASE_VERSION,
           recovery: null,
         } satisfies EnvelopeRow);
         const install = meta.get(META_KEY.install);
         install.onsuccess = (): void => {
           if (install.result === undefined) {
-            meta.put({ k: META_KEY.install, installedAtMs: options.nowMs });
+            meta.put({ key: META_KEY.install, installedAtMs: options.nowMs });
           }
         };
       }
@@ -198,22 +198,28 @@ export function readRecoveryBlock(options: {
         // Read the block, render the numbers, CLOSE, then delete.
         db.close();
         const block = envelope?.recovery ?? null;
-        // §8.5 — a block written at `recoveryFormat: 1` has no mealtime
-        // insulin on it, and the cast above would hand the screen an
+        // EVERY OLDER SHAPE OF THIS BLOCK, read here so nothing downstream
+        // has to know there were older shapes.
+        //
+        // Format 1 has no mealtime insulin at all; format 2 carries it as
+        // `mealtimeInsulin` and the basal as `basalInsulinName`, both renamed
+        // on 2026-09-21. The cast above would otherwise hand the screen an
         // `undefined` the type says cannot exist.
         //
         // Normalised HERE rather than guarded at the render, because this is
         // the boundary where an untyped stored row becomes a typed value and
-        // every consumer downstream is entitled to trust the type. The screen
-        // shows nothing for `''`, which is the honest rendering of a
-        // prescription recorded before the question was asked.
+        // every consumer downstream is entitled to trust the type. `''` is the
+        // honest rendering of a field that was never recorded — and this is
+        // the FAIL-CLOSED screen, so getting a name wrong here costs somebody
+        // their prescription at the moment they most need it.
         resolve(
           block === null
             ? null
             : {
                 ...block,
                 recoveryFormat: RECOVERY_FORMAT,
-                mealtimeInsulin: block.mealtimeInsulin ?? '',
+                bolusName: block.bolusName ?? block.mealtimeInsulin ?? '',
+                basalName: block.basalName ?? block.basalInsulinName ?? '',
               },
         );
       };

@@ -24,7 +24,7 @@ function settings(overrides: Partial<Settings> = {}): Settings {
     basalName: 'Lantus',
     basalUnits: 36,
     basalTiming: 'early morning', personName: '',
-    insulinId: 'humulin-r',
+    bolusId: 'humulin-r',
     eatDelayMinutes: null,
     ...overrides,
   };

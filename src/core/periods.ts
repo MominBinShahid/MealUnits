@@ -43,7 +43,7 @@ export interface SettingsPeriod {
    * A row written before the field existed reads back as `''`, which prints as
    * "not recorded" rather than as a guess.
    */
-  readonly insulinId: string;
+  readonly bolusId: string;
   readonly imported: boolean;
 }
 
@@ -63,9 +63,9 @@ export interface PeriodGroup {
  *
  * §7.7 appends imported history at `max(local) + 1` while §11.3 keeps the other
  * install's `changedAtMs`. Run §1.2's own storage-loss flow — re-enter the
- * settings by hand (local revisions 1..k, today's timestamps), then import the
- * backup (k+1..k+n, last year's timestamps) — and the key order is
- * `1..k` (recent) then `k+1..k+n` (old). Period k then spans [recent, old),
+ * settings by hand (local revisions 1..key, today's timestamps), then import the
+ * backup (k+1..key+n, last year's timestamps) — and the key order is
+ * `1..key` (recent) then `k+1..key+n` (old). Period k then spans [recent, old),
  * which is empty, and period k+n is the open-ended one and swallows the
  * present. Every reading he records from that moment on prints under an
  * imported prescription from another install.

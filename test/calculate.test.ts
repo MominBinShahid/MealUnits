@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { boundUnits, computeExact, exceedsBound } from '../src/core/calculate.js';
 import type { DosingSettings } from '../src/core/types.js';
 
-// §8.5 — `insulinId` joined `DosingSettings` because the insulin changes
+// §8.5 — `bolusId` joined `DosingSettings` because the insulin changes
 // §7.4's gate. NOTHING in this file reads it: every assertion here is about
 // arithmetic, which the insulin has never touched and still does not.
 const PRESCRIPTION: DosingSettings = {
@@ -10,7 +10,7 @@ const PRESCRIPTION: DosingSettings = {
   isf: 30,
   icr: 10,
   roundingMode: 'nearest',
-  insulinId: 'humulin-r',
+  bolusId: 'humulin-r',
 };
 const NO_SUPPRESSION = false;
 const SUPPRESSION = true;
