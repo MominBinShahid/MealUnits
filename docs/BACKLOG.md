@@ -1836,7 +1836,7 @@ a seeded mutation had to find it.
 
 ---
 
-### T19. `npm run smoke` reports two failures on a clean tree, and they are the harness
+### T19. `npm run smoke` reports two failures on a clean tree, and they are the harness — DONE 2026-09-20
 
 **Measured 2026-09-20.** `npm run smoke` ends with:
 
@@ -1851,22 +1851,46 @@ for. The dose logs and the screen reads *"Logged 2 units at 5:40 PM"* both times
 **And it is not this change.** `HEAD` (`be8fac8`) was extracted with `git archive`, built and
 smoke-tested on its own: identical two failures. It has been reporting them for at least one commit.
 
-**The likely cause, from reading the harness.** `tap` is `…find(…)?.click()` — OPTIONAL chaining,
-so a button that has not rendered yet is a silent no-op — and the log step waits a fixed 500 ms
-between "I injected this" and "Log this injection". The amount screen is a full re-render; if it is
-not up inside that window the second tap hits nothing, and the 6-second poll that follows then
-waits for a commit that was never started. Every other step in the file polls with `until`; these
-two do not.
+**The cause I proposed from READING the harness was wrong, and the record of that is the useful
+part.** I said: `tap` is `…find(…)?.click()`, so a button that has not rendered is a silent no-op,
+and the log step waits a fixed 500 ms where every other step polls. Both observations were true.
+Neither was the cause.
 
-**Two things to decide.** Whether `tap` should fail loudly when it finds no button — a helper that
-silently does nothing turns "the button moved" into "the feature broke", three screens away from
-the cause — and whether the log step should poll for the amount screen instead of sleeping.
+**The cause was §10.4's no-break space.** The check polls for `/Logged 2 units/` with an ordinary
+space. The screen reads `Logged 2\u00A0units at 9:35 PM`, because §10.4 puts U+00A0 between every
+number and its unit so the pair cannot break across a line. The regex could never match. It has
+been failing since the day that rule landed — on a check whose own name is *"AND IT LOGS — the
+defect this run exists for"*.
 
-**One more thing found on the way.** `SMOKE_LAN_URL` defaults to `127.0.0.1`, which Chrome treats
-as a secure context exactly like `localhost` — so the "insecure origin" half of the run silently
-tests nothing at the default. Two of its checks (`isSecureContext`, `crypto.randomUUID`) fail at
-that default rather than passing vacuously, which is the only reason this was visible. It needs a
-real LAN address: `SMOKE_LAN_URL="http://$(ipconfig getifaddr en0):4173/MealUnits/" npm run smoke`.
+Found by instrumenting rather than by reasoning: the diagnostic printed a screen that plainly read
+`Logged 2 units at 9:35 PM` beside an expression returning `false`, which is the only shape that
+tells you the two spaces are different characters.
+
+**Fixed centrally.** A `bodyText` expression folds U+00A0 to an ordinary space, and all thirteen
+assertions that read the rendered page go through it — because the next assertion about a number
+and its unit would have made the same mistake. `test/integration.test.ts` has carried the identical
+fold as `plain()` since §10.4 shipped; smoke never got one.
+
+**Both observations were worth acting on anyway, and one of them paid immediately.** `tap` now waits
+for the button with `until` and throws when it never appears, naming the pattern and dumping the
+screen. On its first run it caught a *second* latent no-op: the food-list session tapped
+`/^Food list$/` twice, and the second had nothing to click because that control lives on the
+carbohydrate step, which the session had already left. It had been doing nothing quietly for as long
+as it had existed. That is the argument for a loud helper, demonstrated rather than asserted.
+
+**One more thing found on the way, and it was the worse of the two.** `SMOKE_LAN_URL` defaulted to
+`127.0.0.1`, which Chrome treats as a secure context exactly like `localhost`. So the half of the
+run whose entire purpose is an INSECURE origin was, at its default, testing the secure one twice —
+including the check that exists for note 48's `crypto.randomUUID` defect, which cannot reproduce on
+a secure context at all.
+
+It was visible only because two of its checks assert a negative and reported FAIL rather than
+passing vacuously. Every other check in that session would have gone green against a context that
+could not exercise them.
+
+**The address is detected now**, from `os.networkInterfaces()`, so the ordinary `npm run smoke`
+exercises what it claims to. An explicit `SMOKE_LAN_URL` still wins and `none` still means there is
+no second origin.
 
 ---
 

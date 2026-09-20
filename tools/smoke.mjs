@@ -34,6 +34,7 @@
 import { spawn } from 'node:child_process';
 import { setTimeout as wait } from 'node:timers/promises';
 import { rmSync } from 'node:fs';
+import { networkInterfaces } from 'node:os';
 
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 /**
@@ -53,10 +54,41 @@ const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
  */
 const NO_LAN = 'none';
 const SECURE_URL = process.env.SMOKE_URL ?? 'http://localhost:4173/MealUnits/';
+/**
+ * The machine's own LAN address, or null.
+ *
+ * `BACKLOG` T19's second finding. `package.json` defaulted `SMOKE_LAN_URL` to
+ * `127.0.0.1`, and **Chrome treats 127.0.0.1 as a secure context exactly like
+ * localhost** — same as `::1`. So the half of this run whose entire purpose is
+ * an INSECURE origin was, at its default, testing the secure one twice.
+ *
+ * It was visible only because two of its checks assert the negative and
+ * reported FAIL rather than passing vacuously. The other checks in that session
+ * — including "AND IT LOGS", the defect the session exists for — would have
+ * gone green against a context that can never reproduce it.
+ *
+ * Detected rather than configured, so the ordinary `npm run smoke` exercises
+ * what it claims to. An explicit `SMOKE_LAN_URL` still wins, and `none` still
+ * means there is no second origin.
+ */
+const lanAddress = () => {
+  for (const addresses of Object.values(networkInterfaces())) {
+    for (const address of addresses ?? []) {
+      // `internal` excludes the loopback that started this. IPv4 only: a
+      // link-local IPv6 address carries a zone index that a URL cannot hold.
+      if (address.family === 'IPv4' && !address.internal) return address.address;
+    }
+  }
+  return null;
+};
+
+const configuredLan = process.env.SMOKE_LAN_URL?.trim() || null;
+const detectedLan = lanAddress();
 // Empty counts as unset. `SMOKE_LAN_URL= node tools/smoke.mjs` used to reach the
 // else branch and point Chrome at the empty string, which fails four checks and
 // takes a minute to say so, instead of failing immediately with the reason.
-const LAN_URL = process.env.SMOKE_LAN_URL?.trim() || null;
+const LAN_URL =
+  configuredLan ?? (detectedLan === null ? null : `http://${detectedLan}:4173/MealUnits/`);
 const URL_UNDER_TEST = SECURE_URL;
 const failures = [];
 const skipped = [];
@@ -208,8 +240,61 @@ const until = async ({ ev }, expr, what, ms = 5000) => {
   throw new Error(`smoke: waited ${ms}ms for ${what} and it never appeared. On screen: ${seen}`);
 };
 
+/**
+ * Tap a button, WAITING for it to exist first, and FAILING when it never does.
+ *
+ * `BACKLOG` T19. The old one was a one-liner:
+ *
+ *   `[...document.querySelectorAll('button')].find(b=>RE.test(b.textContent))?.click()`
+ *
+ * followed by a fixed 400 ms. Two things wrong with it, and together they cost
+ * this suite two permanent false failures on a clean tree.
+ *
+ * **The optional chain made a missing button a silent no-op.** Nothing clicked,
+ * nothing thrown, and the run continued to the next step — so a failure
+ * surfaced three screens later as "the dose never logged", which is a true
+ * statement about a cause it cannot name. A helper that quietly does nothing
+ * turns "the button moved" into "the feature broke".
+ *
+ * **And the wait was fixed where every other step polls.** `until` exists for
+ * exactly this and the log step did not use it: after "I injected this" the
+ * amount screen is a full re-render, and if it was not up inside 400 ms the
+ * next tap hit nothing. The six-second poll that followed then waited for a
+ * commit that had never been started. Both the secure and the insecure session
+ * failed this way, on `main`, for at least one commit before anyone looked.
+ *
+ * The 400 ms after the click stays. That one is for the render the click
+ * CAUSES, which no expression here can wait on — a different problem from
+ * waiting for the control to appear.
+ */
+const tapper = ({ ev }) => async (re) => {
+  const present = `[...document.querySelectorAll('button')].some(b=>${re}.test(b.textContent))`;
+  await until({ ev }, present, `a button matching ${re}`);
+  await ev(`[...document.querySelectorAll('button')].find(b=>${re}.test(b.textContent)).click()`);
+  await wait(400);
+};
+
+/**
+ * The page's text with §10.4's NO-BREAK SPACES folded to ordinary ones.
+ *
+ * `BACKLOG` T19, and the actual cause of both "it logs" failures — neither the
+ * fixed wait nor the silent tap, which is what reading the harness suggested.
+ *
+ * §10.4 puts U+00A0 between every number and its unit so "2 units" cannot break
+ * across a line and rejoin in the reader's head as "2Units". The logged screen
+ * therefore reads `Logged 2\u00A0units at 9:35 PM`, and the check polled for
+ * `/Logged 2 units/` with an ordinary space. It could never match. It has been
+ * failing since the day the no-break space landed, on a check whose own name is
+ * "AND IT LOGS — the defect this run exists for".
+ *
+ * Folded HERE rather than in each regex, because the next assertion about a
+ * number and its unit would make the same mistake. The same fold exists in
+ * `test/integration.test.ts` as `plain()`, for the same reason.
+ */
+const bodyText = `document.body.innerText.replace(/\u00a0/g, ' ')`;
+
 const setUp = async ({ ev, send }) => {
-  const tap = async (re) => { await ev(`[...document.querySelectorAll('button')].find(b=>${re}.test(b.textContent))?.click()`); await wait(400); };
+  const tap = tapper({ ev });
   await until({ ev }, `!!document.querySelector('#app')?.textContent?.includes('Read this before')`,
     'the disclaimer');
   await tap('/I have read this/i'); await tap('/own risk/i');
@@ -332,7 +417,7 @@ for (const [width, port] of [[412, 9302], [1440, 9303]]) {
     // elements CSS has hidden. A card broken by `display: none` reads as
     // present there and absent here.
     check(`${width}px: a typed 0 blocks, and says the reading cannot be real`,
-      await ev(`document.body.innerText.includes('cannot read below') && document.body.innerText.includes('Treat it now')`), true);
+      await ev(`${bodyText}.includes('cannot read below') && ${bodyText}.includes('Treat it now')`), true);
     check(`${width}px: the block card still contains itself`,
       await ev(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), true);
     check(`${width}px: and the treat-first instruction is ABOVE THE FOLD`,
@@ -347,7 +432,7 @@ for (const [width, port] of [[412, 9302], [1440, 9303]]) {
     // Same `innerText` argument as above: jsdom proves the disclosure's text is
     // in the tree, and only a real browser proves it is on the screen.
     check(`${width}px: the meter guidance opens, and reaches the ketone warning`,
-      await ev(`document.body.innerText.includes('ketoacidosis')`), true);
+      await ev(`${bodyText}.includes('ketoacidosis')`), true);
   });
 }
 
@@ -369,11 +454,11 @@ await session('/tmp/mealunits-smoke-foods', 9307, 412, async ({ ev, send, open }
   for (const d of ['1', '8', '0']) await tap(`/^${d}$/`);
   await tap('/^Next$/'); for (const d of ['5', '0']) await tap(`/^${d}$/`);
 
-  check('the food list is offered on the carbohydrate step', await ev(`/Food list/.test(document.body.innerText)`), true);
+  check('the food list is offered on the carbohydrate step', await ev(`/Food list/.test(${bodyText})`), true);
   await tap('/^Food list$/'); await wait(400);
-  check('and it opens with the table behind it', await ev(`/Tandoor naan/.test(document.body.innerText)`), true);
+  check('and it opens with the table behind it', await ev(`/Tandoor naan/.test(${bodyText})`), true);
   check('the caveat is above the numbers, not below them', await ev(
-    `document.body.innerText.indexOf('Estimates, not measurements') < document.body.innerText.indexOf('Tandoor naan')`), true);
+    `${bodyText}.indexOf('Estimates, not measurements') < ${bodyText}.indexOf('Tandoor naan')`), true);
 
   /**
    * TYPED AS FAST AS THE PROTOCOL WILL SEND, with no wait between keystrokes.
@@ -407,8 +492,13 @@ await session('/tmp/mealunits-smoke-foods', 9307, 412, async ({ ev, send, open }
    * events is not a soft keyboard. The composition half is covered in jsdom by
    * `test/integration.test.ts`; neither layer is a phone.
    */
+  // Already on the food list — opened four lines above, and the two checks in
+  // between only read text. A second `tap('/^Food list$/')` stood here and was
+  // a NO-OP: that control lives on the carbohydrate step, which this session
+  // has left. It never failed, because the old `tap` used `?.click()` and did
+  // nothing quietly. T19's stricter tap found it on its first run, which is
+  // the whole argument for making a missing button loud.
   const searchField = `document.querySelector('[data-field="foodQuery"]')`;
-  await tap('/^Food list$/'); await wait(400);
   await ev(`window.__field = ${searchField}; window.__field?.focus()`);
   for (const character of 'roti') {
     await send('Input.dispatchKeyEvent', { type: 'keyDown', text: character });
@@ -425,7 +515,7 @@ await session('/tmp/mealunits-smoke-foods', 9307, 412, async ({ ev, send, open }
   // The whole safety argument: it never writes into the field, and it never
   // costs you what you already typed.
   check('back returns the carbohydrate entry, still holding what was typed', await ev(
-    `/50/.test(document.body.innerText) && !/Tandoor naan/.test(document.body.innerText)`), true);
+    `/50/.test(${bodyText}) && !/Tandoor naan/.test(${bodyText})`), true);
 });
 
 await session('/tmp/mealunits-smoke-path', 9304, 412, async ({ send, ev, open }) => {
@@ -442,12 +532,12 @@ await session('/tmp/mealunits-smoke-path', 9304, 412, async ({ send, ev, open })
   // that takes is not ours to predict.
   let logged = false;
   for (let i = 0; i < 60; i++) {
-    logged = (await ev(`/Logged 2 units/.test(document.body.innerText)`)) === true;
+    logged = (await ev(`/Logged 2 units/.test(${bodyText})`)) === true;
     if (logged) break;
     await wait(100);
   }
   check('and logging it says so', logged, true);
-  check('the screen is not blank', await ev(`document.body.innerText.length > 40`), true);
+  check('the screen is not blank', await ev(`${bodyText}.length > 40`), true);
 });
 
 // 3b. The device back gesture, with the app as the FIRST history entry.
@@ -473,7 +563,7 @@ await session('/tmp/mealunits-smoke-back', 9306, 412, async ({ send, ev, open })
   await send('Page.navigateToHistoryEntry', { entryId: entries.at(-2)?.id });
   await wait(1200);
   check('and the back gesture returns to the reading screen, not out of the app',
-    await ev(`/What.s your blood sugar/.test(document.body.innerText)`), true);
+    await ev(`/What.s your blood sugar/.test(${bodyText})`), true);
   check('the app is still loaded', await ev(`!!document.querySelector('#app')?.textContent`), true);
 });
 
@@ -518,7 +608,7 @@ if (LAN_URL === null) {
     await tap('/Log this injection/');
     let logged = false;
     for (let i = 0; i < 60; i++) {
-      logged = (await ev(`/Logged 2 units/.test(document.body.innerText)`)) === true;
+      logged = (await ev(`/Logged 2 units/.test(${bodyText})`)) === true;
       if (logged) break;
       await wait(100);
     }
