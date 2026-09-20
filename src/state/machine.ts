@@ -23,7 +23,7 @@ import { isResultExpired } from '../core/timing.js';
 import { resolve } from '../core/resolve.js';
 // The one table this module reads. §13.1 keeps `src/data` out of `src/core`;
 // this is `src/state`, and the alternative was a derived `insulinClass` on
-// `AppState` that the shell had to keep in step with `settings.insulinId` —
+// `AppState` that the shell had to keep in step with `settings.bolusId` —
 // two fields that can disagree about one fact, in the layer whose whole job is
 // that they cannot.
 import { INSULINS } from '../data/insulins.js';
@@ -320,7 +320,7 @@ function buildSnapshot(state: AppState, nowMs: number): Snapshot | null {
     lastDose: gateLastDose(state),
     // §8.5 — frozen with everything else, so a result and the windows that
     // produced it cannot come from different answers to the same question.
-    insulinClass: classOf(INSULINS, state.settings.insulinId),
+    insulinClass: classOf(INSULINS, state.settings.bolusId),
     bandEFullCardShownRecently: state.record.bandEFullCardShownRecently,
     excludedTimeRecords: state.record.excludedTimeRecords,
     blankReadingAcknowledged: state.blankReadingAcknowledged,
@@ -377,7 +377,7 @@ function stepFor(outcome: Outcome): WizardStep {
  */
 export function screenForSettings(settings: Settings | null): Screen {
   if (settings === null) return 'insulin_setup';
-  switch (insulinGate(INSULINS, settings.insulinId)) {
+  switch (insulinGate(INSULINS, settings.bolusId)) {
     case 'ask':
       return 'insulin_setup';
     case 'unsupported':
@@ -659,6 +659,6 @@ export function inSessionLastDose(state: AppState): LastDose | null {
     // needs settings — so there is no state in which a frozen payload exists
     // and `settings` is null. The check is what the type requires, and it is
     // the safe answer if that ever stops holding.
-    insulinClass: state.settings === null ? null : classOf(INSULINS, state.settings.insulinId),
+    insulinClass: state.settings === null ? null : classOf(INSULINS, state.settings.bolusId),
   };
 }

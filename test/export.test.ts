@@ -47,8 +47,8 @@ const PRESCRIPTION = {
   basalName: 'Lantus',
   basalUnits: 36,
   basalTiming: 'early morning', personName: '',
-  insulinId: 'humulin-r',
-  insulinName: 'Humulin R',
+  bolusId: 'humulin-r',
+  bolusName: 'Humulin R',
   eatDelayMinutes: null,
   acknowledged: [],
   nowMs: NOW,
@@ -82,7 +82,7 @@ const SETTINGS: Settings = {
   basalName: 'Lantus',
   basalUnits: 36,
   basalTiming: 'early morning, before breakfast', personName: '',
-  insulinId: 'humulin-r',
+  bolusId: 'humulin-r',
   eatDelayMinutes: null,
 };
 
@@ -94,7 +94,7 @@ function period(overrides: Partial<SettingsPeriod> = {}): SettingsPeriod {
     isf: 30,
     icr: 10,
     roundingMode: 'nearest',
-    insulinId: 'humulin-r',
+    bolusId: 'humulin-r',
     imported: false,
     ...overrides,
   };
@@ -181,14 +181,14 @@ describe('§7.7 the envelope', () => {
     );
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    // A file that predates BOTH the rename and §8.5 — no `insulinId` either.
+    // A file that predates BOTH the rename and §8.5 — no `bolusId` either.
     // Written as `mode`, read as `roundingMode`. One `??` at the boundary, and
     // the reason it is there at all: an export already saved to somebody's
     // phone should not stop importing because a name got clearer.
     expect(parsed.envelope.settings).toMatchObject({ roundingMode: 'half' });
     expect(parsed.envelope.settingsHistory[0]).toMatchObject({
       roundingMode: 'ceil',
-      insulinId: '',
+      bolusId: '',
     });
   });
 
@@ -197,7 +197,7 @@ describe('§7.7 the envelope', () => {
     // its historical setting and an identical-values row would be noise.
     // `imported` is LOCAL provenance and cannot mean anything in a file.
     //
-    // §8.5 — `insulinId` is here and `eatDelayMinutes` is NOT, and the two sit
+    // §8.5 — `bolusId` is here and `eatDelayMinutes` is NOT, and the two sit
     // on opposite sides of that same test. The insulin changes §7.4's gate, and
     // a suppressed correction is a different dose; the reader's own pre-meal
     // wait changes what they were told to do and never what came out.
@@ -209,7 +209,7 @@ describe('§7.7 the envelope', () => {
       dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
     });
     expect(Object.keys(envelope.settingsHistory[0] ?? {}).sort()).toEqual(
-      ['changedAtMs', 'icr', 'insulinId', 'isf', 'revision', 'roundingMode', 'target'].sort(),
+      ['changedAtMs', 'icr', 'bolusId', 'isf', 'revision', 'roundingMode', 'target'].sort(),
     );
   });
 
@@ -416,8 +416,8 @@ describe('§7.7 revision remapping', () => {
         schemaVersion: 1,
         settings: {},
         settingsHistory: [
-          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, roundingMode: 'nearest', insulinId: 'humulin-r' },
-          { revision: 2, changedAtMs: AUG_18 + DAY, target: 150, isf: 30, icr: 12, roundingMode: 'nearest', insulinId: 'humulin-r' },
+          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, roundingMode: 'nearest', bolusId: 'humulin-r' },
+          { revision: 2, changedAtMs: AUG_18 + DAY, target: 150, isf: 30, icr: 12, roundingMode: 'nearest', bolusId: 'humulin-r' },
         ],
         readings: [],
         log: [injection({ id: 'a', settingsRevision: 2 })],
@@ -433,15 +433,15 @@ describe('§7.7 revision remapping', () => {
 
   it('into a NON-EMPTY store, they are appended at max + 1 and every row is rewritten', () => {
     // §1.2's storage-loss flow: re-enter the settings by hand (local revisions
-    // 1..k), then import the backup (carrying an unrelated 1..n). Merging by
+    // 1..key), then import the backup (carrying an unrelated 1..n). Merging by
     // number collides and attributes rows to settings that never produced them.
     const plan = planMerge(
       {
         schemaVersion: 1,
         settings: {},
         settingsHistory: [
-          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, roundingMode: 'nearest', insulinId: 'humulin-r' },
-          { revision: 2, changedAtMs: AUG_18 + DAY, target: 150, isf: 30, icr: 12, roundingMode: 'nearest', insulinId: 'humulin-r' },
+          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, roundingMode: 'nearest', bolusId: 'humulin-r' },
+          { revision: 2, changedAtMs: AUG_18 + DAY, target: 150, isf: 30, icr: 12, roundingMode: 'nearest', bolusId: 'humulin-r' },
         ],
         readings: [],
         log: [injection({ id: 'a', settingsRevision: 1 }), injection({ id: 'b', settingsRevision: 2 })],
@@ -464,7 +464,7 @@ describe('§7.7 revision remapping', () => {
         schemaVersion: 1,
         settings: {},
         settingsHistory: [
-          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, roundingMode: 'nearest', insulinId: 'humulin-r' },
+          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, roundingMode: 'nearest', bolusId: 'humulin-r' },
         ],
         readings: [],
         log: [],
@@ -489,7 +489,7 @@ describe('§13.3 the composed case v12 lacked', () => {
       schemaVersion: 1,
       settings: {},
       settingsHistory: [
-        { revision: 1, changedAtMs: AUG_18 - 365 * DAY, target: 150, isf: 30, icr: 8, roundingMode: 'nearest', insulinId: 'humulin-r' },
+        { revision: 1, changedAtMs: AUG_18 - 365 * DAY, target: 150, isf: 30, icr: 8, roundingMode: 'nearest', bolusId: 'humulin-r' },
       ],
       readings: [],
       log: [injection({ id: 'old', settingsRevision: 1, timestamp: AUG_18 - 300 * DAY })],

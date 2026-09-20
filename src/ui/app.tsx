@@ -318,7 +318,7 @@ export async function start(host: Host): Promise<void> {
       classByRevision: new Map(
         source.settingsHistory.map((period) => [
           period.revision,
-          classOf(INSULINS, period.insulinId),
+          classOf(INSULINS, period.bolusId),
         ]),
       ),
     });
@@ -394,8 +394,8 @@ export async function start(host: Host): Promise<void> {
       isf: numeric('isf', draft.isf),
       icr: numeric('icr', draft.icr),
       roundingMode: draft.roundingMode,
-      insulinId: draft.insulinId,
-      insulinName: brandFor(draft.insulinId),
+      bolusId: draft.bolusId,
+      bolusName: brandFor(draft.bolusId),
       // §4.1 — empty means "use the class range" and 0 means "at the start of
       // the meal". `parseField` keeps those apart; `Number(text) || null` would
       // collapse them and turn an ultra-rapid analogue's instruction into the
@@ -705,7 +705,7 @@ export async function start(host: Host): Promise<void> {
     },
     onConfirm: (id: string): void => {
       view.pendingInsulin = null;
-      view.draft = { ...view.draft, insulinId: id };
+      view.draft = { ...view.draft, bolusId: id };
       const current = state.settings;
       if (current === null) {
         // Nothing stored yet. The answer rides in the draft and the setup
@@ -720,8 +720,8 @@ export async function start(host: Host): Promise<void> {
           isf: current.isf,
           icr: current.icr,
           roundingMode: current.roundingMode,
-          insulinId: id,
-          insulinName: brandFor(id),
+          bolusId: id,
+          bolusName: brandFor(id),
           // The reader's own wait belonged to the OLD insulin. Cleared rather
           // than carried: a prescriber's "twenty minutes" was an answer about
           // regular insulin, and silently keeping it against a rapid analogue
@@ -816,7 +816,7 @@ export async function start(host: Host): Promise<void> {
               // on a first run, before one does, a Back button would lead to a
               // settings form that cannot be saved.
               onCancel:
-                view.draft.insulinId === ''
+                view.draft.bolusId === ''
                   ? null
                   : (): void => {
                       view.pendingInsulin = null;
@@ -832,7 +832,7 @@ export async function start(host: Host): Promise<void> {
       case 'insulin_unsupported':
         return (
           <InsulinUnsupportedScreen
-            insulin={INSULINS.find((row) => row.id === (state.settings?.insulinId ?? '')) ?? null}
+            insulin={INSULINS.find((row) => row.id === (state.settings?.bolusId ?? '')) ?? null}
             hasRecord={(stored?.log.length ?? 0) > 0}
             handlers={insulinHandlers}
           />
@@ -1041,7 +1041,7 @@ export async function start(host: Host): Promise<void> {
         ) : (
           <HowItWorksScreen
             advisoryStatus={advisoryStatus()}
-            insulinBrand={brandFor(view.draft.insulinId) || null}
+            insulinBrand={brandFor(view.draft.bolusId) || null}
           />
         );
 

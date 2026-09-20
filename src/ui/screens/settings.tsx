@@ -32,7 +32,7 @@ export interface SettingsDraft {
    * ratios, and the insulin question is asked before them. An existing install
    * commits the answer immediately instead and this only mirrors the store.
    */
-  readonly insulinId: string;
+  readonly bolusId: string;
   /** §8.5 — the reader's own doctor's wait, in minutes. Empty means the class range. */
   readonly eatDelay: string;
   readonly threshold: string;
@@ -63,7 +63,7 @@ export function draftFrom(settings: Settings | null): SettingsDraft {
       isf: '',
       icr: '',
       roundingMode: DEFAULT_MODE,
-      insulinId: '',
+      bolusId: '',
       eatDelay: '',
       threshold: '',
       basalName: '',
@@ -77,7 +77,7 @@ export function draftFrom(settings: Settings | null): SettingsDraft {
     isf: String(settings.isf),
     icr: String(settings.icr),
     roundingMode: settings.roundingMode,
-    insulinId: settings.insulinId,
+    bolusId: settings.bolusId,
     // §4.1 — null is "not given" and 0 is a real answer (an ultra-rapid
     // analogue is injected at the start of the meal). `String(0)` is "0" and
     // only null becomes the empty field.
@@ -414,7 +414,7 @@ export function SettingsScreen({
     problems.find((problem) => problem.field === field);
   // §8.5 — read off the DRAFT rather than off `settings`, so on a first run the
   // answer given two screens ago is visible before anything has been stored.
-  const insulin = INSULINS.find((row) => row.id === draft.insulinId);
+  const insulin = INSULINS.find((row) => row.id === draft.bolusId);
   const insulinBrand = insulin?.brand ?? null;
   const insulinMolecule = insulin?.molecule ?? null;
   const insulinClass = insulin === undefined ? null : insulin.insulinClass;
@@ -559,7 +559,7 @@ export function SettingsScreen({
               who answered that the app lost it. */}
           <div class="k">
             <span class="brand">
-              {insulinBrand ?? COPY.insulin.notKnownLabel(draft.insulinId)}
+              {insulinBrand ?? COPY.insulin.notKnownLabel(draft.bolusId)}
             </span>
             {insulinMolecule === null ? null : <span class="molecule">{insulinMolecule}</span>}
           </div>

@@ -64,7 +64,7 @@ export function importEnvelope(
         // covers it: the imported period is a record of what was in force on
         // the other install, and an insulin switch is one of the things that
         // makes a historical row mean something different.
-        insulinId: entry.insulinId,
+        bolusId: entry.bolusId,
         imported: true,
       } satisfies SettingsHistoryRow);
     }
@@ -80,7 +80,7 @@ export function importEnvelope(
     const incoming = envelope.dosingHistoryBeforeApp;
     if (localState === 'unanswered' && incoming !== undefined) {
       await put(tx, STORE.meta, {
-        k: META_KEY.dosingHistory,
+        key: META_KEY.dosingHistory,
         state: 'answered',
         text: incoming.text,
         answeredAtMs: incoming.answeredAtMs,
@@ -94,15 +94,15 @@ export function importEnvelope(
     // still `lastLocalInjectionAtMs` (see `schema.ts`); it is deliberately left
     // alone here, which is what keeps a prior injection's stamp from being
     // erased by a restore.
-    const revision = await get<{ n: number; lastLocalInjectionAtMs: number | null }>(
+    const revision = await get<{ logRevision: number; lastLocalInjectionAtMs: number | null }>(
       tx,
       STORE.meta,
       META_KEY.logRevision,
     );
-    const nextRevision = (revision?.n ?? 0) + 1;
+    const nextRevision = (revision?.logRevision ?? 0) + 1;
     await put(tx, STORE.meta, {
-      k: META_KEY.logRevision,
-      n: nextRevision,
+      key: META_KEY.logRevision,
+      logRevision: nextRevision,
       lastImportAtMs: nowMs,
       lastLocalInjectionAtMs: revision?.lastLocalInjectionAtMs ?? null,
     });

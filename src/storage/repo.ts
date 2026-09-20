@@ -41,8 +41,8 @@ async function readLogRevisionRow(tx: IDBTransaction): Promise<LogRevisionRow> {
   const row = await get<LogRevisionRow>(tx, STORE.meta, META_KEY.logRevision);
   return (
     row ?? {
-      k: META_KEY.logRevision,
-      n: NO_REVISION,
+      key: META_KEY.logRevision,
+      logRevision: NO_REVISION,
       lastImportAtMs: null,
       lastLocalInjectionAtMs: null,
     }
@@ -60,8 +60,11 @@ async function bumpLogRevision(
   patch: Partial<Omit<LogRevisionRow, 'k' | 'n'>> = {},
 ): Promise<number> {
   const current = await readLogRevisionRow(tx);
-  const next = current.n + 1;
-  await put(tx, STORE.meta, { ...current, ...patch, k: META_KEY.logRevision, n: next });
+  // `?? current.n` — a row written before 2026-09-21 carries the counter under
+  // its old one-letter name. Losing it would reset the counter to 1 and make
+  // every other tab think the record had gone backwards.
+  const next = (current.logRevision ?? current.n ?? 0) + 1;
+  await put(tx, STORE.meta, { ...current, ...patch, key: META_KEY.logRevision, logRevision: next });
   return next;
 }
 
@@ -126,7 +129,7 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
               // ASK. That is the entire migration for this field, and it is the
               // behaviour §8.5 asked for — an existing install answers the
               // question on next open like everyone else.
-              insulinId: settingsRow.insulinId ?? '',
+              bolusId: settingsRow.bolusId ?? settingsRow.insulinId ?? '',
               // Null is this field's own "not given", so a missing one reads
               // back as the class range standing. Same shape, one level of
               // optionality rather than two.
@@ -154,17 +157,17 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
         // existed genuinely has no insulin recorded, and `''` is how the export
         // prints "not recorded" rather than attributing one.
         // THE BOUNDARY, for both fields: the stored row says `mode` and carries
-        // no `insulinId` before 2026-09-20; the domain says `roundingMode` and
+        // no `bolusId` before 2026-09-20; the domain says `roundingMode` and
         // reads a missing insulin as "never asked".
         settingsHistory: history.map(({ mode, ...row }) => ({
           ...row,
           roundingMode: row.roundingMode ?? mode,
-          insulinId: row.insulinId ?? '',
+          bolusId: row.bolusId ?? row.insulinId ?? '',
         })),
         log: validated,
         droppedStoredRows: log.length - validated.length,
         readings,
-        logRevision: revision.n,
+        logRevision: revision.logRevision ?? revision.n ?? 0,
         installedAtMs: install?.installedAtMs ?? nowMs,
         lastImportAtMs: revision.lastImportAtMs,
         // No translation here any more. The stored key WAS `lastLocalWriteAtMs`
@@ -172,12 +175,12 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
         // `lastLocalInjectionAtMs` now, which is what note 7 established the
         // value actually means — only an injection append stamps it.
         lastLocalInjectionAtMs: revision.lastLocalInjectionAtMs,
-        acks: new Set(acks.map((row) => row.k)),
+        acks: new Set(acks.map((row) => row.key)),
         // §6.7 v19 — A MISSING ROW READS AS `unanswered`. The row is not seeded
         // at database creation: an install predating the feature, or a partial
         // restore, must ask rather than assume.
         dosingHistory: dosing ?? {
-          k: META_KEY.dosingHistory,
+          key: META_KEY.dosingHistory,
           state: 'unanswered',
           text: '',
           answeredAtMs: null,
@@ -196,9 +199,9 @@ export interface SettingsCommit {
   readonly icr: number;
   readonly roundingMode: RoundingMode;
   /** §8.5 — a row id from `src/data/insulins.ts`, or one of the two sentinels. */
-  readonly insulinId: string;
+  readonly bolusId: string;
   /** §8.5 — the brand in words, for the recovery block a human copies down. */
-  readonly insulinName: string;
+  readonly bolusName: string;
   /** §8.5 — the reader's own pre-meal wait, or null for the class range. */
   readonly eatDelayMinutes: number | null;
   readonly threshold: number;
@@ -243,7 +246,7 @@ function sameProvenance(previous: SettingsHistoryRow, commit: SettingsCommit): b
     isf: commit.isf,
     icr: commit.icr,
     roundingMode: commit.roundingMode,
-    insulinId: commit.insulinId,
+    bolusId: commit.bolusId,
     imported: previous.imported,
   };
   return (Object.keys(proposed) as (keyof SettingsHistoryRow)[])
@@ -263,14 +266,14 @@ function recoveryFor(commit: SettingsCommit): RecoveryBlock {
     targetMgDl: commit.target,
     oneUnitLowersMgDl: commit.isf,
     oneUnitCoversGramsCarbohydrate: commit.icr,
-    basalInsulinName: commit.basalName,
+    basalName: commit.basalName,
     basalUnitsPerDay: commit.basalUnits,
     basalTiming: commit.basalTiming,
     // The BRAND, not the id. This block is read off a screen and typed back in
     // by a person; `novorapid` is not what the box says and not what they would
     // recognise, which is the same reason the units are spelled out beside
     // every number above.
-    mealtimeInsulin: commit.insulinName,
+    bolusName: commit.bolusName,
   };
 }
 
@@ -316,7 +319,7 @@ export function commitSettings(db: IDBDatabase, commit: SettingsCommit): Promise
     const revision = unchanged ? (current?.revision ?? NO_REVISION) : (highest ?? NO_REVISION) + 1;
 
     const settings: SettingsRow = {
-      k: SETTINGS_KEY,
+      key: SETTINGS_KEY,
       revision,
       personName: commit.personName,
       target: commit.target,
@@ -327,7 +330,7 @@ export function commitSettings(db: IDBDatabase, commit: SettingsCommit): Promise
       basalName: commit.basalName,
       basalUnits: commit.basalUnits,
       basalTiming: commit.basalTiming,
-      insulinId: commit.insulinId,
+      bolusId: commit.bolusId,
       eatDelayMinutes: commit.eatDelayMinutes,
     };
     await put(tx, STORE.settings, settings);
@@ -343,7 +346,7 @@ export function commitSettings(db: IDBDatabase, commit: SettingsCommit): Promise
         isf: commit.isf,
         icr: commit.icr,
         roundingMode: commit.roundingMode,
-        insulinId: commit.insulinId,
+        bolusId: commit.bolusId,
         imported: false,
       } satisfies SettingsHistoryRow);
     }
@@ -353,13 +356,13 @@ export function commitSettings(db: IDBDatabase, commit: SettingsCommit): Promise
     // prescription.
     const envelope = await get<EnvelopeRow>(tx, STORE.meta, META_KEY.envelope);
     await put(tx, STORE.meta, {
-      k: META_KEY.envelope,
+      key: META_KEY.envelope,
       schemaVersion: envelope?.schemaVersion ?? SCHEMA_VERSION,
       recovery: recoveryFor(commit),
     } satisfies EnvelopeRow);
 
     for (const key of commit.acknowledged) {
-      await put(tx, STORE.acks, { k: key, acknowledgedAtMs: commit.nowMs } satisfies AckRow);
+      await put(tx, STORE.acks, { key: key, acknowledgedAtMs: commit.nowMs } satisfies AckRow);
     }
     return revision;
   });
@@ -367,7 +370,7 @@ export function commitSettings(db: IDBDatabase, commit: SettingsCommit): Promise
 
 export function acknowledge(db: IDBDatabase, key: string, nowMs: number): Promise<IDBValidKey> {
   return runTransaction(db, [STORE.acks], 'readwrite', (tx) =>
-    put(tx, STORE.acks, { k: key, acknowledgedAtMs: nowMs } satisfies AckRow),
+    put(tx, STORE.acks, { key: key, acknowledgedAtMs: nowMs } satisfies AckRow),
   );
 }
 
@@ -406,7 +409,7 @@ export async function appendInjection(
     if (existing !== undefined) {
       // Idempotent on `id`. Two taps cannot log 52 units.
       const revision = await readLogRevisionRow(tx);
-      return { kind: 'already_written', logRevision: revision.n } satisfies LogWriteOutcome;
+      return { kind: 'already_written', logRevision: revision.logRevision } satisfies LogWriteOutcome;
     }
     await add(tx, STORE.log, row);
     const logRevision = await bumpLogRevision(tx, { lastLocalInjectionAtMs: nowMs });
@@ -518,7 +521,7 @@ export function clearTheRecord(db: IDBDatabase): Promise<number> {
     await clear(tx, STORE.log);
     await clear(tx, STORE.readings);
     await put(tx, STORE.meta, {
-      k: META_KEY.backup,
+      key: META_KEY.backup,
       lastJsonExportAtMs: null,
     } satisfies BackupRow);
     // The provenance stamps go with the rows they described.
@@ -544,7 +547,7 @@ export function clearTheRecord(db: IDBDatabase): Promise<number> {
  */
 export function recordJsonExport(db: IDBDatabase, nowMs: number): Promise<IDBValidKey> {
   return runTransaction(db, [STORE.meta], 'readwrite', (tx) =>
-    put(tx, STORE.meta, { k: META_KEY.backup, lastJsonExportAtMs: nowMs } satisfies BackupRow),
+    put(tx, STORE.meta, { key: META_KEY.backup, lastJsonExportAtMs: nowMs } satisfies BackupRow),
   );
 }
 
@@ -552,9 +555,9 @@ export function recordJsonExport(db: IDBDatabase, nowMs: number): Promise<IDBVal
 
 export function writeDosingHistory(
   db: IDBDatabase,
-  row: Omit<DosingHistoryRow, 'k'>,
+  row: Omit<DosingHistoryRow, 'key'>,
 ): Promise<IDBValidKey> {
   return runTransaction(db, [STORE.meta], 'readwrite', (tx) =>
-    put(tx, STORE.meta, { ...row, k: META_KEY.dosingHistory } satisfies DosingHistoryRow),
+    put(tx, STORE.meta, { ...row, key: META_KEY.dosingHistory } satisfies DosingHistoryRow),
   );
 }

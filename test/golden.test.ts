@@ -110,7 +110,7 @@ function buildSnapshot(input: GoldenInput, mode: string): Snapshot {
     basalName: input.basalName ?? 'Lantus',
     basalUnits: input.basalUnits ?? 36,
     basalTiming: input.basalTiming ?? 'early morning, before breakfast',
-    insulinId: 'humulin-r',
+    bolusId: 'humulin-r',
     eatDelayMinutes: null,
   };
   const lastDose = input.lastDose
