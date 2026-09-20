@@ -18,8 +18,15 @@
  * shell reports the outcome back as another action.
  */
 
+import { classOf, insulinGate } from '../core/insulin.js';
 import { isResultExpired } from '../core/timing.js';
 import { resolve } from '../core/resolve.js';
+// The one table this module reads. §13.1 keeps `src/data` out of `src/core`;
+// this is `src/state`, and the alternative was a derived `insulinClass` on
+// `AppState` that the shell had to keep in step with `settings.insulinId` —
+// two fields that can disagree about one fact, in the layer whose whole job is
+// that they cannot.
+import { INSULINS } from '../data/insulins.js';
 import type {
   HistoryProvenance,
   LastDose,
@@ -46,6 +53,27 @@ export type Screen =
   | 'first_run_disclaimer'
   /** §10.6 item 2 — settings entry is mandatory. There are no defaults. */
   | 'first_run_settings'
+  /**
+   * §8.5 — which mealtime insulin, asked before the ratios and never skipped.
+   *
+   * A GATE rather than a settings field, and it opens for an existing install
+   * too: the question is required, so an app that has been running for months
+   * asks it on the next open like a fresh one. Placed BEFORE `first_run_settings`
+   * on a new install, because an answer of "premixed" ends the setup and making
+   * someone type three ratios first only to be told the app does not fit them
+   * is a worse way to say the same thing.
+   */
+  | 'insulin_setup'
+  /**
+   * §8.5 — the honest exit. Premixed, NPH and long-acting insulins are IN the
+   * list and land here, which is the whole reason they are listed: leaving them
+   * out does not protect anyone, it sends them to the nearest-looking name.
+   *
+   * It gates the CALCULATOR and nothing else. The record stays readable and
+   * exportable, because someone months into their own log must not be locked
+   * out of it by answering a question truthfully.
+   */
+  | 'insulin_unsupported'
   | 'calculator'
   | 'settings'
   | 'history'
@@ -290,6 +318,9 @@ function buildSnapshot(state: AppState, nowMs: number): Snapshot | null {
     eligibleEntryCount: state.record.eligibleEntryCount,
     historyProvenance: state.record.historyProvenance,
     lastDose: gateLastDose(state),
+    // §8.5 — frozen with everything else, so a result and the windows that
+    // produced it cannot come from different answers to the same question.
+    insulinClass: classOf(INSULINS, state.settings.insulinId),
     bandEFullCardShownRecently: state.record.bandEFullCardShownRecently,
     excludedTimeRecords: state.record.excludedTimeRecords,
     blankReadingAcknowledged: state.blankReadingAcknowledged,
@@ -335,16 +366,42 @@ function stepFor(outcome: Outcome): WizardStep {
   }
 }
 
+/**
+ * §8.5 — where an app with these settings belongs, after the disclaimer.
+ *
+ * ONE function, called from every transition that could land on the
+ * calculator. The alternative was the same three-way condition written out at
+ * `loaded`, at `disclaimer_accepted` and at `settings_committed`, which is how
+ * a gate ends up enforced in two places out of three — the shape of §12's
+ * suppression defect, one layer up.
+ */
+export function screenForSettings(settings: Settings | null): Screen {
+  if (settings === null) return 'insulin_setup';
+  switch (insulinGate(INSULINS, settings.insulinId)) {
+    case 'ask':
+      return 'insulin_setup';
+    case 'unsupported':
+      return 'insulin_unsupported';
+    case 'ok':
+      return 'calculator';
+  }
+}
+
 export function reduce(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'loaded': {
       // §10.6 items 1 and 2 — the disclaimer is blocking and accepted once;
       // settings entry is mandatory, because §1.2 ships no defaults.
+      // §8.5 — the insulin question comes BEFORE the ratios, so a fresh
+      // install with no settings at all lands on it rather than on the form.
+      // `first_run_settings` is NOT reachable from here any more and the
+      // branch that used to reach it is gone: with no settings the gate always
+      // answers `insulin_setup`, so the alternative was a condition no input
+      // could satisfy. Setup moves on to the ratios when the insulin screen
+      // dispatches `go`, which is the only path that puts anyone there.
       const screen: Screen = !action.disclaimerAccepted
         ? 'first_run_disclaimer'
-        : action.settings === null
-          ? 'first_run_settings'
-          : 'calculator';
+        : screenForSettings(action.settings);
       return { ...state, screen, settings: action.settings, record: action.record };
     }
 
@@ -352,10 +409,28 @@ export function reduce(state: AppState, action: Action): AppState {
       return { ...state, screen: 'fail_closed' };
 
     case 'disclaimer_accepted':
-      return { ...state, screen: state.settings === null ? 'first_run_settings' : 'calculator' };
+      return { ...state, screen: screenForSettings(state.settings) };
 
     case 'go':
-      return { ...state, screen: action.screen };
+      // §8.5, §10.6 — THE GATES ARE ENFORCED HERE, not at each caller.
+      //
+      // Found in a browser on 2026-09-20: the out-of-model exit offers "open my
+      // record", History's Back dispatches `go: 'calculator'`, and the reader
+      // was on the calculator — past the premix exit AND past §1.2's mandatory
+      // settings, typing a reading. Every screen that goes "home" says
+      // `'calculator'`, so fixing the two that were reachable would have left
+      // the next one to be written wrong.
+      //
+      // Guarding the destination instead means the gate cannot be walked
+      // around by any route: with settings and a usable insulin the answer IS
+      // `'calculator'` and nothing changes, and without them the app returns to
+      // whichever question is still open. Only the calculator is guarded —
+      // History and Export stay reachable, because §8.5's exit must not hold a
+      // record hostage.
+      return {
+        ...state,
+        screen: action.screen === 'calculator' ? screenForSettings(state.settings) : action.screen,
+      };
 
     case 'input_changed': {
       // §10.8 — clear the dose the INSTANT any input changes. 37% of audited
@@ -364,9 +439,19 @@ export function reduce(state: AppState, action: Action): AppState {
       return { ...invalidateWithAck({ ...state, inputs }) };
     }
 
-    case 'settings_committed':
+    case 'settings_committed': {
       // A settings change is as dose-affecting as a log append (§11.3 layer 2).
-      return { ...invalidateWithAck({ ...state, settings: action.settings }), screen: 'calculator' };
+      const committed = invalidateWithAck({ ...state, settings: action.settings });
+      // §8.5 — a commit can CHANGE the answer to the insulin question, so the
+      // gate is re-asked here rather than assumed passed. Selecting a premixed
+      // insulin from Settings must land on the exit, not on a calculator whose
+      // arithmetic no longer applies.
+      //
+      // The insulin screens commit through this action too, which is why a
+      // first-run answer of "premixed" leaves setup rather than continuing into
+      // the ratios.
+      return { ...committed, screen: screenForSettings(action.settings) };
+    }
 
     case 'record_changed':
       // §4.3 step 1 — the log is a dosing input, so a row added, deleted or
@@ -565,5 +650,15 @@ export function inSessionLastDose(state: AppState): LastDose | null {
   return {
     injectedHundredths: state.committing.injectedUnits,
     atMs: state.committing.timestamp,
+    // This dose was given MINUTES ago under the settings in force now, so the
+    // current answer is the right one — unlike `deriveHistory`'s rows, which
+    // read their class from the revision that stamped them.
+    //
+    // Stryker disable next-line ConditionalExpression: unreachable. `committing`
+    // is non-null only after `begin_logging`, which needs an outcome, which
+    // needs settings — so there is no state in which a frozen payload exists
+    // and `settings` is null. The check is what the type requires, and it is
+    // the safe answer if that ever stops holding.
+    insulinClass: state.settings === null ? null : classOf(INSULINS, state.settings.insulinId),
   };
 }

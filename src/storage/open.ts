@@ -16,6 +16,7 @@
  * tab is the blocker.
  */
 
+import { RECOVERY_FORMAT } from '../config.js';
 import {
   DATABASE_NAME,
   DATABASE_VERSION,
@@ -196,7 +197,25 @@ export function readRecoveryBlock(options: {
         const envelope = read.result as EnvelopeRow | undefined;
         // Read the block, render the numbers, CLOSE, then delete.
         db.close();
-        resolve(envelope?.recovery ?? null);
+        const block = envelope?.recovery ?? null;
+        // §8.5 — a block written at `recoveryFormat: 1` has no mealtime
+        // insulin on it, and the cast above would hand the screen an
+        // `undefined` the type says cannot exist.
+        //
+        // Normalised HERE rather than guarded at the render, because this is
+        // the boundary where an untyped stored row becomes a typed value and
+        // every consumer downstream is entitled to trust the type. The screen
+        // shows nothing for `''`, which is the honest rendering of a
+        // prescription recorded before the question was asked.
+        resolve(
+          block === null
+            ? null
+            : {
+                ...block,
+                recoveryFormat: RECOVERY_FORMAT,
+                mealtimeInsulin: block.mealtimeInsulin ?? '',
+              },
+        );
       };
       read.onerror = (): void => {
         db.close();

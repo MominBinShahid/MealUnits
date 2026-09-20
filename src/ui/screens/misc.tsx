@@ -21,6 +21,9 @@ import { formatClockTime, formatDate } from '../../core/calendar.js';
 import { formatHundredths } from '../../core/decimal.js';
 import { hasRowInsideWindow } from '../../core/history.js';
 import { isInjection } from '../../core/types.js';
+import { classOf, eatDelayFor } from '../../core/insulin.js';
+import { INSULINS } from '../../data/insulins.js';
+import { waitInWords } from './insulin.js';
 import type { LogRow, Reading, Settings } from '../../core/types.js';
 import type { RecoveryBlock } from '../../storage/schema.js';
 import { COPY, units } from '../copy.js';
@@ -567,6 +570,16 @@ export function FailClosedScreen({
               <div class="k">{COPY.screens.recordIcr}</div>
               <div class="v">{`${String(recovery.oneUnitCoversGramsCarbohydrate)}\u00A0g`}</div>
             </li>
+            {/* §8.5 — the mealtime insulin, on the screen whose whole purpose
+                is that the settings survive a database this build cannot open.
+                A block written before the field existed has no value here and
+                shows nothing rather than an empty row. */}
+            {recovery.mealtimeInsulin === '' ? null : (
+              <li class="li">
+                <div class="k">{COPY.insulin.settingsLabel}</div>
+                <div class="v">{recovery.mealtimeInsulin}</div>
+              </li>
+            )}
             <li class="li">
               <div class="k">{recovery.basalInsulinName}</div>
               <div class="v">{`${String(recovery.basalUnitsPerDay)}\u00A0units`}</div>
@@ -608,17 +621,26 @@ export function FailClosedScreen({
 
 export function HowItWorksScreen({
   advisoryStatus,
+  insulinBrand,
 }: {
   readonly advisoryStatus: string;
+  /**
+   * §8.5 — the reader's own insulin, or null for "I don't know". This page is
+   * REACHABLE DURING SETUP (§10.6's gate would otherwise hide the explanation
+   * at the one moment it is needed), and during setup the answer may be a draft
+   * that has not been stored — so it is passed in rather than read.
+   */
+  readonly insulinBrand: string | null;
 }): JSX.Element {
   return (
     <div class="screen">
       <h1>{COPY.twoInsulins.title}</h1>
       <p>{COPY.twoInsulins.body}</p>
-      {/* Which insulin the two clocks were calibrated for, in the section that
-          already says what this app does and does not cover. Same string as the
-          Settings hint (§10.2). */}
-      <p>{COPY.settings.insulinAssumption}</p>
+      {/* What the reader's own insulin decides, in the section that already
+          says what this app does and does not cover. Same strings as the
+          Settings hints (§10.2), not a second copy of them. */}
+      <p>{COPY.settings.insulinNote(insulinBrand)}</p>
+      <p>{COPY.settings.stackingWindowsNote}</p>
 
       {/* FIRST, ahead of the arithmetic, because who this is for decides whether
           any of the arithmetic applies to the reader at all. The disclaimer
@@ -741,6 +763,9 @@ export function SettingsAsTextScreen({
 }: {
   readonly settings: Settings;
 }): JSX.Element {
+  const waitText = waitInWords(
+    eatDelayFor(classOf(INSULINS, settings.insulinId), settings.eatDelayMinutes),
+  );
   return (
     <div class="screen">
       <h1>{COPY.screens.asTextTitle}</h1>
@@ -763,6 +788,21 @@ export function SettingsAsTextScreen({
           <div class="k">{COPY.screens.asTextThreshold}</div>
           <div class="v">{units(settings.threshold * HUNDREDTHS_SCALE)}</div>
         </li>
+        {/* §8.5 — this screen exists to be PHOTOGRAPHED and shown to a doctor,
+            and the mealtime insulin is the first thing they would ask. Below
+            the ratios because it changes none of them. */}
+        <li class="li">
+          <div class="k">{COPY.insulin.settingsLabel}</div>
+          <div class="v">
+            {INSULINS.find((row) => row.id === settings.insulinId)?.brand ??
+              COPY.insulin.notRecorded}
+          </div>
+        </li>
+        {waitText === null ? null : (
+          <li class="li">
+            <div class="k">{COPY.insulin.settingsTiming(waitText)}</div>
+          </li>
+        )}
       </ul>
       <div class="basal">
         <h2>{COPY.settings.basalTitle}</h2>

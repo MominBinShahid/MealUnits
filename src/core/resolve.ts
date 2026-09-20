@@ -22,6 +22,7 @@ import {
   needsInvalidTimeLine,
   needsMissingHistoryCaveat,
 } from './stacking.js';
+import { effectiveWindows } from './insulin.js';
 import { decideTimingAdvice } from './timing.js';
 import type {
   Advisory,
@@ -265,6 +266,17 @@ export function resolve(snapshot: Snapshot): Outcome {
     unsuppressed.correction,
     settings.isf,
     snapshot.stackingOverride,
+    // §8.5's switch-day rule. The windows belong to the insulin ON BOARD, so
+    // they are the longer of the one selected now and the one the last dose was
+    // given under — which expires by itself once that dose ages out.
+    //
+    // Stryker disable next-line LogicalOperator: EQUIVALENT while every row in
+    // `INSULIN_TIMING` declares the same windows, which is the hold recorded
+    // there pending CLINICAL.md question 10c. `windowsFor(null)` is the longest
+    // pair in the table, and today that IS every pair, so no assertion through
+    // the resolver can tell a class from a null here. `core/insulin.ts`'s
+    // `longerOf` carries the rule's own tests, against pairs that differ.
+    effectiveWindows(snapshot.insulinClass, snapshot.lastDose?.insulinClass ?? null),
   );
 
   const applied = computeExact(

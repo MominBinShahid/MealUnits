@@ -16,6 +16,7 @@ import {
   MS_PER_HOUR,
 } from '../config.js';
 import { deriveCarbBaseline } from './baseline.js';
+import type { InsulinClass } from './insulin.js';
 import { isInjection } from './types.js';
 import type { HistoryProvenance, Injection, LastDose, LogRow, Reading } from './types.js';
 
@@ -136,6 +137,16 @@ export interface HistoryContext {
    * exists to refuse.
    */
   readonly droppedStoredRows: number;
+  /**
+   * §8.5 — which insulin class each prescription period was, so the gate can
+   * key on the insulin that produced the last dose rather than on the one
+   * selected since.
+   *
+   * Passed as DATA rather than looked up, for the reason §13.1 gives about the
+   * clock: a core module that reached into the settings store to answer this
+   * would be a core module with a dependency the golden cases cannot control.
+   */
+  readonly classByRevision: ReadonlyMap<number, InsulinClass | null>;
 }
 
 function mostRecentUsableInjection(
@@ -174,7 +185,21 @@ export function deriveHistory(
 
   const newest = mostRecentUsableInjection(rows, context.nowMs);
   const lastDose: LastDose | null =
-    newest === null ? null : { injectedHundredths: newest.injectedUnits, atMs: newest.timestamp };
+    newest === null
+      ? null
+      : {
+          injectedHundredths: newest.injectedUnits,
+          atMs: newest.timestamp,
+          // §8.5's switch-day rule — the insulin THIS row was given under,
+          // read through the revision that stamped it. Never the insulin in
+          // force now: the point of the rule is the case where those differ,
+          // and taking today's answer would make the window shrink under a
+          // dose of yesterday's insulin that is still acting.
+          //
+          // `?? null` covers a revision with no class recorded, which
+          // `windowsFor` answers with the longest windows in the table.
+          insulinClass: context.classByRevision.get(newest.settingsRevision) ?? null,
+        };
 
   const logIsEmpty = injections.length === 0;
   const predatesInstall = newest !== null && newest.timestamp < context.installedAtMs;

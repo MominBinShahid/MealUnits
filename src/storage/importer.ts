@@ -60,6 +60,11 @@ export function importEnvelope(
         isf: entry.isf,
         icr: entry.icr,
         mode: entry.mode,
+        // §8.5 — travels with the rest of the prescription, and §7.7's reason
+        // covers it: the imported period is a record of what was in force on
+        // the other install, and an insulin switch is one of the things that
+        // makes a historical row mean something different.
+        insulinId: entry.insulinId,
         imported: true,
       } satisfies SettingsHistoryRow);
     }

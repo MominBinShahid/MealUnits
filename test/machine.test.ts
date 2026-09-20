@@ -29,6 +29,8 @@ const SETTINGS: Settings = {
   basalName: 'Lantus',
   basalUnits: 36,
   basalTiming: 'early morning', personName: '',
+  insulinId: 'humulin-r',
+  eatDelayMinutes: null,
 };
 
 const RECORD: RecordContext = { ...EMPTY_RECORD, historyProvenance: 'trusted' };
@@ -57,19 +59,112 @@ describe('§10.6 first run', () => {
     expect(state.screen).toBe('first_run_disclaimer');
   });
 
-  it('then requires settings, because §1.2 ships no defaults', () => {
+  /**
+   * §8.5 MOVED THIS ONE SCREEN EARLIER. It asserted `first_run_settings`, and
+   * the insulin question now comes first — deliberately, because an answer of
+   * "premixed" ends the setup, and making someone type three ratios before
+   * being told the app does not fit them is a worse way to say the same thing.
+   */
+  it('then requires the insulin, because §8.5 asks it before the ratios', () => {
     const state = run([
       { type: 'loaded', settings: null, record: RECORD, disclaimerAccepted: true },
     ]);
-    expect(state.screen).toBe('first_run_settings');
+    expect(state.screen).toBe('insulin_setup');
   });
 
-  it('and accepting the disclaimer with no settings still lands on settings', () => {
+  it('and accepting the disclaimer with no settings lands on the same question', () => {
     const state = run([
       { type: 'loaded', settings: null, record: RECORD, disclaimerAccepted: false },
       { type: 'disclaimer_accepted' },
     ]);
-    expect(state.screen).toBe('first_run_settings');
+    expect(state.screen).toBe('insulin_setup');
+  });
+
+  /**
+   * §8.5's whole migration, as one case. A settings row written before the
+   * question existed reads back with `insulinId: ''`, and an install that has
+   * been running for months therefore answers it on the next open exactly like
+   * a fresh one. There is no migration value and no tap-through.
+   */
+  it('§8.5 — an EXISTING install with no insulin recorded is asked as well', () => {
+    const state = run([
+      {
+        type: 'loaded',
+        settings: { ...SETTINGS, insulinId: '' },
+        record: RECORD,
+        disclaimerAccepted: true,
+      },
+    ]);
+    expect(state.screen).toBe('insulin_setup');
+  });
+
+  it('§8.5 — an insulin this calculator cannot fit routes to the exit, not the calculator', () => {
+    const state = run([
+      {
+        type: 'loaded',
+        settings: { ...SETTINGS, insulinId: 'novomix-30' },
+        record: RECORD,
+        disclaimerAccepted: true,
+      },
+    ]);
+    expect(state.screen).toBe('insulin_unsupported');
+  });
+
+  it('§8.5 — "I don\u2019t know" is an ANSWER, and the app carries on', () => {
+    const state = run([
+      {
+        type: 'loaded',
+        settings: { ...SETTINGS, insulinId: 'unknown' },
+        record: RECORD,
+        disclaimerAccepted: true,
+      },
+    ]);
+    expect(state.screen).toBe('calculator');
+  });
+
+  /**
+   * FOUND IN A BROWSER, 2026-09-20, and it is the reason the guard lives in
+   * `go` rather than at each caller.
+   *
+   * The out-of-model exit offers "open my record"; History's Back dispatches
+   * `go: 'calculator'`; the reader was on the calculator, past the premix exit
+   * AND past §1.2's mandatory settings, typing a reading. Every screen that
+   * goes home says `'calculator'`, so fixing the two reachable callers would
+   * have left the next one to be written wrong.
+   */
+  it('§10.6 — no route reaches the calculator while a setup question is open', () => {
+    const openScreens = [
+      [{ ...SETTINGS, insulinId: '' }, 'insulin_setup'],
+      [{ ...SETTINGS, insulinId: 'novomix-30' }, 'insulin_unsupported'],
+      [null, 'insulin_setup'],
+    ] as const;
+    for (const [settings, expected] of openScreens) {
+      const loaded = run([
+        { type: 'loaded', settings, record: RECORD, disclaimerAccepted: true },
+      ]);
+      // The record stays reachable — §8.5's exit must not hold one hostage.
+      expect(reduce(loaded, { type: 'go', screen: 'history' }).screen).toBe('history');
+      // And going "home" from it lands back on the open question.
+      const viaHistory = reduce(
+        reduce(loaded, { type: 'go', screen: 'history' }),
+        { type: 'go', screen: 'calculator' },
+      );
+      expect(viaHistory.screen, String(settings?.insulinId)).toBe(expected);
+    }
+    // With every question answered it is the calculator, unchanged.
+    const ready = run([{ type: 'loaded', settings: SETTINGS, record: RECORD, disclaimerAccepted: true }]);
+    expect(reduce(ready, { type: 'go', screen: 'calculator' }).screen).toBe('calculator');
+  });
+
+  it('§8.5 — and a settings commit re-asks the gate rather than assuming it passed', () => {
+    // Selecting a premixed insulin from Settings must leave the calculator,
+    // which is the branch a `screen: 'calculator'` written straight into
+    // `settings_committed` would have got wrong.
+    const state = reduce(
+      run([{ type: 'loaded', settings: SETTINGS, record: RECORD, disclaimerAccepted: true }]),
+      { type: 'settings_committed', settings: { ...SETTINGS, insulinId: 'humulin-n' } },
+    );
+    expect(state.screen).toBe('insulin_unsupported');
   });
 
   it('§11.3 — a downgrade puts the app on the fail-closed screen', () => {
@@ -324,7 +419,7 @@ describe('§7.2 a failed() write does not un-inject anything', () => {
     // property of the GATE, and the gate did not read it — the case below is
     // the one that pins what §7.2 actually promises.
     const { inSessionLastDose } = await import('../src/state/machine.js');
-    expect(inSessionLastDose(failed())).toEqual({ injectedHundredths: 1100, atMs: NOW });
+    expect(inSessionLastDose(failed())).toEqual({ injectedHundredths: 1100, atMs: NOW, insulinClass: 'regular' as const });
     expect(inSessionLastDose(initialState())).toBeNull();
   });
 
@@ -349,7 +444,7 @@ describe('§7.2 a failed() write does not un-inject anything', () => {
       ],
       failed(),
     );
-    expect(recalculated.snapshot?.lastDose).toEqual({ injectedHundredths: 1100, atMs: NOW });
+    expect(recalculated.snapshot?.lastDose).toEqual({ injectedHundredths: 1100, atMs: NOW, insulinClass: 'regular' as const });
     expect(recalculated.outcome?.kind).toBe('meal_only_suppressed');
   });
 
@@ -438,7 +533,7 @@ describe('§8.2 results expire', () => {
     const confirmed = run([
       {
         type: 'record_changed',
-        record: { ...RECORD, lastDose: { injectedHundredths: 600, atMs: NOW - 2 * HOUR } },
+        record: { ...RECORD, lastDose: { injectedHundredths: 600, atMs: NOW - 2 * HOUR, insulinClass: 'regular' as const } },
       },
       { type: 'input_changed', field: 'bloodSugar', value: '300' },
       { type: 'input_changed', field: 'carbs', value: '250' },
@@ -467,7 +562,7 @@ describe('§11.2 the snapshot is what the result came from', () => {
       carbBaseline: 150,
       eligibleEntryCount: 24,
       historyProvenance: 'suspect',
-      lastDose: { injectedHundredths: 600, atMs: NOW - 2 * HOUR },
+      lastDose: { injectedHundredths: 600, atMs: NOW - 2 * HOUR, insulinClass: 'regular' as const },
       bandEFullCardShownRecently: true,
       excludedTimeRecords: 2,
     };
@@ -486,7 +581,11 @@ describe('§11.2 the snapshot is what the result came from', () => {
       carbBaseline: 150,
       eligibleEntryCount: 24,
       historyProvenance: 'suspect',
-      lastDose: { injectedHundredths: 600, atMs: NOW - 2 * HOUR },
+      lastDose: { injectedHundredths: 600, atMs: NOW - 2 * HOUR, insulinClass: 'regular' as const },
+      // §8.5 — resolved from `settings.insulinId` and frozen with the rest, so
+      // a result and the windows that produced it cannot come from different
+      // answers to the same question.
+      insulinClass: 'regular',
       bandEFullCardShownRecently: true,
       excludedTimeRecords: 2,
       blankReadingAcknowledged: false,
@@ -677,12 +776,13 @@ describe('§13.4 — the reducer seams the mutation gate now covers', () => {
     const land = (accepted: boolean, settings: typeof SETTINGS | null): AppState['screen'] =>
       reduce(initialState(), { type: 'loaded', settings, record: RECORD, disclaimerAccepted: accepted }).screen;
     expect(land(false, SETTINGS)).toBe('first_run_disclaimer');
-    expect(land(true, null)).toBe('first_run_settings');
+    expect(land(true, null)).toBe('insulin_setup');
     expect(land(true, SETTINGS)).toBe('calculator');
-    // And accepting the disclaimer still stops at settings when there are none.
+    // And accepting the disclaimer still stops at setup when there is none —
+    // at §8.5's question, which is the first thing setup asks.
     expect(reduce(land(false, null) === 'first_run_disclaimer'
       ? reduce(initialState(), { type: 'loaded', settings: null, record: RECORD, disclaimerAccepted: false })
-      : initialState(), { type: 'disclaimer_accepted' }).screen).toBe('first_run_settings');
+      : initialState(), { type: 'disclaimer_accepted' }).screen).toBe('insulin_setup');
   });
 
   it('§7.2 — `begin_logging` opens only on a dose, and writes nothing', () => {
@@ -722,7 +822,7 @@ describe('§13.4 — the reducer seams the mutation gate now covers', () => {
       units: 1100, injectedUnits: 1100, settingsRevision: 1, overrodeStacking: false,
       timingAdvice: 'before', advisoryFlagged: false,
     };
-    const recorded: RecordContext = { ...RECORD, lastDose: { injectedHundredths: 200, atMs: NOW - 60 * 60 * 1000 } };
+    const recorded: RecordContext = { ...RECORD, lastDose: { injectedHundredths: 200, atMs: NOW - 60 * 60 * 1000, insulinClass: 'regular' as const } };
     const pending = run([
       { type: 'loaded', settings: SETTINGS, record: recorded, disclaimerAccepted: true },
       { type: 'input_changed', field: 'bloodSugar', value: '330' },
@@ -734,19 +834,19 @@ describe('§13.4 — the reducer seams the mutation gate now covers', () => {
       { type: 'calculate', nowMs: NOW },
     ]);
     // The RECORDED dose is an hour old; the pending one is three. Newer wins.
-    expect(pending.snapshot?.lastDose).toEqual({ injectedHundredths: 200, atMs: NOW - 60 * 60 * 1000 });
+    expect(pending.snapshot?.lastDose).toEqual({ injectedHundredths: 200, atMs: NOW - 60 * 60 * 1000, insulinClass: 'regular' as const });
   });
 });
 
 /** The last seams the gate found once `src/state` joined it. */
 describe('§13.4 — the remaining reducer branches', () => {
-  it('§10.6 — accepting the disclaimer goes to settings, or past them if they exist', () => {
+  it('§10.6 — accepting the disclaimer goes to setup, or past it if it is done', () => {
     const after = (settings: Settings | null): AppState['screen'] =>
       reduce(
         reduce(initialState(), { type: 'loaded', settings, record: RECORD, disclaimerAccepted: false }),
         { type: 'disclaimer_accepted' },
       ).screen;
-    expect(after(null)).toBe('first_run_settings');
+    expect(after(null)).toBe('insulin_setup');
     expect(after(SETTINGS)).toBe('calculator');
   });
 
@@ -764,7 +864,7 @@ describe('§13.4 — the remaining reducer branches', () => {
   it('§7.2 — a suppressed meal-only dose is loggable, like any other', () => {
     const record: RecordContext = {
       ...RECORD,
-      lastDose: { injectedHundredths: 600, atMs: NOW - 2 * HOUR },
+      lastDose: { injectedHundredths: 600, atMs: NOW - 2 * HOUR, insulinClass: 'regular' as const },
     };
     const state = run([
       { type: 'loaded', settings: SETTINGS, record, disclaimerAccepted: true },
@@ -794,7 +894,7 @@ describe('§13.4 — the remaining reducer branches', () => {
     };
     const older: RecordContext = {
       ...RECORD,
-      lastDose: { injectedHundredths: 300, atMs: NOW - 3 * HOUR },
+      lastDose: { injectedHundredths: 300, atMs: NOW - 3 * HOUR, insulinClass: 'regular' as const },
     };
     const upTo = (...extra: Action[]): AppState =>
       run([
@@ -809,27 +909,27 @@ describe('§13.4 — the remaining reducer branches', () => {
 
     // Pending, and the pending dose is the newer of the two.
     const pending = run([{ type: 'calculate', nowMs: NOW }], upTo({ type: 'log_save_failed' }));
-    expect(pending.snapshot?.lastDose).toEqual({ injectedHundredths: 1100, atMs: NOW - HOUR });
+    expect(pending.snapshot?.lastDose).toEqual({ injectedHundredths: 1100, atMs: NOW - HOUR, insulinClass: 'regular' as const });
 
     // Saved: the record speaks, even though `committing` still stands.
     const saved = run([{ type: 'calculate', nowMs: NOW }], upTo({ type: 'log_saved', record: older }));
     expect(saved.committing).not.toBeNull();
-    expect(saved.snapshot?.lastDose).toEqual({ injectedHundredths: 300, atMs: NOW - 3 * HOUR });
+    expect(saved.snapshot?.lastDose).toEqual({ injectedHundredths: 300, atMs: NOW - 3 * HOUR, insulinClass: 'regular' as const });
 
     // Pending with NOTHING frozen falls back to the record rather than throwing.
     const noPayload = { ...upTo({ type: 'log_save_failed' }), committing: null };
     expect(run([{ type: 'calculate', nowMs: NOW }], noPayload).snapshot?.lastDose)
-      .toEqual({ injectedHundredths: 300, atMs: NOW - 3 * HOUR });
+      .toEqual({ injectedHundredths: 300, atMs: NOW - 3 * HOUR, insulinClass: 'regular' as const });
 
     // And a RECORDED dose newer than the pending one wins: the question is
     // "what is the most recent insulin", not "what did this session do".
     const newerRecord: RecordContext = {
       ...RECORD,
-      lastDose: { injectedHundredths: 900, atMs: NOW - MINUTE },
+      lastDose: { injectedHundredths: 900, atMs: NOW - MINUTE, insulinClass: 'regular' as const },
     };
     const state = { ...upTo({ type: 'log_save_failed' }), record: newerRecord };
     expect(run([{ type: 'calculate', nowMs: NOW }], state).snapshot?.lastDose)
-      .toEqual({ injectedHundredths: 900, atMs: NOW - MINUTE });
+      .toEqual({ injectedHundredths: 900, atMs: NOW - MINUTE, insulinClass: 'regular' as const });
   });
 
   it('and at the SAME instant the frozen payload wins, being first-hand', () => {
@@ -846,7 +946,7 @@ describe('§13.4 — the remaining reducer branches', () => {
     };
     const sameInstant: RecordContext = {
       ...RECORD,
-      lastDose: { injectedHundredths: 300, atMs: NOW - HOUR },
+      lastDose: { injectedHundredths: 300, atMs: NOW - HOUR, insulinClass: 'regular' as const },
     };
     const state = run([
       { type: 'loaded', settings: SETTINGS, record: sameInstant, disclaimerAccepted: true },
@@ -858,6 +958,6 @@ describe('§13.4 — the remaining reducer branches', () => {
       { type: 'log_save_failed' },
       { type: 'calculate', nowMs: NOW },
     ]);
-    expect(state.snapshot?.lastDose).toEqual({ injectedHundredths: 1100, atMs: NOW - HOUR });
+    expect(state.snapshot?.lastDose).toEqual({ injectedHundredths: 1100, atMs: NOW - HOUR, insulinClass: 'regular' as const });
   });
 });

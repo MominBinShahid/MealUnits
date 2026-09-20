@@ -1298,3 +1298,150 @@ wrong while the panel above still carries everything that actually is. The shape
 Measured on a fresh port: heading and body 13px, the opt-out 13px amber and underlined at 48px, the
 footer `--ink-3` above a `--warn-line` rule.
 
+
+---
+
+## 78. Asking which insulin, and the four places the answer had to reach
+
+`BACKLOG.md` entry 26, built 2026-09-20. This note is the decisions the entry did not make.
+
+### The stacking windows ship keyed by class and identical in value, and that is deliberate
+
+The entry asks for both clocks to move by class. Only one does, and the split is the entry's own
+argument read back: **the eat delay fails toward hypoglycaemia and the windows fail toward running
+high.** A rapid analogue injected twenty minutes early is acting before the food arrives. A
+correction held back longer than an analogue needs runs high, which §2.1 calls the tolerable
+direction, and §7.4.1's per-dose override — recorded on the row — is the designed escape.
+
+So the waits are label-derived per class and live today, and the windows wait on `CLINICAL.md`
+question 10c. Shortening a gate is the dose-RAISING direction, no source states a number, and
+§20.1.1 forbids picking one off a reading of the literature.
+
+**The mechanism still shipped complete**, including the switch-day rule, and that was the point of
+doing it now rather than later. Entry 26 point 9 warns that the rule would be retrofitted if the
+windows became per-class afterwards — and a retrofit is exactly when somebody forgets that the gate
+belongs to the insulin already ON BOARD. `effectiveWindows` takes the longer of old and new, is
+tested against a table whose classes DIFFER, and the shipped table's equality is pinned from the
+outside by `test/insulin.test.ts`. The eventual ruling is a data edit with the tests already written.
+
+### The missing field turned out to be the migration
+
+`SettingsRow.insulinId` did not exist before this. A row written without it reads back `undefined`,
+and `repo.ts` maps that to `''` — which is `UNANSWERED_INSULIN`, the state that makes the app ask.
+An install that has been running for months therefore meets the required question on its next open,
+exactly as entry 26 point 1 asks for, and **no `DATABASE_VERSION` bump was needed**: no store and no
+index changed, and the one absent field already had a meaning.
+
+That is not a trick, it is what §4.1's rule buys. `''` and `'unknown'` are two different answers with
+two different behaviours, so the sentinel that means "never asked" was already in the design before
+anything needed migrating.
+
+### The question is asked BEFORE the three ratios
+
+The obvious placement is a row in the settings form. It is wrong for one reason: an answer of
+"premixed" ends the setup, and making somebody type a target, a sensitivity and a carbohydrate ratio
+first — then telling them the calculator does not fit their insulin — is a worse way to say the same
+thing. It is also a long grouped list that deserves its own screen.
+
+On a first run the answer has nowhere to be stored, because `commitSettings` needs the three ratios.
+It rides in the settings DRAFT and travels with the first save. On an existing install it is
+committed immediately, as its own settings revision — which is right rather than heavy-handed: §7.7's
+machinery exists because the settings in force now are not the ones that produced a historical row,
+and an insulin switch is exactly such a change.
+
+**Changing insulin clears the reader's own pre-meal wait.** A prescriber's "twenty minutes" was an
+answer about the old insulin, and carrying it silently onto a rapid analogue would be the original
+defect with the app's own fingerprints on it.
+
+### Why the list is grouped, and why the insulins that do not work are in it
+
+HumuLIN and HumaLOG are on ISMP's confused-drug-names list, as are NovoLIN and NovoLOG and both
+premix pairs. An alphabetical list seats each pair in consecutive rows; ISMP's own mitigation is to
+stop that happening. Class headers do it structurally — and they make the harmless mistake the easy
+one, because a within-class mispick leaves every timing correct.
+
+Premixed, NPH and long-acting insulins are named and route to an exit. Leaving them out does not
+protect those readers, it sends them to the nearest-looking name. The long-acting rows were added on
+top of the entry's list for a second reason: somebody who believes their Lantus is their mealtime
+insulin is confusing the two halves of their own regimen, and §1.3 already has a field for it.
+
+**The confirmation echo restates the class FACTS, not the name just tapped** — re-reading your own
+choice confirms nothing. It ends with the physical check: every mealtime insulin is a clear solution,
+while NPH and every premix containing it are suspensions whose labels require resuspending. That does
+not tell a Humalog user from a NovoRapid user and does not need to. It tells a premix user they are
+on the wrong screen.
+
+### The exit gates the calculator and nothing else
+
+Someone months into their own record who answers this question truthfully must not lose access to it.
+The exit reaches History, and its FIRST sentence is that nothing has happened to their record — the
+same opening, for the same reason, as the 404 page.
+
+There is no "continue anyway". §7.4's gate has an override because the reader can know better on the
+day; here there is no dose to be right about.
+
+### Two things found by opening it in a browser, which the tests could not see
+
+**The out-of-model exit was escapable.** It offers "open my record"; History's Back dispatches
+`go: 'calculator'`; the reader was on the calculator, past the premix exit AND past §1.2's mandatory
+settings, typing a reading. Every screen that goes home says `'calculator'`, so fixing the two
+reachable callers would have left the next one to be written wrong — the same shape as §12's
+suppression defect, where the raise was guarded and the bar already on screen was not. The guard is
+in the reducer's `go` now: a `go: 'calculator'` resolves through the same gate as `loaded` does, and
+no route can walk around it. History and Export stay reachable, because the exit must not hold a
+record hostage.
+
+**"I don't know" promised a field it then hid.** The note tells that reader to ask their doctor and
+says Settings has a place for the answer; Settings hid the wait field whenever the class was unknown,
+which is the one case where a prescriber's number is the ONLY wait there could be. The field is
+always shown now, with its own hint — *leave this empty and the app says nothing about when to eat* —
+and `eatDelayFor` already preferred an override over a class, so nothing else moved.
+
+Settings also labelled that answer "Not recorded", which is what a prescription period predating the
+question says. An answered "I don't know" reads "Not known". §4.1's three states, one layer out.
+
+### The U-100 sentence had to be rewritten, and NOT parameterised
+
+`unitAssumption` said *"the standard strength, and what Humulin R is"* — a claim about the reader's
+own insulin, written when the app assumed there was one. Naming their brand instead would be the
+obvious fix and it is unsafe: **Humalog and Lyumjev are also sold at 200 units/mL**, so the same
+sentence would be true for most brands and false for exactly the readers holding a 200-unit pen.
+
+So it names no brand and points at the box, which is the one thing the reader can verify — the same
+move §8.5 made in asking for the brand on the dose rather than the concentration. **U-40 keeps its
+2.5-times figure and stays named**: it is not a museum piece in this app's own region, and the
+multiplier is attached to it rather than left floating beside a mention of U-200, where it would be
+wrong about one of the two.
+
+### The one piece that is not built, and why
+
+Entry 26 point 4 asks the not-listed path to link the blog's feedback form. **The screen carries the
+sentence and no link**, because nobody has given this build the form's address. A control labelled
+"tell us about it" that lands somewhere wrong is worse on that screen than the words alone. It is one
+line when the URL arrives.
+
+### A pre-existing gap this did not touch
+
+§7.7 says a threshold-only change does not bump the settings revision. Nothing implements that —
+`commitSettings` allocates on every save — so an eat-delay-only change writes a `settingsHistory`
+row identical to the one before it, and the export prints two identical prescription periods. The
+gap predates this work by every revision; `eatDelayMinutes` simply joined the fields it applies to.
+`BACKLOG.md` T18 carries it as a question rather than a fix, per §20.1.1.
+
+### What the checker had to learn
+
+`check-plan.py` pinned `EAT_DELAY_MINUTES` as a literal, and the entry predicted the problem: "there
+stops being *the* value for the checker to assert." Three things changed, and two of them were found
+by running it rather than by reading it.
+
+- **The three constants are now pinned as ALIASES** onto `INSULIN_TIMING.regular`, and a new check
+  pins the table row by row — in `src/config.ts`, in §11.8 and in §8.1's class table. Both halves are
+  load-bearing: without the alias pin a row could be re-pointed at another class with every literal
+  still correct.
+- **The alias pin reads PLAN.md**, so re-pointing the alias in `src/config.ts` alone passed clean.
+  A seeded mutation caught it; the fix asserts the aliases in the shipping file too.
+- **The prose rule is class-aware rather than relaxed.** It fired on `CLINICAL.md`'s new rapid row
+  the moment that row was written. A statement is now checked against the class the surrounding prose
+  NAMES — nearest word wins, which matters because "ultra-rapid" contains "rapid" and because a
+  ±90-character window reaches into the paragraph next door. A rapid row stating 20–30 is still a
+  finding, which is the case that matters: it is the wrong number in the hypo direction.

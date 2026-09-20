@@ -6,6 +6,8 @@
  */
 
 import { HUNDREDTHS_SCALE, RANGE, SCHEMA_VERSION, MAX_NAME_LENGTH } from '../config.js';
+import { UNKNOWN_INSULIN } from '../core/insulin.js';
+import { INSULINS } from '../data/insulins.js';
 import { isTombstone } from '../core/types.js';
 import type { Injection, LogRow, Reading, RoundingMode, Settings, Tombstone } from '../core/types.js';
 import type { SettingsPeriod } from '../core/periods.js';
@@ -17,6 +19,27 @@ export interface ExportedSettingsHistory {
   readonly isf: number;
   readonly icr: number;
   readonly mode: RoundingMode;
+  /** §8.5 — the insulin in force for this period. `''` when none was recorded. */
+  readonly insulinId: string;
+}
+
+/**
+ * §8.5 — an insulin id crossing the trust boundary.
+ *
+ * Checked against the TABLE rather than merely typed as a string, because an
+ * id is a key and an unrecognised key is not a lesser version of a real one.
+ * Anything else becomes `''` — "not recorded" — which every reader of the field
+ * already handles, rather than a foreign value that would degrade differently
+ * in each of them.
+ *
+ * `UNKNOWN_INSULIN` passes: it is a deliberate answer with its own meaning, and
+ * an import that flattened it to `''` would turn "I don't know" back into a
+ * question the reader has already answered.
+ */
+function readInsulinId(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  if (value === UNKNOWN_INSULIN) return value;
+  return INSULINS.some((row) => row.id === value) ? value : '';
 }
 
 export interface Envelope {
@@ -68,6 +91,8 @@ export function buildEnvelope(input: ExportInput): Envelope {
           basalName: input.settings.basalName,
           basalUnits: input.settings.basalUnits,
           basalTiming: input.settings.basalTiming,
+          insulinId: input.settings.insulinId,
+          eatDelayMinutes: input.settings.eatDelayMinutes,
           personName: input.settings.personName,
         };
 
@@ -83,6 +108,7 @@ export function buildEnvelope(input: ExportInput): Envelope {
       isf: period.isf,
       icr: period.icr,
       mode: period.mode,
+      insulinId: period.insulinId,
     })),
     readings: input.readings,
     log: input.log,
@@ -276,6 +302,14 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
             basalName: typeof settingsRaw.basalName === 'string' ? settingsRaw.basalName : '',
             basalUnits: inHardRange(settingsRaw.basalUnits, 'basalUnits') ? settingsRaw.basalUnits : 0,
             basalTiming: typeof settingsRaw.basalTiming === 'string' ? settingsRaw.basalTiming : '',
+            insulinId: readInsulinId(settingsRaw.insulinId),
+            // §8.5 — the reader's own wait, range-checked like every other
+            // number from a file. Anything outside the field's own bounds
+            // becomes null, which is "the class range stands" and not a
+            // silently clamped instruction about when to eat.
+            eatDelayMinutes: inHardRange(settingsRaw.eatDelayMinutes, 'eatDelay')
+              ? settingsRaw.eatDelayMinutes
+              : null,
             // Validated as a STRING and nothing more. It is untrusted text from
             // a file, it enters no calculation, and the readable export escapes
             // it — §7.7.1's escaping rule is what makes that safe. A file
@@ -310,6 +344,7 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
       isf: entry.isf,
       icr: entry.icr,
       mode: mode as RoundingMode,
+      insulinId: readInsulinId(entry.insulinId),
     });
   }
 

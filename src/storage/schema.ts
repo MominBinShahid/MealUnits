@@ -19,7 +19,7 @@
  * row means a blind safety gate.
  */
 
-import { SCHEMA_VERSION } from '../config.js';
+import { RECOVERY_FORMAT, SCHEMA_VERSION } from '../config.js';
 import type { RoundingMode } from '../core/types.js';
 
 export const DATABASE_NAME = 'MealUnits';
@@ -82,13 +82,23 @@ export const META_KEY = {
  * numbers as verified prescription settings.
  */
 export interface RecoveryBlock {
-  readonly recoveryFormat: 1;
+  readonly recoveryFormat: typeof RECOVERY_FORMAT;
   readonly targetMgDl: number;
   readonly oneUnitLowersMgDl: number;
   readonly oneUnitCoversGramsCarbohydrate: number;
   readonly basalInsulinName: string;
   readonly basalUnitsPerDay: number;
   readonly basalTiming: string;
+  /**
+   * §8.5's brand, in WORDS rather than as a row id — this block is copied down
+   * off a screen by hand, and `novorapid` is not what the vial says.
+   *
+   * The format is versioned independently and this is an addition to it, so
+   * `recoveryFormat` goes to 2. An older build reading a 2 refuses to present
+   * the numbers as verified settings, which is the behaviour §11.3 asks for and
+   * the reason the field is versioned at all.
+   */
+  readonly mealtimeInsulin: string;
   /** Optional; '' means not given. See `Settings.personName`. */
   readonly personName: string;
 }
@@ -184,6 +194,18 @@ export interface SettingsRow {
   readonly basalName: string;
   readonly basalUnits: number;
   readonly basalTiming: string;
+  /**
+   * §8.5 — the mealtime insulin, as a row id from `src/data/insulins.ts`.
+   *
+   * **A row written before 2026-09-20 does not have this field, and that is the
+   * whole migration.** `repo.ts` reads a missing value back as `''`, which is
+   * `UNANSWERED_INSULIN` — so the gate asks, exactly as it does on a fresh
+   * install. No `DATABASE_VERSION` bump: no store and no index changed, and the
+   * one absent field already has a meaning.
+   */
+  readonly insulinId: string;
+  /** §8.5 — the reader's own pre-meal wait in minutes, or null for the class range. */
+  readonly eatDelayMinutes: number | null;
   /** Optional; '' means not given. See `Settings.personName`. */
   readonly personName: string;
 }
@@ -208,6 +230,16 @@ export interface SettingsHistoryRow {
   readonly isf: number;
   readonly icr: number;
   readonly mode: RoundingMode;
+  /**
+   * §8.5 — present for the same reason the ratios are and `threshold` is not:
+   * it changes what a dose came out as, through §7.4's gate. `eatDelayMinutes`
+   * is absent on that same test — it changes what the reader was told to do,
+   * never what the app calculated.
+   *
+   * A row written before the field existed reads back as `''` and prints as
+   * "not recorded".
+   */
+  readonly insulinId: string;
   readonly imported: boolean;
 }
 

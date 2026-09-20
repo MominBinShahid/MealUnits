@@ -24,6 +24,9 @@ import { divergesFromCalculated } from '../core/divergence.js';
 import { formatHundredths, hundredthsFromGrammarText } from '../core/decimal.js';
 import { parseField, applyKeystroke } from '../core/parse.js';
 import { modeNeedsAcknowledgement } from '../core/round.js';
+import { classOf } from '../core/insulin.js';
+import { INSULINS } from '../data/insulins.js';
+import { InsulinScreen, InsulinUnsupportedScreen } from './screens/insulin.js';
 import type { Injection, Reading, RoundingMode, Settings } from '../core/types.js';
 import { buildEnvelope, parseEnvelope } from '../storage/envelope.js';
 import { importEnvelope } from '../storage/importer.js';
@@ -117,6 +120,26 @@ interface ViewState {
    * database is being reopened.
    */
   recordDeletedElsewhere: boolean;
+  /**
+   * §8.5 — the insulin row the reader has TAPPED but not yet confirmed.
+   *
+   * Outside the reducer with the rest of `ViewState`, and safe there for the
+   * reason `pendingDelete` is: it decides which of the picker's three faces is
+   * on screen and can never become a stored answer on its own. Only
+   * `onConfirm` writes, and it writes the id it is handed.
+   */
+  pendingInsulin: string | null;
+}
+
+/**
+ * §8.5 — the name on the vial for a stored id, and `''` for everything else.
+ *
+ * `''` rather than a placeholder because it feeds the recovery block, which a
+ * person copies off a screen and types back in. "Not recorded" written into
+ * that block would come back on the next import as an insulin name.
+ */
+function brandFor(id: string): string {
+  return INSULINS.find((row) => row.id === id)?.brand ?? '';
 }
 
 /**
@@ -273,6 +296,7 @@ export async function start(host: Host): Promise<void> {
     screenBefore: 'calculator',
     foodQuery: '',
     recordDeletedElsewhere: false,
+    pendingInsulin: null,
   };
 
   const dispatch = (action: Action): void => {
@@ -288,6 +312,15 @@ export async function start(host: Host): Promise<void> {
       lastImportAtMs: source.lastImportAtMs,
       lastLocalInjectionAtMs: source.lastLocalInjectionAtMs,
       droppedStoredRows: source.droppedStoredRows,
+      // §8.5's switch-day rule — which insulin each prescription period was.
+      // Built from `settingsHistory` rather than from the settings in force,
+      // because the whole point is the case where those two disagree.
+      classByRevision: new Map(
+        source.settingsHistory.map((period) => [
+          period.revision,
+          classOf(INSULINS, period.insulinId),
+        ]),
+      ),
     });
     return {
       logRevision: source.logRevision,
@@ -346,6 +379,11 @@ export async function start(host: Host): Promise<void> {
       const parsed = parseField(text, field);
       return parsed.state === 'valid' ? parsed.value : 0;
     };
+    const optionalNumeric = (text: string): number | null => {
+      const parsed = parseField(text, 'eatDelay');
+      if (parsed.state === 'zero') return 0;
+      return parsed.state === 'valid' ? parsed.value : null;
+    };
     const acknowledged: string[] = [];
     if (modeNeedsAcknowledgement(draft.mode)) acknowledged.push(ackKeys.forMode(draft.mode));
     for (const field of ['target', 'isf', 'icr', 'threshold', 'basalUnits'] as const) {
@@ -356,6 +394,13 @@ export async function start(host: Host): Promise<void> {
       isf: numeric('isf', draft.isf),
       icr: numeric('icr', draft.icr),
       mode: draft.mode,
+      insulinId: draft.insulinId,
+      insulinName: brandFor(draft.insulinId),
+      // §4.1 — empty means "use the class range" and 0 means "at the start of
+      // the meal". `parseField` keeps those apart; `Number(text) || null` would
+      // collapse them and turn an ultra-rapid analogue's instruction into the
+      // absence of one.
+      eatDelayMinutes: optionalNumeric(draft.eatDelay),
       threshold: numeric('threshold', draft.threshold),
       personName: draft.personName.trim(),
       basalName: draft.basalName,
@@ -643,6 +688,75 @@ export async function start(host: Host): Promise<void> {
     );
   };
 
+  /**
+   * §8.5 — the insulin answer, committed by one of two routes.
+   *
+   * On a FIRST RUN there is nothing to commit into: `commitSettings` needs the
+   * three ratios and the insulin question is asked before them, so the answer
+   * lands in the draft and travels with the first save. On an EXISTING install
+   * it is written immediately, as its own settings revision — which is correct
+   * rather than heavy-handed, since §7.7's machinery exists precisely because
+   * the settings in force now are not the ones that produced a historical row.
+   */
+  const insulinHandlers = {
+    onPick: (id: string): void => {
+      view.pendingInsulin = id;
+      render();
+    },
+    onConfirm: (id: string): void => {
+      view.pendingInsulin = null;
+      view.draft = { ...view.draft, insulinId: id };
+      const current = state.settings;
+      if (current === null) {
+        // Nothing stored yet. The answer rides in the draft and the setup
+        // continues into the ratios.
+        dispatch({ type: 'go', screen: 'first_run_settings' });
+        return;
+      }
+      void (async (): Promise<void> => {
+        if (db === null) return;
+        await commitSettings(db, {
+          target: current.target,
+          isf: current.isf,
+          icr: current.icr,
+          mode: current.mode,
+          insulinId: id,
+          insulinName: brandFor(id),
+          // The reader's own wait belonged to the OLD insulin. Cleared rather
+          // than carried: a prescriber's "twenty minutes" was an answer about
+          // regular insulin, and silently keeping it against a rapid analogue
+          // is the exact failure §8.5 exists to remove — with the app's own
+          // fingerprints on it this time.
+          eatDelayMinutes: null,
+          threshold: current.threshold,
+          personName: current.personName,
+          basalName: current.basalName,
+          basalUnits: current.basalUnits,
+          basalTiming: current.basalTiming,
+          // §4.5's confirm-once acks are keyed by VALUE and none of those
+          // values moved, so there is nothing to re-acknowledge and nothing is
+          // lost by acknowledging nothing.
+          acknowledged: [],
+          nowMs: host.now(),
+        });
+        stored = await readAll(db, host.now());
+        watch.announce();
+        if (stored.settings !== null) {
+          view.draft = draftFrom(stored.settings);
+          dispatch({ type: 'settings_committed', settings: stored.settings });
+        }
+      })();
+    },
+    onBack: (): void => {
+      view.pendingInsulin = null;
+      dispatch({ type: 'go', screen: 'insulin_setup' });
+    },
+    onOpenRecord: (): void => {
+      dispatch({ type: 'go', screen: 'history' });
+    },
+    onCancel: null as (() => void) | null,
+  };
+
   function screenFor(): JSX.Element {
     switch (state.screen) {
       case 'loading':
@@ -691,6 +805,39 @@ export async function start(host: Host): Promise<void> {
           />
         );
 
+      case 'insulin_setup':
+        return (
+          <InsulinScreen
+            pending={view.pendingInsulin}
+            hasRecord={(stored?.log.length ?? 0) > 0}
+            handlers={{
+              ...insulinHandlers,
+              // There is something to go back to only once an answer exists —
+              // on a first run, before one does, a Back button would lead to a
+              // settings form that cannot be saved.
+              onCancel:
+                view.draft.insulinId === ''
+                  ? null
+                  : (): void => {
+                      view.pendingInsulin = null;
+                      dispatch({
+                        type: 'go',
+                        screen: state.settings === null ? 'first_run_settings' : 'settings',
+                      });
+                    },
+            }}
+          />
+        );
+
+      case 'insulin_unsupported':
+        return (
+          <InsulinUnsupportedScreen
+            insulin={INSULINS.find((row) => row.id === (state.settings?.insulinId ?? '')) ?? null}
+            hasRecord={(stored?.log.length ?? 0) > 0}
+            handlers={insulinHandlers}
+          />
+        );
+
       case 'first_run_settings':
       case 'settings':
         return <SettingsScreen
@@ -703,6 +850,10 @@ export async function start(host: Host): Promise<void> {
           }}
           handlers={{
           firstRun: state.screen === 'first_run_settings',
+          onChangeInsulin: () => {
+            view.pendingInsulin = null;
+            dispatch({ type: 'go', screen: 'insulin_setup' });
+          },
           ceilAcknowledged: stored?.acks.has(ackKeys.forMode(view.draft.mode)) ?? false,
           advisoryStatus: advisoryStatus(),
           onChange: (field, value) => {
@@ -888,7 +1039,10 @@ export async function start(host: Host): Promise<void> {
         return showAsText && state.settings !== null ? (
           <SettingsAsTextScreen settings={state.settings} />
         ) : (
-          <HowItWorksScreen advisoryStatus={advisoryStatus()} />
+          <HowItWorksScreen
+            advisoryStatus={advisoryStatus()}
+            insulinBrand={brandFor(view.draft.insulinId) || null}
+          />
         );
 
       case 'calculator':
@@ -1050,10 +1204,17 @@ export async function start(host: Host): Promise<void> {
         };
       // §10.6 and §11.3 — the first run and the fail-closed screen are
       // deliberately inescapable. No back, and no hardware back either.
+      //
+      // §8.5's two are here for the same reason: the insulin question is
+      // required, so it gets no foot-nav back. The picker carries its OWN back
+      // control, offered only once an answer exists to go back to, and the exit
+      // carries two — both of which lead somewhere rather than around.
       case 'loading':
       case 'fail_closed':
       case 'first_run_disclaimer':
       case 'first_run_settings':
+      case 'insulin_setup':
+      case 'insulin_unsupported':
         return null;
     }
   }

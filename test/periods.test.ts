@@ -16,6 +16,7 @@ function period(overrides: Partial<SettingsPeriod> = {}): SettingsPeriod {
     isf: 30,
     icr: 10,
     mode: 'nearest',
+    insulinId: 'humulin-r',
     imported: false,
     ...overrides,
   };

@@ -33,6 +33,7 @@ export default defineConfig({
       'test/golden.test.ts',
       'test/history.test.ts',
       'test/ids.test.ts',
+      'test/insulin.test.ts',
       'test/machine.test.ts',
       'test/parse.test.ts',
       'test/periods.test.ts',

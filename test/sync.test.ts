@@ -20,6 +20,8 @@ const SETTINGS: Settings = {
   basalName: 'Lantus',
   basalUnits: 36,
   basalTiming: 'early morning', personName: '',
+  insulinId: 'humulin-r',
+  eatDelayMinutes: null,
 };
 
 describe('§11.3 layer 2 polls a TOKEN, not the log revision', () => {

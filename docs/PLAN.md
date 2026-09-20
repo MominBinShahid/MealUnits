@@ -1545,6 +1545,30 @@ override, since blocking outright is what drove users to delete rows.
 only, so erring long is free. **No decay model, now or ever**: dose-dependent duration makes a
 fixed curve false precision.
 
+#### 7.4.2 Whose windows — §8.5's answer, and the switch day
+
+**The four and twelve are regular human insulin's**, and since 2026-09-20 they are a row in
+`INSULIN_TIMING` rather than two loose constants. Every class currently declares the same pair —
+`CLINICAL.md` question 10c asks the prescriber whether they may shorten for a rapid analogue, and
+nobody has answered. Shortening a gate is the dose-RAISING direction and §20.1.1 forbids picking that
+number off a reading of the literature; holding a correction longer than an analogue needs runs high,
+which §2.1 tolerates, and §7.4.1's recorded override is the designed escape for the reader who knows
+better on the day.
+
+**The gate keys on the insulin ON BOARD, not on the one selected since**, and this is the part that
+would have been missed if the windows had been made per-class later. Somebody takes regular insulin
+at lunch, switches to a rapid analogue, and calculates at four o'clock: lunch's regular insulin is
+still in them, and selecting the analogue must not shrink the window underneath it.
+
+**The rule is the LONGER of old and new**, where "old" is the class in force at the revision that
+stamped the last dose (`settingsHistory.insulinId`, §7.7). It expires by itself — once that dose ages
+past the advise window, both pairs answer `too_old` — so there is no stored switch timestamp and no
+date arithmetic to get wrong.
+
+**A last dose whose insulin was never recorded gets the longest windows in the table**, not the
+current selection. §7.5's doctrine, applied to a clock: "we do not know what is in them" is not
+"there is nothing in them".
+
 #### 7.4.1 The override — fully specified
 
 v2 said "user may override deliberately" and specified nothing. That is a rubber stamp by
@@ -1687,14 +1711,16 @@ building from this section alone would have dropped it.
                                              // future schemas; v8 gave it
                                              // nothing to read
   "settings":       { target, isf, icr, mode, threshold,
-                      basalName, basalUnits, basalTiming },  // §1.3
+                      basalName, basalUnits, basalTiming,    // §1.3
+                      insulinId, eatDelayMinutes },          // §8.5
   "dosingHistoryBeforeApp":                  // §6.7 — present ONLY when the
       { answeredAtMs, text },                // state is `answered`. Absent for
                                              // `unanswered` and `declined`, and
                                              // the state itself is never exported
                                              // (§6.7) — same ruling the empty
                                              // `settings` block got in v14
-  "settingsHistory":[ { revision, changedAtMs, target, isf, icr, mode } ],
+  "settingsHistory":[ { revision, changedAtMs, target, isf, icr, mode,
+                        insulinId } ],         // §8.5 — ADDED 2026-09-20
   "readings":       [ ...§7.8 rows... ],
   "log":            [ Injection | Tombstone ],   // §7.3 — CHANGED IN v24
                                              // an Injection carries settingsRevision;
@@ -1796,6 +1822,12 @@ recorded so it is not rediscovered as a defect.
 
 **`settingsHistory` deliberately omits `threshold`** [R1]: it never changes a dose value, so no
 consumer needs its historical setting. Stated so it does not read as an oversight.
+
+**It omits `eatDelayMinutes` on the same test, and carries `insulinId` because that test SEPARATES
+them.** The reader's own pre-meal wait changes what they were told to do and never what the app
+calculated; the insulin changes §7.4's gate, and a suppressed correction is a different dose. §8.5's
+switch-day rule reads this field, and §7.8's hypo patterns cannot be read through kinetics without
+it — a low at hour three means one thing under regular insulin and another under aspart.
 
 **The settings block is why the export is worth anything to a prescriber**: a table of readings
 and doses without the ratios that produced them cannot be reasoned about.
@@ -2396,15 +2428,56 @@ the previous revision's fixes**, and this one lived inside the paragraph written
 
 ---
 
-## 8. Humulin R specifics
+## 8. The mealtime insulin
+
+**Renamed from "Humulin R specifics" on 2026-09-20**, because the title was the defect. This
+section held one insulin's clocks and the app rendered them to everybody — and since the audience
+change the analogue reader is the more common one, so they were the wrong numbers, shown daily, to
+most readers. §8.5 now asks which insulin is in the pen and the two clocks follow the answer.
 
 **Humulin R is short-acting regular human insulin, not rapid-acting.** The app must never
-call it rapid — the timing advice depends on the distinction.
+call it rapid — the timing advice depends on the distinction, and the numbers throughout this
+section are Humulin R's unless a line says otherwise.
+
+**Exactly two things depend on which insulin it is**, and no more: §8.1's wait before eating and
+§7.4's stacking windows. The dose arithmetic does not — target, ISF and ICR are the reader's own,
+set for whatever they actually take.
 
 ### 8.1 Pre-meal timing — anchored to injection
 
 The FDA label says inject about 30 minutes before meals; ISPAD says 20–30. This is the largest
 practical difference from a rapid analog.
+
+**The wait is per CLASS, from §8.5's answer** (`INSULIN_TIMING` in `src/config.ts`). Each range is
+the GUIDELINE recommendation where one exists, and the label where one does not.
+
+| Class | Wait | Where it comes from |
+|---|---|---|
+| Regular human insulin | 20–30 minutes | ISPAD 2024 ch. 9. Humulin R's own label says "approximately 30 minutes", a point rather than a range |
+| Rapid analogue | 10–15 minutes | ISPAD 2024 ch. 9, **grade [A]** — and the labels permit up to 15 for lispro and glulisine |
+| Ultra-rapid analogue | at the start of the meal | Fiasp and Lyumjev are both labelled for injection at the start of the meal |
+
+**The rapid row shipped at 5–10 for a few hours on 2026-09-20 and was corrected the same day**, and
+the correction is worth keeping because the reasoning failed in three separate ways. 5–10 was the
+intersection of what the three rapid-analogue labels permit — arithmetically sound and clinically
+meaningless, because a minimum taken across heterogeneous regulatory filings is a fact about the
+documents rather than about insulin, and the ceiling came from one label whose EU twin says
+"immediately before a meal". The safety argument written alongside it was inverted: ISPAD's grade
+[A] evidence is that the LONGER pre-bolus reduces nocturnal hypoglycaemia. And it was incoherent
+with the row above it, which already took ISPAD's number.
+
+**Zero is an instruction and not a missing value.** The pair `[0, 0]` is what an ultra-rapid label
+states, and the interface says "inject at the start of your meal" rather than rendering "wait 0
+minutes". §4.1's rule about not collapsing states, applied to a clock.
+
+**The reader may replace the range with their own prescriber's single number**, in minutes, in
+Settings — `RANGE.eatDelay`, hard 0–45, confirm-once above 30. That is the answer §8.5's old
+disclosure asked for and then gave nowhere to live. Changing insulin CLEARS it: a doctor's
+"twenty minutes" was an answer about the old insulin.
+
+**With no insulin named, there is no wait and the app says so.** It shows "inject now" and a line
+saying it cannot tell them when to eat, rather than a default. §7.5's rule that an absence must never
+be rendered as a fact, applied here.
 
 Version 1 computed an absolute eat-time from the **calculation** clock: "Inject now → eat at
 7:40 PM." That breaks silently. Calculate at 7:10, get distracted, inject at 7:35, eat at the
@@ -2420,7 +2493,7 @@ app shows the *rule*, not a time: "Inject 20–30 minutes before eating." After 
 
 | State | Timing instruction |
 |---|---|
-| Band A | "Inject 20–30 minutes before eating" |
+| Band A | "Inject *n* minutes before eating", from the class — or "inject now" with no wait stated when the insulin is unknown |
 | Band B (well below target) | **Inverted**: "You are low-ish — eat first, then inject." A 30-minute fast at 71 mg/dL is wrong, and version 1 would have shown "eat before injecting" and "inject now, eat in 30 minutes" simultaneously. |
 | Bands C / D | **Suppressed** — no dose exists |
 | Blood sugar blank | **Suppressed** — cannot know the band (§4.6) |
@@ -2461,12 +2534,76 @@ the 2–3 hour analog stacking threshold, and inpatient four-to-six-hourly corre
 Humulin R peaks around three hours, so correcting at two hours means correcting into the
 rising limb of the meal dose. Analog-derived advice ("correct at two hours") is wrong here.
 
-### 8.5 U-100 assumed, stated, not configurable
+### 8.5 Which insulin, and U-100 assumed
+
+**Two questions live here and they fail differently.** The concentration is assumed and stated,
+because a setting for it could be set wrong and cause the 2.5× error it exists to prevent. The
+MOLECULE is asked, because assuming it caused a wrong number every day.
+
+#### 8.5.1 The mealtime insulin is asked at setup — RULED 2026-09-20 [Momin], shipped the same day
+
+**A required question, with no default and no prefill.** `src/config.ts` records why the three
+ratios stopped being prefilled — *"a prefilled 150 is a prescription wearing the clothes of a
+default"* — and an insulin is the same category. A required question also has no tap-through, which
+is the whole answer to the objection that a picker gives false confirmation of fit to a reader who
+does not know their insulin differs: they cannot pass it without reading it.
+
+**It is asked BEFORE the three ratios**, on its own screen, because an out-of-model answer ends the
+setup and making someone type three numbers first is a worse way to say the same thing.
+
+**No migration value.** A settings row written before the field existed reads back as `''`, which is
+"never asked", so an install that has been running for months answers it on the next open exactly
+like a fresh one. No `DATABASE_VERSION` bump: no store and no index changed, and the absent field
+already had a meaning.
+
+**Grouped by CLASS, never an alphabetical brand list.** HumuLIN and HumaLOG are on ISMP's
+confused-drug-names list, as are NovoLIN and NovoLOG and both premix pairs, and ISMP's own mitigation
+is to stop look-alike names appearing consecutively. Class headers do that structurally. A
+WITHIN-class mispick is harmless — tap Humalog while taking NovoRapid and every timing shown is
+still right — so the grouping makes the harmless mistake the easy one.
+
+**The reader taps a BRAND and the app gets both halves.** The brand is the name on the vial, so it is
+what the dose is labelled with and what both exports record; the class is what the two clocks read.
+One selection, no second question.
+
+**A confirmation echo restates the CLASS FACTS, not the name just tapped** — re-reading your own
+choice confirms nothing. It ends with the physical check: every mealtime insulin is a clear
+solution, while NPH and every premix containing it are suspensions their own labels require
+resuspending. That does not tell a Humalog user from a NovoRapid user and does not need to; it tells
+a premix user they are on the wrong screen, which is the only pick that matters.
+
+**Premixed, NPH and long-acting insulins are IN the list, and route to an honest exit.** Leaving them
+out does not protect a premix reader, it sends them to the nearest-looking name. The exit names the
+insulin, says why this calculator cannot be right for it, and has NO way through — §7.4's gate has an
+override because the reader can know better on the day, and here there is no dose to be right about.
+
+**The exit gates the CALCULATOR and nothing else.** The record stays readable and exportable, and the
+screen says so in its first sentence: someone months into their own log must not read a truthful
+answer as the app taking their record away.
+
+**"I don't know, or mine isn't listed" is a real answer with its own heading**, not a link in small
+print — the reader who cannot find their insulin is the one most at risk of tapping the nearest name.
+It suppresses the timing lines, keeps the generic dose label, and gives the stacking gate the longest
+windows in the table.
+
+**Switch-day rule.** §7.4's windows model insulin ALREADY ON BOARD, so the gate keys on the insulin
+the last dose was given under, not the one selected since. Until that dose ages past the advise
+window the gate uses the **longer** of old and new — which expires by itself, with no stored switch
+timestamp to get wrong.
+
+**The stacking windows move by class in SHAPE and not yet in value.** Every row declares the same 4
+and 12 hours, pending `CLINICAL.md` question 10c. Shortening a gate is the dose-raising direction and
+§20.1.1 forbids picking that number off a reading of the literature; holding a correction longer than
+an analogue needs runs high, which §2.1 tolerates, and §7.4.1's recorded per-dose override is the
+designed escape. The mechanism ships complete so the eventual ruling is a data edit.
+
+#### 8.5.2 U-100 assumed, stated, not configurable
 
 Confirmed U-100 by the user. **Setup states the assumption.**
 
 **Corrected 2026-09-12 [R26]: the output does NOT read `6 units (U-100)`, and should not.** It reads
-"units of Humulin R", and that is the better of the two for this section's own purpose. §10.5 runs a
+"units of NovoRapid" — the reader's own insulin from §8.5.1's answer, generic only for the reader
+who answered "I don't know" — and that is the better of the two for this section's own purpose. §10.5 runs a
 strict budget on what shares space with a number about to be injected, and `(U-100)` is a
 concentration most users cannot check. Naming the actual insulin is something they can: a person
 holding a different vial sees the mismatch, where `(U-100)` would tell them nothing.
@@ -2840,7 +2977,12 @@ acknowledgement of an unusual-but-intended value, not a warning.
    device, no regulatory clearance, not clinically validated, verify every dose, consult the
    clinician, use at own risk. Plus explicit non-endorsement of the meter and insulin
    manufacturers.
-2. **Settings entry is mandatory** — there are no defaults (§1.2).
+2. **The mealtime insulin is asked first, and settings entry is mandatory** — there are no defaults
+   for either (§1.2, §8.5.1). The insulin comes BEFORE the three ratios because an out-of-model
+   answer ends the setup, and making somebody type three numbers only to be told the app does not
+   fit their insulin is a worse way to say the same thing. Neither screen has a way past it. An
+   existing install with no insulin recorded meets the same gate on its next open — the question is
+   required, so there is no migration value and no tap-through.
 3. **"What this doesn't know about"**, reachable any time: active insulin, exercise, illness,
    alcohol, fat and protein, time-of-day variation. Exercise and alcohol named as the two most
    common causes of low blood sugar the app cannot see.
@@ -2852,13 +2994,18 @@ acknowledgement of an unusual-but-intended value, not a warning.
    > day — this app does not calculate it and never changes it. Your **Humulin R** is the fast
    > one you take with meals, and that is the only number this app works out.
 
+   The second name is the reader's OWN, from §8.5.1's answer, and the page also states what that
+   answer decides: the wait before eating and §7.4's windows, and nothing about the dose.
+
    Neither "basal" nor "bolus" appears in the interface; both are explained here in ordinary
    words, per §10.2.
 6. **"It fills in none of them" stated on first run** [R1], REWORDED 2026-09-13 with the audience
    change. It used to read *"configured for one specific person's prescription"*, which was true
    while it was, and became a false statement about the app the day the fields went empty. The
    reason it is said at all is unchanged: the URL is public, and anyone on a rapid analog would
-   inherit wrong timing advice.
+   inherit wrong timing advice. **That last clause stopped being true on 2026-09-20** — §8.5.1 asks
+   which insulin, so a rapid-analogue reader inherits their own timing rather than Humulin R's. The
+   sentence stays because the ratios are still nobody's by default.
 7. **"If this number looks nothing like what you usually take" — NEW IN v9** [R1]. §6.7 promised
    this disclosure and §10.6 never contained it. Shown once at setup, and reachable afterwards
    from the how-it-works screen:
@@ -2985,9 +3132,17 @@ any screen is built.
 { inputs, settings (including settings.revision — §11.3's ROW STAMP),
   logRevision, decisionTime, stackingOverride,
   carbBaseline, eligibleEntryCount, historyProvenance, lastDose,
-  bandEFullCardShownRecently, excludedTimeRecords,
+  insulinClass, bandEFullCardShownRecently, excludedTimeRecords,
   blankReadingAcknowledged, largeDoseConfirmed }
 ```
+
+**`insulinClass` was added 2026-09-20 with §8.5.** The settings row stores an insulin *id*; the
+clocks read a *class*, and resolving between them needs `src/data/insulins.ts`, which §13.1 keeps out
+of the core the same way it keeps the clock out. Resolving it into the snapshot is how the core gets
+the answer without acquiring the table — and freezing it means a result and the windows that produced
+it cannot come from different answers to the same question. `lastDose` carries its OWN class for
+§8.5's switch-day rule, which is a different fact: the insulin the last dose was given under, not the
+one selected since.
 
 **The last two were added to this list in v27, ruled by Momin 2026-09-09.** They were legislated in
 §4.6 and §6.3 and never named here, so the list described a snapshot the resolver could not actually
@@ -3141,8 +3296,14 @@ db: MealUnits   (version = code schema version)
                                    { k: "logRevision", n }            // ADDED IN v23 [R1]
   store: settings  keyPath "k"   -> revision,                             // §7.7
                                     target, isf, icr, mode, threshold,
-                                    basalName, basalUnits, basalTiming    // §1.3
+                                    basalName, basalUnits, basalTiming,   // §1.3
+                                    insulinId, eatDelayMinutes            // §8.5
                                     // usualDose REMOVED IN v17 — see §6.7
+                                    // A row written before 2026-09-20 has no
+                                    // insulinId, and `''` is "never asked" —
+                                    // so the gate asks. That is the whole
+                                    // migration: no store and no index moved,
+                                    // so DATABASE_VERSION does not either.
   store: acks      keyPath "k"   -> disclaimer, ceilMode, out-of-range confirmations
   store: log       keyPath "id"  -> one record per injection OR one tombstone
                                     (§7.3, `deleted: true`), index on timestamp
@@ -3266,6 +3427,12 @@ introduced the round's only blocker** (§19).
   Plain text prevents injection but does not establish meaning — "a parsed integer does not reveal
   whether `150` means units, hundredths or mg/dL" — so an older build must never present
   unknown-schema numbers as verified prescription settings.
+  **`RECOVERY_FORMAT` went to 2 on 2026-09-20** when §8.5's mealtime insulin joined the block, which
+  is what independent versioning is FOR: the addition is what moves it, and a build that does not
+  know the field refuses rather than rendering the half it recognises. The value stored is the
+  **brand in words**, not the row id — this block is copied off a screen by a person, and
+  `novorapid` is not what the box says. A block written at format 1 has no insulin on it and shows
+  none, rather than an empty row.
 - **Every write is one transaction.** The "I injected" row is a single `add` on `log`, so it
   cannot clobber settings and settings cannot clobber it.
 - **Re-validate on every load and import** — type, presence, finiteness, precision, range.
@@ -3530,7 +3697,22 @@ export const HUNDREDTHS_SCALE = 100;          // §2.2 integer representation
 
 // ─── CLOCK AND TIMING (§7.6, §8.1) ─────────────────────────
 export const CLOCK_SKEW_TOLERANCE_HOURS = 1;  // §7.6 future-timestamp bound
-export const EAT_DELAY_MINUTES = [20, 30];    // §8.1 pre-meal window
+
+// ─── THE TWO CLOCKS, PER INSULIN CLASS (§8.5) ──────────────
+// DO NOT CHANGE WITHOUT CLINICAL REVIEW. One row until 2026-09-20, and
+// it was Humulin R's, rendered to everyone. The waits are label-derived
+// per class; the stacking windows are IDENTICAL on every row and wait
+// on CLINICAL.md question 10c — the mechanism ships, the values do not.
+// src/data/insulins.ts says which class a brand is; this says what a
+// class means.
+export const INSULIN_TIMING = {
+  regular:     { eatDelayMinutes: [20, 30], stackSuppressHours: 4, stackAdviseHours: 12 },
+  rapid:       { eatDelayMinutes: [10, 15], stackSuppressHours: 4, stackAdviseHours: 12 },
+  ultra_rapid: { eatDelayMinutes: [0, 0],   stackSuppressHours: 4, stackAdviseHours: 12 },
+};
+// §8.1's window, and it is REGULAR HUMAN INSULIN'S — an alias onto the
+// table rather than a second copy, so the two cannot drift.
+export const EAT_DELAY_MINUTES = INSULIN_TIMING.regular.eatDelayMinutes;
 
 // ─── DIVERGENCE CONFIRMATION (§7.1) ────────────────────────
 export const DIVERGE_MIN_UNITS = 5;           // absolute floor
@@ -3547,11 +3729,22 @@ export const RANGE = {
   threshold:  { hard: [10, 45],  soft: [15, 35]  },
   basalUnits: { hard: [1, 150],  soft: [5, 80]   },  // §1.3
   injected:   { hard: [0.01, 100], soft: [0.5, 60] },// §7.1 — ADDED IN v9
-};
+  eatDelay:   { hard: [0, 45],   soft: [0, 30]   },  // §8.5 — the reader's own
+};                                                   // pre-meal wait. ZERO IS A
+                                                     // VALUE: an ultra-rapid
+                                                     // analogue is injected at
+                                                     // the start of the meal.
+                                                     // The 45 is PROVISIONAL —
+                                                     // CLINICAL.md question 10b.
 
 // ─── STACKING (§7.4) ───────────────────────────────────────
-export const STACK_SUPPRESS_HOURS = 4;
-export const STACK_ADVISE_HOURS   = 12;
+// Aliases onto INSULIN_TIMING's regular row, for the reason
+// EAT_DELAY_MINUTES is one. Every class declares the same pair today,
+// so these are still "the" windows — but they are regular human
+// insulin's, and naming them from that row is what stops a future
+// per-class edit leaving a second copy behind.
+export const STACK_SUPPRESS_HOURS = INSULIN_TIMING.regular.stackSuppressHours;
+export const STACK_ADVISE_HOURS   = INSULIN_TIMING.regular.stackAdviseHours;
 // Declared after STACK_ADVISE_HOURS deliberately — v9 printed this above it,
 // which is a TDZ ReferenceError if transcribed literally [R1].
 export const DELETE_CONFIRM_WINDOW_HOURS = STACK_ADVISE_HOURS;  // §7.3
@@ -3581,6 +3774,14 @@ export const GRAMMAR_INTEGER_DIGIT_SLACK = 1;
 // ─── TIMING (§8.2, §11.3) ──────────────────────────────────
 export const RESULT_EXPIRY_MINUTES = 15;
 export const POLL_INTERVAL_MS      = 4000;
+
+// ─── SCHEMA (§11.3) ────────────────────────────────────────
+export const SCHEMA_VERSION  = 1;
+// The recovery block, versioned INDEPENDENTLY of the payload — an older
+// build reading a version it does not know must refuse to present the
+// numbers as verified settings rather than render the half it knows.
+// Went to 2 on 2026-09-20 when §8.5's mealtime insulin joined the block.
+export const RECOVERY_FORMAT = 2;
 ```
 
 Every value carries a comment naming what it does and which section decided it.

@@ -213,6 +213,14 @@ const setUp = async ({ ev, send }) => {
   await until({ ev }, `!!document.querySelector('#app')?.textContent?.includes('Read this before')`,
     'the disclaimer');
   await tap('/I have read this/i'); await tap('/own risk/i');
+  // §8.5, ADDED 2026-09-20 — the insulin is asked BEFORE the ratios and there
+  // is no way past it. Humulin R, because everything downstream here is timed
+  // for regular human insulin. The confirmation echo is a second tap, and it
+  // is a gate rather than a notification: nothing is stored until it.
+  await until({ ev }, `!!document.querySelector('#app')?.textContent?.includes('Which insulin do you inject')`,
+    'the insulin question');
+  await tap('/^Humulin R/');
+  await tap('/that\u2019s mine/');
   await until({ ev }, `[...document.querySelectorAll('label')].some(n=>n.textContent.includes('What should a correction aim for'))`,
     'the setup screen');
   // The THREE RATIOS, added 2026-09-14. They used to arrive prefilled, and this

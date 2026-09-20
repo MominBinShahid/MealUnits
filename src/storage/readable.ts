@@ -21,6 +21,8 @@
 import { formatClockTime, formatDate, formatDayAndMonth } from '../core/calendar.js';
 import { formatHundredths } from '../core/decimal.js';
 import { groupByPrescriptionPeriod } from '../core/periods.js';
+import { UNKNOWN_INSULIN } from '../core/insulin.js';
+import { INSULINS } from '../data/insulins.js';
 import type { PeriodGroup, SettingsPeriod } from '../core/periods.js';
 import type { LogRow, Reading, Settings } from '../core/types.js';
 
@@ -85,6 +87,30 @@ function prescriptionHeading(period: SettingsPeriod): string {
     `1&nbsp;unit lowers ${String(period.isf)}&nbsp;mg/dL`,
     `target ${String(period.target)}`,
   ].join(' &middot; ');
+}
+
+/**
+ * §8.5 — which mealtime insulin the rows in this period are doses OF.
+ *
+ * §1.3 records the basal so the stored picture is "the whole regimen rather
+ * than half of it" — and until 2026-09-20 the document named the insulin it
+ * does NOT log and omitted the one every row is a dose of. A clinician reading
+ * §7.8's hypo patterns reads them through kinetics: a low at hour three means
+ * one thing under regular insulin and another under aspart, and a record that
+ * cannot say which cannot be read that way at all.
+ *
+ * Says "not recorded" rather than nothing when a period predates the question.
+ * An omission in a clinical document is read as an absence of the thing, and
+ * these readers did have an insulin — the app simply never asked.
+ */
+function insulinLine(period: SettingsPeriod): string {
+  const insulin = INSULINS.find((row) => row.id === period.insulinId);
+  if (insulin !== undefined) {
+    return `Mealtime insulin: <strong>${escapeHtml(insulin.brand)}</strong> (${escapeHtml(insulin.molecule)})`;
+  }
+  return period.insulinId === UNKNOWN_INSULIN
+    ? 'Mealtime insulin: not known to the patient'
+    : 'Mealtime insulin: not recorded';
 }
 
 function periodRange(group: PeriodGroup, timeZone: string, nowMs: number): string {
@@ -158,6 +184,7 @@ export function buildReadableExport(input: ReadableInput): string {
       return `<section>
       <h2>${heading}</h2>
       <p class="range">${periodRange(group, timeZone, input.generatedAtMs)} &nbsp;&nbsp; ${escapeHtml(counts)}</p>
+      ${group.period === null ? '' : `<p class="range">${insulinLine(group.period)}</p>`}
       <table>
         <thead><tr><th>Date</th><th>Time</th><th>Blood sugar</th><th>Carbohydrate</th><th>Calculated</th><th>Injected</th></tr></thead>
         <tbody>

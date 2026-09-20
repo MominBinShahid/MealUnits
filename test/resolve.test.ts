@@ -24,6 +24,8 @@ function settings(overrides: Partial<Settings> = {}): Settings {
     basalName: 'Lantus',
     basalUnits: 36,
     basalTiming: 'early morning', personName: '',
+    insulinId: 'humulin-r',
+    eatDelayMinutes: null,
     ...overrides,
   };
 }
@@ -43,6 +45,7 @@ function snapshot(
     eligibleEntryCount: 0,
     historyProvenance: 'trusted',
     lastDose: null,
+    insulinClass: 'regular',
     bandEFullCardShownRecently: false,
     excludedTimeRecords: 0,
     blankReadingAcknowledged: true,
@@ -180,7 +183,7 @@ describe('§6.2 the operand is EITHER the exact total OR the rounded dose', () =
 });
 
 describe('§7.4.1 the override panel withholds its figures at the threshold', () => {
-  const twoHoursAgo = { injectedHundredths: 600, atMs: NOW - 2 * HOUR };
+  const twoHoursAgo = { injectedHundredths: 600, atMs: NOW - 2 * HOUR, insulinClass: 'regular' as const };
 
   it('shows both figures when neither reaches the threshold', () => {
     const outcome = resolve(snapshot('330', '40', { lastDose: twoHoursAgo }));
@@ -247,7 +250,7 @@ describe('§7.4.1 the override panel withholds its figures at the threshold', ()
 });
 
 describe('§7.4 the informational line for a correction that is NOT suppressed', () => {
-  const twoHoursAgo = { injectedHundredths: 600, atMs: NOW - 2 * HOUR };
+  const twoHoursAgo = { injectedHundredths: 600, atMs: NOW - 2 * HOUR, insulinClass: 'regular' as const };
 
   it('fires on a negative correction inside the window', () => {
     const outcome = resolve(snapshot('100', '60', { lastDose: twoHoursAgo }));
@@ -272,7 +275,7 @@ describe('§7.4 the informational line for a correction that is NOT suppressed',
   });
 
   it('fires in the skewed-to-zero case too, which is the same branch', () => {
-    const skewed = { injectedHundredths: 600, atMs: NOW + 30 * 60_000 };
+    const skewed = { injectedHundredths: 600, atMs: NOW + 30 * 60_000, insulinClass: 'regular' as const };
     const outcome = resolve(snapshot('100', '60', { lastDose: skewed }));
     expect(outcome.kind).toBe('dose');
     if (outcome.kind !== 'dose') return;
@@ -280,7 +283,7 @@ describe('§7.4 the informational line for a correction that is NOT suppressed',
   });
 
   it('does not fire outside the suppression window', () => {
-    const fiveHoursAgo = { injectedHundredths: 600, atMs: NOW - 5 * HOUR };
+    const fiveHoursAgo = { injectedHundredths: 600, atMs: NOW - 5 * HOUR, insulinClass: 'regular' as const };
     const outcome = resolve(snapshot('100', '60', { lastDose: fiveHoursAgo }));
     expect(outcome.kind).toBe('dose');
     if (outcome.kind !== 'dose') return;
@@ -339,7 +342,7 @@ describe('§10.5 the warning budget', () => {
     // ranks afterwards.
     const outcome = resolve(
       snapshot('100', '60', {
-        lastDose: { injectedHundredths: 600, atMs: NOW - 5 * HOUR },
+        lastDose: { injectedHundredths: 600, atMs: NOW - 5 * HOUR, insulinClass: 'regular' as const },
         historyProvenance: 'suspect',
         excludedTimeRecords: 2,
       }),

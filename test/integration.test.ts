@@ -227,6 +227,20 @@ function buttonLabel(button: Element): string {
   return plain(button.textContent ?? '').replace(/[\u2190\u2192\u200a]/g, '').trim();
 }
 
+/**
+ * §8.5's picker — a row's accessible name is the brand AND the molecule, which
+ * is deliberate for a screen reader and unwieldy for an exact match here.
+ */
+async function tapStartingWith(prefix: string): Promise<void> {
+  const buttons = [...root.querySelectorAll('button')];
+  const found = buttons.find((button) => buttonLabel(button).startsWith(prefix));
+  if (!found) {
+    throw new Error(`No button starting "${prefix}". Buttons: ${buttons.map((b) => buttonLabel(b)).join(' | ')}`);
+  }
+  found.click();
+  await settle();
+}
+
 async function tap(label: string): Promise<void> {
   const buttons = [...root.querySelectorAll('button')];
   const found = buttons.find((button) => buttonLabel(button) === label);
@@ -324,6 +338,11 @@ async function setUpAsHisBrother(indexedDB?: IDBFactory): Promise<void> {
   await boot(indexedDB);
   await tap('☐  I have read this');
   await tap('I understand — use at my own risk');
+  // §8.5 — the insulin is asked BEFORE the ratios, and it is required: there
+  // is no button on that screen that skips it. Humulin R, because every
+  // timing this file asserts is regular human insulin's.
+  await tapStartingWith('Humulin R');
+  await tap('Yes, that’s mine');
   // The three ratios are TYPED now, not tapped past. They used to arrive
   // prefilled with 150 / 30 / 10, and the 2026-09-13 audience change removed
   // that: the app is for anyone with type 1, and for anyone else those are
@@ -370,7 +389,8 @@ describe('§10.6 first run', () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');
     // §1.2 as originally written. The prefill was accepted against it on one
     // argument — this app has one user, and these are his numbers — and Momin
     // ruled on 2026-09-08 that it does not. Both shipping pumps that were
@@ -388,7 +408,8 @@ describe('§10.6 first run', () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');
     // Blank until there is something to compute it from. A partial answer stays
     // blank rather than putting a number in a dosing field on the strength of
     // an incomplete one.
@@ -421,7 +442,8 @@ describe('§10.6 first run', () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-    await typeInto('What should a correction aim for', '150');
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');    await typeInto('What should a correction aim for', '150');
     await typeInto('How far does one unit lower', '30');
     await typeInto('How much carbohydrate does one unit cover', '10');
     expect(fieldLabelled('Double-check my typing').value).toBe('20');
@@ -494,7 +516,8 @@ describe('§10.6 first run', () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');
     // Until 2026-09-13 a stranger met an unexplained proper noun three times and
     // got no answer. Naming him is also the SAFER wording — an unexplained
     // number beside an empty field reads as a suggestion, while a number with
@@ -514,7 +537,8 @@ describe('§10.6 first run', () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');
     // `.ask` is the DISPLAY size for a screen's single question — right on the
     // calculator and the food list, where there is exactly one. Settings has
     // eight, and this one alone wore it, so the rounding section towered over
@@ -539,7 +563,8 @@ describe('§10.6 first run', () => {
     await boot();
     await tap('\u2610  I have read this');
     await tap('I understand — use at my own risk');
-
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');
     // The half of §8.5 that went eight months unbuilt. Setup is the one place a
     // concentration mismatch is catchable ONCE; on the result it would be noise
     // beside a number about to be injected, which is what §10.5 budgets against.
@@ -560,7 +585,8 @@ describe('§10.6 first run', () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-    // The basal block is HIS, not the prescription's, and is still empty — so
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');    // The basal block is HIS, not the prescription's, and is still empty — so
     // the save is genuinely blocked and the prefill cannot be tapped past
     // without passing through every screen.
     expect(fieldLabelled('Which insulin').value).toBe('');
@@ -728,7 +754,8 @@ describe('§10.6 the five terms the app used and never explained', () => {
     await boot();
     await tap('\u2610  I have read this');
     await tap('I understand — use at my own risk');
-    expect(text()).toContain('Your prescription');
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');    expect(text()).toContain('Your prescription');
 
     // The button list is gated on !firstRun, so until 2026-09-12 the one moment
     // the app asks for these numbers was the one moment the explanation was
@@ -792,6 +819,8 @@ describe('§10.6 back from "How this works" returns where you came from', () => 
     await boot();
     await tap('\u2610  I have read this');
     await tap('I understand \u2014 use at my own risk');
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that\u2019s mine');
     await typeInto('What should a correction aim for', '150');
     await typeInto('How far does one unit lower', '30');
     await typeInto('How much carbohydrate does one unit cover', '10');
@@ -813,7 +842,8 @@ describe('the name, which changes nothing the app calculates', () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-    await typeInto('What should the app call you', 'Ahmed');
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');    await typeInto('What should the app call you', 'Ahmed');
     await typeInto('What should a correction aim for', '150');
     await typeInto('How far does one unit lower', '30');
     await typeInto('How much carbohydrate does one unit cover', '10');
@@ -830,7 +860,7 @@ describe('the name, which changes nothing the app calculates', () => {
     expect(text()).not.toContain('Hey Ahmed');
     await keys('50');
     await tap('Work out the dose');
-    expect(text()).toContain('units of your mealtime insulin');
+    expect(text()).toContain('units of Humulin R');
     expect(text()).not.toContain('Hey Ahmed');
   });
 
@@ -843,7 +873,8 @@ describe('the name, which changes nothing the app calculates', () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-    await typeInto('What should the app call you', 'Ahmed');
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');    await typeInto('What should the app call you', 'Ahmed');
     await typeInto('What should a correction aim for', '150');
     await typeInto('How far does one unit lower', '30');
     await typeInto('How much carbohydrate does one unit cover', '10');
@@ -873,7 +904,8 @@ describe('the name, which changes nothing the app calculates', () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-    await typeInto('What should the app call you', 'a/b ../c');
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');    await typeInto('What should the app call you', 'a/b ../c');
     await typeInto('What should a correction aim for', '150');
     await typeInto('How far does one unit lower', '30');
     await typeInto('How much carbohydrate does one unit cover', '10');
@@ -1035,7 +1067,8 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-  }
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');  }
 
   it('keeps focus in the field across the rebuild every keystroke triggers', async () => {
     await reachSettings();
@@ -1305,7 +1338,7 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     await tap('Next');
     await keys('50');
     await tap('Work out the dose');
-    expect(text()).toContain('units of your mealtime insulin');
+    expect(text()).toContain('units of Humulin R');
 
     // Two routes to the same place: the button, then the gesture, must land on
     // the same screen. They read one `backAction`, and this is what pins that.
@@ -1395,7 +1428,8 @@ describe('the DOM shapes the stylesheet depends on', () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');
     const wide = [...root.querySelectorAll('.field.wide')];
     // Guards the guard: if the class is renamed, this case must fail rather
     // than pass over an empty list — the check-that-stopped-looking shape.
@@ -1412,7 +1446,8 @@ describe('the DOM shapes the stylesheet depends on', () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');
     const inputs = [...root.querySelectorAll('input[data-field]')];
     expect(inputs.length).toBeGreaterThan(0);
     for (const input of inputs) {
@@ -1433,7 +1468,7 @@ describe('§13.6 interface-to-core mapping', () => {
     await tap('Work out the dose');
 
     expect(text()).toContain('11');
-    expect(text()).toContain('units of your mealtime insulin');
+    expect(text()).toContain('units of Humulin R');
     // §10.3 — the working, with both components and the total.
     expect(text()).toContain('330 down to 150');
     expect(text()).toContain('50 g of carbohydrate');
@@ -1450,7 +1485,7 @@ describe('§13.6 interface-to-core mapping', () => {
     await keys('330');
     await tap('Work out the dose');
     expect(text()).toContain('This is very low. Treat it now.');
-    expect(text()).not.toContain('units of your mealtime insulin');
+    expect(text()).not.toContain('units of Humulin R');
   });
 });
 
@@ -1477,7 +1512,7 @@ describe('§8.2 — a block goes stale too', () => {
     // The block does NOT go away. Being low is still the likeliest reading of
     // an old low, and §3.3's suppression of every insulin number still holds.
     expect(text()).toContain('Treat this first. Do not inject.');
-    expect(text()).not.toContain('units of your mealtime insulin');
+    expect(text()).not.toContain('units of Humulin R');
   });
 });
 
@@ -1503,7 +1538,7 @@ describe('§8.2 + §6.2 — a confirmation dies with the result it authorised', 
     await tap('Work out the dose');
     expect(text()).toContain('That will be a large dose');
     await tap('Show the dose');
-    expect(text()).toContain('25units of your mealtime insulin');
+    expect(text()).toContain('25units of Humulin R');
     expect(text()).toContain('Correction held back');
 
     // Twenty minutes later the result expires…
@@ -1522,7 +1557,7 @@ describe('§8.2 + §6.2 — a confirmation dies with the result it authorised', 
     await tap('Work out the dose');
     expect(text()).toContain('That will be a large dose');
     expect(text()).not.toContain('30units of your mealtime insulin');
-    expect(text()).not.toContain('units of your mealtime insulin');
+    expect(text()).not.toContain('units of Humulin R');
   });
 });
 
@@ -1538,7 +1573,7 @@ describe('§13.6 band-to-message pairing', () => {
     // §3.3 — the block suppresses every INSULIN quantity: the main result, the
     // breakdown, the confirmation preview and the announcement.
     expect(screen).toContain('Treat this first. Do not inject.');
-    expect(screen).not.toContain('units of your mealtime insulin');
+    expect(screen).not.toContain('units of Humulin R');
     expect(screen).not.toContain('Total');
     // ...and does NOT suppress the treatment instructions, which necessarily
     // contain 15 grams, 15 minutes and 70 mg/dL. "No insulin dose numbers, not
@@ -1556,7 +1591,7 @@ describe('§13.6 band-to-message pairing', () => {
     await tap('Work out the dose');
     expect(text()).toContain('This is very low');
     expect(text()).toContain('Get help if you cannot treat yourself');
-    expect(text()).not.toContain('units of your mealtime insulin');
+    expect(text()).not.toContain('units of Humulin R');
   });
 
   it('§7.8 — and the reading offer sits AFTER the treat-first instruction', async () => {
@@ -1578,7 +1613,7 @@ describe('§13.6 band-to-message pairing', () => {
     await keys('60');
     await tap('Work out the dose');
     expect(text()).toContain('You are well below target');
-    expect(text()).toContain('units of your mealtime insulin');
+    expect(text()).toContain('units of Humulin R');
     // §8.1 — band B INVERTS the timing instruction.
     expect(text()).toContain('eat first, then inject');
     expect(text()).not.toContain('Inject 20–30 minutes before eating');
@@ -1609,7 +1644,7 @@ describe('§13.6 the confirmation flow', () => {
     expect(screen).toContain('350 mg/dL');
     expect(screen).toContain('250 g');
     // The dose is 31.7 -> 32 units, and none of it may appear yet.
-    expect(screen).not.toContain('units of your mealtime insulin');
+    expect(screen).not.toContain('units of Humulin R');
     expect(screen).not.toContain('32');
   });
 
@@ -1621,7 +1656,7 @@ describe('§13.6 the confirmation flow', () => {
     await tap('Work out the dose');
     await tap('Show the dose');
     expect(text()).toContain('32');
-    expect(text()).toContain('units of your mealtime insulin');
+    expect(text()).toContain('units of Humulin R');
   });
 
   it('§6.2 — a 250 g plate confirms at EVERY blood sugar, even a perfect one', async () => {
@@ -1658,7 +1693,7 @@ describe('§4.3 step 3 — an impossible reading combines with the possible low,
     await tap('Work out the dose');
     expect(text()).toContain('This is very low. Treat it now.');
     expect(text()).toContain(COPY.blockedInvalidReading);
-    expect(text()).not.toContain('units of your mealtime insulin');
+    expect(text()).not.toContain('units of Humulin R');
   });
 
   it('a typed 19 gets the same pair', async () => {
@@ -1818,7 +1853,7 @@ describe('§7.9 a cross-tab delete returns this tab to the first-run gate', () =
     await tap('Next');
     await keys('50');
     await tap('Work out the dose');
-    expect(text()).toContain('units of your mealtime insulin');
+    expect(text()).toContain('units of Humulin R');
 
     // Another tab starts over. `open.ts` closes our connection on
     // `versionchange`, so the delete is not blocked by this one.
@@ -1830,7 +1865,7 @@ describe('§7.9 a cross-tab delete returns this tab to the first-run gate', () =
     await settle();
 
     // The stale result is gone, the tab says why, and setup is running again.
-    expect(text()).not.toContain('units of your mealtime insulin');
+    expect(text()).not.toContain('units of Humulin R');
     expect(text()).not.toContain('Opening your record');
     expect(text()).toContain('I have read this');
   });
@@ -2351,7 +2386,8 @@ describe('§12 — what this browser promises about the record', () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-    expect(storageWarnings).toBe(0);
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');    expect(storageWarnings).toBe(0);
   });
 
   it('offers it once per session, however many doses follow', async () => {
@@ -2461,7 +2497,8 @@ describe('§12 — what this browser promises about the record', () => {
       await boot();
       await tap('☐  I have read this');
       await tap('I understand — use at my own risk');
-      await typeInto('What should a correction aim for', '150');
+      await tapStartingWith('Humulin R');
+      await tap('Yes, that’s mine');      await typeInto('What should a correction aim for', '150');
       await typeInto('How far does one unit lower', '30');
       await typeInto('How much carbohydrate does one unit cover', '10');
       await typeInto('Which insulin', 'Lantus');
@@ -2505,7 +2542,8 @@ describe('§12 — what this browser promises about the record', () => {
       await boot();
       await tap('☐  I have read this');
       await tap('I understand — use at my own risk');
-      await typeInto('What should a correction aim for', '150');
+      await tapStartingWith('Humulin R');
+      await tap('Yes, that’s mine');      await typeInto('What should a correction aim for', '150');
       await typeInto('How far does one unit lower', '30');
       await typeInto('How much carbohydrate does one unit cover', '10');
       await typeInto('Which insulin', 'Lantus');
@@ -2525,6 +2563,7 @@ describe('§12 — what this browser promises about the record', () => {
     await boot();
     await tap('☐  I have read this');
     await tap('I understand — use at my own risk');
-    expect(text()).not.toContain(plain(COPY.storage.label));
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');    expect(text()).not.toContain(plain(COPY.storage.label));
   });
 });
