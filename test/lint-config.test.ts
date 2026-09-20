@@ -60,6 +60,26 @@ async function findings(): Promise<{ ruleId: string; message: string }[]> {
   );
 }
 
+/**
+ * `BACKLOG` T21 — the first case pays for the whole file, and it needed longer
+ * than vitest's default five seconds.
+ *
+ * `findings()` caches, so ONE case spawns a real ESLint over the fixture and
+ * the other eleven read its result. That one took 6.3 seconds during a full
+ * `vitest run` — not cold start, since it passes in well under five when this
+ * file runs alone: it is contention with the other twenty-eight files sharing
+ * the cores.
+ *
+ * It matters because this file is inside `npm run check`, which is a required
+ * CI job. A required job that fails on machine load fails for a reason the log
+ * does not name, and the reflex it trains is "re-run it" — the same reflex that
+ * hides a real failure.
+ *
+ * The number is about PROCESS START, not about the assertion. Thirty seconds is
+ * far past anything observed and still far short of the run hanging.
+ */
+const ESLINT_START_MS = 30_000;
+
 describe('the linter still reports what eslint.config.js claims', () => {
   it('parses the fixture at all', async () => {
     const reported = await findings();
@@ -67,7 +87,7 @@ describe('the linter still reports what eslint.config.js claims', () => {
     // A fixture that stopped violating anything is a fixture that proves
     // nothing, and it would leave every case below passing on an empty set.
     expect(reported.length).toBeGreaterThan(0);
-  });
+  }, ESLINT_START_MS);
 
   /**
    * Each entry is a rule the project depends on, paired with a fragment of the

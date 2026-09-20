@@ -3002,6 +3002,23 @@ acknowledgement of an unusual-but-intended value, not a warning.
    device, no regulatory clearance, not clinically validated, verify every dose, consult the
    clinician, use at own risk. Plus explicit non-endorsement of the meter and insulin
    manufacturers.
+
+   **The FORM carries the severity, from 2026-09-20 [Momin].** It was five paragraphs of identical
+   grey prose, so the legal position of this app read exactly like the sentence about meter
+   manufacturers — the same defect §12 corrected one screen over, where an advisory that looked like
+   every other paragraph was read like every other paragraph.
+
+   | Panel | What it holds | Why |
+   |---|---|---|
+   | **Red** (`.flag.stop`) | *This is not a medical device* | The one thing every reader must carry out of this screen |
+   | **Amber** (`.flag`) | *This is for type 1 diabetes* | Its job is to send the wrong reader away, not to be remembered |
+   | Plain prose | "fills in none of them", non-endorsement | Facts about the app, not hazards to the reader |
+   | **Amber** | §10.6 item 7's disagreement block | The one thing that asks the reader to DO something |
+
+   **One red, and §10.5's budget is the reason.** Two reds is no red — the second teaches that red
+   is how this app writes, and then the first stops being read. The `--halt` tokens had existed
+   since the first stylesheet with no panel using them; band C and D are red by REFUSAL rather than
+   by panel, because they replace the dose instead of sitting beside it.
 2. **The mealtime insulin is asked first, and settings entry is mandatory** — there are no defaults
    for either (§1.2, §8.5.1). The insulin comes BEFORE the three ratios because an out-of-model
    answer ends the setup, and making somebody type three numbers only to be told the app does not

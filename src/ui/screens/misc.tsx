@@ -45,11 +45,38 @@ export function DisclaimerScreen({
   return (
     <div class="screen">
       <h1>{COPY.firstRun.disclaimerTitle}</h1>
+      {/* §10.6 item 1 — the FORM carries the severity, the same correction §12
+          made one screen over. Five paragraphs of identical grey prose meant
+          the legal position of this app read exactly like the sentence about
+          meter manufacturers.
+
+          One red, by §10.5's budget: two reds is no red. */}
+      <div class="flag stop">
+        <b>{COPY.firstRun.notADevice.title}</b>
+        <p>{COPY.firstRun.notADevice.body}</p>
+      </div>
+      {/* Amber, and the distinction is what each one is FOR. The red statement
+          is what every reader must carry out of this screen; this one exists to
+          send the wrong reader away, and a type 2 reader who gets this far has
+          already been told in the words. */}
+      <div class="flag">
+        <b>{COPY.firstRun.typeOne.title}</b>
+        <p>{COPY.firstRun.typeOne.body}</p>
+      </div>
+      {/* Plain, deliberately. These are facts about the app rather than hazards
+          to the reader, and panelling them would spend the budget on nothing. */}
       {COPY.firstRun.disclaimerBody.map((line) => (
         <p key={line}>{line}</p>
       ))}
-      <h2>{COPY.firstRun.disagreementTitle}</h2>
-      <p>{COPY.firstRun.disagreementBody}</p>
+      {/* §10.6 item 7 — a heading and a paragraph, promoted to amber because it
+          is the one thing on this screen that asks the reader to DO something
+          when the app and their habit disagree: show the doctor the record.
+          It keeps its heading rather than borrowing the panel's, because it is
+          a question rather than a statement and reads as one. */}
+      <div class="flag">
+        <b>{COPY.firstRun.disagreementTitle}</b>
+        <p>{COPY.firstRun.disagreementBody}</p>
+      </div>
       <div class="sheet">
         {/* §10.6 — a CHECKBOX PLUS SUBMIT, and "not dismissible by tapping past it". */}
         <Button class="go quiet" aria-pressed={accepted} onPress={onToggle}>
