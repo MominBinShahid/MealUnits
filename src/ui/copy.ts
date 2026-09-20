@@ -815,6 +815,18 @@ export const COPY = {
       'This does not change your dose — that comes from your own target, ISF and ICR, whatever insulin you take. It changes two things: how long to wait before eating, and how long the app waits between corrections.',
     whereToLook:
       'It is on the pen or the vial. The large name is the brand; the smaller one under it is the insulin itself, and either will find it below.',
+    /**
+     * Who Hasham is, said on the screen that now asks first — matching
+     * `settings.builtFor`, which names him beside the three ratios.
+     *
+     * **It ends by pointing at the reader's own box, and that clause is not
+     * decoration.** §8.5's objection to a picker was that it could give false
+     * confirmation of fit to somebody who does not know their insulin differs.
+     * A named example on a screen of tappable brands is the one place that
+     * objection has teeth, so the sentence has to close the door it opens.
+     */
+    builtFor:
+      'I built this for my brother Hasham, who takes Humulin R. Yours will very likely be a different one — read the box rather than picking his.',
     /** No skip, and the screen says so rather than just having no button. */
     required: 'There is no default for this one, and no way past it. An answer that is wrong about your insulin is worse than no app at all.',
     /**
