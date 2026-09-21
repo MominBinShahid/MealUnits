@@ -16,7 +16,6 @@
  * tab is the blocker.
  */
 
-import { RECOVERY_FORMAT } from '../config.js';
 import {
   DATABASE_NAME,
   DATABASE_VERSION,
@@ -133,8 +132,8 @@ export function openDatabase(options: OpenOptions): Promise<OpenOutcome> {
         const envelope = read.result as EnvelopeRow | undefined;
         const found = envelope?.schemaVersion;
         if (found === undefined) {
-          // A database with stores but no envelope predates the discovery row,
-          // or was cleared badly. Treat it as unreadable rather than assuming.
+          // A database with stores but no envelope was cleared badly or
+          // partially restored. Treat it as unreadable rather than assuming.
           db.close();
           resolve({ kind: 'fail_closed', reason: 'schema', found: null });
           return;
@@ -197,31 +196,7 @@ export function readRecoveryBlock(options: {
         const envelope = read.result as EnvelopeRow | undefined;
         // Read the block, render the numbers, CLOSE, then delete.
         db.close();
-        const block = envelope?.recovery ?? null;
-        // EVERY OLDER SHAPE OF THIS BLOCK, read here so nothing downstream
-        // has to know there were older shapes.
-        //
-        // Format 1 has no mealtime insulin at all; format 2 carries it as
-        // `mealtimeInsulin` and the basal as `basalInsulinName`, both renamed
-        // on 2026-09-21. The cast above would otherwise hand the screen an
-        // `undefined` the type says cannot exist.
-        //
-        // Normalised HERE rather than guarded at the render, because this is
-        // the boundary where an untyped stored row becomes a typed value and
-        // every consumer downstream is entitled to trust the type. `''` is the
-        // honest rendering of a field that was never recorded — and this is
-        // the FAIL-CLOSED screen, so getting a name wrong here costs somebody
-        // their prescription at the moment they most need it.
-        resolve(
-          block === null
-            ? null
-            : {
-                ...block,
-                recoveryFormat: RECOVERY_FORMAT,
-                bolusName: block.bolusName ?? block.mealtimeInsulin ?? '',
-                basalName: block.basalName ?? block.basalInsulinName ?? '',
-              },
-        );
+        resolve(envelope?.recovery ?? null);
       };
       read.onerror = (): void => {
         db.close();

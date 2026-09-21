@@ -15,7 +15,9 @@ import { isInjection } from './types.js';
 import type { Injection, LogRow, Reading, RoundingMode } from './types.js';
 
 /**
- * A row of `settingsHistory` (§11.3), plus one field that store does not have.
+ * A row of `settingsHistory` (§11.3). Identical in shape to the stored row
+ * since the 2026-09-21 rename, which is why `readAll` passes them straight
+ * through — see the note at that boundary.
  *
  * `imported` is LOCAL PROVENANCE. It is set when an import appends the row and
  * is never read from the file, because a file cannot say whether a prescription
@@ -40,8 +42,8 @@ export interface SettingsPeriod {
    * under regular insulin and another under aspart — so a record that omits it
    * cannot be read that way at all.
    *
-   * A row written before the field existed reads back as `''`, which prints as
-   * "not recorded" rather than as a guess.
+   * `''` arrives by ONE route — an import whose stored id matched no brand this
+   * build knows — and prints as "not recorded" rather than as a guess.
    */
   readonly bolusId: string;
   readonly imported: boolean;

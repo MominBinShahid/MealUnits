@@ -5,7 +5,7 @@
  * on `log`, so it cannot clobber settings and settings cannot clobber it."
  */
 
-import { DELETE_CONFIRM_WINDOW_HOURS, RECOVERY_FORMAT, SCHEMA_VERSION } from '../config.js';
+import { DELETE_CONFIRM_WINDOW_HOURS, SCHEMA_VERSION } from '../config.js';
 import { isInjection } from '../core/types.js';
 import type { Injection, LogRow, Reading, RoundingMode, Settings, Tombstone } from '../core/types.js';
 import type { SettingsPeriod } from '../core/periods.js';
@@ -57,13 +57,10 @@ async function readLogRevisionRow(tx: IDBTransaction): Promise<LogRevisionRow> {
  */
 async function bumpLogRevision(
   tx: IDBTransaction,
-  patch: Partial<Omit<LogRevisionRow, 'k' | 'n'>> = {},
+  patch: Partial<Omit<LogRevisionRow, 'key' | 'logRevision'>> = {},
 ): Promise<number> {
   const current = await readLogRevisionRow(tx);
-  // `?? current.n` — a row written before 2026-09-21 carries the counter under
-  // its old one-letter name. Losing it would reset the counter to 1 and make
-  // every other tab think the record had gone backwards.
-  const next = (current.logRevision ?? current.n ?? 0) + 1;
+  const next = current.logRevision + 1;
   await put(tx, STORE.meta, { ...current, ...patch, key: META_KEY.logRevision, logRevision: next });
   return next;
 }
@@ -116,28 +113,18 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
               target: settingsRow.target,
               isf: settingsRow.isf,
               icr: settingsRow.icr,
-              // `?? settingsRow.mode` is the ONLY thing left of the old
-              // spelling: a row written before 2026-09-21 still opens. Three
-              // characters against losing a prescription.
-              roundingMode: settingsRow.roundingMode ?? settingsRow.mode,
+              roundingMode: settingsRow.roundingMode,
               threshold: settingsRow.threshold,
               basalName: settingsRow.basalName,
               basalUnits: settingsRow.basalUnits,
               basalTiming: settingsRow.basalTiming,
-              // §8.5 — a row written before 2026-09-20 has no insulin on it,
-              // and `''` is `UNANSWERED_INSULIN`: the state that MAKES THE APP
-              // ASK. That is the entire migration for this field, and it is the
-              // behaviour §8.5 asked for — an existing install answers the
-              // question on next open like everyone else.
-              bolusId: settingsRow.bolusId ?? settingsRow.insulinId ?? '',
-              // Null is this field's own "not given", so a missing one reads
-              // back as the class range standing. Same shape, one level of
-              // optionality rather than two.
-              eatDelayMinutes: settingsRow.eatDelayMinutes ?? null,
-              // §11.3 re-validates on every load, and a row written before this
-              // field existed has no name on it. `?? ''` is the SAME empty
-              // state the field already models, not a fallback inventing data.
-              personName: settingsRow.personName ?? '',
+              // `''` here is `UNANSWERED_INSULIN` and makes §8.5 ask. No
+              // write path produces it: the question precedes the first commit
+              // and "I don't know" is `UNKNOWN_INSULIN`. Read straight through,
+              // so a hand-edited row reaches the gate instead of a guess.
+              bolusId: settingsRow.bolusId,
+              eatDelayMinutes: settingsRow.eatDelayMinutes,
+              personName: settingsRow.personName,
             };
 
       // §11.3 — "Re-validate on every LOAD and import." The import half was
@@ -152,22 +139,24 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
 
       return {
         settings,
-        // §8.5 — the same missing-field read as the settings row above, applied
-        // to every historical period. A prescription from before the question
-        // existed genuinely has no insulin recorded, and `''` is how the export
-        // prints "not recorded" rather than attributing one.
-        // THE BOUNDARY, for both fields: the stored row says `mode` and carries
-        // no `bolusId` before 2026-09-20; the domain says `roundingMode` and
-        // reads a missing insulin as "never asked".
-        settingsHistory: history.map(({ mode, ...row }) => ({
-          ...row,
-          roundingMode: row.roundingMode ?? mode,
-          bolusId: row.bolusId ?? row.insulinId ?? '',
-        })),
+        // No translation left: `SettingsHistoryRow` and §7.7's `SettingsPeriod`
+        // have had the same shape since the stored row stopped spelling
+        // `roundingMode` as `mode`. This was a `map` that renamed one field and
+        // defaulted another. If the two shapes diverge again, the translation
+        // comes back HERE — this is the boundary, empty or not.
+        settingsHistory: history,
         log: validated,
         droppedStoredRows: log.length - validated.length,
         readings,
-        logRevision: revision.logRevision ?? revision.n ?? 0,
+        logRevision: revision.logRevision,
+        // `?? nowMs` is not a shrug at a row that might be missing. The row
+        // is written in `onupgradeneeded`, so it exists for every database
+        // that exists and this branch means the database is already broken.
+        // WHICH default it picks is the safety decision: §7.5 marks a log
+        // predating the install as `suspect`, so `nowMs` makes every existing
+        // row suspect, where `0` would make every row trusted. When provenance
+        // cannot be established, claiming less of it is the only safe way to
+        // be wrong.
         installedAtMs: install?.installedAtMs ?? nowMs,
         lastImportAtMs: revision.lastImportAtMs,
         // No translation here any more. The stored key WAS `lastLocalWriteAtMs`
@@ -255,11 +244,10 @@ function sameProvenance(previous: SettingsHistoryRow, commit: SettingsCommit): b
 }
 
 function recoveryFor(commit: SettingsCommit): RecoveryBlock {
-  // §11.3 — fixed field names and EXPLICIT UNITS, versioned independently of the
-  // evolving payload. "A parsed integer does not reveal whether 150 means units,
-  // hundredths or mg/dL."
+  // §11.3 — fixed field names and EXPLICIT UNITS. "A parsed integer does not
+  // reveal whether 150 means units, hundredths or mg/dL", and the field name is
+  // the only thing that says which.
   return {
-    recoveryFormat: RECOVERY_FORMAT,
     // §11.3 — the recovery block is what he copies down off the fail-closed
     // screen, so whose record it is belongs on it.
     personName: commit.personName,

@@ -436,13 +436,11 @@ export const UPDATE_LOOK_INTERVAL_MS = 1000;
 
 // ─── SCHEMA (§11.3) ────────────────────────────────────────
 export const SCHEMA_VERSION = 1;
-// §11.3's recovery block, VERSIONED INDEPENDENTLY of the payload above — which
-// is the point of it: an older build reading a version it does not know must
-// refuse to present the numbers as verified prescription settings rather than
-// render the half it recognises. Went to 2 on 2026-09-20 when §8.5's mealtime
-// insulin joined the block, and to 3 on 2026-09-21 when two of its fields were
-// renamed — a shape change is a shape change whether a field arrives or moves.
-export const RECOVERY_FORMAT = 3;
+// §11.3's recovery block carried a `RECOVERY_FORMAT` integer beside this one
+// until 2026-09-21. Nothing ever compared it — it was written as a constant and
+// overwritten on read — so the independent versioning it claimed to provide was
+// never implemented. See `RecoveryBlock` in `storage/schema.ts` for the rule
+// that stands in its place.
 
 /**
  * §11.8's self-consistency test, as an executable assertion rather than a

@@ -2,7 +2,7 @@
   "name": "mealunits",
   "version": "0.1.0",
   "private": true,
-  "description": "An insulin bolus calculator for one person, built as an offline-capable web app.",
+  "description": "An insulin bolus calculator for people with type 1 diabetes, built as an offline-capable web app.",
   "license": "MIT",
   "type": "module",
   "engines": {

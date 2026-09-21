@@ -512,6 +512,11 @@ nulling the stamp wherever `lastImportAtMs` is set. The affected population was 
 zero, which is why it was accepted; the recipe is here so "plausibly" does not have to be
 re-derived.
 
+**2026-09-21: "plausibly" became "certainly".** Momin ruled that he is the only person who has ever
+run this app and cleared his own database, which retires this residual along with every other
+older-version accommodation. The recipe stays because the reasoning is reusable, not because
+anything is owed it.
+
 ## 63. §11.8's lint rules had two holes, found by probing rather than reading `[RULE]`
 
 `eslint.config.js`. Reading a lint rule tells you what it was meant to catch. **Seed a violation and
@@ -1326,15 +1331,22 @@ outside by `test/insulin.test.ts`. The eventual ruling is a data edit with the t
 
 ### The missing field turned out to be the migration
 
-`SettingsRow.insulinId` did not exist before this. A row written without it reads back `undefined`,
-and `repo.ts` maps that to `''` — which is `UNANSWERED_INSULIN`, the state that makes the app ask.
-An install that has been running for months therefore meets the required question on its next open,
-exactly as entry 26 point 1 asks for, and **no `DATABASE_VERSION` bump was needed**: no store and no
-index changed, and the one absent field already had a meaning.
+`SettingsRow.bolusId` (then `insulinId`) did not exist before this. A row written without it read
+back `undefined`, and `repo.ts` mapped that to `''` — which is `UNANSWERED_INSULIN`, the state that
+makes the app ask. An install that had been running for months therefore met the required question
+on its next open, exactly as entry 26 point 1 asks for, and **no `DATABASE_VERSION` bump was
+needed**: no store and no index changed, and the one absent field already had a meaning.
 
 That is not a trick, it is what §4.1's rule buys. `''` and `'unknown'` are two different answers with
 two different behaviours, so the sentinel that means "never asked" was already in the design before
 anything needed migrating.
+
+**The mapping itself went on 2026-09-21** with every other older-version accommodation, on Momin's
+ruling that he is the only person who has ever run the app and would clear his own database. `''` is
+still `UNANSWERED_INSULIN` and still makes the app ask, but nothing WRITES it to a settings row
+either — the gate on it is defence in depth now. What survives here is the design point,
+which was always the interesting half: a sentinel that already means something absorbs a schema
+addition for free.
 
 ### The question is asked BEFORE the three ratios
 
@@ -1420,13 +1432,18 @@ sentence and no link**, because nobody has given this build the form's address. 
 "tell us about it" that lands somewhere wrong is worse on that screen than the words alone. It is one
 line when the URL arrives.
 
-### A pre-existing gap this did not touch
+### A pre-existing gap this did not touch — CLOSED 2026-09-20
 
-§7.7 says a threshold-only change does not bump the settings revision. Nothing implements that —
-`commitSettings` allocates on every save — so an eat-delay-only change writes a `settingsHistory`
-row identical to the one before it, and the export prints two identical prescription periods. The
-gap predates this work by every revision; `eatDelayMinutes` simply joined the fields it applies to.
-`BACKLOG.md` T18 carries it as a question rather than a fix, per §20.1.1.
+§7.7 says a threshold-only change does not bump the settings revision. When this note was written
+nothing implemented it — `commitSettings` allocated on every save — so an eat-delay-only change
+wrote a `settingsHistory` row identical to the one before it and the export printed two identical
+prescription periods. The gap predated that work by every revision; `eatDelayMinutes` simply joined
+the fields it applied to. It was raised as `BACKLOG.md` T18, a question rather than a fix, per
+§20.1.1.
+
+**T18 was ruled and shipped on 2026-09-20.** `sameProvenance` in `repo.ts` implements the
+comparison by walking the proposed row's own keys rather than a hand-written list, and a
+`storage.test.ts` block pins it field by field.
 
 ### What the checker had to learn
 
@@ -1511,3 +1528,21 @@ eleven read its result; that one case pays for the whole file.
 Fixed rather than deferred because it had begun failing the verification of other work, and **a
 green run you cannot trust is worse than a red one.** Thirty seconds, stated at the line as being
 about process start rather than about the assertion.
+
+### The missing-row default that had a safety direction
+
+Deleting every older-version read left `installedAtMs: install?.installedAtMs ?? nowMs` in
+`readAll`, and it looked like one more of them. It is not, and the reason is worth a line because
+the mechanics are trivial enough to hide it.
+
+The install row is written in `onupgradeneeded`, so it exists for every database that exists and
+that branch only runs on one that is already broken. What matters is not that a default is needed —
+IndexedDB's `get` returns `undefined` for an absent key, so something has to go there — but WHICH
+default. §7.5 marks a log predating the install as `suspect`, so `nowMs` makes every existing row
+suspect where `0` would make every row **trusted**. Same shape, opposite direction, no test
+distinguishes them because neither can be reached on a healthy database.
+
+Momin, on being asked: *"it's basically use the installedAtMs or use the now, it's a basic
+condition."* Which is right, and is exactly why it needed writing down — a fallback simple enough
+to read past is a fallback whose value nobody re-examines. When provenance cannot be established,
+claiming less of it is the only safe way to be wrong.

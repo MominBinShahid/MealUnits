@@ -81,10 +81,10 @@ describe('§10.6 first run', () => {
   });
 
   /**
-   * §8.5's whole migration, as one case. A settings row written before the
-   * question existed reads back with `bolusId: ''`, and an install that has
-   * been running for months therefore answers it on the next open exactly like
-   * a fresh one. There is no migration value and no tap-through.
+   * Settings carrying `bolusId: ''` route to the question. No write path
+   * produces such a row — §8.5 is asked before the first commit — so this is
+   * the reducer's half of a defence-in-depth pair: whatever put `''` there,
+   * the gate asks rather than dosing against an insulin nobody named.
    */
   it('§8.5 — an EXISTING install with no insulin recorded is asked as well', () => {
     const state = run([

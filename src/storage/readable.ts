@@ -99,9 +99,10 @@ function prescriptionHeading(period: SettingsPeriod): string {
  * one thing under regular insulin and another under aspart, and a record that
  * cannot say which cannot be read that way at all.
  *
- * Says "not recorded" rather than nothing when a period predates the question.
- * An omission in a clinical document is read as an absence of the thing, and
- * these readers did have an insulin — the app simply never asked.
+ * Says "not recorded" rather than nothing for an imported period whose insulin
+ * this build could not identify. An omission in a clinical document is read as
+ * an absence of the thing, and that reader did have an insulin — this install
+ * just cannot name it.
  */
 function insulinLine(period: SettingsPeriod): string {
   const insulin = INSULINS.find((row) => row.id === period.bolusId);
