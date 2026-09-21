@@ -1497,7 +1497,7 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     await tap('Next');
     await keys('50');
     await tap('Work out the dose');
-    expect(text()).toContain('Treat this first. Do not inject.');
+    expect(text()).toContain(COPY.bandC.title);
     expect(root.className).toBe('mood-halt');
 
     // §18.14 keeps the outcome across a back navigation on purpose, so a mood
@@ -1739,7 +1739,7 @@ describe('§13.6 interface-to-core mapping', () => {
     await tap('Next');
     await keys('330');
     await tap('Work out the dose');
-    expect(text()).toContain('This is very low. Treat it now.');
+    expect(text()).toContain(COPY.bandD.title);
     expect(text()).not.toContain('units of Humulin R');
   });
 });
@@ -1751,7 +1751,7 @@ describe('§8.2 — a block goes stale too', () => {
     await tap('Next');
     await keys('50');
     await tap('Work out the dose');
-    expect(text()).toContain('Treat this first. Do not inject.');
+    expect(text()).toContain(COPY.bandC.title);
     expect(text()).not.toContain('Check your blood sugar again before deciding');
 
     // §8.2's fifteen minutes, and then some. `blocked` was the only step that
@@ -1766,7 +1766,7 @@ describe('§8.2 — a block goes stale too', () => {
     expect(text()).toContain('Check your blood sugar again before deciding');
     // The block does NOT go away. Being low is still the likeliest reading of
     // an old low, and §3.3's suppression of every insulin number still holds.
-    expect(text()).toContain('Treat this first. Do not inject.');
+    expect(text()).toContain(COPY.bandC.title);
     expect(text()).not.toContain('units of Humulin R');
   });
 });
@@ -1827,7 +1827,7 @@ describe('§13.6 band-to-message pairing', () => {
     const screen = text();
     // §3.3 — the block suppresses every INSULIN quantity: the main result, the
     // breakdown, the confirmation preview and the announcement.
-    expect(screen).toContain('Treat this first. Do not inject.');
+    expect(screen).toContain(COPY.bandC.title);
     expect(screen).not.toContain('units of Humulin R');
     expect(screen).not.toContain('Total');
     // ...and does NOT suppress the treatment instructions, which necessarily
@@ -1856,7 +1856,7 @@ describe('§13.6 band-to-message pairing', () => {
     await keys('50');
     await tap('Work out the dose');
     const screen = text();
-    expect(screen.indexOf('Treat this first')).toBeLessThan(screen.indexOf('Record this reading'));
+    expect(screen.indexOf(COPY.bandC.title)).toBeLessThan(screen.indexOf('Record this reading'));
   });
 
   it('band B cautions and still calculates', async () => {
@@ -1946,7 +1946,7 @@ describe('§4.3 step 3 — an impossible reading combines with the possible low,
     await tap('Next');
     await keys('50');
     await tap('Work out the dose');
-    expect(text()).toContain('This is very low. Treat it now.');
+    expect(text()).toContain(COPY.bandD.title);
     expect(text()).toContain(COPY.blockedInvalidReading);
     expect(text()).not.toContain('units of Humulin R');
   });
@@ -1957,7 +1957,7 @@ describe('§4.3 step 3 — an impossible reading combines with the possible low,
     await tap('Next');
     await keys('50');
     await tap('Work out the dose');
-    expect(text()).toContain('This is very low. Treat it now.');
+    expect(text()).toContain(COPY.bandD.title);
     expect(text()).toContain(COPY.blockedInvalidReading);
   });
 
@@ -1967,7 +1967,7 @@ describe('§4.3 step 3 — an impossible reading combines with the possible low,
     await tap('Next');
     await keys('50');
     await tap('Work out the dose');
-    expect(text()).toContain('Treat this first. Do not inject.');
+    expect(text()).toContain(COPY.bandC.title);
     expect(text()).not.toContain(COPY.blockedInvalidReading);
   });
 
@@ -1977,7 +1977,7 @@ describe('§4.3 step 3 — an impossible reading combines with the possible low,
     await tap('Next');
     await keys('999');
     await tap('Work out the dose');
-    expect(text()).toContain('Treat this first. Do not inject.');
+    expect(text()).toContain(COPY.bandC.title);
     // §10.5 rank 1 — nothing shows beside a band C/D block, and 65 is a real
     // reading, so the blood-sugar half has no business here either.
     expect(text()).not.toContain('more than 300 grams');
@@ -1996,7 +1996,7 @@ describe('§4.5 the HI/LO meter guidance is reachable, not merely written', () =
     await setUpAsHisBrother();
     await tap('Meter showing HI or LO?');
     expect(text()).toContain('injected insulin alone will not treat diabetic ketoacidosis');
-    expect(text()).toContain('Do not enter a number. Treat now');
+    expect(text()).toContain(plain(COPY.meterLo.body));
   });
 
   it('sits beside the above-range error — the link §4.5 promises', async () => {

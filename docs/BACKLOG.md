@@ -194,8 +194,28 @@ they are not lost:**
 2. **"Save a copy" scent-matches the wrong tile.** It is the nav label on the path toward deletion,
    and the export screen offers two files with different purposes; a reader heading for "move to
    another phone" may stop at the first thing that says save.
-3. **"fast-acting carbohydrate" has no anchor** for a first-timer mid-hypo. Naming examples is
-   clinical content, so it is a prescriber question rather than a wording one.
+3. ~~**"fast-acting carbohydrate" has no anchor** for a first-timer mid-hypo. Naming examples is
+   clinical content, so it is a prescriber question rather than a wording one.~~ **DONE
+   2026-09-22, and the answer was already in this repository.** `docs/design/step-flow.html` has
+   said "juice, glucose tablets, sugar" since the design; the build dropped the examples and this
+   entry then recorded the gap without anyone noticing the design had answered it. They are back in
+   `bandC.body`, `bandD.body` and `meterLo.body`. **The category stays alongside them** — "fast-acting"
+   is what rules out chocolate, biscuits and mithai, whose fat slows absorption, and examples alone
+   do not carry that. Still worth mentioning to the prescriber, but the work no longer waits on him:
+   NIDDK and CDC both name the same things, and so did the design.
+
+   **The titles changed with it, and translation is what surfaced them.** `bandC.title` was "Treat
+   this first. Do not inject." and `bandD.title` was "This is very low. Treat it now." Asked for an
+   Urdu rendering, three reviewers independently warned that the literal `علاج کریں` reads as SEEK
+   MEDICAL CARE — a reader at 60 mg/dL telephones a doctor while the sugar sits in the kitchen — and
+   two said never ship it. The English carries the same weakness more quietly: "treat" is a category
+   that must be decoded into an action, and decoding is what hypoglycaemia takes first. They now name
+   the action, and say "do not inject INSULIN" rather than a bare "do not inject". Ruled by Momin
+   individually, as this file's own table of action-carrying instructions requires.
+
+   **The design mocks were not updated and that is deliberate.** Four files quote the old titles.
+   They are records of what was designed, not live copies of what ships — `step-flow.html` already
+   differed from the code in the other direction, which is how the lost examples were found.
 4. **"Check ketones" is instructed three times and explained nowhere.** A missing explainer, not a
    cut — and it belongs with `T12`, which is already blocked on the doctor.
 5. **`"away from zero"` in the whole-units mode.** §5's rule is ties half away from zero, which

@@ -434,12 +434,19 @@ for (const [width, port] of [[412, 9302], [1440, 9303]]) {
     // jsdom does not implement `innerText` at all, and `textContent` includes
     // elements CSS has hidden. A card broken by `display: none` reads as
     // present there and absent here.
+    // A FRAGMENT, not the whole sentence, and chosen to outlive a rewording.
+    // This said `Treat it now` until 2026-09-22, when band D stopped saying
+    // "treat" and started naming the action. Smoke drives a BUILT bundle and
+    // cannot import `COPY`, so a literal is unavoidable here — but the literal
+    // can be the half that carries the meaning rather than the half that gets
+    // reworded. `very low` is the reading's severity; the instruction after it
+    // is the part that was argued over twice and may be again.
     check(`${width}px: a typed 0 blocks, and says the reading cannot be real`,
-      await ev(`${bodyText}.includes('cannot read below') && ${bodyText}.includes('Treat it now')`), true);
+      await ev(`${bodyText}.includes('cannot read below') && ${bodyText}.includes('very low')`), true);
     check(`${width}px: the block card still contains itself`,
       await ev(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), true);
     check(`${width}px: and the treat-first instruction is ABOVE THE FOLD`,
-      await ev(`(()=>{const n=[...document.querySelectorAll('*')].find(e=>e.children.length===0&&/Treat it now/.test(e.textContent));if(!n)return 'missing';return n.getBoundingClientRect().bottom <= window.innerHeight})()`), true);
+      await ev(`(()=>{const n=[...document.querySelectorAll('*')].find(e=>e.children.length===0&&/very low/.test(e.textContent));if(!n)return 'missing';return n.getBoundingClientRect().bottom <= window.innerHeight})()`), true);
 
     // §4.5's HI/LO guidance. It qualifies because the text behind it is the
     // app's diabetic-ketoacidosis warning, and it rendered NOWHERE until this

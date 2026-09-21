@@ -213,17 +213,50 @@ export const COPY = {
   },
 
   // ── §3's bands ────────────────────────────────────────────────────────────
+  /**
+   * THE TITLES NAME THE ACTION, and the bodies name the food — both changed
+   * 2026-09-22, ruled by Momin string by string as `BACKLOG.md`'s table of
+   * action-carrying instructions requires.
+   *
+   * They said "Treat this first" and "Treat it now". The word survived every
+   * earlier review because it is the clinical term and it is what a doctor
+   * says. What surfaced it was translation: asked for an Urdu rendering, three
+   * separate reviewers independently warned that `علاج کریں` — the literal
+   * "treat" — reads as SEEK MEDICAL CARE, so a reader at 60 mg/dL telephones
+   * a doctor while the sugar sits in the kitchen. Two of them said never ship
+   * it.
+   *
+   * And the English has the same weakness in a quieter form. "Treat" is a
+   * category that has to be decoded into an action, and decoding is the thing
+   * hypoglycaemia takes away first. Naming the action costs four words.
+   *
+   * **"Do not inject INSULIN", not a bare "do not inject."** Naming the
+   * substance costs nothing and removes a guess.
+   *
+   * The examples are a RESTORATION, not an addition. `docs/design/step-flow.html`
+   * has carried "juice, glucose tablets, sugar" since the design; the build
+   * dropped them and `BACKLOG.md`'s residue item 3 then recorded the gap —
+   * "no anchor for a first-timer mid-hypo" — without noticing the design had
+   * already answered it. The category STAYS alongside them, because it is what
+   * rules out chocolate, biscuits and mithai, whose fat slows absorption: the
+   * classic wrong treatment. Examples alone do not carry that.
+   */
   bandC: {
-    title: 'Treat this first. Do not inject.',
-    body: `Have ${String(FAST_CARB_GRAMS)}\u00A0grams of fast-acting carbohydrate now, then check again in ${String(RECHECK_MINUTES)} minutes.`,
+    title: 'Eat or drink something sweet first. Do not inject insulin.',
+    body: `Have ${String(FAST_CARB_GRAMS)}\u00A0grams of fast-acting carbohydrate now — juice, glucose, or sugar in water — then check again in ${String(RECHECK_MINUTES)} minutes.`,
     // §3.3 — the block suppresses every INSULIN quantity. It does not suppress
     // the treatment instructions, which necessarily contain 15 grams, 15
     // minutes and 70 mg/dL. "The rule is no insulin dose numbers, not no digits."
     gate: `Do not inject until you are above ${String(HYPO_LEVEL_1)}\u00A0mg/dL.`,
   },
   bandD: {
-    title: 'This is very low. Treat it now.',
-    body: `Have ${String(FAST_CARB_GRAMS)}\u00A0grams of fast-acting carbohydrate now. Check again in ${String(RECHECK_MINUTES)} minutes, and repeat if you have not recovered.`,
+    /**
+     * Band D is the MORE severe band, so it cannot be the vaguer sentence.
+     * Leaving "Treat it now" here while band C names the action would have put
+     * the weaker instruction on the worse reading.
+     */
+    title: 'This is very low. Eat or drink something sweet now.',
+    body: `Have ${String(FAST_CARB_GRAMS)}\u00A0grams of fast-acting carbohydrate now — juice, glucose, or sugar in water. Check again in ${String(RECHECK_MINUTES)} minutes, and repeat if you have not recovered.`,
     escalation: 'Get help if you cannot treat yourself.',
     gate: `Do not inject until you are above ${String(HYPO_LEVEL_1)}\u00A0mg/dL.`,
   },
@@ -374,7 +407,7 @@ export const COPY = {
 
   meterLo: {
     title: 'Meter showing LO?',
-    body: `Do not enter a number. Treat now — ${String(FAST_CARB_GRAMS)}\u00A0grams of fast-acting carbohydrate, and check again in ${String(RECHECK_MINUTES)} minutes.`,
+    body: `Do not enter a number. Eat or drink something sweet now — ${String(FAST_CARB_GRAMS)}\u00A0grams of fast-acting carbohydrate, from juice, glucose, or sugar in water — and check again in ${String(RECHECK_MINUTES)} minutes.`,
   },
 
   /**
