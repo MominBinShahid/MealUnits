@@ -1627,6 +1627,27 @@ export const COPY = {
   },
 
   /**
+   * A REPAIR TOOK THE PRESCRIPTION AND THE RECORD STILL HAS IT — 2026-09-21.
+   *
+   * `upgradeFrom`'s 1 -> 2 step rebuilds `settings`, so an install mended after
+   * `#63` opens on first run with the three ratios empty. `settingsHistory` is
+   * NOT rebuilt and still holds them. Asking someone to retype a sensitivity
+   * from memory, while the app is sitting on the number, is the one step in
+   * this flow that can produce a wrong dose.
+   *
+   * SHOWN, NEVER PREFILLED. §1.2 makes the fields start empty and that was
+   * restored deliberately on 2026-09-13 after a prefill shipped one person's
+   * prescription to everybody. This tells the reader what the record says and
+   * leaves the typing to them — and says to check it against the paper, because
+   * a number the app remembers is still not a number a doctor confirmed today.
+   */
+  repairedPrescription: {
+    title: 'Your settings had to be rebuilt.',
+    body: 'Your doses and readings are safe and still here. The three numbers below were the last ones recorded — type them in again, and check them against what your doctor gave you rather than trusting this screen.',
+    asOf: (date: string): string => `Last changed ${date}`,
+  },
+
+  /**
    * §11.3 — another tab UPGRADED the database, so this tab's connection is
    * closed and nothing it does can be recorded. Added 2026-09-21.
    *

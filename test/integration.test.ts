@@ -2214,6 +2214,54 @@ describe('§7.2 a failed write retries, and escalates only when retrying stops h
   });
 
   /**
+   * After a repair took the settings row, the record still holds the numbers —
+   * and the app must not ask for them back from memory.
+   *
+   * `upgradeFrom`'s 1 -> 2 step rebuilds `settings` and leaves
+   * `settingsHistory` alone, so this pair is exactly what a mended install
+   * looks like. Retyping a sensitivity from recall is the one step in first-run
+   * setup that can put a wrong number into a dose.
+   *
+   * Built here by clearing the settings store rather than by seeding a pre-#63
+   * database: the condition under test is "settings gone, history kept", and
+   * how it came about is `storage.test.ts`'s business.
+   */
+  it('shows the last recorded prescription when a repair took the settings row', async () => {
+    const idb = new IDBFactory();
+    await setUpAsHisBrother(idb);
+
+    await new Promise<void>((resolve) => {
+      const request = idb.open(DATABASE_NAME);
+      request.onsuccess = (): void => {
+        const db = request.result;
+        const tx = db.transaction('settings', 'readwrite');
+        tx.objectStore('settings').clear();
+        tx.oncomplete = (): void => { db.close(); resolve(); };
+      };
+    });
+    await boot(idb);
+
+    // §8.5 asks which insulin BEFORE the ratios, and that gate is ahead of the
+    // settings screen on every first run — including this one.
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that\u2019s mine');
+
+    const screen = text();
+    // It says what happened, before it asks for anything.
+    expect(screen).toContain(COPY.repairedPrescription.title);
+    expect(screen).toContain('check them against what your doctor gave you');
+    // And the three numbers the record still holds.
+    expect(screen).toContain('150');
+    expect(screen).toContain('30');
+    expect(screen).toContain('10');
+
+    // SHOWN, NOT PREFILLED. §1.2's fields start empty and a prefill was
+    // reverted on 2026-09-13; this must not quietly reintroduce one.
+    expect(fieldLabelled('What should a correction aim for').value).toBe('');
+    expect(fieldLabelled('How far does one unit lower').value).toBe('');
+  });
+
+  /**
    * The state `#70` made reachable: another tab upgraded the database, so this
    * tab's connection is closed and `db` is null.
    *

@@ -33,10 +33,28 @@
  */
 import { spawn } from 'node:child_process';
 import { setTimeout as wait } from 'node:timers/promises';
-import { rmSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+/**
+ * Chrome, wherever this is running — 2026-09-21.
+ *
+ * This was the macOS application path and nothing else, which was true for as
+ * long as the only machine that ran it was Momin's. Wiring the run into CI made
+ * it false: a Linux runner has no `/Applications`, and the failure would have
+ * been "chrome did not start" with no hint that the path was the problem.
+ *
+ * `SMOKE_CHROME` wins, then the first path that exists. The list is checked
+ * rather than guessed from `process.platform`, because a machine with Chromium
+ * and no Chrome is a real machine and the platform does not say which.
+ */
+const CHROME = process.env.SMOKE_CHROME ?? [
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  '/usr/bin/google-chrome',
+  '/usr/bin/google-chrome-stable',
+  '/usr/bin/chromium-browser',
+  '/usr/bin/chromium',
+].find((path) => existsSync(path)) ?? 'google-chrome';
 /**
  * BOTH origins, and that is the point of the second one.
  *

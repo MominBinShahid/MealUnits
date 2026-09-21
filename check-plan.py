@@ -3734,53 +3734,57 @@ def check_store_schema_pinned(corpus):
         return ["src/storage/open.ts or src/config.ts is missing, so the store"
                 " structure cannot be verified"]
 
-    block = re.search(r"export const STORE_SCHEMA[^=]*=\s*\[(.*?)\n\];", source, re.S)
-    if not block:
-        return ["src/storage/open.ts: could not find `export const STORE_SCHEMA` —"
-                " check 36's parser needs updating (maintenance obligation)"]
+    # Read the createObjectStore CALLS, because after 2026-09-21 there is no
+    # declaration to read: the schema-as-data engine was deleted when two
+    # reviews independently found that its "any mismatch, rebuild the store"
+    # rule would answer a future added index by deleting the log. The code is
+    # the authority now, which is the stronger arrangement anyway.
+    calls = re.findall(
+        r"createObjectStore\(\s*STORE\.(\w+)\s*,\s*\{\s*keyPath:\s*'([^']+)'\s*\}\s*\)",
+        source)
+    if not calls:
+        return ["src/storage/open.ts: no createObjectStore calls found — check 36's"
+                " parser needs updating (maintenance obligation)"]
 
     actual = {}
-    for entry in re.finditer(
-            r"\{\s*name:\s*STORE\.(\w+),\s*keyPath:\s*'([^']+)',\s*indexes:\s*\[(.*?)\]\s*,?\s*\}",
-            block.group(1), re.S):
-        indexes = re.findall(r"name:\s*(\w+)", entry.group(3))
-        # The index name is a constant, not a literal; resolve it the one way
-        # that cannot drift -- by reading what the constant is assigned.
-        resolved = []
-        for name in indexes:
-            found = re.search(r"export const %s = '([^']+)'" % re.escape(name), source)
-            if found is None:
-                found = re.search(r"%s = '([^']+)'" % re.escape(name),
-                                  load(os.path.join(HERE, "src", "storage", "schema.ts")))
-            resolved.append(found.group(1) if found else name)
-        actual[entry.group(1)] = (entry.group(2), resolved)
-
-    if not actual:
-        return ["src/storage/open.ts: STORE_SCHEMA parsed to nothing — check 36's"
-                " parser needs updating (maintenance obligation)"]
+    for name, key_path in calls:
+        actual[name] = (key_path, [])
+    # Indexes are created on the store handle rather than in the same call, so
+    # they are read separately and resolved through the constant they name.
+    for name, index_const in re.findall(r"(\w+)\.createIndex\((\w+),", source):
+        owner = re.search(
+            r"const %s = db\.createObjectStore\(\s*STORE\.(\w+)" % re.escape(name), source)
+        if owner is None or owner.group(1) not in actual:
+            out.append("src/storage/open.ts: createIndex on `%s`, whose store check 36"
+                       " cannot resolve — an index it cannot see is one it cannot"
+                       " pin" % name)
+            continue
+        resolved = re.search(r"export const %s = '([^']+)'" % re.escape(index_const),
+                             load(os.path.join(HERE, "src", "storage", "schema.ts")))
+        actual[owner.group(1)][1].append(resolved.group(1) if resolved else index_const)
 
     # §20.3's third rule: a check that resolves its own inputs says how many it
     # resolved. Silence here would look identical to a clean run.
     if len(actual) != len(EXPECTED_STORES):
-        out.append("check 36 read %d stores from STORE_SCHEMA and the pin names"
-                   " %d — one of them is wrong, and a count that does not match"
-                   " is the finding" % (len(actual), len(EXPECTED_STORES)))
+        out.append("check 36 read %d stores from src/storage/open.ts and the pin"
+                   " names %d — one of them is wrong, and a count that does not"
+                   " match is the finding" % (len(actual), len(EXPECTED_STORES)))
 
     for name in sorted(set(EXPECTED_STORES) - set(actual)):
-        out.append("check-plan.py pins store `%s` and src/storage/open.ts's"
-                   " STORE_SCHEMA no longer declares it — if the store was"
-                   " removed, drop it from the pin and bump STRUCTURE_VERSION in"
-                   " src/config.ts in the same edit" % name)
+        out.append("check-plan.py pins store `%s` and src/storage/open.ts no longer"
+                   " creates it — if the store was removed, drop it from the pin and"
+                   " bump STRUCTURE_VERSION in src/config.ts in the same edit" % name)
     for name in sorted(set(actual) - set(EXPECTED_STORES)):
-        out.append("src/storage/open.ts declares store `%s` and check-plan.py"
-                   " does not pin it — add it to EXPECTED_STORES and bump"
-                   " STRUCTURE_VERSION in src/config.ts in the same edit" % name)
+        out.append("src/storage/open.ts creates store `%s` and check-plan.py does not"
+                   " pin it — add it to EXPECTED_STORES and bump STRUCTURE_VERSION in"
+                   " src/config.ts in the same edit" % name)
     for name in sorted(set(actual) & set(EXPECTED_STORES)):
         if actual[name] != EXPECTED_STORES[name]:
             out.append("store `%s` is %r in src/storage/open.ts and %r in"
                        " check-plan.py's pin. A STORE's shape changed, so"
-                       " STRUCTURE_VERSION in src/config.ts must move with it —"
-                       " an upgrade that never fires reaches no install that"
+                       " STRUCTURE_VERSION in src/config.ts must move with it and"
+                       " `upgradeFrom` needs a step saying what happens to the rows"
+                       " — an upgrade that never fires reaches no install that"
                        " already exists, which is exactly how #63 shipped"
                        % (name, actual[name], EXPECTED_STORES[name]))
 
@@ -4180,30 +4184,26 @@ SELF_TESTS = [
     # walking rather than by being told — so a NEW screen is covered by the same
     # three without anyone adding a fourth seed.
     # §20.3 — check 36 arrives with the defect it was written for, replayed
-    # exactly. #63 renamed three keyPaths from `k` to `key` inside a callback
-    # that only fires when the version moves, and the version did not move.
+    # exactly. #63 renamed three keyPaths inside a callback that only fires when
+    # the version moves, and the version did not move.
     ("a store's keyPath changed with no STRUCTURE_VERSION bump",
      "src/storage/open.ts",
-     lambda t: t.replace("{ name: STORE.acks, keyPath: 'key', indexes: [] }",
-                         "{ name: STORE.acks, keyPath: 'k', indexes: [] }")),
+     lambda t: t.replace("db.createObjectStore(STORE.acks, { keyPath: 'key' })",
+                         "db.createObjectStore(STORE.acks, { keyPath: 'k' })")),
     # The other direction: the version rolled back while the structure stayed.
-    # An install carrying the repaired structure would then be told it is from
-    # the future and fail closed.
     ("STRUCTURE_VERSION rolled back under an unchanged structure",
      "src/config.ts",
      lambda t: t.replace("export const STRUCTURE_VERSION = 2;",
                          "export const STRUCTURE_VERSION = 1;")),
-    # A store dropped from the declaration. `createStores` would stop making it
-    # and `mismatchedStores` would stop asking about it, together, silently.
-    ("a store dropped from STORE_SCHEMA", "src/storage/open.ts",
+    # A store dropped from creation. Nothing would make it, and nothing would
+    # ask why it was missing.
+    ("a store dropped from createStores", "src/storage/open.ts",
      lambda t: t.replace(
-         "  { name: STORE.settingsHistory, keyPath: 'revision', indexes: [] },\n", "")),
+         "    db.createObjectStore(STORE.settingsHistory, { keyPath: 'revision' });\n", "")),
     # An index quietly dropped. The store still opens; §7.7's timestamp reads
     # lose the index they were written for.
-    ("a timestamp index dropped from STORE_SCHEMA", "src/storage/open.ts",
-     lambda t: t.replace(
-         "{ name: STORE.readings, keyPath: 'id', indexes: [{ name: TIMESTAMP_INDEX, keyPath: 'timestamp' }] }",
-         "{ name: STORE.readings, keyPath: 'id', indexes: [] }")),
+    ("a timestamp index dropped from createStores", "src/storage/open.ts",
+     lambda t: t.replace("    readings.createIndex(TIMESTAMP_INDEX, 'timestamp');\n", "")),
     ("a sentence rendered as a bare JSX text node", "src/ui/screens/misc.tsx",
      lambda t: t.replace("<h1>{COPY.screens.exportTitle}</h1>",
                          "<h1>Save a copy of your record</h1>")),

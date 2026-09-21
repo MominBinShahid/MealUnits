@@ -50,7 +50,7 @@ import type { StoredState } from '../storage/repo.js';
 import { stateToken, watchForChanges } from '../storage/sync.js';
 import { initialState, reduce } from '../state/machine.js';
 import type { Action, AppState, FrozenLogPayload, RecordContext } from '../state/machine.js';
-import { localDayKey } from '../core/calendar.js';
+import { formatDate, localDayKey } from '../core/calendar.js';
 import { newId } from '../core/ids.js';
 import { FoodListScreen } from './screens/foods.js';
 import { COPY, units } from './copy.js';
@@ -926,6 +926,22 @@ export async function start(host: Host): Promise<void> {
         return <SettingsScreen
           draft={view.draft}
           settings={state.settings}
+          /*
+           * The prescription the RECORD still holds while the settings row does
+           * not — which only `upgradeFrom`'s 1 -> 2 repair and an import can
+           * produce. `null` on every ordinary first run, because a new install
+           * has no history either.
+           *
+           * The LAST period by revision, not by array position: §11.3 allocates
+           * `max(keys) + 1` and an import appends, so order is not identity.
+           */
+          rebuilt={(() => {
+            if (state.settings !== null) return null;
+            const periods = stored?.settingsHistory ?? [];
+            if (periods.length === 0) return null;
+            const latest = periods.reduce((a, b) => (b.revision > a.revision ? b : a));
+            return { period: latest, changedAt: formatDate(latest.changedAtMs, host.timeZone) };
+          })()}
           storageDurable={storageDurable}
           storageWarningOff={stored?.acks.has(ackKeys.storageEviction) ?? false}
           onStopStorageWarning={() => {

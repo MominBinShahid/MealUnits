@@ -40,6 +40,38 @@ jobs:
       - name: Unit and integration tests
         run: npm test
 
+  # ADDED 2026-09-21. `npm run smoke` existed for weeks and nothing ran it, so
+  # the one layer that drives a real browser — the layer that exists because
+  # jsdom does not lay out, load fonts, enforce a content security policy or run
+  # a service worker — was only ever exercised by whoever remembered. Its
+  # upgrade session is the only check anywhere that opens a database written by
+  # an earlier build, which is how #63 reached every existing install unnoticed.
+  #
+  # SMOKE_LAN_URL=none, deliberately. The second half of a local run uses the
+  # machine's LAN address to get an INSECURE origin, because `localhost` is a
+  # secure context and a phone on Wi-Fi is not. A runner has no second origin to
+  # offer, and `none` is the harness's own way of saying so — the alternative,
+  # leaving it unset, fails the run with a message about configuring it.
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: Build the app the smoke run drives
+        run: npm run build
+      - name: Serve it
+        run: npm run preview -- --port 4173 &
+      - name: Wait for the server
+        run: npx wait-on http://localhost:4173/MealUnits/ --timeout 60000
+      - name: Real Chrome, over a served build
+        run: npm run smoke
+        env:
+          SMOKE_LAN_URL: none
+
   plan:
     runs-on: ubuntu-latest
     steps:
