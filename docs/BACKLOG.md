@@ -1238,6 +1238,76 @@ ones deliberately not acted on — the same standing as everything else in this 
 
 ---
 
+### T24. Two fingers on the keypad enter nothing — PARKED 2026-09-21
+
+**Momin, on a real phone: type with two fingers and you lose BOTH digits.** Reproduced, diagnosed
+and a fix designed and verified — then parked, unfixed, on his ruling. Everything below exists so
+that whoever picks this up starts from the answer rather than from the symptom.
+
+**The cause, measured rather than reasoned.** On a touch screen a `click` is SYNTHESISED from a
+touch sequence. Dispatching two touch points in one `touchStart` through CDP, against a bare page
+with two buttons:
+
+| | one finger, then the other | both at once |
+|---|---|---|
+| `pointerdown` | both | **both** |
+| `touchstart` | both | **both** |
+| `pointerup` | both | **both** |
+| `click` | both | **neither** |
+
+`click` is the only event the browser refuses to synthesise under multi-touch. Every other event
+arrives intact for both fingers. **So no fix that keeps `click` as the trigger can work** — not
+different CSS, not a faster handler. The event never comes.
+
+**`touch-action: manipulation` is NOT the fix, and was tried.** It removes double-tap-to-zoom, and
+with it the wait before a tap becomes a click. It changed nothing here, in headless Chrome or on
+Momin's device — the multi-touch suppression is a different mechanism. It is also redundant in this
+app: `index.html` sets `width=device-width`, which already disabled the tap delay it targets.
+
+**The verified fix, for when this is unparked.** Trigger on `pointerup`, not `click`:
+
+  * `pointerdown` — ignore if the key is `disabled` or `e.button !== 0`; otherwise record that this
+    `pointerId` went down on this key.
+  * `pointercancel` — forget it. This is what stops a scroll that began on a key entering a digit.
+  * `pointerup` — ignore if `disabled`; commit only if this same `pointerId` went down on THIS key
+    and the release point is still inside the key's rectangle.
+  * `click` — commit ONLY when `e.detail === 0`, which is keyboard and assistive-technology
+    activation. A real tap or mouse click carries `detail === 1` and is ignored here, so nothing
+    fires twice.
+
+**Two traps, both found by testing the design before writing it, both invisible by reading:**
+
+  * **`e.isPrimary` is wrong.** Only the FIRST active pointer is primary, so guarding on it drops
+    the second finger — the code looks correct, reviews clean, and does not fix the bug.
+  * **`pointerup` fires on DISABLED buttons; `click` does not.** The element's own disabled state
+    was doing that work silently, and leaving `click` gives it up. The decimal placeholder would
+    have registered presses.
+
+**Thirteen cases were run against the corrected logic**, all correct: two fingers at once → both
+digits; single tap; slide-off-to-cancel → nothing; keyboard Enter and Space; `element.click()` as
+assistive tech uses; mouse; right-click → nothing; the disabled key → nothing; a scroll begun on a
+key → nothing; three fingers; three fingers including the disabled key; and two fingers released one
+at a time.
+
+**Why it is parked.** Momin, 2026-09-21: nobody has reported it but him, and a wrong number can be
+typed without this defect anyway — checking the number before injecting is the standing discipline
+either way. **The trigger to unpark is his brother or his mother hitting it**, not a schedule.
+
+**What the defect can actually cost, recorded so the trade is not re-litigated from memory.** Both
+digits vanishing is visible and harmless — an empty field is retyped. The case that is not harmless
+is a partial one on the CARBOHYDRATE field, whose hard range is `[0, 300]`: 45 entered as 4 is
+accepted and doses low. The blood-sugar field is protected by accident, its range starting at 20, so
+120 entered as 12 is rejected.
+
+**The check exists and is SKIPPED, not deleted.** `tools/smoke.mjs` holds it behind
+`SMOKE_KEYPAD=1`; `npm run smoke` reports the skip on its summary line so a parked check cannot
+make a reduced run look like a full one. It fails when run, which is the point.
+
+**And it found something about the harness.** `tapper` in `smoke.mjs` calls `.click()` on the
+element — so does `test/integration.test.ts`, and so does jsdom. `CLAUDE.md` calls smoke "the layer
+the others cannot reach", which was true of layout, fonts, the CSP and the service worker and
+**false about input**: nothing in this project had ever sent a real touch event until this check.
+
 ### T8. Mutation testing for `src/storage`, behind a runner bug
 
 **Trigger: when Stryker's vitest runner can survive `fake-indexeddb`.** Added 2026-09-11 with
