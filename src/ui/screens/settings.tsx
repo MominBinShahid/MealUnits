@@ -20,6 +20,7 @@ import type { RoundingMode, Settings } from '../../core/types.js';
 import { classEatDelay } from '../../core/insulin.js';
 import type { InsulinClass } from '../../core/insulin.js';
 import { INSULINS } from '../../data/insulins.js';
+import type { SettingsPeriod } from '../../core/periods.js';
 import { waitInWords } from './insulin.js';
 
 export interface SettingsDraft {
@@ -476,6 +477,38 @@ function NumberField({
  */
 const MODES = COPY.rounding.modes;
 
+/**
+ * What the record still knows, after a repair took the settings row.
+ *
+ * Rendered only on FIRST RUN and only when history exists — the pair that can
+ * only happen after `upgradeFrom`'s 1 -> 2 step, or an import that brought
+ * history without settings. A genuinely new install has no history and never
+ * sees it.
+ *
+ * Read-only on purpose. §1.2's fields start empty and prefilling them was
+ * reverted on 2026-09-13; this shows the numbers and leaves the typing alone.
+ */
+function RebuiltPrescription({
+  period,
+  changedAt,
+}: {
+  readonly period: SettingsPeriod;
+  readonly changedAt: string;
+}): JSX.Element {
+  return (
+    <div class="flag mint">
+      <b>{COPY.repairedPrescription.title}</b>
+      {COPY.repairedPrescription.body}
+      <div class="working">
+        <div class="row"><span>{COPY.settings.deltaTarget}</span><b>{String(period.target)}</b></div>
+        <div class="row"><span>{COPY.settings.deltaIsf}</span><b>{String(period.isf)}</b></div>
+        <div class="row"><span>{COPY.settings.deltaIcr}</span><b>{String(period.icr)}</b></div>
+      </div>
+      <p class="hint">{COPY.repairedPrescription.asOf(changedAt)}</p>
+    </div>
+  );
+}
+
 export function SettingsScreen({
   draft,
   settings,
@@ -483,6 +516,7 @@ export function SettingsScreen({
   storageDurable,
   storageWarningOff,
   onStopStorageWarning,
+  rebuilt,
 }: {
   readonly draft: SettingsDraft;
   readonly settings: Settings | null;
@@ -497,6 +531,12 @@ export function SettingsScreen({
   /** §12 — an explicit tap, persisted. The warning stays; only the reminder stops. */
   readonly storageWarningOff: boolean;
   readonly onStopStorageWarning: () => void;
+  /**
+   * The last prescription the RECORD still holds, when the settings row itself
+   * is gone. Only `upgradeFrom`'s repair and an import can produce that pair,
+   * so this is `null` on every ordinary first run.
+   */
+  readonly rebuilt: { readonly period: SettingsPeriod; readonly changedAt: string } | null;
 }): JSX.Element {
   const problems = checkDraft(draft);
   const problemFor = (field: keyof SettingsDraft): FieldProblem | undefined =>
@@ -520,6 +560,13 @@ export function SettingsScreen({
   return (
     <div class="screen">
       <h1>{handlers.firstRun ? COPY.settings.titleFirstRun : COPY.settings.title}</h1>
+
+      {/* Before the setup flag, because "your settings had to be rebuilt" is
+          the answer to "why am I being asked this again" and has to arrive
+          first. */}
+      {rebuilt === null ? null : (
+        <RebuiltPrescription period={rebuilt.period} changedAt={rebuilt.changedAt} />
+      )}
 
       {/* §1.2 as ruled — the three prescribed values arrive PREFILLED, and a
           prefill that does not announce itself is the silent default §1.2

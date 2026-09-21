@@ -53,111 +53,87 @@ function factory(options: { readonly indexedDB?: IDBFactory | undefined }): IDBF
 }
 
 /**
- * The structure this build writes, DECLARED AS DATA so that one list both
- * builds it and checks it — ADDED 2026-09-21, after a keyPath rename bricked
- * every install that already existed.
+ * Creates every store and index that is missing. Runs inside `onupgradeneeded`.
  *
- * `#63` renamed the keyPath of `meta`, `settings` and `acks` from `k` to `key`.
- * That edit sat inside `onupgradeneeded`, which fires only when the version
- * number INCREASES, and `SCHEMA_VERSION` had been 1 since the first commit. So
- * the rename reached databases created afterwards and no others. Every existing
- * install kept three stores keyed on `k`, and every write the new code made
- * sent an object whose field is `key` — `DataError: Evaluating the object
- * store's key path did not yield a value`, on the disclaimer acknowledgement
- * and on the settings commit. The app looked dead and said nothing.
+ * Explicit rather than driven off a declaration, and that is a correction made
+ * on 2026-09-21 after two independent reviews said the same thing. The version
+ * that shipped a few hours earlier declared the structure as data and rebuilt
+ * whatever did not match it — which answered "this store has a missing index"
+ * with `deleteObjectStore`, destroying every row in it. Unreachable that day,
+ * because no build had ever made `log` without its index. **But the next
+ * ordinary change that adds an index to `log` would have deleted every
+ * install's dose history, silently, with the checker's own message telling the
+ * author to go ahead.** The one piece of generality was the piece whose
+ * general case was wrong, in the exact direction the repair exists to avoid.
  *
- * Nothing caught it because **nothing in this project has ever opened a
- * database written by a previous build**: every vitest case gets a fresh
- * `fake-indexeddb`, and every smoke session wipes its `--user-data-dir` on
- * purpose. The one condition every real phone is always in was the one
- * condition never exercised. `tools/smoke.mjs`'s upgrade session now is.
- *
- * Two lists would have the same defect one level up, so there is one:
- * `createStores` builds from it and `mismatchedStores` checks against it.
- * `check_store_schema_pinned` in `check-plan.py` pins it a third time, so
- * changing a keyPath without saying so fails the build rather than a phone.
+ * So: no engine. A structural change writes its own step in `upgradeFrom`
+ * below, which forces whoever writes it to decide, per store, whether the rows
+ * migrate, survive, or go.
  */
-export interface StoreSchema {
-  readonly name: string;
-  readonly keyPath: string;
-  readonly indexes: readonly { readonly name: string; readonly keyPath: string }[];
-}
-
-export const STORE_SCHEMA: readonly StoreSchema[] = [
-  { name: STORE.meta, keyPath: 'key', indexes: [] },
-  { name: STORE.settings, keyPath: 'key', indexes: [] },
-  { name: STORE.acks, keyPath: 'key', indexes: [] },
-  { name: STORE.log, keyPath: 'id', indexes: [{ name: TIMESTAMP_INDEX, keyPath: 'timestamp' }] },
-  { name: STORE.readings, keyPath: 'id', indexes: [{ name: TIMESTAMP_INDEX, keyPath: 'timestamp' }] },
-  // §11.3 — the PRIMARY KEY, which is why the allocation rule exists and why
-  // history entries are appended with `add` rather than `put`.
-  { name: STORE.settingsHistory, keyPath: 'revision', indexes: [] },
-];
-
-/** Creates every store and index that is missing. Runs inside `onupgradeneeded`. */
 function createStores(db: IDBDatabase): void {
-  for (const store of STORE_SCHEMA) {
-    if (db.objectStoreNames.contains(store.name)) continue;
-    const created = db.createObjectStore(store.name, { keyPath: store.keyPath });
-    for (const index of store.indexes) created.createIndex(index.name, index.keyPath);
+  if (!db.objectStoreNames.contains(STORE.meta)) db.createObjectStore(STORE.meta, { keyPath: 'key' });
+  if (!db.objectStoreNames.contains(STORE.settings)) {
+    db.createObjectStore(STORE.settings, { keyPath: 'key' });
+  }
+  if (!db.objectStoreNames.contains(STORE.acks)) db.createObjectStore(STORE.acks, { keyPath: 'key' });
+  if (!db.objectStoreNames.contains(STORE.log)) {
+    const log = db.createObjectStore(STORE.log, { keyPath: 'id' });
+    log.createIndex(TIMESTAMP_INDEX, 'timestamp');
+  }
+  if (!db.objectStoreNames.contains(STORE.readings)) {
+    const readings = db.createObjectStore(STORE.readings, { keyPath: 'id' });
+    readings.createIndex(TIMESTAMP_INDEX, 'timestamp');
+  }
+  if (!db.objectStoreNames.contains(STORE.settingsHistory)) {
+    // §11.3 — the PRIMARY KEY, which is why the allocation rule exists and why
+    // history entries are appended with `add` rather than `put`.
+    db.createObjectStore(STORE.settingsHistory, { keyPath: 'revision' });
   }
 }
 
 /**
- * The stores whose SHAPE does not match what this build writes — missing, wrong
- * keyPath, or missing an index.
+ * The version ladder: one step per structural change, each naming what it does
+ * to the rows it touches.
  *
- * Reads metadata only. No row is fetched and no field is inspected, which is
- * what keeps this from being the backwards-compatibility code deleted on
- * 2026-09-21: it does not know what an old row looks like and never will. A
- * container is not data.
+ * **1 -> 2, and so far the only step.** `#63` renamed the keyPath of `meta`,
+ * `settings` and `acks` from `k` to `key`. That line lives in
+ * `onupgradeneeded`, which fires only when the IndexedDB version increases, and
+ * the version was an alias of `SCHEMA_VERSION` — 1 since the first commit, and
+ * not moved, because no ROW had changed shape. So the rename reached databases
+ * created afterwards and no others: every install that already existed kept
+ * three stores keyed on `k`, every write sent an object keyed `key`, and
+ * IndexedDB refused all of them.
  *
- * Takes the `versionchange` transaction rather than opening its own, because it
- * runs inside `onupgradeneeded`, where no other transaction can exist.
- *
- * `keyPath` is compared through `String` because the DOM type admits a string,
- * an array of strings, or null. Every store here uses a plain string, and an
- * array arriving would mean the structure is wrong anyway — which is the answer
- * this function exists to give.
- */
-function mismatchedStores(db: IDBDatabase, transaction: IDBTransaction): string[] {
-  const wrong: string[] = [];
-  for (const store of STORE_SCHEMA) {
-    // Absent is handled by `createStores`, not here: there is nothing to delete
-    // and deleting a store that does not exist throws.
-    if (!db.objectStoreNames.contains(store.name)) continue;
-    const found = transaction.objectStore(store.name);
-    if (String(found.keyPath) !== store.keyPath) {
-      wrong.push(store.name);
-      continue;
-    }
-    if (store.indexes.some((index) => !found.indexNames.contains(index.name))) {
-      wrong.push(store.name);
-    }
-  }
-  return wrong;
-}
-
-/**
- * Drops the stores that do not match, so `createStores` can put them back.
- *
- * **Delete and recreate, because IndexedDB has no `ALTER`.** A keyPath cannot
- * be changed in place. The rows in a dropped store are therefore GONE: not
- * read, not renamed, not copied. That is deliberate, and it is the difference
- * between this and the compatibility reads deleted on 2026-09-21 — there is no
- * old shape to understand here, only a container to replace.
- *
- * Stores that already match are not touched, which is the whole point. On a
- * database broken by `#63` that is `log` and `readings` — every dose and every
- * reading survives, because `#63` changed neither their keyPath nor their row
- * shape. The prescription is three numbers on a piece of paper; the log is
+ * A keyPath cannot be changed in place — IndexedDB has no `ALTER` — so these
+ * three are dropped and remade. **Their rows go: not read, not renamed, not
+ * copied.** That is what keeps this from being the backwards-compatibility
+ * reads deleted the same day; there is no old shape to understand, only a
+ * container to replace. `log`, `readings` and `settingsHistory` are not named
+ * here and are therefore untouched, which is the whole point: `#63` changed
+ * neither their keyPath nor their row shape, so a fix for it must not cost
+ * them. The prescription is three numbers on a piece of paper; the log is
  * months nobody can reconstruct.
  *
- * It runs inside one `versionchange` transaction, so a repair that throws rolls
- * back entirely and leaves the old structure intact rather than half-converted.
+ * The keyPath is still checked before dropping, because a database created at
+ * version 1 AFTER `#63` is already correct and there is no reason to empty it.
  */
-function repairStores(db: IDBDatabase, transaction: IDBTransaction): void {
-  for (const name of mismatchedStores(db, transaction)) db.deleteObjectStore(name);
+function upgradeFrom(oldVersion: number, db: IDBDatabase, transaction: IDBTransaction): void {
+  // `oldVersion === 0` is a brand-new database: nothing to repair, and
+  // `createStores` builds it correctly on the way out.
+  //
+  // `< DATABASE_VERSION` rather than `=== 1`, and §11.8 forced the question by
+  // rejecting the literal. It is the better guard: it means "this database
+  // predates the structure this build writes", so a phone that has been shut in
+  // a drawer across two bumps is still mended in one pass. What keeps it exact
+  // is the per-store keyPath test below — a store that is already right is
+  // skipped, so re-running this step costs nothing and destroys nothing.
+  if (oldVersion > 0 && oldVersion < DATABASE_VERSION) {
+    for (const name of [STORE.meta, STORE.settings, STORE.acks]) {
+      if (!db.objectStoreNames.contains(name)) continue;
+      if (String(transaction.objectStore(name).keyPath) === 'key') continue;
+      db.deleteObjectStore(name);
+    }
+  }
 }
 
 /**
@@ -202,13 +178,14 @@ export function openDatabase(options: OpenOptions): Promise<OpenOutcome> {
   return new Promise<OpenOutcome>((resolve) => {
     const request = factory(options).open(DATABASE_NAME, DATABASE_VERSION);
 
-    request.onupgradeneeded = (): void => {
+    request.onupgradeneeded = (event): void => {
       const db = request.result;
       const transaction = request.transaction;
-      // REPAIR, THEN CREATE, THEN SEED, and the order is the whole of it: the
-      // repair drops what is wrong, the create puts it back along with anything
-      // missing, and the seed replaces the meta rows the repair may have taken.
-      if (transaction) repairStores(db, transaction);
+      // LADDER, THEN CREATE, THEN SEED, and the order is the whole of it: the
+      // ladder drops what this version has to drop, the create puts it back
+      // along with anything missing, and the seed replaces the meta rows the
+      // ladder may have taken.
+      if (transaction) upgradeFrom(event.oldVersion, db, transaction);
       createStores(db);
       if (transaction) seedMeta(transaction, options.nowMs);
     };

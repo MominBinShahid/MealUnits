@@ -1323,10 +1323,39 @@ every real phone is always in.
    panel. The dose write is deliberately NOT routed through it — §7.2 already gives that one a
    pending state, a retry and `onSaveStuck`, because a dose that did not save outlives its screen.
 
+**CORRECTED THE SAME DAY, after two independent reviews.** The first version of
+this fix declared the structure as data and rebuilt any store that did not match
+it. Both reviewers found the same defect and neither had seen the other's
+report: `mismatchedStores` flagged a store for a **missing index**, and the
+repair answered every mismatch with `deleteObjectStore`. Unreachable that day —
+no build had ever created `log` without its timestamp index — but **the next
+ordinary change that adds an index to `log` would have deleted every install's
+dose history, silently**, with check 36's own message telling the author to go
+ahead and bump the version. The one piece of generality in the fix was the piece
+whose general case was wrong, in the exact direction the fix existed to prevent.
+IndexedDB can `createIndex` in place; the destruction was never necessary.
+
+So the engine is gone — `STORE_SCHEMA`, `mismatchedStores` and `repairStores`,
+about ninety lines — and `upgradeFrom` is a plain version ladder with one step
+in it. A future structural change writes its own step, which forces whoever
+writes it to decide, per store, whether the rows migrate, survive or go. Check
+36 now reads the `createObjectStore` calls instead of a declaration, which is
+the stronger arrangement anyway: the code is the authority.
+
+**And the record was not asking for numbers it already had.** The repair rebuilds
+`settings` and leaves `settingsHistory` untouched, so a mended install opened on
+first run with three empty ratio fields while the database held the last
+prescription. Retyping a sensitivity from memory is the single step in that flow
+that can put a wrong number into a dose. The screen now SHOWS those three
+numbers, says the settings had to be rebuilt, and tells the reader to check them
+against the doctor's paper rather than trusting the screen — **shown, never
+prefilled**, because §1.2's empty fields were restored deliberately on
+2026-09-13 and a prefill that arrives by the back door is still a prefill.
+
 **Two checks, so it cannot come back.** `check_store_schema_pinned` (check 36) pins every store's
 keyPath and indexes plus `STRUCTURE_VERSION` in `check-plan.py`, so a structural change has to be
 made in two files and the message says which. And `tools/smoke.mjs` has an upgrade session that
-seeds the pre-`#63` structure in real Chrome — read off the real thing, by building the commit
+seeds the pre-`#63` structure in real Chrome — **and CI runs it now**, which it did not when this was written: `npm run smoke` existed for weeks with no workflow calling it, so the only layer that drives a real browser ran when somebody remembered. The harness also had the macOS Chrome path hardcoded, true for as long as one Mac was the only machine that ran it — read off the real thing, by building the commit
 before `#63` in a worktree and reporting its key paths — then asserts setup completes, the three
 stores come back on `key`, **the logged dose survives**, and a new dose can be worked out.
 
