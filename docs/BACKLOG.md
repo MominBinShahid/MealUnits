@@ -1734,6 +1734,59 @@ That turned out to be benign — Google's own help lists "low crawl demand" as a
 status, and a live test returned "URL is available to Google" — but reading the apex `robots.txt` to
 rule it out is what surfaced the ownership question.
 
+### T25. "Which insulin" suggests brands without restricting them — DONE 2026-09-21
+
+**Ruled in conversation on 2026-09-20 and written down nowhere**, which is how it came within one
+forgotten session of being decided again from scratch. The change shipped with this entry.
+
+**The ruling: a `<datalist>`, never a `<select>`.** §1.3's `basalName` is free text *on purpose*. It
+is recorded and never calculated with, and it reaches the doctor exactly as it was typed — so the
+only thing a hard picker can add is the ability to be wrong. The brands this app's table does not
+carry are not exotic: Toujeo, Basaglar, Abasaglar and the locally supplied Pakistani products are
+ordinary answers, and a reader who cannot find theirs picks the nearest wrong name or leaves the row
+blank. `basalNameMissing` already exists because that blank happens. A datalist suggests and refuses
+nothing, needs no script, and works with the network off — which is the whole posture of this app.
+
+**The options are DERIVED, from `insulinClass` being `'long'` or `'intermediate'`.** Not a list of
+five names typed into the screen. A hand-written list is correct until the edit that adds a row and
+silently wrong from then on, with nothing to say so — the same argument as `vite.config.ts`'s
+precache walk and `check_structural_query_count`, and the reason neither of those is maintained by
+hand either. Both classes belong: `'intermediate'` is NPH, which `InsulinClass` calls a background
+insulin in as many words, and which is what Pakistan's public sector supplies. A list written from
+the phrase "long-acting" leaves out the likeliest answer here.
+
+**Brand names stay in Latin script in every language.** They are proper nouns printed on the vial,
+and this field's entire job is to match the box in the reader's hand — a transliterated `Lantus`
+matches nothing they are holding. 10a's Urdu pass translates the label and the hint around them and
+leaves the brands alone. Stated in `screens/settings.tsx` at the point the options are built, because
+that is where somebody translating the screen will be looking.
+
+**The hint sits ABOVE the input, and it is the only hint on this screen that does.** Every other
+per-field hint here is below its input — `personName`'s, and every `NumberField`'s clinical line —
+and the two pieces of guidance that sit above something (`modeHint`, `basalNote`) are about a GROUP
+rather than a field. This one is an exception with a mechanical reason: Chrome opens the datalist
+popup downward, over whatever is under the input, so a hint below it is hidden at exactly the moment
+five brand names are on screen with nothing beside them. The popup is browser chrome and takes no
+CSS, so moving our own text is the only lever available. In the code it is tied to `options` being
+present rather than to a flag, so a field that grows suggestions later cannot end up with its hint
+under the popup because somebody forgot to set one.
+
+**Two things this change does NOT settle**, both kept open rather than closed by the fact that it
+shipped:
+
+1. **Nobody has seen the suggestion list on a real phone.** `<datalist>` rendering is the browser's,
+   not ours, and Android Chrome and iOS Safari do not agree on it — position, how much of the screen
+   it takes, and above all how it is dismissed. A list that is awkward to get rid of on a 412px
+   screen is *worse than no list*, because it sits between the reader and the next field. jsdom
+   cannot see any of this and neither can the served-build smoke run's assertions; it needs a device.
+2. **Whether the hint is enough.** Five names on a field that accepts anything still read as a
+   permitted set, and *"These are common brands. Type yours if it isn’t listed."* is one sentence
+   against that impression. It has not been tested on anyone. If a reader turns up having typed
+   nothing because their brand was not offered, the hint failed and the answer is probably fewer
+   suggestions rather than more words.
+
+---
+
 ### T22. The U-100 warning was promoted to an advisory, and put back — 2026-09-21
 
 **Built locally, shown to Momin, reverted on his question.** It is here because the question was the
