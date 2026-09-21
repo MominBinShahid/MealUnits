@@ -1611,16 +1611,22 @@ describe('§1.3 the long-acting insulin field', () => {
     );
   }
 
-  it('offers the background insulins from the table, both classes of them', async () => {
+  it('offers the background insulins from the table, long-acting first', async () => {
     await toSettings();
 
     // Computed from the DATA, not spelled out as five names. A test that
     // listed them would agree with a hand-written screen forever, which is the
     // arrangement this change exists to avoid: the list and the table would
     // drift apart on the edit that adds a row and nothing would say so.
-    const expected = INSULINS
-      .filter((row) => row.insulinClass === 'long' || row.insulinClass === 'intermediate')
-      .map((row) => row.brand);
+    //
+    // The CLASS order is the one thing spelled out, because it is this
+    // screen's decision rather than the table's: the heading says
+    // "long-acting", so the class it names comes first and NPH follows.
+    // `toEqual` is order-sensitive, so a screen that reads the table out in
+    // its own order — which seats the NPH pair first — goes red here.
+    const expected = (['long', 'intermediate'] as const).flatMap((wanted) =>
+      INSULINS.filter((row) => row.insulinClass === wanted).map((row) => row.brand),
+    );
     // Guards the guard: an empty expectation makes every line below vacuous.
     expect(expected.length).toBeGreaterThan(0);
 

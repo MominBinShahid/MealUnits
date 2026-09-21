@@ -18,6 +18,7 @@ import { COPY } from '../copy.js';
 import { Button, TextInput } from '../components.js';
 import type { RoundingMode, Settings } from '../../core/types.js';
 import { classEatDelay } from '../../core/insulin.js';
+import type { InsulinClass } from '../../core/insulin.js';
 import { INSULINS } from '../../data/insulins.js';
 import { waitInWords } from './insulin.js';
 
@@ -254,6 +255,20 @@ export interface SettingsHandlers {
  * which is what Pakistan's public sector actually supplies. Leaving Humulin N
  * and Insulatard out would offer a list that omits the likeliest answer here.
  *
+ * **Long-acting first, then NPH, and the order is written down rather than
+ * inherited.** The heading over this block is `basalTitle` — "Your long-acting
+ * insulin" — so the analogue basals are the thing the field asks for, and NPH
+ * is the near neighbour that belongs on the list without being what was asked.
+ * A list that opens with two rows of the other class buries the likely answer
+ * under them, and one `filter` over the table did exactly that: Humulin N,
+ * Insulatard, Lantus, Levemir, Tresiba, which is alphabetical by accident — in
+ * a projection of a file whose own header says it is "Ordered by class, and
+ * the order of the CLASSES is deliberate too" and is never sorted
+ * alphabetically. So `BASAL_CLASSES` states the class order here, next to the
+ * heading that justifies it. WITHIN a class the table's order is kept: that
+ * file argues its ordering is deliberate, and it is not this screen's to
+ * re-sort.
+ *
  * DERIVED, because a hand-written five would be correct until the day a row is
  * added and silently wrong afterwards — the same argument as `vite.config.ts`'s
  * precache walk and `check_structural_query_count`, and the reason neither is a
@@ -264,9 +279,13 @@ export interface SettingsHandlers {
  * hand: a transliterated `Lantus` matches nothing they are holding. 10a's Urdu
  * pass translates the label and the hint around them and leaves these alone.
  */
-const BASAL_BRANDS: readonly string[] = INSULINS
-  .filter(({ insulinClass }) => insulinClass === 'long' || insulinClass === 'intermediate')
-  .map(({ brand }) => brand);
+const BASAL_CLASSES: readonly InsulinClass[] = ['long', 'intermediate'];
+
+const BASAL_BRANDS: readonly string[] = BASAL_CLASSES.flatMap((listed) =>
+  INSULINS
+    .filter(({ insulinClass }) => insulinClass === listed)
+    .map(({ brand }) => brand),
+);
 
 /**
  * A free-text field — the name, and §1.3's two basal strings.
