@@ -15,7 +15,7 @@
  */
 
 import type { JSX } from 'preact';
-import { COPY, useCopy } from '../copy.js';
+import { useCopy } from '../copy.js';
 import type { Copy } from '../copy.js';
 import { Button } from '../components.js';
 import { classEatDelay, exitKindFor, isMealtimeClass, UNKNOWN_INSULIN } from '../../core/insulin.js';
@@ -37,7 +37,18 @@ import type { Insulin } from '../../data/insulins.js';
  */
 const CONTACT_FORM_URL = 'https://mominbinshahid.github.io/contact/';
 const CONTACT_EMAIL = 'MominBinShahid@gmail.com';
-const CONTACT_MAILTO = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(COPY.insulin.contactSubject)}`;
+/**
+ * The subject line is TRANSLATED, so the address cannot be built at module
+ * scope — found by the agent that did the `useCopy` sweep, and it is the same
+ * trap as `settings.tsx`'s `MODES`: a module-level read happens once, at import,
+ * and would have stayed English for ever however the language was set.
+ *
+ * The two constants above it are NOT translated and stay where they are. A URL
+ * and an address are not words.
+ */
+function contactMailto(copy: Copy): string {
+  return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(copy.insulin.contactSubject)}`;
+}
 
 /**
  * The class order on screen, and every part of it is a decision.
@@ -344,7 +355,7 @@ export function InsulinUnsupportedScreen({
             <a class="go quiet" href={CONTACT_FORM_URL} target="_blank" rel="noreferrer">
               {COPY.insulin.contactForm}
             </a>
-            <a class="go quiet" href={CONTACT_MAILTO}>
+            <a class="go quiet" href={contactMailto(COPY)}>
               {COPY.insulin.contactEmail}
             </a>
           </div>
