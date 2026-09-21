@@ -1,5 +1,11 @@
 # MealUnits
 
+[![checks](https://img.shields.io/github/actions/workflow/status/MominBinShahid/MealUnits/ci.yml?branch=main&label=checks)](https://github.com/MominBinShahid/MealUnits/actions/workflows/ci.yml)
+[![deploy](https://img.shields.io/github/actions/workflow/status/MominBinShahid/MealUnits/deploy.yml?branch=main&label=deploy)](https://github.com/MominBinShahid/MealUnits/actions/workflows/deploy.yml)
+
+**The app is at <https://mominbinshahid.github.io/MealUnits/>.** It installs to a phone's home
+screen and runs with no network once it has been opened.
+
 **For people with type 1 diabetes.** A mealtime insulin dose calculator, built as an installable,
 offline-capable web app.
 
@@ -68,7 +74,7 @@ CI reads that file rather than carrying its own copy.
 ```sh
 npm install
 npm run dev        # development server
-npm test           # 664 tests
+npm test           # 789 tests
 npm run check      # typecheck, lint and tests — what CI runs
 npm run mutate     # mutation testing on the core, at a 100% break threshold
 npm run build      # production build, including the service worker
@@ -115,14 +121,14 @@ launder a literal through a local constant.
 
 ### The testing, and what it is worth
 
-- **792 tests**, including 77 golden cases that each carry the hand derivation of their expected
+- **789 tests**, including 77 golden cases that each carry the hand derivation of their expected
   value in the fixture.
 - **100% mutation score** on the core, the state machine and `config.ts` — 1,822 mutants killed, 0
   survived, 0 uncovered. A further 83 are **disabled by name**, each with its reason written at the
   line it silences; `BUILD-NOTES.md` note 16 tables every one and says why it is disabled rather
   than killed.
 
-Figures as of 2026-09-20. `npm run check` and `npm run mutate` print the current ones, and
+Figures as of 2026-09-21. `npm run check` and `npm run mutate` print the current ones, and
 `reports/mutation/report.json` is the authority for the second line — a number copied out of it by
 hand has gone stale twice here already.
 - **Integration tests** driving the whole app through a real DOM and a real IndexedDB, because a
@@ -152,7 +158,7 @@ no backend, no accounts, no sync, no analytics.
 
 | File | What it is |
 |---|---|
-| [PLAN.md](docs/PLAN.md) | The specification, and the single source of truth. Twenty-five revisions and twenty-two adversarial review rounds went into it; `git log` is the record of them. |
+| [PLAN.md](docs/PLAN.md) | The specification, and the single source of truth. Twenty-seven revisions and twenty-two adversarial review rounds went into it; `git log` is the record of them. |
 | [CLINICAL.md](docs/CLINICAL.md) | Every clinical decision with its source, and the reversals. |
 | [BUILD-NOTES.md](docs/BUILD-NOTES.md) | Every decision the build had to make that the plan does not state. |
 | [CARBS.md](docs/CARBS.md) | The carbohydrate reference for Pakistani food, every value with its source, confidence and licence. |
