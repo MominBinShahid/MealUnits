@@ -20,7 +20,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import { JSDOM } from 'jsdom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { start } from '../src/ui/app.js';
-import { DATABASE_NAME } from '../src/storage/schema.js';
+import { DATABASE_NAME, DATABASE_VERSION } from '../src/storage/schema.js';
 import { DEFAULT_TITLE, ROUTES, pathForScreen, screenForPath } from '../src/routes.js';
 // Asserted by reference, not by literal: these cases prove the combined §4.3
 // step 3 response RENDERS, which is what was missing. The words themselves are
@@ -106,6 +106,27 @@ function failingSettingsWrites(blocked: { on: boolean }): IDBFactory {
     return request;
   };
   return factory;
+}
+
+/**
+ * ANOTHER TAB UPGRADING THE DATABASE, done the way another tab would do it —
+ * by opening the same database at a higher version.
+ *
+ * That fires `versionchange` on the app's own connection, which is what makes
+ * `app.tsx` close it and set `db = null`. Reaching in and calling `close()`
+ * would NOT be the same test: a closed connection throws on the next
+ * transaction and lands in `attemptWrite`'s catch, which always worked. The
+ * null is the case that used to return early and say nothing.
+ */
+async function upgradeFromAnotherTab(idb: IDBFactory): Promise<void> {
+  await new Promise<void>((resolve) => {
+    const request = idb.open(DATABASE_NAME, DATABASE_VERSION + 1);
+    request.onupgradeneeded = (): void => { /* structure is not the point here */ };
+    request.onsuccess = (): void => { request.result.close(); resolve(); };
+    request.onblocked = (): void => { resolve(); };
+    request.onerror = (): void => { resolve(); };
+  });
+  await settle();
 }
 
 function failingWrites(times: number): IDBFactory {
@@ -2189,6 +2210,68 @@ describe('§7.2 a failed write retries, and escalates only when retrying stops h
     expect(plain(stuckPrompts[0]?.amount ?? '')).toBe('11 units');
     expect(text()).toContain('still counts toward your next calculation while the app is open');
     expect(text()).not.toMatch(/retry|retrying/i);
+    expect(buzzes).toBe(0);
+  });
+
+  /**
+   * The state `#70` made reachable: another tab upgraded the database, so this
+   * tab's connection is closed and `db` is null.
+   *
+   * What actually happens is milder than it first looks, and the difference is
+   * worth recording. `commitLog` returns on `db === null` BEFORE dispatching
+   * `commit_log`, so the dose never reaches the logged state and nothing is
+   * silently lost — the tap is simply inert. That is still a dead control with
+   * no explanation, on an app whose entire value is the record, and until
+   * 2026-09-21 the screen said nothing about it at all.
+   */
+  it('a tab whose connection another tab closed says so, instead of going quiet', async () => {
+    const idb = new IDBFactory();
+    await setUpAsHisBrother(idb);
+    await keys('330');
+    await tap('Next');
+    await keys('50');
+    await tap('Work out the dose');
+    await tap('I injected this');
+
+    expect(text()).not.toContain(COPY.staleConnection.title);
+    await upgradeFromAnotherTab(idb);
+    expect(text()).toContain(COPY.staleConnection.title);
+    expect(text()).toContain(COPY.staleConnection.body);
+
+    await tap('Log this injection');
+    // Inert, and that is the point: no claim that a dose was recorded.
+    expect(buzzes).toBe(0);
+    expect(stuckPrompts).toHaveLength(0);
+  });
+
+  /**
+   * And the path where a null connection DOES reach the write.
+   *
+   * A save that already failed twice is pending, with the retry in the reader's
+   * hands through `onSaveStuck`. If the connection goes between the failure and
+   * the tap — which is exactly what another tab's upgrade does — `attemptWrite`
+   * used to return above its own `try`, dispatching neither outcome. The prompt
+   * sat there, the retry did nothing, and nothing said why.
+   */
+  it('and a pending save retried after the connection goes escalates, not vanishes', async () => {
+    const idb = failingWrites(2);
+    await setUpAsHisBrother(idb);
+    await keys('330');
+    await tap('Next');
+    await keys('50');
+    await tap('Work out the dose');
+    await tap('I injected this');
+    await tap('Log this injection');
+    expect(stuckPrompts).toHaveLength(1);
+
+    // The disk is healthy again by now — only the connection is the problem.
+    await upgradeFromAnotherTab(idb);
+
+    stuckPrompts[0]?.retry();
+    await settle();
+
+    // It must report again rather than silently doing nothing.
+    expect(stuckPrompts.length).toBeGreaterThan(1);
     expect(buzzes).toBe(0);
   });
 

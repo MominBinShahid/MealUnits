@@ -1626,6 +1626,18 @@ export const COPY = {
     dismiss: 'Close',
   },
 
+  /**
+   * §11.3 — another tab UPGRADED the database, so this tab's connection is
+   * closed and nothing it does can be recorded. Added 2026-09-21.
+   *
+   * No control, deliberately. There is nothing this tab can do about it and
+   * offering a button that pretends otherwise would be worse than the sentence.
+   */
+  staleConnection: {
+    title: 'This app was updated in another window.',
+    body: 'Close this one and open it again before you log anything else. Nothing has been lost.',
+  },
+
   /** §11.3 — another tab deleted the record while this one was open. */
   recordDeleted: {
     title: 'The record was cleared in another tab.',
