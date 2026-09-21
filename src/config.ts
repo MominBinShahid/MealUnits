@@ -435,7 +435,35 @@ export const UPDATE_LOOK_INTERVAL_MS = 1000;
 // single source cannot also hold a second, dead definition.
 
 // ─── SCHEMA (§11.3) ────────────────────────────────────────
+/**
+ * The DECLARED schema — the shape of the ROWS. `meta.envelope.schemaVersion`
+ * carries it, and §11.3's compatibility check is a comparison against it.
+ *
+ * It stays 1 until a row's shape changes in a way a reader has to know about.
+ * It is NOT the IndexedDB version; see `STRUCTURE_VERSION` below for why those
+ * are two numbers now.
+ */
 export const SCHEMA_VERSION = 1;
+/**
+ * The IndexedDB version — the shape of the STORES. Passed to `open()`, and the
+ * only thing that can make `onupgradeneeded` fire.
+ *
+ * **2 since 2026-09-21, and the reason is a defect these two numbers being one
+ * number allowed.** `#63` renamed the keyPath of `meta`, `settings` and `acks`
+ * from `k` to `key`. That edit lives inside `onupgradeneeded`, which runs only
+ * when this number increases — and it did not, because the single constant was
+ * read as "the schema", and no row's shape had changed. So the rename reached
+ * databases created afterwards and no others: every existing install kept three
+ * stores keyed on `k`, every write sent an object keyed `key`, and IndexedDB
+ * answered `DataError: Evaluating the object store's key path did not yield a
+ * value`. The disclaimer acknowledgement and the settings commit both failed;
+ * the app looked dead and said nothing.
+ *
+ * Splitting them makes the question answerable rather than a matter of judgement:
+ * did a STORE change, or did a ROW change. `check_store_schema_pinned` in
+ * `check-plan.py` now asks it on every build.
+ */
+export const STRUCTURE_VERSION = 2;
 // §11.3's recovery block carried a `RECOVERY_FORMAT` integer beside this one
 // until 2026-09-21. Nothing ever compared it — it was written as a constant and
 // overwritten on read — so the independent versioning it claimed to provide was

@@ -78,6 +78,36 @@ let stuckPrompts: { amount: string; retry: () => void }[];
  * shares `meta` with `HISTORY_SCOPE`, so a blunter filter would break
  * `setUpAsHisBrother` before the case under test began.
  */
+/**
+ * An IndexedDB whose SETTINGS writes throw once a flag is flipped — added
+ * 2026-09-21 with `BACKLOG` T26.
+ *
+ * The flag rather than a count, because the case under test needs setup to
+ * SUCCEED and the write after it to fail. That is the shape of the defect:
+ * `#63` left three stores keyed for an older build, so every write threw while
+ * the app went on looking fine until somebody pressed save.
+ */
+function failingSettingsWrites(blocked: { on: boolean }): IDBFactory {
+  const real = new IDBFactory();
+  const factory = Object.create(real) as IDBFactory;
+  factory.open = (name: string, version?: number): IDBOpenDBRequest => {
+    const request = version === undefined ? real.open(name) : real.open(name, version);
+    request.addEventListener('success', () => {
+      const db = request.result;
+      const open = db.transaction.bind(db);
+      db.transaction = ((stores: string | string[], mode?: IDBTransactionMode) => {
+        const names = typeof stores === 'string' ? [stores] : stores;
+        if (blocked.on && mode === 'readwrite' && names.includes('settings')) {
+          throw new dom.window.DOMException('injected write failure', 'UnknownError');
+        }
+        return mode === undefined ? open(stores) : open(stores, mode);
+      }) as typeof db.transaction;
+    });
+    return request;
+  };
+  return factory;
+}
+
 function failingWrites(times: number): IDBFactory {
   const real = new IDBFactory();
   let remaining = times;
@@ -736,6 +766,50 @@ describe('§11.8 the food list — read-only by design', () => {
 });
 
 describe('§10.6 the five terms the app used and never explained', () => {
+  /**
+   * `BACKLOG` T26 — the half of that defect that made it take an hour to find.
+   *
+   * `onSave` was `void saveSettings()`. `void` discards the promise and the
+   * rejection with it, so when `#63`'s keyPath rename made every settings write
+   * throw, the screen showed a button that did nothing and said nothing. The
+   * only trace was `Uncaught (in promise)` in a console no phone has.
+   *
+   * What is asserted is not the wording but that SOMETHING reaches the screen
+   * and that the escape is in it — an app whose whole value is the record must
+   * never fail to write one quietly.
+   */
+  it('says so when a write fails, rather than leaving a button that does nothing', async () => {
+    const blocked = { on: false };
+    await setUpAsHisBrother(failingSettingsWrites(blocked));
+    await tap('Settings');
+
+    // Nothing on screen before the failure — the panel must not be furniture.
+    expect(text()).not.toContain(COPY.writeFailed.title);
+
+    blocked.on = true;
+    await typeInto('What should a correction aim for', '140');
+    await tap(COPY.settings.save);
+
+    expect(text()).toContain(COPY.writeFailed.title);
+    expect(text()).toContain(COPY.writeFailed.body);
+    // §7.9's escape, offered with what it costs stated before the control.
+    expect(text()).toContain(COPY.writeFailed.startOverHint);
+    expect(text()).toContain(COPY.failClosed.escape);
+  });
+
+  it('and the failure panel can be dismissed, because the app still works', async () => {
+    const blocked = { on: false };
+    await setUpAsHisBrother(failingSettingsWrites(blocked));
+    await tap('Settings');
+    blocked.on = true;
+    await typeInto('What should a correction aim for', '140');
+    await tap(COPY.settings.save);
+    expect(text()).toContain(COPY.writeFailed.title);
+
+    await tap(COPY.writeFailed.dismiss);
+    expect(text()).not.toContain(COPY.writeFailed.title);
+  });
+
   it('defines stacking, the word seven user-facing strings already use', async () => {
     await setUpAsHisBrother();
     await tap('Settings');

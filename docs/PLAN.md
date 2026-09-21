@@ -3838,9 +3838,16 @@ export const RESULT_EXPIRY_MINUTES = 15;
 export const POLL_INTERVAL_MS      = 4000;
 
 // ─── SCHEMA (§11.3) ────────────────────────────────────────
-export const SCHEMA_VERSION  = 1;
+export const SCHEMA_VERSION    = 1;    // the shape of the ROWS
+export const STRUCTURE_VERSION = 2;    // the shape of the STORES
 // RECOVERY_FORMAT stood here until 2026-09-21. Nothing ever compared it;
 // see §11.3 for the rule that replaced it.
+//
+// SCHEMA_VERSION and STRUCTURE_VERSION were ONE constant until 2026-09-21, and
+// the day they stopped being one is the day a keyPath rename was found to have
+// bricked every install that already existed — `onupgradeneeded` fires on the
+// IndexedDB version and nothing else, and the single number had been read as
+// "the schema", which had genuinely not changed. See BACKLOG T26.
 ```
 
 Every value carries a comment naming what it does and which section decided it.

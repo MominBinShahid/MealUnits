@@ -757,6 +757,27 @@ body {
   border-top-left-radius: 0;
 }
 
+/* T26's write-failure prompt. It wears §11.4's furniture because it is the same
+   kind of thing — an interruption that must not rearrange the page — and it is
+   fixed to the foot for the reason that section already argues: the control
+   whose failure it reports is itself at the foot of a long screen, and a panel
+   in normal flow rendered above the fold where nobody would look. `stop` rather
+   than `warn`, because nothing was written. */
+.prompt-bar.stop {
+  border-color: var(--halt-line);
+}
+
+.prompt-bar.stop b {
+  color: var(--halt);
+}
+
+/* Each paragraph takes its own row of the wrapping flex line; the container's
+   `gap` spaces them, so `.hint`'s own top margin would double it. */
+.prompt-bar p {
+  flex: 1 1 100%;
+  margin: 0;
+}
+
 .prompt-bar b {
   flex: 1 1 100%;
 }
