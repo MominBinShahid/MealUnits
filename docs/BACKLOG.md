@@ -1825,6 +1825,13 @@ hand either. Both classes belong: `'intermediate'` is NPH, which `InsulinClass` 
 insulin in as many words, and which is what Pakistan's public sector supplies. A list written from
 the phrase "long-acting" leaves out the likeliest answer here.
 
+**Ordered long-acting first, then NPH (2026-09-21).** The derivation first shipped in the table's
+own order, which put Humulin N and Insulatard ahead of Lantus, Levemir and Tresiba — alphabetical by
+accident, from a file whose own header says its class order is deliberate and never alphabetical.
+The heading over the field says "Your long-acting insulin", so the class it names comes first and
+NPH follows; `BASAL_CLASSES` in `screens/settings.tsx` states that order, the integration test pins
+it, and within a class the table's own order is kept.
+
 **Brand names stay in Latin script in every language.** They are proper nouns printed on the vial,
 and this field's entire job is to match the box in the reader's hand — a transliterated `Lantus`
 matches nothing they are holding. 10a's Urdu pass translates the label and the hint around them and
