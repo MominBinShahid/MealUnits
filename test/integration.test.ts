@@ -26,6 +26,9 @@ import { DEFAULT_TITLE, ROUTES, pathForScreen, screenForPath } from '../src/rout
 // step 3 response RENDERS, which is what was missing. The words themselves are
 // a clinical-review matter and must stay free to change without going red.
 import { COPY } from '../src/ui/copy.js';
+// §1.3's basal suggestions are DERIVED from this table, so the expectation is
+// too — see "offers the background insulins from the table".
+import { INSULINS } from '../src/data/insulins.js';
 import {
   RESULT_EXPIRY_MINUTES,
   STACK_ADVISE_HOURS,
@@ -1496,6 +1499,114 @@ describe('the DOM shapes the stylesheet depends on', () => {
     for (const input of inputs) {
       expect(input.closest('.field')).not.toBeNull();
     }
+  });
+});
+
+/**
+ * §1.3 — the long-acting field SUGGESTS and refuses nothing.
+ *
+ * A `<datalist>` rather than a `<select>`, and the second case below is the
+ * whole reason: `basalName` is recorded and never calculated with, it reaches
+ * the doctor as written, and the brands this table does not carry — Toujeo,
+ * Basaglar, Abasaglar, the locally supplied Pakistani products — are ordinary
+ * answers rather than edge cases. A picker would send those readers to the
+ * nearest wrong name or to a blank row.
+ */
+describe('§1.3 the long-acting insulin field', () => {
+  /** First run as far as the settings screen, with the basal block on it. */
+  async function toSettings(): Promise<void> {
+    await boot();
+    await tap('☐  I have read this');
+    await tap('I understand — use at my own risk');
+    await tapStartingWith('Humulin R');
+    await tap('Yes, that’s mine');
+  }
+
+  /** The brands offered under "Which insulin", in the order they render. */
+  function suggestions(): string[] {
+    const field = fieldLabelled('Which insulin');
+    const lists = [...root.querySelectorAll('datalist')];
+    expect(lists).toHaveLength(1);
+    const list = lists[0];
+    // A datalist nothing points AT renders nothing, and does so silently: the
+    // field looks right, the markup is there, and no suggestion ever appears.
+    expect(list?.id).not.toBe('');
+    expect(field.getAttribute('list')).toBe(list?.id);
+    return [...(list?.querySelectorAll('option') ?? [])].map(
+      (option) => option.getAttribute('value') ?? '',
+    );
+  }
+
+  it('offers the background insulins from the table, both classes of them', async () => {
+    await toSettings();
+
+    // Computed from the DATA, not spelled out as five names. A test that
+    // listed them would agree with a hand-written screen forever, which is the
+    // arrangement this change exists to avoid: the list and the table would
+    // drift apart on the edit that adds a row and nothing would say so.
+    const expected = INSULINS
+      .filter((row) => row.insulinClass === 'long' || row.insulinClass === 'intermediate')
+      .map((row) => row.brand);
+    // Guards the guard: an empty expectation makes every line below vacuous.
+    expect(expected.length).toBeGreaterThan(0);
+
+    expect(suggestions()).toEqual(expected);
+
+    // BOTH classes, asserted by class rather than by brand. `'intermediate'`
+    // is NPH, which `InsulinClass` calls a background insulin and which is what
+    // Pakistan's public sector supplies — it is the half a list written from
+    // the word "long-acting" would leave out.
+    const classOf = new Map(INSULINS.map((row) => [row.brand, row.insulinClass]));
+    expect(new Set(suggestions().map((brand) => classOf.get(brand))))
+      .toEqual(new Set(['long', 'intermediate']));
+  });
+
+  it('says the list is not the boundary, and says it ABOVE the input', async () => {
+    await toSettings();
+    // By reference. The wording is a plain-language matter and must stay free
+    // to change without this going red; that it is ON SCREEN is the assertion.
+    expect(text()).toContain(COPY.settings.basalNameHint);
+
+    // ORDER, which is the part a reader loses if it goes back. Chrome opens the
+    // suggestion popup DOWNWARD, over whatever sits under the input, so a hint
+    // below the field is covered at the one moment it is needed — five brands
+    // on screen and nothing saying they are not the permitted set. jsdom cannot
+    // see the popup; it can see that the sentence comes first, and that is the
+    // thing being protected.
+    const hint = [...root.querySelectorAll('p')].find(
+      (node) => plain(node.textContent ?? '') === COPY.settings.basalNameHint,
+    );
+    expect(hint).toBeDefined();
+    const position = hint?.compareDocumentPosition(fieldLabelled('Which insulin')) ?? 0;
+    expect(position & dom.window.Node.DOCUMENT_POSITION_FOLLOWING).toBeGreaterThan(0);
+    expect(position & dom.window.Node.DOCUMENT_POSITION_PRECEDING).toBe(0);
+  });
+
+  it('accepts and saves a brand the table has never heard of', async () => {
+    await toSettings();
+
+    // Toujeo is a real glargine sold in Pakistan. It appears in the table only
+    // as Lantus's `alsoSoldAs`, so it is NOT a suggestion — which is what makes
+    // it the right thing to type here.
+    expect(suggestions()).not.toContain('Toujeo');
+
+    await typeInto('What should a correction aim for', '150');
+    await typeInto('How far does one unit lower', '30');
+    await typeInto('How much carbohydrate does one unit cover', '10');
+    await typeInto('Which insulin', 'Toujeo');
+    await typeInto('How many units', '36');
+    await typeInto('When', 'early morning');
+    await tap('Save and start');
+
+    await tap('Settings');
+    expect(fieldLabelled('Which insulin').value).toBe('Toujeo');
+
+    // And it survives to the page the doctor is handed, spelled as typed —
+    // with no "Not recorded" left anywhere on it, which is the row a brand the
+    // app had refused would have produced.
+    await tap('Show my settings as text');
+    expect(text()).toContain('Toujeo');
+    expect(text()).not.toContain('Not recorded');
   });
 });
 

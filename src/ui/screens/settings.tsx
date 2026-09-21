@@ -237,6 +237,38 @@ export interface SettingsHandlers {
 }
 
 /**
+ * §1.3's "Which insulin" suggestions — the background insulins, read off the
+ * table rather than written out here.
+ *
+ * **A `<datalist>`, never a `<select>`, and that is the decision rather than an
+ * implementation detail.** `basalName` is free text on purpose: it is recorded
+ * and never calculated with, and it is what the doctor reads on the printed
+ * record. A picker would make anyone whose brand is missing pick a wrong one or
+ * leave the row blank — and the brands that are missing are not exotic. Toujeo,
+ * Basaglar, Abasaglar and the locally supplied Pakistani products are all
+ * legitimate answers this table does not carry. A datalist suggests without
+ * refusing, needs no script, and works with the network off.
+ *
+ * **Both classes belong.** `'long'` is the analogue basal; `'intermediate'` is
+ * NPH, which `InsulinClass` calls a background insulin in as many words, and
+ * which is what Pakistan's public sector actually supplies. Leaving Humulin N
+ * and Insulatard out would offer a list that omits the likeliest answer here.
+ *
+ * DERIVED, because a hand-written five would be correct until the day a row is
+ * added and silently wrong afterwards — the same argument as `vite.config.ts`'s
+ * precache walk and `check_structural_query_count`, and the reason neither is a
+ * list someone maintains.
+ *
+ * **The brands stay in Latin script in every language.** They are proper nouns
+ * printed on the vial, and this field exists to match the box in the reader's
+ * hand: a transliterated `Lantus` matches nothing they are holding. 10a's Urdu
+ * pass translates the label and the hint around them and leaves these alone.
+ */
+const BASAL_BRANDS: readonly string[] = INSULINS
+  .filter(({ insulinClass }) => insulinClass === 'long' || insulinClass === 'intermediate')
+  .map(({ brand }) => brand);
+
+/**
  * A free-text field — the name, and §1.3's two basal strings.
  *
  * Separate from `NumberField` because it carries no keypad claim, no range and
@@ -252,6 +284,7 @@ function TextField({
   describedBy,
   wide,
   hint,
+  options,
   onChange,
 }: {
   readonly id: keyof SettingsDraft;
@@ -260,11 +293,34 @@ function TextField({
   readonly describedBy?: string;
   readonly wide?: boolean;
   readonly hint?: string;
+  /**
+   * Suggestions, never a restriction. Given, the field grows a `<datalist>`;
+   * the input stays free text and anything typed is kept exactly as typed.
+   */
+  readonly options?: readonly string[];
   readonly onChange: (field: keyof SettingsDraft, value: string) => void;
 }): JSX.Element {
+  const hintLine = hint === undefined ? null : <p class="clinical">{hint}</p>;
   return (
     <div class={wide === true ? 'field wide' : 'field'}>
       <label id={describedBy}>{label}</label>
+      {/*
+        A HINT ON A FIELD WITH SUGGESTIONS GOES ABOVE THE INPUT, and every
+        other hint on this screen goes below it. This is not tidiness either
+        way — do not move it back.
+
+        Chrome opens the `<datalist>` popup DOWNWARD, over whatever sits under
+        the input. A hint below would be covered at exactly the moment the
+        suggestions are on screen, which is the moment it is needed: five
+        brands with nothing beside them read as the list of permitted answers.
+        The popup is browser chrome and takes no CSS at all, so moving our own
+        text is the only lever there is.
+
+        Tied to `options` rather than to a flag the caller sets, so a field
+        that grows suggestions later cannot end up with its hint under the
+        popup because somebody forgot the second argument.
+      */}
+      {options === undefined ? null : hintLine}
       {/*
         A DIRECT CHILD of `.field`, with no wrapper, and that is load-bearing.
         `.field` is `display: grid` (styles.css) and nothing sets an input's
@@ -282,13 +338,27 @@ function TextField({
         type="text"
         // §10.7 — these are transient measurements, and offering a stale
         // previous value is an active hazard.
+        //
+        // It does NOT switch the `<datalist>` off. `autocomplete` governs
+        // what the browser remembers of what this reader typed before;
+        // `<datalist>` is the page's own list, and the two are separate
+        // mechanisms in every engine.
         autocomplete="off"
+        list={options === undefined ? undefined : `${id}-options`}
         value={value}
         aria-describedby={describedBy}
         data-field={id}
         onValue={(next) => { onChange(id, next); }}
       />
-      {hint === undefined ? null : <p class="clinical">{hint}</p>}
+      {/* Rendered after the input and hidden by the browser's own stylesheet,
+          so it takes no room in `.field`'s grid and the layout above is
+          untouched. */}
+      {options === undefined ? null : (
+        <datalist id={`${id}-options`}>
+          {options.map((option) => <option key={option} value={option} />)}
+        </datalist>
+      )}
+      {options === undefined ? hintLine : null}
     </div>
   );
 }
@@ -674,6 +744,13 @@ export function SettingsScreen({
           label={COPY.settings.basalNameLabel}
           value={draft.basalName}
           wide
+          options={BASAL_BRANDS}
+          // On the field rather than beside the heading, because it is about
+          // the SUGGESTIONS and only exists once they do: five names on a field
+          // that accepts anything read as the permitted set otherwise.
+          // `TextField` puts it ABOVE the input because there are options —
+          // see the comment there, and do not move it below.
+          hint={COPY.settings.basalNameHint}
           onChange={handlers.onChange}
         />
         <NumberField

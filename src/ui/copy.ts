@@ -1241,6 +1241,15 @@ export const COPY = {
     deltaIsf: 'How far one unit lowers you',
     deltaTarget: 'What a correction aims for',
     basalNameLabel: 'Which insulin',
+    /**
+     * The suggestions under "Which insulin" are the background insulins the
+     * table happens to hold, and a list of five on a field that accepts
+     * anything reads as a list of what is ALLOWED. Toujeo, Basaglar, Abasaglar
+     * and the local Pakistani brands are all legitimate answers and none of
+     * them is offered, so the field says outright that the list is not the
+     * boundary.
+     */
+    basalNameHint: 'These are common brands. Type yours if it isn’t listed.',
     basalUnitsLabel: 'How many units',
     basalTimingLabel: 'When',
     basalRecordNote: 'None of this enters any calculation. It is here so the record is complete.',
