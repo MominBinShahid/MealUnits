@@ -954,6 +954,73 @@ body {
   max-width: none;
 }
 
+/* ── the food search ────────────────────────────────────────────────────────
+ *
+ * It had no styling at all until 2026-09-21, and the cause is one level of
+ * markup: `class="field"` sat on the INPUT, while every input rule above is a
+ * descendant selector, so it matched none of them and rendered as Chrome's own
+ * search control — no line, no radius, no surface, and no `min-height`, which
+ * made it the only field in the app under §10.7's 48px floor. Putting the class
+ * on a wrapper is the whole fix; everything below is the icon and the clear
+ * control, which are new.
+ *
+ * LOGICAL PROPERTIES THROUGHOUT. 10a puts this screen in `dir="rtl"`, and the
+ * glyph and the clear button are the two things on it that must swap sides.
+ * Writing them physically here would mean finding them again later.
+ */
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Must follow `.field input` — same specificity, so source order decides, and
+   the shorthand there would otherwise put back the inline padding these two
+   controls sit in. */
+.search-box input {
+  width: 100%;
+  padding-inline: 2.5rem 3.25rem;
+}
+
+.search-icon {
+  position: absolute;
+  inset-inline-start: 0.75rem;
+  font-size: 0.875rem;
+  opacity: 0.75;
+  /* The field is what a tap on the glyph should reach. */
+  pointer-events: none;
+}
+
+/* Own touch target, sitting inside the field's own height rather than adding to
+   it: `.field input` is already `min-height: var(--touch)`, so the two match. */
+.search-clear {
+  position: absolute;
+  inset-inline-end: 0.125rem;
+  min-width: var(--touch);
+  min-height: var(--touch);
+  padding: 0;
+  border: 0;
+  border-radius: 0.5rem;
+  background: none;
+  color: var(--ink-2);
+  font-size: 1.375rem;
+  line-height: 1;
+}
+
+/* `type="search"` is kept — it is what tells a soft keyboard to offer a search
+   key — but WebKit's own cancel control is not, because the app now draws one
+   and two clear buttons in one field is worse than either alone. */
+.search-box input::-webkit-search-cancel-button {
+  display: none;
+}
+
+/* The count is a caption for the list below it, not a second hint for the field
+   above it. Without this it sat 0.5rem under `searchHint` in the same grey at
+   the same size, and the two read as one block of small print. */
+.count {
+  margin-top: 1rem;
+}
+
 .sentence {
   font-size: 1rem;
   line-height: 2.25;

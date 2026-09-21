@@ -3,7 +3,7 @@ import { matchFoods } from '../../core/foods.js';
 import type { Food } from '../../data/carbs.js';
 import { FOODS } from '../../data/carbs.js';
 import { COPY } from '../copy.js';
-import { TextInput } from '../components.js';
+import { Button, TextInput } from '../components.js';
 
 export interface FoodListProps {
   readonly query: string;
@@ -59,33 +59,65 @@ export function FoodListScreen({ query, onQuery }: FoodListProps): JSX.Element {
       <h1>{COPY.foods.title}</h1>
       <p>{COPY.foods.intro}</p>
 
-      <div class="ask">{COPY.foods.searchLabel}</div>
-      <TextInput
-        type="search"
-        class="field"
-        id="food-search"
-        /*
-         * `data-field` no longer drives a focus restore — nothing restores
-         * focus any more, because nothing destroys the field. It stays because
-         * it is this input's stable identity for anything that has to FIND it:
-         * the continuity tests key on it, and note 25's recurrence was a screen
-         * shipping without one.
-         *
-         * The name is the state key it drives, so the two cannot drift.
-         */
-        data-field="foodQuery"
-        value={query}
-        autocomplete="off"
-        /* Labelled by the visible heading above it rather than by a
-           placeholder: placeholder-as-label disappears the moment anyone types,
-           which is exactly when a person looks up to check what they are
-           filling in. */
-        aria-label={COPY.foods.searchLabel}
-        onValue={onQuery}
-      />
-      <p class="hint">{COPY.foods.searchHint}</p>
+      {/* `field wide` and NOT `ask`, both of which were wrong before.
+          `class="field"` sat on the input itself, where every input rule in the
+          stylesheet is a descendant — `.field input` — so this field matched
+          none of them and rendered as the browser's own control: no line, no
+          radius, no surface, and no `min-height`, which left the one field in
+          the app below §10.7's touch floor. The label wore `.ask`, the display
+          size meant for a screen's SINGLE question, and this screen already has
+          its h1 — the same defect Momin caught on the settings rounding
+          question, arriving on a different screen. */}
+      <div class="field wide search">
+        {/* A real `<label for>` rather than the `aria-label` this carried. The
+            accessible name is identical; the difference is that a visible label
+            is also a tap target that focuses the field.
 
-      <p class="hint">{COPY.foods.countNote(shown.length, FOODS.length)}</p>
+            Still a VISIBLE label and still not a placeholder, which is the part
+            of the old comment worth keeping: placeholder-as-label disappears
+            the moment anyone types, which is exactly when a person looks up to
+            check what they are filling in. */}
+        <label for="food-search">{COPY.foods.searchLabel}</label>
+        <div class="search-box">
+          <span class="search-icon" aria-hidden="true">{'\u{1F50D}'}</span>
+          <TextInput
+            type="search"
+            id="food-search"
+            /*
+             * `data-field` no longer drives a focus restore — nothing restores
+             * focus any more, because nothing destroys the field. It stays
+             * because it is this input's stable identity for anything that has
+             * to FIND it: the continuity tests key on it, and note 25's
+             * recurrence was a screen shipping without one.
+             *
+             * The name is the state key it drives, so the two cannot drift.
+             */
+            data-field="foodQuery"
+            value={query}
+            autocomplete="off"
+            onValue={onQuery}
+          />
+          {/* Only once there is something to clear. A control that is always
+              there but does nothing most of the time is noise on a 412px
+              screen, and `type="search"`'s native version is hidden in the
+              stylesheet because two clear buttons is worse than either. */}
+          {query === '' ? null : (
+            <Button
+              class="search-clear"
+              aria-label={COPY.foods.searchClear}
+              onPress={() => { onQuery(''); }}
+            >
+              {'×'}
+            </Button>
+          )}
+        </div>
+        {/* Inside the field group, so the 0.25rem grid gap binds it to the box
+            it describes. It used to be a sibling of the count below, and two
+            identical `.hint` paragraphs in a row read as one grey block. */}
+        <p class="hint">{COPY.foods.searchHint}</p>
+      </div>
+
+      <p class="hint count">{COPY.foods.countNote(shown.length, FOODS.length)}</p>
 
       {shown.length === 0 ? (
         <p class="flag">{COPY.foods.empty(query)}</p>

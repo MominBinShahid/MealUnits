@@ -182,6 +182,12 @@ export const COPY = {
     intro:
       'Estimates, not measurements of your plate. Read the number, then type it yourself — nothing here fills the box in for you.',
     searchLabel: 'Search food',
+    /**
+     * Read aloud, never seen: the control it names is a `×`. §10.2's rule about
+     * bare abbreviations applies to what a screen reader says as much as to what
+     * is printed, so this says what the button DOES rather than "clear".
+     */
+    searchClear: 'Clear the search',
     searchHint: 'English or Roman Urdu — roti, chawal, qeema, biryani.',
     empty: (query: string): string =>
       `Nothing matches "${query}". Try the Urdu name, or a simpler word — "naan" rather than "tandoori naan".`,
