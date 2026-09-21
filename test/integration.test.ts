@@ -651,6 +651,49 @@ describe('§11.8 the food list — read-only by design', () => {
     expect(filtered).not.toContain('Tandoor naan, small tier');
   });
 
+  /**
+   * The clear control, added 2026-09-21 with the field's own styling.
+   *
+   * Found by ACCESSIBLE NAME, not by the `×` on its face. A test spelling the
+   * glyph asserts a typographic choice — `buttonLabel`'s own comment makes that
+   * argument about the back arrow — and this control has words precisely
+   * because a screen reader has to announce something other than "times".
+   *
+   * `fieldLabelled` is the second assertion here and it is not incidental: it
+   * resolves through `<label>`, so it can only find this input now that the
+   * field has a real one. Before this change the label was a `<div class="ask">`
+   * and nothing on the screen was a label at all.
+   */
+  it('offers nothing to clear until there is something, then clears it', async () => {
+    await setUpAsHisBrother();
+    await keys('180');
+    await tap('Next');
+    await tap('Food list');
+
+    // A bare `button` query, which `check_structural_query_count` deliberately
+    // does not count — it depends on nothing a port could change.
+    const clearControl = (): HTMLButtonElement | undefined =>
+      [...root.querySelectorAll('button')].find(
+        (button) => button.getAttribute('aria-label') === COPY.foods.searchClear,
+      );
+
+    expect(clearControl()).toBeUndefined();
+
+    await typeInto('Search food', 'qeema');
+    const field = fieldLabelled('Search food');
+    expect(text()).not.toContain('Tandoor naan, small tier');
+
+    const clear = clearControl();
+    if (!clear) throw new Error('no clear control once the field has a query');
+    clear.click();
+    await settle();
+
+    expect(field.value).toBe('');
+    expect(clearControl()).toBeUndefined();
+    // The whole table is back, not merely the field emptied.
+    expect(text()).toContain('Tandoor naan, small tier');
+  });
+
   it('carries every value\'s confidence and source, which is what §11.8 exempted it on', async () => {
     await setUpAsHisBrother();
     await keys('180');
