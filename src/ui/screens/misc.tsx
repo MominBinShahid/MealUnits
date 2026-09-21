@@ -26,7 +26,8 @@ import { INSULINS } from '../../data/insulins.js';
 import { waitInWords } from './insulin.js';
 import type { LogRow, Reading, Settings } from '../../core/types.js';
 import type { RecoveryBlock } from '../../storage/schema.js';
-import { COPY, units } from '../copy.js';
+import { units, useCopy } from '../copy.js';
+import type { Copy } from '../copy.js';
 import { Button, TextInput } from '../components.js';
 
 const MS_PER_DAY = HOURS_PER_DAY * MS_PER_HOUR;
@@ -42,6 +43,7 @@ export function DisclaimerScreen({
   readonly accepted: boolean;
   readonly onToggle: () => void;
 }): JSX.Element {
+  const COPY = useCopy();
   return (
     <div class="screen">
       <h1>{COPY.firstRun.disclaimerTitle}</h1>
@@ -109,6 +111,7 @@ function DoseRow({
   readonly row: Extract<LogRow, { deleted?: undefined }>;
   readonly handlers: HistoryHandlers;
 }): JSX.Element {
+  const COPY = useCopy();
   const asking = handlers.pendingDelete === row.id;
   const inWindow = hasRowInsideWindow([row], handlers.nowMs, DELETE_CONFIRM_WINDOW_HOURS);
   const reading = row.bloodSugar === null ? COPY.screens.noReading : `${String(row.bloodSugar)}\u00A0mg/dL`;
@@ -178,6 +181,7 @@ function ReadingRow({
   readonly row: Reading;
   readonly handlers: HistoryHandlers;
 }): JSX.Element {
+  const COPY = useCopy();
   const note = row.note === undefined ? '' : ` · ${COPY.reading.notes[row.note]}`;
   return (
     <li class="li">
@@ -215,6 +219,7 @@ export function HistoryScreen({
   readonly readings: readonly Reading[];
   readonly handlers: HistoryHandlers;
 }): JSX.Element {
+  const COPY = useCopy();
   const doses = log.filter(isInjection).slice().sort((a, b) => b.timestamp - a.timestamp);
   const sortedReadings = readings.slice().sort((a, b) => b.timestamp - a.timestamp);
 
@@ -284,6 +289,7 @@ export interface ExportHandlers {
  * sentence can."
  */
 function DosingQuestion({ handlers }: { readonly handlers: ExportHandlers }): JSX.Element | null {
+  const COPY = useCopy();
   if (handlers.dosingState === 'declined') return null;
 
   if (handlers.decliningDosing) {
@@ -367,6 +373,7 @@ function DosingQuestion({ handlers }: { readonly handlers: ExportHandlers }): JS
 }
 
 export function ExportScreen({ handlers }: { readonly handlers: ExportHandlers }): JSX.Element {
+  const COPY = useCopy();
   // §7.7.1 — SUPPRESSED when `log` and `readings` are both empty. "A fresh
   // install and a just-cleared record have nothing to protect, and §10.5's
   // doctrine is that a prompt firing with nothing behind it teaches the user to
@@ -449,6 +456,7 @@ export function ClearScreen({
   readonly readings: readonly Reading[];
   readonly handlers: ClearHandlers;
 }): JSX.Element {
+  const COPY = useCopy();
   const doses = log.filter(isInjection);
   const total = doses.length + readings.length;
   const stamps = [...doses, ...readings].map((row) => row.timestamp);
@@ -570,6 +578,7 @@ export function ClearScreen({
  * nothing.
  */
 export function StaleConnectionPanel(): JSX.Element {
+  const COPY = useCopy();
   return (
     <div class="prompt-bar stop" role="alert">
       <b>{COPY.staleConnection.title}</b>
@@ -597,6 +606,7 @@ export function WriteFailedPanel({
   readonly onStartOver: () => void;
   readonly onDismiss: () => void;
 }): JSX.Element {
+  const COPY = useCopy();
   return (
     /*
       `prompt-bar` and NOT `flag`, and it took a screenshot to learn why.
@@ -636,6 +646,7 @@ export function FailClosedScreen({
   readonly confirming: boolean;
   readonly onAsk: (asking: boolean) => void;
 }): JSX.Element {
+  const COPY = useCopy();
   return (
     <div class="screen">
       <h1>{COPY.failClosed.title}</h1>
@@ -719,6 +730,7 @@ export function HowItWorksScreen({
    */
   readonly insulinBrand: string | null;
 }): JSX.Element {
+  const COPY = useCopy();
   return (
     <div class="screen">
       <h1>{COPY.twoInsulins.title}</h1>
@@ -839,7 +851,10 @@ export function HowItWorksScreen({
  * doctor read "Doses are rounded to — ceil". The one reader who most needs the
  * setting to be legible got the enum.
  */
-function roundingName(roundingMode: Settings['roundingMode']): string {
+function roundingName(roundingMode: Settings['roundingMode'], copy: Copy): string {
+  // Not a component, so no hook: the words arrive from the component that
+  // could call one, rebound to the name the body already reads.
+  const COPY = copy;
   const found = COPY.rounding.modes.find((entry) => entry.roundingMode === roundingMode);
   return found === undefined ? roundingMode : found.name;
 }
@@ -850,8 +865,10 @@ export function SettingsAsTextScreen({
 }: {
   readonly settings: Settings;
 }): JSX.Element {
+  const COPY = useCopy();
   const waitText = waitInWords(
     eatDelayFor(classOf(INSULINS, settings.bolusId), settings.eatDelayMinutes),
+    COPY,
   );
   return (
     <div class="screen">
@@ -869,7 +886,7 @@ export function SettingsAsTextScreen({
         </li>
         <li class="li">
           <div class="k">{COPY.screens.asTextRounding}</div>
-          <div class="v">{roundingName(settings.roundingMode)}</div>
+          <div class="v">{roundingName(settings.roundingMode, COPY)}</div>
         </li>
         <li class="li">
           <div class="k">{COPY.screens.asTextThreshold}</div>

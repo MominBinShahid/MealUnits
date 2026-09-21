@@ -15,6 +15,8 @@
  * term so a person can talk to their doctor.
  */
 
+import { createContext } from 'preact';
+import { useContext } from 'preact/hooks';
 import {
   FAST_CARB_GRAMS,
   HYPO_LEVEL_1,
@@ -1682,3 +1684,39 @@ export const COPY = {
   cancel: 'Cancel',
   done: 'Done',
 } as const;
+
+/** The shape a language must fill in full — `10a`'s Urdu object will be one of these. */
+export type Copy = typeof COPY;
+
+/**
+ * The seam `10a` (Urdu) needs, added before any second language exists.
+ *
+ * `COPY` is a module-level constant, and a module-level constant cannot be
+ * swapped at runtime: a screen that reads the import directly is bound to
+ * English at load time, before any language question could be asked. Read
+ * through context instead, "which words" becomes a value the tree can supply.
+ *
+ * The DEFAULT is the English object, deliberately, and that is what makes this
+ * seam invisible: with no provider mounted, `useCopy()` answers `COPY` itself
+ * — the same object, not a copy of it — everywhere in the tree. No provider
+ * ships with this seam; mounting one belongs to the change that has a second
+ * language to mount.
+ *
+ * The specific trap the seam closes is the module-scope CAPTURE. `settings.tsx`
+ * held `const MODES = COPY.rounding.modes;` at module scope, which no provider
+ * could ever have reached: the value was read once at import time and would
+ * have stayed English for ever. That capture moved inside its component in the
+ * same change that added this context.
+ */
+export const CopyContext = createContext<Copy>(COPY);
+
+/**
+ * How a component asks for the words. Components read `COPY` from here rather
+ * than from the module constant, so that the day a provider exists the strings
+ * can change language without a single call site changing. Functions that are
+ * not components cannot call this — they take a `copy: Copy` parameter from
+ * the component that can.
+ */
+export function useCopy(): Copy {
+  return useContext(CopyContext);
+}

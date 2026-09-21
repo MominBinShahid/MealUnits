@@ -2,7 +2,7 @@ import type { JSX } from 'preact';
 import { matchFoods } from '../../core/foods.js';
 import type { Food } from '../../data/carbs.js';
 import { FOODS } from '../../data/carbs.js';
-import { COPY } from '../copy.js';
+import { useCopy } from '../copy.js';
 import { Button, TextInput } from '../components.js';
 
 export interface FoodListProps {
@@ -16,6 +16,7 @@ export interface FoodListProps {
  * why you wanted it.
  */
 function FoodRow({ food }: { readonly food: Food }): JSX.Element {
+  const COPY = useCopy();
   const amount = food.gramsMax === null
     ? `${String(food.grams)}\u00A0g`
     : `${String(food.grams)}–${String(food.gramsMax)}\u00A0g`;
@@ -52,6 +53,7 @@ function FoodRow({ food }: { readonly food: Food }): JSX.Element {
  * being asked at that exact moment, and it is noise anywhere else.
  */
 export function FoodListScreen({ query, onQuery }: FoodListProps): JSX.Element {
+  const COPY = useCopy();
   const shown = matchFoods(FOODS, query);
 
   return (

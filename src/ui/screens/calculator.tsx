@@ -25,7 +25,8 @@ import { classOf, eatDelayFor } from '../../core/insulin.js';
 import type { EatDelay } from '../../core/insulin.js';
 import { INSULINS } from '../../data/insulins.js';
 import type { JSX } from 'preact';
-import { COPY, units } from '../copy.js';
+import { units, useCopy } from '../copy.js';
+import type { Copy } from '../copy.js';
 import { Advisories, Button, Keypad, Readout, StepDots } from '../components.js';
 import type { AdvisoryView } from '../components.js';
 import type { AppState } from '../../state/machine.js';
@@ -83,7 +84,10 @@ const SECOND_STEP = FIRST_STEP + 1;
  * §10.5's ranked list, turned into renderable views. The RANK is the core's
  * (§4.3 step 11b); this only supplies the words, which live in `copy.ts`.
  */
-function advisoryViews(state: AppState, list: readonly Advisory[]): AdvisoryView[] {
+function advisoryViews(state: AppState, list: readonly Advisory[], copy: Copy): AdvisoryView[] {
+  // Not a component, so no hook: the words arrive from the component that
+  // could call one, rebound to the name the body already reads.
+  const COPY = copy;
   const views: AdvisoryView[] = [];
   const last = state.record.lastDose;
   for (const kind of list) {
@@ -165,6 +169,7 @@ function Working({
   readonly breakdown: Breakdown;
   readonly doseHundredths: number;
 }): JSX.Element {
+  const COPY = useCopy();
   const settings = state.settings;
   const correction =
     settings === null || state.inputs.bloodSugar === ''
@@ -232,6 +237,7 @@ function Blocked({
   readonly bands: readonly Band[];
   readonly handlers: CalculatorHandlers;
 }): JSX.Element {
+  const COPY = useCopy();
   const veryLow = bands.includes('D');
   const words = veryLow ? COPY.bandD : COPY.bandC;
   // §4.3 step 3 — a typed zero or a reading below the meter's floor gets the
@@ -289,6 +295,7 @@ function Blocked({
  * button, expansion in place, nothing modal.
  */
 function MeterGuidance({ handlers }: { readonly handlers: CalculatorHandlers }): JSX.Element {
+  const COPY = useCopy();
   if (!handlers.meterGuidanceShown) {
     return (
       <div>
@@ -327,6 +334,7 @@ function EntryScreen({
   readonly field: 'bloodSugar' | 'carbs';
   readonly handlers: CalculatorHandlers;
 }): JSX.Element {
+  const COPY = useCopy();
   const isReading = field === 'bloodSugar';
   const value = state.inputs[field];
   const [minReading, maxReading] = RANGE.bloodSugar.hard;
@@ -466,6 +474,7 @@ function ConfirmInputs({
   readonly state: AppState;
   readonly handlers: CalculatorHandlers;
 }): JSX.Element {
+  const COPY = useCopy();
   const reading =
     state.inputs.bloodSugar === ''
       ? COPY.confirm.noReading
@@ -500,6 +509,7 @@ function ConfirmInputs({
 
 /** §4.6 — one explicit tap, and never persisted. */
 function BlankReadingAck({ handlers }: { readonly handlers: CalculatorHandlers }): JSX.Element {
+  const COPY = useCopy();
   return (
     <div class="screen">
       <div class="ask">{COPY.blankReading.title}</div>
@@ -522,6 +532,7 @@ function BlankReadingAck({ handlers }: { readonly handlers: CalculatorHandlers }
 
 /** §6.4 — the app is wrong, not the user, and it cannot be overridden. */
 function BoundFailure({ handlers }: { readonly handlers: CalculatorHandlers }): JSX.Element {
+  const COPY = useCopy();
   return (
     <div class="screen">
       <div class="halt">
@@ -567,6 +578,7 @@ function TimingLine({
   readonly outcome: Outcome;
   readonly timeZone: string;
 }): JSX.Element | null {
+  const COPY = useCopy();
   if (outcome.kind !== 'dose' && outcome.kind !== 'meal_only_suppressed') return null;
   if (outcome.timingAdvice === 'suppressed') return null;
   if (outcome.timingAdvice === 'eat_first') {
@@ -620,10 +632,11 @@ function ResultScreen({
   readonly outcome: Outcome;
   readonly handlers: CalculatorHandlers;
 }): JSX.Element {
+  const COPY = useCopy();
   if (outcome.kind !== 'dose' && outcome.kind !== 'meal_only_suppressed') {
     return <div class="screen" />;
   }
-  const views = advisoryViews(state, outcome.advisories);
+  const views = advisoryViews(state, outcome.advisories, COPY);
 
   return (
     <div class="screen">
@@ -706,6 +719,7 @@ function OverrideScreen({
   readonly outcome: Outcome;
   readonly handlers: CalculatorHandlers;
 }): JSX.Element {
+  const COPY = useCopy();
   if (outcome.kind !== 'meal_only_suppressed') return <div class="screen" />;
   const last = state.record.lastDose;
   const withheld = outcome.overrideFiguresWithheld;
@@ -761,6 +775,7 @@ function AmountScreen({
   readonly outcome: Outcome;
   readonly handlers: CalculatorHandlers;
 }): JSX.Element {
+  const COPY = useCopy();
   if (outcome.kind !== 'dose' && outcome.kind !== 'meal_only_suppressed') {
     return <div class="screen" />;
   }
@@ -829,6 +844,7 @@ function LoggedScreen({
   readonly state: AppState;
   readonly handlers: CalculatorHandlers;
 }): JSX.Element {
+  const COPY = useCopy();
   const payload = state.committing;
   const delay = eatDelayOf(state);
   const window = payload === null || delay === null ? null : eatWindow(payload.timestamp, delay);
@@ -877,6 +893,7 @@ function RecordReadingScreen({
   readonly state: AppState;
   readonly handlers: CalculatorHandlers;
 }): JSX.Element {
+  const COPY = useCopy();
   return (
     <div class="screen">
       <div class="ask">{COPY.reading.title}</div>

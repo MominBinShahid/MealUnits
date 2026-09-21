@@ -5,7 +5,7 @@
 import type { ComponentChildren, JSX } from 'preact';
 import { useRef } from 'preact/hooks';
 import { ADVISORY_BUDGET } from '../config.js';
-import { COPY } from './copy.js';
+import { useCopy } from './copy.js';
 import type { Advisory } from '../core/types.js';
 
 /**
@@ -153,6 +153,7 @@ export interface KeypadProps {
 const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
 
 export function Keypad({ decimal, onDigit, onBackspace, action }: KeypadProps): JSX.Element {
+  const COPY = useCopy();
   return (
     <div class="pad">
       {DIGITS.map((digit) => (
@@ -235,6 +236,7 @@ export function Advisories({
   readonly onMore: () => void;
   readonly expanded: boolean;
 }): JSX.Element | null {
+  const COPY = useCopy();
   if (views.length === 0) return null;
   const shown = expanded ? views : views.slice(0, ADVISORY_BUDGET);
   const hidden = views.length - shown.length;
