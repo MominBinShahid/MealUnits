@@ -161,9 +161,15 @@ export default tseslint.config(
        * as a design violation, which is why it is worth a rule.
        *
        * NOT a ban — a stop sign. Adding one means deciding whether the one-turn
-       * contract still holds, and saying so. Today nothing in `src/ui` uses
-       * either; `useRef` in `TextInput` is the only hook in the tree, and a ref
-       * is synchronous.
+       * contract still holds, and saying so. Nothing in `src/ui` uses either.
+       *
+       * Two hooks are in the tree and both are synchronous, which is the whole
+       * reason they are allowed: `useRef` in `TextInput`, and `useContext` via
+       * `useCopy` on every screen — added 2026-09-21 as 10a's seam. `useContext`
+       * reads the value during render and schedules nothing, so dispatch-to-DOM
+       * is still one turn. This sentence said `useRef` was the ONLY hook until
+       * the change that made that false, and the agent doing it reported the
+       * staleness rather than leaving it.
        *
        * **In THIS array, and the first attempt was not.** It went into the
        * plugin block below as its own `no-restricted-syntax`, which silently

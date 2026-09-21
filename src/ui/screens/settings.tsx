@@ -14,7 +14,8 @@ import {
 import { parseField, withinHardRange, withinSoftBand } from '../../core/parse.js';
 import { modeNeedsAcknowledgement } from '../../core/round.js';
 import type { JSX } from 'preact';
-import { COPY } from '../copy.js';
+import { useCopy } from '../copy.js';
+import type { Copy } from '../copy.js';
 import { Button, TextInput } from '../components.js';
 import type { RoundingMode, Settings } from '../../core/types.js';
 import { classEatDelay } from '../../core/insulin.js';
@@ -125,7 +126,10 @@ const OPTIONAL_NUMERIC: readonly {
   readonly range: keyof typeof RANGE;
 }[] = [{ field: 'eatDelay', range: 'eatDelay' }];
 
-export function checkDraft(draft: SettingsDraft): FieldProblem[] {
+export function checkDraft(draft: SettingsDraft, copy: Copy): FieldProblem[] {
+  // Not a component, so no hook: the words arrive from the component that
+  // could call one, rebound to the name the body already reads.
+  const COPY = copy;
   const problems: FieldProblem[] = [];
   for (const field of NUMERIC) {
     const parsed = parseField(draft[field], field);
@@ -193,7 +197,10 @@ export interface Delta {
   readonly now: string;
 }
 
-export function deltasFor(settings: Settings | null, draft: SettingsDraft): Delta[] {
+export function deltasFor(settings: Settings | null, draft: SettingsDraft, copy: Copy): Delta[] {
+  // Not a component, so no hook: the words arrive from the component that
+  // could call one, rebound to the name the body already reads.
+  const COPY = copy;
   if (settings === null) return [];
   const deltas: Delta[] = [];
   // A ratio fat-fingered from 10 to 40 is INSIDE the soft range, produces 5
@@ -470,14 +477,6 @@ function NumberField({
 }
 
 /**
- * The buttons ARE `COPY.rounding.modes` — the same list the how-it-works page
- * explains, each entry carrying the mode it sets. Until 2026-09-13 the five
- * names existed twice, here and there, so renaming one left the other
- * disagreeing about what the button is called (§10.2).
- */
-const MODES = COPY.rounding.modes;
-
-/**
  * What the record still knows, after a repair took the settings row.
  *
  * Rendered only on FIRST RUN and only when history exists — the pair that can
@@ -495,6 +494,7 @@ function RebuiltPrescription({
   readonly period: SettingsPeriod;
   readonly changedAt: string;
 }): JSX.Element {
+  const COPY = useCopy();
   return (
     <div class="flag mint">
       <b>{COPY.repairedPrescription.title}</b>
@@ -538,7 +538,20 @@ export function SettingsScreen({
    */
   readonly rebuilt: { readonly period: SettingsPeriod; readonly changedAt: string } | null;
 }): JSX.Element {
-  const problems = checkDraft(draft);
+  const COPY = useCopy();
+  /**
+   * The buttons ARE `COPY.rounding.modes` — the same list the how-it-works page
+   * explains, each entry carrying the mode it sets. Until 2026-09-13 the five
+   * names existed twice, here and there, so renaming one left the other
+   * disagreeing about what the button is called (§10.2).
+   *
+   * INSIDE the component body, moved from module scope when `useCopy` arrived:
+   * a module-scope capture reads the English object once, at import time, and
+   * no copy provider could ever have reached it — see `CopyContext` in
+   * `../copy.js`, whose comment names this constant as the trap.
+   */
+  const MODES = COPY.rounding.modes;
+  const problems = checkDraft(draft, COPY);
   const problemFor = (field: keyof SettingsDraft): FieldProblem | undefined =>
     problems.find((problem) => problem.field === field);
   // §8.5 — read off the DRAFT rather than off `settings`, so on a first run the
@@ -547,14 +560,14 @@ export function SettingsScreen({
   const insulinBrand = insulin?.brand ?? null;
   const insulinMolecule = insulin?.molecule ?? null;
   const insulinClass = insulin === undefined ? null : insulin.insulinClass;
-  const classWait = waitInWords(classEatDelay(insulinClass));
+  const classWait = waitInWords(classEatDelay(insulinClass), COPY);
   const ownParsed = parseField(draft.eatDelay, 'eatDelay');
   const ownWait =
     ownParsed.state === 'valid' || ownParsed.state === 'zero'
       ? COPY.insulin.waitOwnSet(String(ownParsed.value))
       : null;
   const blocking = problems.filter((problem) => !problem.confirmable);
-  const deltas = deltasFor(settings, draft);
+  const deltas = deltasFor(settings, draft, COPY);
   const needsCeilAck = modeNeedsAcknowledgement(draft.roundingMode) && !handlers.ceilAcknowledged;
 
   return (

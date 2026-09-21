@@ -15,7 +15,8 @@
  */
 
 import type { JSX } from 'preact';
-import { COPY } from '../copy.js';
+import { useCopy } from '../copy.js';
+import type { Copy } from '../copy.js';
 import { Button } from '../components.js';
 import { classEatDelay, exitKindFor, isMealtimeClass, UNKNOWN_INSULIN } from '../../core/insulin.js';
 import type { EatDelay, InsulinClass } from '../../core/insulin.js';
@@ -36,7 +37,18 @@ import type { Insulin } from '../../data/insulins.js';
  */
 const CONTACT_FORM_URL = 'https://mominbinshahid.github.io/contact/';
 const CONTACT_EMAIL = 'MominBinShahid@gmail.com';
-const CONTACT_MAILTO = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(COPY.insulin.contactSubject)}`;
+/**
+ * The subject line is TRANSLATED, so the address cannot be built at module
+ * scope — found by the agent that did the `useCopy` sweep, and it is the same
+ * trap as `settings.tsx`'s `MODES`: a module-level read happens once, at import,
+ * and would have stayed English for ever however the language was set.
+ *
+ * The two constants above it are NOT translated and stay where they are. A URL
+ * and an address are not words.
+ */
+function contactMailto(copy: Copy): string {
+  return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(copy.insulin.contactSubject)}`;
+}
 
 /**
  * The class order on screen, and every part of it is a decision.
@@ -66,7 +78,10 @@ const CLASS_ORDER: readonly InsulinClass[] = [
 ];
 
 /** §8.5 — a wait, in the words the reader gets rather than as a pair of numbers. */
-export function waitInWords(delay: EatDelay | null): string | null {
+export function waitInWords(delay: EatDelay | null, copy: Copy): string | null {
+  // Not a component, so no hook: the words arrive from the component that
+  // could call one, rebound to the name the body already reads.
+  const COPY = copy;
   if (delay === null) return null;
   const [lo, hi] = delay;
   if (hi === 0) return COPY.insulin.waitZero;
@@ -93,6 +108,7 @@ function Row({
   readonly insulin: Insulin;
   readonly onPick: (id: string) => void;
 }): JSX.Element {
+  const COPY = useCopy();
   return (
     <Button
       class="go quiet insulin"
@@ -114,6 +130,7 @@ function Row({
 
 /** The list. Grouped, ordered, and with "I don't know" as a real row at the end. */
 function Picker({ handlers }: { readonly handlers: InsulinHandlers }): JSX.Element {
+  const COPY = useCopy();
   return (
     <div class="screen">
       <h1>{COPY.insulin.title}</h1>
@@ -193,7 +210,8 @@ function Echo({
   readonly insulin: Insulin;
   readonly handlers: InsulinHandlers;
 }): JSX.Element {
-  const wait = waitInWords(classEatDelay(insulin.insulinClass));
+  const COPY = useCopy();
+  const wait = waitInWords(classEatDelay(insulin.insulinClass), COPY);
   return (
     <div class="screen">
       <h1>{COPY.insulin.confirmTitle(insulin.brand)}</h1>
@@ -230,6 +248,7 @@ function Echo({
 
 /** The echo for "I don't know", which has no class facts to restate. */
 function UnknownEcho({ handlers }: { readonly handlers: InsulinHandlers }): JSX.Element {
+  const COPY = useCopy();
   return (
     <div class="screen">
       <h1>{COPY.insulin.unknownLabel}</h1>
@@ -287,6 +306,7 @@ export function InsulinUnsupportedScreen({
   readonly hasRecord: boolean;
   readonly handlers: InsulinHandlers;
 }): JSX.Element {
+  const COPY = useCopy();
   const brand = insulin?.brand ?? '';
   const insulinClass = insulin?.insulinClass ?? 'premix';
   const wrongTurn = exitKindFor(insulinClass) === 'wrong_turn';
@@ -335,7 +355,7 @@ export function InsulinUnsupportedScreen({
             <a class="go quiet" href={CONTACT_FORM_URL} target="_blank" rel="noreferrer">
               {COPY.insulin.contactForm}
             </a>
-            <a class="go quiet" href={CONTACT_MAILTO}>
+            <a class="go quiet" href={contactMailto(COPY)}>
               {COPY.insulin.contactEmail}
             </a>
           </div>
