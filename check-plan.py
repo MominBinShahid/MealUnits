@@ -942,8 +942,14 @@ _INPUT_SETS = {}
 # because it pins a NON-ZERO count and saw it drop to nought.
 #
 # A floor is that property, made general. It does not catch a regex that stopped
-# matching inside a walk that still finds its files; SELF_TESTS covers that half,
-# and the two are not substitutes.
+# matching inside a walk that still finds its files.
+#
+# **This comment used to say SELF_TESTS covers that half. It does not**, and
+# check 34 is the counter-example: it resolved two of three `Omit<>` targets and
+# reported clean, and a seeded mutation landing on either of the two it COULD
+# see would have certified it. A single seed proves a check can fire once; it
+# says nothing about how much of its input the check ever looked at. §20.3 now
+# carries the third rule that closes this — a resolver reports what it resolved.
 #
 # The numbers are deliberately well below today's counts. They are not a census
 # — deleting a screen must not fail the build — they are the point at which
@@ -3729,6 +3735,12 @@ def check_soft_bands_against_config(corpus):
     return out
 
 
+# Targets check 34 knowingly cannot resolve, each of which must earn its place.
+# EMPTY IS THE CORRECT STATE. A name here is a site the check is blind to, so it
+# is a debt rather than a configuration — see §20.3's third rule.
+OMIT_UNRESOLVED_OK = set()
+
+
 def check_omit_targets(corpus):
     """34. `Omit<T, 'field'>` naming a field that is not a key of `T`.
 
@@ -3746,9 +3758,11 @@ def check_omit_targets(corpus):
         which stopped forbidding a patch from rewriting the PRIMARY KEY. Only
         the `put` re-setting `key` after the spread kept that harmless.
 
-    Interfaces declared outside `src/` cannot be resolved, so an `Omit` of an
-    imported or generic type is SKIPPED rather than guessed at — this reports
-    what it can prove wrong, not what it cannot prove right.
+    An `Omit` whose target this parser cannot resolve is REPORTED, not skipped.
+    Silently skipping is how the check came to be blind to a third of its own
+    input while reporting clean; §20.3's third rule is the general form of that
+    lesson. A target that genuinely cannot be resolved goes in
+    OMIT_UNRESOLVED_OK, where it is visible as a debt.
     """
     out = []
     sources = {}
@@ -3803,6 +3817,19 @@ def check_omit_targets(corpus):
             target, keys = m.group(1), m.group(2)
             known = fields_of(target)
             if known is None:
+                # §20.3's third rule. Skipping silently is what let this check
+                # sit blind to `Settings` — `interface Settings extends
+                # DosingSettings` did not match the parser, so a THIRD of the
+                # `Omit<>` in this repository were invisible and the check said
+                # clean. An unresolvable target is now a finding: either teach
+                # the parser, or declare it in OMIT_UNRESOLVED_OK with a reason.
+                if target not in OMIT_UNRESOLVED_OK:
+                    out.append("%s:%d: `Omit<%s, ...>` — this check CANNOT "
+                               "resolve `%s`, so it is not checking this site "
+                               "at all. Teach the parser, or declare it in "
+                               "OMIT_UNRESOLVED_OK"
+                               % (rel, text[:m.start()].count("\n") + 1,
+                                  target, target))
                 continue
             for key in re.findall(r"['\"](\w+)['\"]", keys):
                 if key not in known:
@@ -4291,6 +4318,14 @@ SELF_TESTS = [
      lambda t: t.replace(
          '"An insulin bolus calculator for people with type 1 diabetes',
          '"An insulin bolus calculator for one person')),
+    # §20.3's third rule, and check 34's own blind spot made permanent. An
+    # `Omit` of a type declared nowhere in `src/` is a site the check cannot
+    # examine; before 2026-09-21 it was skipped in silence and the run stayed
+    # clean, which is the exact shape that hid `Settings` from it.
+    ("Omit<> of a type the checker cannot resolve", "src/storage/repo.ts",
+     lambda t: t.replace(
+         "export interface StoredState {",
+         "type Unresolvable = Omit<NotDeclaredAnywhere, 'field'>;\n\nexport interface StoredState {")),
     # Check 35. `injected` sat in SOFT_RANGES for ten days after `config.ts`
     # struck its band, and every soft-band check stayed quiet because they only
     # fire on a band a DOCUMENT states. This seeds the same drift on a field
