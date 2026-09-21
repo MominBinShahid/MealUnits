@@ -12,7 +12,7 @@
 import { IDBFactory } from 'fake-indexeddb';
 import { DELETE_CONFIRM_WINDOW_HOURS } from '../src/config.js';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DATABASE_NAME, META_KEY, SETTINGS_KEY, STORE } from '../src/storage/schema.js';
+import { DATABASE_NAME, DATABASE_VERSION, META_KEY, SETTINGS_KEY, STORE } from '../src/storage/schema.js';
 import type { EnvelopeRow, SettingsHistoryRow, SettingsRow } from '../src/storage/schema.js';
 import type { SettingsCommit } from '../src/storage/repo.js';
 import { deleteDatabase, openDatabase, readRecoveryBlock } from '../src/storage/open.js';
@@ -108,14 +108,128 @@ describe('§11.3 opening the database', () => {
     db.close();
   });
 
+  /**
+   * The defect of 2026-09-21, which shipped to every install that already
+   * existed and which nothing in this suite could see.
+   *
+   * `#63` renamed the keyPath of `meta`, `settings` and `acks` from `k` to
+   * `key`. That edit lives inside `onupgradeneeded`, the version number never
+   * moved, and so the rename reached databases created afterwards and no
+   * others. The app then wrote `{ key: ... }` into a store keyed on `k` and
+   * IndexedDB refused every write.
+   *
+   * **Nothing caught it because nothing here had ever opened a database written
+   * by an earlier build.** Every case in this file starts from a fresh
+   * `IDBFactory`; every smoke session wipes its profile on purpose. The one
+   * state every real phone is always in was the one state never exercised. This
+   * block is that state, and `tools/smoke.mjs` does it again against real
+   * Chrome with two real builds.
+   */
+  async function asBuiltBeforeTheRename(withALoggedDose: boolean): Promise<void> {
+    await new Promise<void>((resolve) => {
+      const request = idb.open(DATABASE_NAME, 1);
+      request.onupgradeneeded = (): void => {
+        const db = request.result;
+        // Exactly what `createStores` said before `#63`.
+        db.createObjectStore(STORE.meta, { keyPath: 'k' });
+        db.createObjectStore(STORE.settings, { keyPath: 'k' });
+        db.createObjectStore(STORE.acks, { keyPath: 'k' });
+        db.createObjectStore(STORE.log, { keyPath: 'id' }).createIndex('by_timestamp', 'timestamp');
+        db.createObjectStore(STORE.readings, { keyPath: 'id' }).createIndex('by_timestamp', 'timestamp');
+        db.createObjectStore(STORE.settingsHistory, { keyPath: 'revision' });
+        const meta = request.transaction?.objectStore(STORE.meta);
+        meta?.put({ k: META_KEY.envelope, schemaVersion: 1, recovery: null });
+        if (withALoggedDose) {
+          request.transaction?.objectStore(STORE.log).put({ ...injection(), id: 'survivor' });
+        }
+      };
+      request.onsuccess = (): void => {
+        request.result.close();
+        resolve();
+      };
+    });
+  }
+
+  it('repairs a store whose keyPath belongs to an older build', async () => {
+    await asBuiltBeforeTheRename(false);
+    const db = await open();
+    const tx = db.transaction([STORE.meta, STORE.settings, STORE.acks], 'readonly');
+    expect(String(tx.objectStore(STORE.meta).keyPath)).toBe('key');
+    expect(String(tx.objectStore(STORE.settings).keyPath)).toBe('key');
+    expect(String(tx.objectStore(STORE.acks).keyPath)).toBe('key');
+    db.close();
+  });
+
+  it('and the write that used to throw DataError now lands', async () => {
+    // The symptom as Momin met it: "Save and start" did nothing, the console
+    // carried `Evaluating the object store's key path did not yield a value`,
+    // and the app said nothing at all.
+    await asBuiltBeforeTheRename(false);
+    const db = await open();
+    await expect(commitSettings(db, PRESCRIPTION satisfies SettingsCommit)).resolves.toBeDefined();
+    const settings = await runTransaction(db, [STORE.settings], 'readonly', (tx) =>
+      get<SettingsRow>(tx, STORE.settings, SETTINGS_KEY),
+    );
+    expect(settings?.isf).toBe(30);
+    db.close();
+  });
+
+  /**
+   * The reason the repair is per-store rather than `deleteDatabase`. `#63`
+   * changed neither the log's keyPath nor its row shape, so there is nothing
+   * wrong with those rows and no reason a fix should cost them. The
+   * prescription is three numbers on a piece of paper; the log is months
+   * nobody can reconstruct.
+   */
+  it('and the log survives it, because nothing was wrong with the log', async () => {
+    await asBuiltBeforeTheRename(true);
+    const db = await open();
+    const rows = await runTransaction(db, [STORE.log], 'readonly', (tx) =>
+      getAll<LogRow>(tx, STORE.log),
+    );
+    expect(rows.map((row) => row.id)).toEqual(['survivor']);
+    db.close();
+  });
+
+  /**
+   * A structural bump reaches HEALTHY installs too, and on those the upgrade
+   * must be a no-op. Writing the envelope unconditionally would overwrite the
+   * frozen recovery block on every one of them — turning a fix into silent loss
+   * of the single row §7.9 exists to preserve.
+   */
+  it('leaves a database that already matches completely alone', async () => {
+    const first = await open();
+    await commitSettings(first, PRESCRIPTION satisfies SettingsCommit);
+    const before = await runTransaction(first, [STORE.meta], 'readonly', (tx) =>
+      get<EnvelopeRow>(tx, STORE.meta, META_KEY.envelope),
+    );
+    expect(before?.recovery).not.toBeNull();
+    first.close();
+
+    const again = await open();
+    const after = await runTransaction(again, [STORE.meta], 'readonly', (tx) =>
+      get<EnvelopeRow>(tx, STORE.meta, META_KEY.envelope),
+    );
+    expect(after?.recovery).toEqual(before?.recovery);
+    again.close();
+  });
+
   it('§11.3 — a DOWNGRADE fails closed, on the request error event', async () => {
     // The behaviour the plan calls out twice: "`VersionError` is an ASYNCHRONOUS
     // REQUEST ERROR, not a synchronous throw from `open()`. Handle it on the
     // request, not in a try/catch around the call."
     //
-    // A database written at schema 2, opened by a build at schema 1.
+    // A database written one STRUCTURAL version ahead of this build.
+    //
+    // This said `2` until 2026-09-21, when `DATABASE_VERSION` became 2 itself —
+    // so the setup stopped describing a newer build and started describing this
+    // one, and the case fell through to the envelope check and reported
+    // `schema` instead of `version`. The assertion below never changed and the
+    // behaviour it guards never changed; the literal had quietly encoded "one
+    // more than ours", and ours moved. Written as the arithmetic it always
+    // meant, so the next bump cannot break it the same way.
     await new Promise<void>((resolve) => {
-      const request = idb.open(DATABASE_NAME, 2);
+      const request = idb.open(DATABASE_NAME, DATABASE_VERSION + 1);
       request.onupgradeneeded = (): void => {
         request.result.createObjectStore(STORE.meta, { keyPath: 'key' });
       };

@@ -1282,6 +1282,76 @@ ones deliberately not acted on — the same standing as everything else in this 
 
 ---
 
+### T26. A keyPath rename bricked every install that already existed — FIXED 2026-09-21
+
+**The defect.** `#63` renamed the keyPath of `meta`, `settings` and `acks` from `k` to `key`. That
+line lives inside `onupgradeneeded`, which fires only when the IndexedDB version INCREASES — and the
+version was an alias of `SCHEMA_VERSION`, which had been `1` since the first commit and which nobody
+moved, because no ROW had changed shape. So the rename reached databases created afterwards and no
+others.
+
+Every install that already existed kept three stores keyed on `k`. Every write the new code made
+sent an object whose field is `key`, and IndexedDB answered `DataError: Evaluating the object store's
+key path did not yield a value` — on the disclaimer acknowledgement and on the settings commit. The
+rejections were unhandled, so **"Save and start" did nothing and the screen said nothing**. Momin hit
+it on localhost; anyone whose install predated that morning would have hit it on their next dose.
+
+**Why nothing caught it, which is the part worth keeping.** Every vitest case gets a fresh
+`fake-indexeddb`. Every smoke session wipes its `--user-data-dir` on purpose, and the comment doing
+it argues correctly that a dirty profile is worse than none. Both are right, and between them
+**nothing in this project had ever opened a database written by a previous build** — the one state
+every real phone is always in.
+
+**The fix, in four parts.**
+
+1. **The two versions are two numbers.** `SCHEMA_VERSION` is the DECLARED schema — the shape of the
+   rows, carried in `meta.envelope.schemaVersion`, and the only thing §11.3's compatibility check
+   compares. It stays `1`. `STRUCTURE_VERSION` is the IndexedDB version — the shape of the STORES,
+   passed to `open()`, and the only thing that can make `onupgradeneeded` fire. It is `2`. Momin
+   pushed back hard on bumping anything, and he was right that the declared schema had not changed;
+   splitting them is what let both answers be true at once.
+2. **`STORE_SCHEMA` declares the structure as data**, and `createStores` builds from it while
+   `mismatchedStores` checks against it. One list, two readers.
+3. **The upgrade repairs what does not match**, per store. `deleteObjectStore` then recreate,
+   because IndexedDB has no `ALTER`. **The rows in a rebuilt store are gone — not read, not renamed,
+   not copied**, which is what keeps this from being the compatibility code deleted the same day: it
+   never learns what an old row looked like. Stores that already match are untouched, so on a
+   database broken by `#63` the log and the readings survive intact. The prescription is three
+   numbers on a piece of paper; the log is months nobody can reconstruct.
+4. **A failed write reaches the screen.** Four writes were spelled `void somethingAsync()`, which
+   discards the promise and the rejection with it. They go through `guardWrite` now and raise a
+   panel. The dose write is deliberately NOT routed through it — §7.2 already gives that one a
+   pending state, a retry and `onSaveStuck`, because a dose that did not save outlives its screen.
+
+**Two checks, so it cannot come back.** `check_store_schema_pinned` (check 36) pins every store's
+keyPath and indexes plus `STRUCTURE_VERSION` in `check-plan.py`, so a structural change has to be
+made in two files and the message says which. And `tools/smoke.mjs` has an upgrade session that
+seeds the pre-`#63` structure in real Chrome — read off the real thing, by building the commit
+before `#63` in a worktree and reporting its key paths — then asserts setup completes, the three
+stores come back on `key`, **the logged dose survives**, and a new dose can be worked out.
+
+**Not offered: a permanent "delete everything" link.** Momin proposed one under "Save and start" and
+then withdrew it himself: *"if we are fixing the actual thing correctly without doing the backward
+compatible code then why do you think I need that link… if in future if I need this link again then
+that means something you did actually is a mistake or is a regression."* Start over appears in the
+write-failure panel, which shows only when a write has actually failed. The argument for a permanent
+one — that `first_run_settings` means nothing is stored yet — does not hold: it is shown whenever
+`settings === null`, and a settings row broken by exactly this defect reads back as null while the
+log reads back fine.
+
+**One existing test changed its setup and the change is recorded here rather than slid past.**
+`§11.3 — a DOWNGRADE fails closed` created a database at version `2` to stand for "newer than this
+build". `DATABASE_VERSION` is now `2` itself, so that setup stopped describing a newer build and
+started describing this one. It is `DATABASE_VERSION + 1` now — the arithmetic the literal always
+meant. The assertion never changed and neither did the behaviour.
+
+**Still open, found while fixing this and not fixed here.** `basalName` and `basalTiming` have no
+label association at all: `TextField` sets `<label id>` and `aria-describedby` only when
+`describedBy` is passed, and those two pass nothing. No field's `hint` is in its accessible
+description either. Found during `T25`'s review; nobody has decided what it should be.
+
+---
+
 ### T24. Two fingers on the keypad enter nothing — PARKED 2026-09-21
 
 **Momin, on a real phone: type with two fingers and you lose BOTH digits.** Reproduced, diagnosed

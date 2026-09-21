@@ -1602,6 +1602,30 @@ export const COPY = {
     blocked: 'Close this app’s other tabs and try again.',
   },
 
+  /**
+   * A WRITE THAT FAILED, SAID OUT LOUD — added 2026-09-21.
+   *
+   * `onSave` was `void saveSettings()` and the rejection went nowhere, so a
+   * storage failure showed as a button that did nothing. That is how the
+   * keyPath defect of that morning presented: "Save and start" pressed, no
+   * message, no record, and a console nobody on a phone can open. An app whose
+   * whole value is the record must never fail to write one quietly.
+   *
+   * Separate from `failClosed`, which says the record cannot be READ and is a
+   * state the app boots into. This one is an action that did not happen.
+   */
+  writeFailed: {
+    title: 'That did not save.',
+    body: 'The app could not write to this device’s storage, so nothing on this screen has been recorded.',
+    /**
+     * Said before the control, not after. Starting over is the only repair the
+     * app can offer from here, and it is also the one that costs everything —
+     * §7.9's rule that the escape is offered honestly or not at all.
+     */
+    startOverHint: 'If it keeps happening, starting over rebuilds the storage — and deletes everything already recorded.',
+    dismiss: 'Close',
+  },
+
   /** §11.3 — another tab deleted the record while this one was open. */
   recordDeleted: {
     title: 'The record was cleared in another tab.',

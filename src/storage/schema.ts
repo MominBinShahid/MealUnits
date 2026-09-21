@@ -19,11 +19,20 @@
  * row means a blind safety gate.
  */
 
-import { SCHEMA_VERSION } from '../config.js';
+import { SCHEMA_VERSION, STRUCTURE_VERSION } from '../config.js';
 import type { RoundingMode } from '../core/types.js';
 
 export const DATABASE_NAME = 'MealUnits';
-export const DATABASE_VERSION = SCHEMA_VERSION;
+/**
+ * The IndexedDB version, under the name IndexedDB itself uses for it. It was an
+ * alias of `SCHEMA_VERSION` until 2026-09-21, and that alias is the defect:
+ * "the version" read as one idea when it is two, so a keyPath rename shipped
+ * without the bump that would have made it reach a single existing install.
+ * `config.ts` carries the whole account.
+ */
+export const DATABASE_VERSION = STRUCTURE_VERSION;
+/** Re-exported so `open.ts` reads both numbers from one place. */
+export { SCHEMA_VERSION };
 
 export const STORE = {
   meta: 'meta',

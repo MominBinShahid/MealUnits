@@ -684,6 +684,104 @@ await session('/tmp/mealunits-smoke-touch', 9306, 412, async ({ ev, send, open }
 });
 }
 
+// AN INSTALL MADE BY AN EARLIER BUILD — the axis nothing in this project has
+// ever tested, and the one every real phone is always on.
+//
+// Every vitest case gets a fresh `fake-indexeddb`. Every session above wipes its
+// `--user-data-dir` on purpose, and the comment on the food-list session argues
+// correctly that a dirty profile is worse than none. Both are right, and between
+// them they meant the suite only ever met a database this build had just made.
+//
+// So #63's keyPath rename — `meta`, `settings` and `acks` from `k` to `key`,
+// inside an `onupgradeneeded` that only fires when the version moves, with a
+// version that did not move — reached databases created afterwards and no
+// others. Every install that already existed kept three stores keyed on `k`,
+// every write sent an object keyed `key`, and IndexedDB refused it:
+// `DataError: Evaluating the object store's key path did not yield a value`.
+// "Save and start" did nothing and said nothing. 789 tests and a clean smoke run
+// reported no such thing.
+//
+// THE OLD STRUCTURE IS SEEDED RATHER THAN BUILT, and the difference is worth
+// stating. Checking out the pre-#63 commit and building it is the faithful
+// version and it is not something CI can do on every push. What is seeded here
+// was READ BACK OFF THE REAL THING: the commit before #63 was built into a
+// worktree on 2026-09-21, set up through a real first run, and its database
+// reported `acks=k, log=id, meta=k, readings=id, settings=k,
+// settingsHistory=revision`. That is the line below, verbatim.
+//
+// Real Chrome and not `fake-indexeddb`, because `deleteObjectStore` inside a
+// `versionchange` transaction is exactly the kind of thing a shim can get
+// almost right.
+rmSync('/tmp/mealunits-smoke-upgrade', { recursive: true, force: true });
+await session('/tmp/mealunits-smoke-upgrade', 9308, 412, async ({ ev, send, open }) => {
+  // A page on the app's ORIGIN that is not the app, so the database can be
+  // seeded before any of its code runs.
+  await send('Page.navigate', { url: new URL('robots.txt', URL_UNDER_TEST).href });
+  await wait(800);
+
+  const seeded = await ev(`new Promise((resolve) => {
+    const open = indexedDB.open('MealUnits', 1);
+    open.onupgradeneeded = () => {
+      const db = open.result;
+      db.createObjectStore('meta', { keyPath: 'k' });
+      db.createObjectStore('settings', { keyPath: 'k' });
+      db.createObjectStore('acks', { keyPath: 'k' });
+      db.createObjectStore('log', { keyPath: 'id' }).createIndex('by_timestamp', 'timestamp');
+      db.createObjectStore('readings', { keyPath: 'id' }).createIndex('by_timestamp', 'timestamp');
+      db.createObjectStore('settingsHistory', { keyPath: 'revision' });
+      const tx = open.transaction;
+      tx.objectStore('meta').put({ k: 'envelope', schemaVersion: 1, recovery: null });
+      tx.objectStore('log').put({ id: 'survivor', timestamp: 1757000000000, bloodSugar: 180,
+        carbs: 50, calculatedUnits: 600, injectedUnits: 600, settingsRevision: 1,
+        overrodeStacking: false, timingAdvice: 'before', advisoryFlagged: false });
+    };
+    open.onsuccess = () => { open.result.close(); resolve('ok'); };
+    open.onerror = () => resolve('failed: ' + String(open.error));
+  })`);
+  check('upgrade: a database in the shape the previous build left', seeded, 'ok');
+
+  await open(URL_UNDER_TEST);
+  const tap = await setUp({ ev, send });
+
+  // THE SYMPTOM. Before the repair this returned '' — the disclaimer would not
+  // stay accepted and the settings commit threw, so setup never completed.
+  check('upgrade: setup completes on a database an older build wrote',
+    await ev(`/What's your blood sugar/.test(${bodyText})`), true);
+
+  const paths = await ev(`new Promise((resolve) => {
+    const open = indexedDB.open('MealUnits');
+    open.onsuccess = () => {
+      const db = open.result;
+      const out = [...db.objectStoreNames].sort().map((n) =>
+        n + '=' + String(db.transaction(n, 'readonly').objectStore(n).keyPath)).join(', ');
+      db.close(); resolve(out);
+    };
+  })`);
+  check('upgrade: the three broken stores were rebuilt on the right key',
+    paths, 'acks=key, log=id, meta=key, readings=id, settings=key, settingsHistory=revision');
+
+  // The reason the repair is per-store and not `deleteDatabase`. #63 changed
+  // neither the log's keyPath nor its row shape, so a fix that cost the log
+  // would be charging months of record for a defect it had no part in.
+  const survivors = await ev(`new Promise((resolve) => {
+    const open = indexedDB.open('MealUnits');
+    open.onsuccess = () => {
+      const db = open.result;
+      const all = db.transaction('log', 'readonly').objectStore('log').getAll();
+      all.onsuccess = () => { db.close(); resolve(all.result.map((r) => r.id).join(',')); };
+    };
+  })`);
+  check('upgrade: AND THE LOG SURVIVED IT', survivors, 'survivor');
+
+  // A write, which is the thing that was failing. Logging a dose exercises the
+  // same stores the repair rebuilt.
+  for (const d of ['1', '2', '0']) await tap(`/^${d}$/`);
+  await tap('/^Next$/'); for (const d of ['2', '5']) await tap(`/^${d}$/`);
+  await tap('/Work out the dose/'); await wait(500);
+  check('upgrade: and a dose can be worked out afterwards',
+    await ev(`/units/.test(${bodyText})`), true);
+});
+
 // A run that skipped a block must NEVER look like a full one. The word "clean"
 // on its own is the whole report for most runs, so the reduced coverage is
 // carried on the same line rather than left further up the scrollback.

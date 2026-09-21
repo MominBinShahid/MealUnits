@@ -65,6 +65,7 @@ import {
   ExportScreen,
   FailClosedScreen,
   HistoryScreen,
+  WriteFailedPanel,
   HowItWorksScreen,
   SettingsAsTextScreen,
 } from './screens/misc.js';
@@ -120,6 +121,15 @@ interface ViewState {
    * database is being reopened.
    */
   recordDeletedElsewhere: boolean;
+  /**
+   * A write rejected, and the screen is going to say so — added 2026-09-21.
+   *
+   * Outside the reducer with the rest of `ViewState` for the usual reason: it
+   * changes no dose, band or gate, only whether a panel is on screen. It is NOT
+   * a fail-closed state — the app goes on working and the reader can carry on
+   * or start over. What it must never do again is nothing at all.
+   */
+  writeFailed: boolean;
   /**
    * §8.5 — the insulin row the reader has TAPPED but not yet confirmed.
    *
@@ -296,6 +306,7 @@ export async function start(host: Host): Promise<void> {
     screenBefore: 'calculator',
     foodQuery: '',
     recordDeletedElsewhere: false,
+    writeFailed: false,
     pendingInsulin: null,
   };
 
@@ -632,6 +643,28 @@ export async function start(host: Host): Promise<void> {
     await refresh();
   };
 
+  /**
+   * A WRITE WHOSE FAILURE REACHES THE SCREEN — added 2026-09-21.
+   *
+   * Four writes were spelled `void somethingAsync()`, which discards the
+   * promise and with it the rejection. When `#63`'s keyPath rename made every
+   * write to three stores throw, that is precisely what the reader met: a
+   * "Save and start" that did nothing, a disclaimer that would not stay
+   * accepted, and `Uncaught (in promise)` in a console no phone has. Diagnosing
+   * it took an hour; the screen could have said it in a sentence.
+   *
+   * The dose write is NOT routed through here and must not be. §7.2 gives it a
+   * pending state, a retry and `onSaveStuck`, because a dose that did not save
+   * outlives the screen it was entered on. This is for the writes that had
+   * nothing.
+   */
+  const guardWrite = (write: () => Promise<unknown>): void => {
+    void write().catch(() => {
+      view.writeFailed = true;
+      render();
+    });
+  };
+
   const startOver = async (): Promise<void> => {
     // §7.9 — the app must close its OWN connection first, on both paths, or it
     // blocks on itself.
@@ -794,7 +827,7 @@ export async function start(host: Host): Promise<void> {
         return (
           <DisclaimerScreen
             onAccept={() => {
-              if (db !== null) void acknowledge(db, ackKeys.disclaimer, host.now());
+              if (db !== null) { const handle = db; guardWrite(() => acknowledge(handle, ackKeys.disclaimer, host.now())); }
               dispatch({ type: 'disclaimer_accepted' });
             }}
             accepted={view.disclaimerChecked}
@@ -846,7 +879,7 @@ export async function start(host: Host): Promise<void> {
           storageDurable={storageDurable}
           storageWarningOff={stored?.acks.has(ackKeys.storageEviction) ?? false}
           onStopStorageWarning={() => {
-            if (db !== null) void acknowledge(db, ackKeys.storageEviction, host.now()).then(refresh);
+            if (db !== null) { const handle = db; guardWrite(() => acknowledge(handle, ackKeys.storageEviction, host.now()).then(refresh)); }
           }}
           handlers={{
           firstRun: state.screen === 'first_run_settings',
@@ -878,9 +911,9 @@ export async function start(host: Host): Promise<void> {
             }
             render();
           },
-          onSave: () => { void saveSettings(); },
+          onSave: () => { guardWrite(() => saveSettings()); },
           onAcknowledgeCeil: () => {
-            if (db !== null) void acknowledge(db, ackKeys.forMode(view.draft.roundingMode), host.now()).then(refresh);
+            if (db !== null) { const handle = db; guardWrite(() => acknowledge(handle, ackKeys.forMode(view.draft.roundingMode), host.now()).then(refresh)); }
           },
           onOpenClear: () => { dispatch({ type: 'go', screen: 'export' }); view.clearConfirming = null; showClear = true; render(); },
           onOpenExport: () => { showClear = false; dispatch({ type: 'go', screen: 'export' }); },
@@ -1386,6 +1419,15 @@ export async function start(host: Host): Promise<void> {
      */
     mount(
       <>
+        {/* ABOVE the screen, not inside one, because three of the four writes it
+            reports fire from different screens and a panel each would be three
+            places for the wording to drift. */}
+        {view.writeFailed ? (
+          <WriteFailedPanel
+            onStartOver={() => { void startOver(); }}
+            onDismiss={() => { view.writeFailed = false; render(); }}
+          />
+        ) : null}
         {screenFor()}
         {footNav()}
         {/* §10.8 — show the running build version. "It is the only way to

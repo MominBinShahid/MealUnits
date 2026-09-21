@@ -561,6 +561,49 @@ export function ClearScreen({
  * and no export is possible without a connection. "That screen is the last place
  * those three numbers exist, so it says so."
  */
+/**
+ * A write that rejected, reported where the reader is — added 2026-09-21.
+ *
+ * NOT a screen and not a fail-closed state. The app goes on working; one
+ * action did not happen, and before this the only trace of that was a console
+ * message on a device with no console. `app.tsx`'s `guardWrite` decides when it
+ * appears.
+ *
+ * The escape is offered with what it costs stated FIRST, which is §7.9's rule
+ * about `copyThemDown` applied one floor down: starting over is the only repair
+ * available from here and it is also the one that takes everything.
+ */
+export function WriteFailedPanel({
+  onStartOver,
+  onDismiss,
+}: {
+  readonly onStartOver: () => void;
+  readonly onDismiss: () => void;
+}): JSX.Element {
+  return (
+    /*
+      `prompt-bar` and NOT `flag`, and it took a screenshot to learn why.
+      Rendered in flow it sat at the top of the settings screen — correct in the
+      DOM, invisible to the reader, because "Save and start" is at the FOOT of a
+      long screen and nobody scrolls back up to look for a message they do not
+      know exists. The test passed throughout: `textContent` does not have a
+      viewport.
+
+      §11.4's update offer already made this argument and wrote it down — "a
+      prompt is an interruption; it should sit over the page rather than
+      rearrange it", fixed to the foot because that is what a thumb can reach.
+      The same furniture, for the same reason, one floor down.
+    */
+    <div class="prompt-bar stop" role="alert">
+      <b>{COPY.writeFailed.title}</b>
+      <p>{COPY.writeFailed.body}</p>
+      <p class="hint">{COPY.writeFailed.startOverHint}</p>
+      <Button class="go quiet" onPress={onDismiss}>{COPY.writeFailed.dismiss}</Button>
+      <Button class="go danger" onPress={onStartOver}>{COPY.failClosed.escape}</Button>
+    </div>
+  );
+}
+
 export function FailClosedScreen({
   recovery,
   onStartOver,
