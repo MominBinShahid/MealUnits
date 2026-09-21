@@ -619,7 +619,8 @@ typo**, so machine translation is not acceptable and neither is a bilingual frie
 context. This needs someone who can be shown `docs/CLINICAL.md` and asked whether the Urdu says the
 same thing.
 
-**Three engineering pieces, in order of nastiness:**
+**Four engineering pieces.** It was three until 2026-09-22, when the second one below fell out of
+the first minute of looking at a real build in `dir="rtl"`.
 
 1. **The digits are a real decision, not a detail.** §4.2 deliberately rejects non-ASCII digits with
    its own message, because *"Please type the number in English digits"* is a different instruction
@@ -627,10 +628,51 @@ same thing.
    normalising them is friendlier; it also adds a conversion step to a string that becomes an insulin
    dose. **§10.4's number formatting is language-independent and must survive translation** — the
    digits shown in a result stay ASCII regardless, or the golden cases stop meaning anything.
-2. **RTL layout.** `dir="rtl"` plus converting the physical CSS properties that remain —
-   `margin-left` on `.tag`, `margin-right` on `.field-icon` — to logical ones (`margin-inline-start`).
-   Small and mechanical, but it has to be swept for rather than assumed done.
-3. **The font.** Nastaliq needs a real face. **Noto Nastaliq Urdu is 156 KB** — this entry said
+2. **A number RANGE reverses in right-to-left text, and this app is full of ranges.** Found
+   2026-09-22, by flipping a running build to `dir="rtl"` with Urdu on both sides of the number,
+   which is the only arrangement that shows it. `روٹی 12–15 گرام` paints its two numbers in the
+   opposite order, 15 first and 12 second; §8.5's regular-insulin wait does the same, painting the
+   30 ahead of the 20. An en-dash and a plain hyphen both do it.
+
+   **It is the bidi algorithm, not the font and not the translation.** Rule N1 treats a European
+   number as though it were right-to-left when it resolves the neutral character between two of
+   them, so the dash takes the paragraph's direction and the numbers are reordered around it. A
+   colon does NOT do this — `1:10` comes out intact, because `:` is a Common Separator and binds
+   its neighbours instead of dividing them. That is why an ICR reads correctly in Urdu and a
+   carbohydrate range does not.
+
+   **English hides it completely, and so does every test here.** A range inside an English sentence
+   is one left-to-right run and comes out in order — which is what the deployed app shows today and
+   will keep showing until the sentence around it is Urdu. And `textContent` reports SOURCE order,
+   not painted order: it says `12–15` whichever way the glyphs land. Nothing in this build can
+   fail on this, which is why it is written down instead.
+
+   **Where it bites:** `docs/CARBS.md`'s portion ranges as they reach `src/data/carbs.ts`, §8.5's
+   per-insulin waits — the regular-insulin one is on the settings screen today — and any advisory
+   expressed as a span. None of these is the injected dose. A wait whose two numbers have traded
+   places is still a number this app told someone.
+
+   **The fix is isolation — `<bdi>` around the range, or `unicode-bidi: isolate` on the span that
+   holds it — and it ships with the translation**, not before. Both are no-ops in English, so
+   neither can be verified until there is Urdu around them to verify against.
+
+3. **RTL layout — SWEPT 2026-09-22, and now guarded.** `dir="rtl"` plus converting the physical CSS
+   properties that remain to logical ones. Small and mechanical, but it has to be swept for rather
+   than assumed done. Seven declarations: `margin-left` on `.tag`, `margin-right` on `.field-icon`,
+   `text-align: left` three times, and the warning bar's `border-left` accent with the
+   `border-top-left-radius` that squares the corner it meets. The radius is the one a careless
+   conversion gets wrong — its logical name is `border-start-start-radius`, naming the block axis
+   before the inline one, and `border-top-start-radius` is not a property at all.
+
+   Verified in Chrome in both directions rather than by reading the diff: the accent computes
+   3px-left in `ltr` and 3px-right in `rtl` with the squared corner following it, and `.tag` and
+   `.field-icon` swap their 8px and 6px gaps. `ltr` is identical to what shipped, which is the
+   whole claim — **this change is invisible in English.**
+
+   `check-plan.py` grew `check_logical_properties` the same day, so the next `margin-left` fails
+   the build with a file and a line — named rather than numbered, per §20.3. `dir="rtl"` itself
+   is not set anywhere yet: nothing selects a language.
+4. **The font.** Nastaliq needs a real face. **Noto Nastaliq Urdu is 156 KB** — this entry said
    "several hundred kilobytes" until 2026-09-21, which was wrong. Measured from the Google Fonts
    Arabic-subset `.woff2`, which is the whole download: `.woff2` is already Brotli-compressed, so
    there is no smaller gzipped figure, and the Arabic subset is the only slice an Urdu interface
