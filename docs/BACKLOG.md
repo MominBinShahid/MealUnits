@@ -610,8 +610,13 @@ same thing.
 2. **RTL layout.** `dir="rtl"` plus converting the physical CSS properties that remain —
    `margin-left` on `.tag`, `margin-right` on `.field-icon` — to logical ones (`margin-inline-start`).
    Small and mechanical, but it has to be swept for rather than assumed done.
-3. **The font.** Nastaliq needs a real face; Noto Nastaliq Urdu is several hundred kilobytes against a
-   current font budget of **42 KB**.
+3. **The font.** Nastaliq needs a real face. **Noto Nastaliq Urdu is 156 KB** — this entry said
+   "several hundred kilobytes" until 2026-09-21, which was wrong. Measured from the Google Fonts
+   Arabic-subset `.woff2`, which is the whole download: `.woff2` is already Brotli-compressed, so
+   there is no smaller gzipped figure, and the Arabic subset is the only slice an Urdu interface
+   fetches. Against a **42 KB** font budget — Space Grotesk at 22 KB plus two weights of IBM Plex
+   Mono at 10 KB each, re-measured the same day — so it is 3.7x the app's entire current typography.
+   Gulzar, the only other Nastaliq face on Google Fonts, is larger still at 187 KB.
 
    **Self-hosted, and lazily fetched — those are two separate things and both hold.** The `.woff2` is
    downloaded once at build time into `public/fonts/` and served from `'self'`, so §11.5's policy
@@ -619,18 +624,57 @@ same thing.
    the file until something on screen uses that family, so **an English user never downloads a byte
    of it** — the laziness comes from the browser, not from who hosts it.
 
-   **The open question is OFFLINE, and it is a real trade-off.** Momin's preference is that Urdu
-   should work offline. Precaching the face guarantees that and costs every user the download,
-   including everyone who never selects Urdu; caching on first use costs nobody who does not want
-   it, but the first Urdu session must be online.
+   **OFFLINE — RULED BY MOMIN, 2026-09-21: fetch and cache it the first time Urdu is selected.** The
+   cost falls only on Urdu users, and offline works from the second session onward. Precaching for
+   everyone was rejected on his reasoning that "every English user, the majority, will take this
+   hit".
 
-   *A third option worth weighing when this is decided:* precache it only AFTER Urdu has been
-   selected once — the service worker adds it to the cache at that point, so the cost falls only on
-   Urdu users and offline works from the second session onward. **To be settled before implementing,
-   not during.**
+   **An eviction timer was considered and rejected in the same conversation.** Momin's idea was to
+   drop the face after 15 or 30 days of Urdu not being used. It is not worth it: a returning Urdu
+   reader opens the app offline and finds their own language gone, which is the one failure the
+   offline guarantee exists to prevent, and it saves 156 KB on a device already holding the app.
+   Keep it while Urdu is selected; drop it if they switch back to English.
 
-**Trigger: after T3.** Recorded now because the DEPENDENCY is the useful part — anyone picking this
-up would otherwise start with the copy and discover the composition problem last.
+#### The rulings, 2026-09-21 — all of these were decided in conversation and lived nowhere
+
+**The translator is Momin's mother.** That closes the blocker this entry calls "the harder half".
+The review happens on a DEPLOYED build: he switches the app to Urdu, hands her the phone, and
+relays what she says. Draft strings may be produced with an LLM line by line; none of it ships as
+her review.
+
+**Numbers stay in English.** §4.2's rejection of non-ASCII digits stands, and so does its own
+message — *"Please type the number in English digits."* Urdu-Indic digits are not accepted and not
+normalised. This was already what the code did; it had simply never been ruled, so the question kept
+being re-asked.
+
+**Urdu ships in PRODUCTION, not behind a flag**, with a label on the option saying it is in testing
+and a confirmation when it is selected. Momin, asked whether an unreviewed string reaching a
+stranger was acceptable: *"we have locked the warning — somebody ignored the warning, this is not
+something that we report that we are supporting."* The concern was raised twice and overruled twice;
+it is recorded here as settled rather than as an open risk.
+
+**Everything translates, including the band C and D copy.** *"Please, because my mother will review
+everything — don't use anything in English that will be in Urdu even if it's important."* An English
+fallback for the safety strings was proposed and declined.
+
+**The food list needs no search work, and does need data work.** `matchFoods` already searches three
+fields per row — the English `name`, the `urdu` field and `aliases` — so typing `roti` on a QWERTY
+keyboard finds it regardless of interface language, which is what Momin asked for. But **the field
+called `urdu` does not contain Urdu**: all 32 rows hold Roman transliterations (`'Roti'`,
+`'Phulka'`, `'Bari chapatti'`), and there are ZERO Urdu-script characters in `src/data/carbs.ts`. So
+an Urdu interface would render Latin food names beside Urdu chrome. Those 32 names are a small,
+self-contained task his mother could do, unlike the clinical copy.
+
+**Typeface comparison, for the choice that is still open:**
+<https://claude.ai/code/artifact/acfb8392-1a00-4814-8451-9556610691db> — ten faces on Google Fonts,
+each rendering the result screen and the low-reading screen, with measured sizes and a row of the
+letters Urdu has that Arabic does not (ٹ ڈ ڑ ں ے ہ ھ ء آ), so a face missing one shows a box. The
+real split is **Nastaliq or Naskh**: Urdu is conventionally set in Nastaliq and only two of the ten
+are, and Nastaliq needs roughly 2.4x the line-height, so every screen gets taller.
+
+**BOTH ENGINEERING BLOCKERS ARE CLEARED.** T3 shipped 2026-09-14 (Preact 10.29.8), so keyed
+reconciliation preserves IME composition state. Entry 25's plain-language pass shipped the same day.
+What remains is the typeface choice, and then the work itself.
 
 
 
