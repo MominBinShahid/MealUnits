@@ -616,6 +616,74 @@ if (LAN_URL === null) {
   });
 }
 
+// 5. TWO FINGERS ON THE KEYPAD, which every other check in this file is
+// structurally unable to see.
+//
+// `tapper` calls `.click()` on the element. So does `test/integration.test.ts`,
+// and so does jsdom — which means the line in CLAUDE.md calling smoke "the
+// layer the others cannot reach" was true about layout, fonts, the CSP and the
+// service worker, and FALSE ABOUT INPUT. Nothing in this project has ever sent
+// a real touch.
+//
+// Momin, on a phone: type with two fingers and you lose BOTH digits. On a touch
+// screen a `click` is SYNTHESISED from a touch sequence, and a second finger
+// arriving while the first is down reads as the start of a possible gesture —
+// so the browser cancels the synthesis for both. Neither key fires. A person
+// typing quickly with a thumb on each side of the pad enters nothing, and the
+// app shows no sign that anything was pressed.
+//
+// This dispatches two real touch points at once through CDP, which is the only
+// way to reproduce it. `Emulation.setTouchEmulationEnabled` is required: without
+// it the page has no touch support and the events are delivered to nothing.
+//
+// PARKED 2026-09-21 — `BACKLOG` T24 carries the diagnosis, the verified fix and
+// the reason it is not being applied. The check FAILS when it runs, because the
+// defect is real and unfixed; it is skipped rather than deleted so the work is
+// not re-derived, and the skip is carried on smoke's summary line so a reduced
+// run can never read as a full one.
+if (process.env.SMOKE_KEYPAD !== '1') {
+  skip('two fingers on the keypad', 'T24 is parked — run with SMOKE_KEYPAD=1 to see it fail');
+} else {
+rmSync('/tmp/mealunits-smoke-touch', { recursive: true, force: true });
+await session('/tmp/mealunits-smoke-touch', 9306, 412, async ({ ev, send, open }) => {
+  await open(URL_UNDER_TEST);
+  await setUp({ ev, send });
+  await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+
+  const centres = await ev(`(() => {
+    const keys = [...document.querySelectorAll('.pad .key')];
+    const at = (label) => {
+      const key = keys.find((k) => k.textContent.trim() === label);
+      if (!key) return null;
+      const r = key.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    };
+    const a = at('1'), b = at('2');
+    return a && b ? { a, b } : null;
+  })()`);
+  check('two fingers: the keypad is on screen and its keys were found', centres !== null, true);
+  if (centres === null) return;
+
+  // BOTH points in one touchStart, which is what "at the same time" means and
+  // what two sequential taps cannot express.
+  await send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [
+      { x: centres.a.x, y: centres.a.y, id: 1 },
+      { x: centres.b.x, y: centres.b.y, id: 2 },
+    ],
+  });
+  await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await wait(500);
+
+  const shown = await ev(`document.querySelector('.result .n')?.textContent ?? ''`);
+  // The ORDER is not the assertion — either finger may register first, and both
+  // orders are correct. What must not happen is a digit going missing.
+  check('two fingers on the keypad enter TWO digits, not one and not none',
+    typeof shown === 'string' && shown.replace(/\D/g, '').length, 2);
+});
+}
+
 // A run that skipped a block must NEVER look like a full one. The word "clean"
 // on its own is the whole report for most runs, so the reduced coverage is
 // carried on the same line rather than left further up the scrollback.
