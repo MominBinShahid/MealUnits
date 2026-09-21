@@ -562,6 +562,23 @@ export function ClearScreen({
  * those three numbers exist, so it says so."
  */
 /**
+ * The tab whose connection another tab closed — added 2026-09-21.
+ *
+ * It wears the same furniture as the write-failure prompt and carries no
+ * control, because there is nothing this tab can do: its connection is gone
+ * until the app is opened again. A button here would have to either lie or do
+ * nothing.
+ */
+export function StaleConnectionPanel(): JSX.Element {
+  return (
+    <div class="prompt-bar stop" role="alert">
+      <b>{COPY.staleConnection.title}</b>
+      <p>{COPY.staleConnection.body}</p>
+    </div>
+  );
+}
+
+/**
  * A write that rejected, reported where the reader is — added 2026-09-21.
  *
  * NOT a screen and not a fail-closed state. The app goes on working; one

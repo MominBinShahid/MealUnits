@@ -65,6 +65,7 @@ import {
   ExportScreen,
   FailClosedScreen,
   HistoryScreen,
+  StaleConnectionPanel,
   WriteFailedPanel,
   HowItWorksScreen,
   SettingsAsTextScreen,
@@ -130,6 +131,15 @@ interface ViewState {
    * or start over. What it must never do again is nothing at all.
    */
   writeFailed: boolean;
+  /**
+   * Another tab upgraded the database, so this tab's connection was closed and
+   * every write here will now fail — added 2026-09-21.
+   *
+   * NOT dismissible, unlike `writeFailed`: dismissing it would leave someone
+   * carrying on in a tab that cannot record anything, and the condition does
+   * not improve until the app is reopened.
+   */
+  staleConnection: boolean;
   /**
    * §8.5 — the insulin row the reader has TAPPED but not yet confirmed.
    *
@@ -307,6 +317,7 @@ export async function start(host: Host): Promise<void> {
     foodQuery: '',
     recordDeletedElsewhere: false,
     writeFailed: false,
+    staleConnection: false,
     pendingInsulin: null,
   };
 
@@ -539,9 +550,35 @@ export async function start(host: Host): Promise<void> {
    * capability, not a `setTimeout` reached for here.
    */
   const attemptWrite = async (payload: FrozenLogPayload): Promise<void> => {
-    if (db === null) return;
     const row: Injection = { ...payload };
     try {
+      /*
+       * A CLOSED CONNECTION IS A FAILED WRITE, not a quiet no-op — changed
+       * 2026-09-21, and it is the most dangerous line in this file.
+       *
+       * This was `if (db === null) return;` ABOVE the try. `commit_log` has
+       * already set `step: 'logged'`, so the screen says the dose is recorded —
+       * and returning here wrote nothing, dispatched neither `log_saved` nor
+       * `log_save_failed`, armed no retry and never reached `onSaveStuck`. The
+       * reader is told a dose is in the record when it is in no store.
+       *
+       * **And the next calculation reasons from that record.** A missing
+       * injection understates what is still acting, so §7.4's stacking check
+       * releases a correction it should have held back. A silent no-op here is
+       * an insulin error one dose later, which is the hazard this whole app
+       * exists to keep away from.
+       *
+       * `db` is null between another tab's `versionchange` and this tab being
+       * reloaded. That branch was unreachable until `STRUCTURE_VERSION` moved:
+       * the app's IndexedDB version had never changed since the first commit,
+       * so the only `versionchange` anyone could cause was a DELETE, which
+       * takes the other branch and reboots. #70 made it live and did not touch
+       * this line.
+       */
+      if (db === null) {
+        await writeFailed();
+        return;
+      }
       await appendInjection(db, row, payload.timestamp);
       stored = await readAll(db, host.now());
       watch.announce();
@@ -551,6 +588,19 @@ export async function start(host: Host): Promise<void> {
       // record, and one on the failure path would be a lie about a worse thing.
       host.buzz();
     } catch {
+      await writeFailed();
+    }
+
+    /**
+     * §7.2's failure path, named so the null-connection case can take it too.
+     *
+     * It was inline in the `catch`, which is why a missing connection could not
+     * reach it without throwing a string to itself — and a thrown string that
+     * is never rendered is exactly the kind of thing `check_ui_text_outside_copy`
+     * is right to object to. Calling the path directly says what is meant: a
+     * connection that is gone IS a failed write.
+     */
+    async function writeFailed(): Promise<void> {
       // §7.2 — the app enters a PENDING-SAVE state. The in-session gate still
       // knows about the dose (`gateLastDose`), and the timer started regardless.
       dispatch({ type: 'log_save_failed' });
@@ -1422,6 +1472,7 @@ export async function start(host: Host): Promise<void> {
         {/* ABOVE the screen, not inside one, because three of the four writes it
             reports fire from different screens and a panel each would be three
             places for the wording to drift. */}
+        {view.staleConnection ? <StaleConnectionPanel /> : null}
         {view.writeFailed ? (
           <WriteFailedPanel
             onStartOver={() => { void startOver(); }}
@@ -1463,6 +1514,14 @@ export async function start(host: Host): Promise<void> {
         // confirmation, "since a result left rendered after the record beneath
         // it was deleted is §4.3's stale-output defect arriving by a new route".
         db = null;
+        // An UPGRADE in another tab, not a delete. Until 2026-09-21 this could
+        // not happen — the version had never moved — so the branch below was
+        // the only one anybody could reach, and this one went quiet. A tab that
+        // cannot write must say so rather than look ordinary.
+        if (newVersion !== null) {
+          view.staleConnection = true;
+          render();
+        }
         if (newVersion === null) {
           state = initialState();
           // §7.9 v23's THIRD clause, which nothing implemented: "…invalidate the
