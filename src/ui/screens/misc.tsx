@@ -599,8 +599,8 @@ export function FailClosedScreen({
             </li>
             {/* §8.5 — the mealtime insulin, on the screen whose whole purpose
                 is that the settings survive a database this build cannot open.
-                A block written before the field existed has no value here and
-                shows nothing rather than an empty row. */}
+                `brandFor` returns `''` for "I don't know", which has no brand
+                to print — so that row is omitted rather than shown empty. */}
             {recovery.bolusName === '' ? null : (
               <li class="li">
                 <div class="k">{COPY.insulin.settingsLabel}</div>

@@ -218,58 +218,6 @@ describe('§11.3 opening the database', () => {
  * them — noise in the document whose argument is that it does not misstate what
  * produced a row.
  */
-/**
- * The 2026-09-21 rename, from the only side that can go wrong: a row or a block
- * written under the OLD names still has to open.
- *
- * Every fallback here is one `??`, and each one protects something different —
- * a prescription, a counter every tab reads, or the numbers on the screen that
- * exists for when nothing else works.
- */
-describe('the renamed keys still read what was written before them', () => {
-  it('§11.3 — a settings row written as `insulinId` keeps its insulin', async () => {
-    const db = await open();
-    await commitSettings(db, PRESCRIPTION);
-    // Rewrite the row the way a pre-rename build would have.
-    await runTransaction(db, [STORE.settings], 'readwrite', async (tx) => {
-      const row = await get<SettingsRow>(tx, STORE.settings, SETTINGS_KEY);
-      const { bolusId, ...rest } = row as SettingsRow;
-      await request(
-        tx.objectStore(STORE.settings).put({ ...rest, insulinId: bolusId }),
-      );
-    });
-    const state = await readAll(db, NOW);
-    expect(state.settings?.bolusId).toBe('humulin-r');
-    db.close();
-  });
-
-  it('§11.3 — a log-revision row written as `n` does not reset the counter', async () => {
-    // The worst of the three. A counter that silently restarts at 1 makes every
-    // other tab believe the record went backwards, which is §11.3's whole
-    // cross-tab correctness argument inverted.
-    const db = await open();
-    await commitSettings(db, PRESCRIPTION);
-    await appendInjection(db, injection({ id: 'one' }), NOW);
-    await runTransaction(db, [STORE.meta], 'readwrite', async (tx) => {
-      const row = await get<{ key: string; logRevision: number }>(
-        tx,
-        STORE.meta,
-        META_KEY.logRevision,
-      );
-      const { logRevision, ...rest } = row as { key: string; logRevision: number };
-      await request(tx.objectStore(STORE.meta).put({ ...rest, n: logRevision }));
-    });
-    const before = (await readAll(db, NOW)).logRevision;
-    expect(before).toBeGreaterThan(0);
-    // The real assertion is what happens on the NEXT write: the counter has to
-    // continue from what was stored, not restart. `toBeGreaterThan(0)` alone
-    // passes against a reset, which is the failure this exists to catch.
-    await appendInjection(db, injection({ id: 'two' }), NOW);
-    expect((await readAll(db, NOW)).logRevision).toBe(before + 1);
-    db.close();
-  });
-});
-
 describe('§7.7 a commit that changes no prescription field keeps its revision', () => {
   /** Every field `settingsHistory` records, one at a time. */
   // `Partial<SettingsCommit>` rather than `Partial<typeof PRESCRIPTION>`: the
@@ -441,17 +389,15 @@ describe('§11.3 the allocation rule', () => {
     // §11.3 — fixed field names and EXPLICIT UNITS, so an older build cannot
     // read 150 and guess what it counts.
     //
-    // §8.5 added the mealtime insulin and the format went to 2 with it; the
-    // 2026-09-21 rename moved two field names and took it to 3. That is what
-    // "versioned independently of the evolving payload" is FOR: an older build
-    // reading a number it does not know refuses to present these as verified
-    // settings rather than rendering the half it recognises. A shape change is
-    // a shape change whether a field arrives or moves.
+    // A `recoveryFormat` stamp rode along here until 2026-09-21, claiming to be
+    // what stopped an older build misreading these numbers. Nothing ever
+    // compared it. What actually stops that is §11.3's rule — a field name is
+    // never reused with a different meaning — and this assertion is a key-set
+    // assertion for exactly that reason: it fails if a name moves.
     //
     // The value is the BRAND, because this block is copied off a screen by a
     // person and `humulin-r` is not what the box says.
     expect(envelope?.recovery).toEqual({
-      recoveryFormat: 3,
       bolusName: 'Humulin R',
       targetMgDl: 150,
       oneUnitLowersMgDl: 30,
@@ -708,7 +654,7 @@ describe('§7.9 clearing the record', () => {
     await commitSettings(db, {
       ...PRESCRIPTION,
       roundingMode: 'ceil',
-      acknowledged: ['disclaimer', 'mode:ceil', 'setting:target:150'],
+      acknowledged: ['disclaimer', 'roundingMode:ceil', 'setting:target:150'],
     });
     await appendInjection(db, injection(), NOW);
     await appendReading(db, { id: 'r1', timestamp: NOW, bloodSugar: 65 });
@@ -724,7 +670,7 @@ describe('§7.9 clearing the record', () => {
     // record. Dropping the acknowledgement of a `ceil` mode or a target that
     // REMAIN in settings would re-gate a man who changed nothing.
     expect(state.acks.has('disclaimer')).toBe(true);
-    expect(state.acks.has('mode:ceil')).toBe(true);
+    expect(state.acks.has('roundingMode:ceil')).toBe(true);
     expect(state.acks.has('setting:target:150')).toBe(true);
 
     expect(state.log).toEqual([]);

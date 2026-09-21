@@ -1223,13 +1223,13 @@ section is rewritten with those integrations made explicit.
 | `timestamp` | clock at the moment of the "I injected" tap |
 | `bloodSugar` | what the user entered, or an explicit "not entered" marker |
 | `carbs` | what the user entered |
-| `units` | the calculated dose, exactly as the app produced it |
-| `injectedUnits` | **what he actually injected — NEW IN v8.** Defaults to `units`; editable at the moment of logging only |
+| `calculatedUnits` | the calculated dose, exactly as the app produced it |
+| `injectedUnits` | **what he actually injected — NEW IN v8.** Defaults to `calculatedUnits`; editable at the moment of logging only |
 | `settingsRevision` | **ADDED IN v13** [R1] — **the `revision` carried in the committed snapshot that produced the result** (§11.3 ROW STAMP), i.e. the settings **in force at calculation**. v14 still said "read from `settings.revision`", the wording §11.3 corrects for leaving the wrong build readable [R1]. Frozen at §7.2 step 1. v12 relied on this field existing and never listed it, so §7.2's "freeze every field §7.1 stores" excluded it by literal reading |
 | `overrodeStacking` | whether §7.4's override was used |
 | `timingAdvice` | `before` / `eat_first` / `suppressed` — the §8.1 decision made at calculation time [R1] |
 | `advisoryFlagged` | true if §6.5 showed an advisory for this entry — **excluded from the baseline** |
-| `deleted`, `deletedAtMs` | **ADDED IN v24** [R1, R2] — present only on a **tombstone** (§7.3), which carries these plus `id` and `timestamp` and **nothing else above**. Their presence is the discriminator: a row with `deleted` has no `units`, no `injectedUnits` and no `settingsRevision`, and every consumer that reads those fields must skip it |
+| `deleted`, `deletedAtMs` | **ADDED IN v24** [R1, R2] — present only on a **tombstone** (§7.3), which carries these plus `id` and `timestamp` and **nothing else above**. Their presence is the discriminator: a row with `deleted` has no `calculatedUnits`, no `injectedUnits` and no `settingsRevision`, and every consumer that reads those fields must skip it |
 
 About 70 characters per row; six doses a day is ~150 KB per year against 5 MB. Decades.
 
@@ -1262,9 +1262,9 @@ for 25 under-counts insulin on board, the dose-raising direction.
 | **Grammar** | **Superseded by the stepper — RULED 2026-09-11** (amendment below). §4.2's whole-string grammar was written for a typed field, and the amount screen has none: the draft is written only by the stepper, so there is nothing of the user's to parse. The grammar survives as a defensive check on the stepper-written draft, not as a user-facing rule |
 | **Representation** | §2.2's **integer hundredths**. A float here reintroduces the exact defect §2.2 exists to remove, in the export |
 | **Finiteness** | Explicit `Number.isFinite` before any use |
-| **Zero and negative** | **Rejected — rule unchanged, mechanism amended 2026-09-11.** The tap asserts an injection happened; zero contradicts it. The stepper clamps at zero, so a negative amount is unconstructible, and a zero reached at the clamp is still refused with its reason. §7.2's "a zero-unit result cannot be logged" governs `units`, not this field, and needed saying |
+| **Zero and negative** | **Rejected — rule unchanged, mechanism amended 2026-09-11.** The tap asserts an injection happened; zero contradicts it. The stepper clamps at zero, so a negative amount is unconstructible, and a zero reached at the clamp is still refused with its reason. §7.2's "a zero-unit result cannot be logged" governs `calculatedUnits`, not this field, and needed saying |
 | **Hard cap** | **100 units** — a U-100 syringe holds no more, so above it is a typo by construction |
-| **Soft confirm** | ~~Outside 0.5–60 units (§4.5), or~~ on large divergence from `units` — **predicate defined below**. ~~v9's prose named only the upper end; the range governs [R1]~~ **The fixed band is struck — RULED 2026-09-11**, in the stepper amendment below; the divergence confirmation is the surviving rule |
+| **Soft confirm** | ~~Outside 0.5–60 units (§4.5), or~~ on large divergence from `calculatedUnits` — **predicate defined below**. ~~v9's prose named only the upper end; the range governs [R1]~~ **The fixed band is struck — RULED 2026-09-11**, in the stepper amendment below; the divergence confirmation is the surviving rule |
 
 **The amount entry is a ±half-unit stepper, and the table above is amended to match — RULED
 2026-09-11 [Momin].** §7.2's amount screen pre-fills the calculated dose and moves in half-unit
@@ -1278,9 +1278,10 @@ entered amount against the CALCULATED dose rather than against a fixed band. Und
 band a calculated 55 stepped to 61 would have soft-confirmed at the fixed boundary; under the
 divergence rule it confirms nowhere, and should not — it is inside the syringe's physical range
 and unremarkable next to its own calculation — while the same 61 against a calculated 12 does
-confirm. One consequence of the strike is recorded rather than left to be found: `RANGE.injected`
-keeps its soft band in `config.ts` and in §11.8's block with no consumer; removing it is a code
-edit, not made from here.
+confirm. One consequence of the strike was recorded rather than left to be found: `RANGE.injected`
+kept its soft band in `config.ts` and in §11.8's block with no consumer. **The code edit happened** —
+`config.ts` holds `injected: { hard: [0.01, 100] }` and no soft band — and this paragraph outlived
+it by ten days because nothing compared a soft band in this document against the one in the file.
 
 **"Large divergence" defined — ADDED IN v10** [R2, blocking]. v9 named this confirmation and gave
 it no predicate, so an implementer could not tell whether a calculated 11 against an entered 25
@@ -1339,7 +1340,7 @@ confirmed, never refused. This is the same logic as "the injection is never disc
 draft is exactly the hole "captured at the tap" is meant to close.
 
 **Constraints.** Captured at the "I injected" tap and never afterwards — §7.3's no-edit rule
-stands, and this is a field of the logging action, not a later revision. Defaults to `units`, so
+stands, and this is a field of the logging action, not a later revision. Defaults to `calculatedUnits`, so
 the common case stays one tap, and the commit control names the amount being recorded. Editing it
 **must not** clear the result: §4.3 step 1 invalidates on any *calculation* input change, and the
 logging draft is explicitly not one. It is **never** an input to §2 and never appears in §11.2's
@@ -1366,7 +1367,7 @@ the record's time and the timing advice cannot disagree.
 
 Then, in order:
 
-1. Generate the event `id` and **freeze the entire payload** — timestamp, `units`,
+1. Generate the event `id` and **freeze the entire payload** — timestamp, `calculatedUnits`,
    `injectedUnits`, and every field §7.1 stores. **CHANGED IN v9** [R1]: v8 froze only the `id`
    and timestamp, so a retry could re-read a mutated draft and persist a different amount than
    the one consumed in step 2.
@@ -1473,7 +1474,7 @@ a separate store would need its own merge, export and clearing rules for no gain
 | `id`, `timestamp` | as §7.1, **preserved from the deleted row** — the tombstone stands where the dose stood |
 | `deleted` | `true`. Its presence is what makes the row a tombstone |
 | `deletedAtMs` | when the deletion happened, which is the part a pattern is visible in |
-| everything else | **gone.** No `units`, no `injectedUnits`, no `bloodSugar`, no `carbs` |
+| everything else | **gone.** No `calculatedUnits`, no `injectedUnits`, no `bloodSugar`, no `carbs` |
 
 **The dose values do not survive**, and that is the point rather than an economy: §7.3 exists because
 delete legitimately means *"I never injected this"*, and a tombstone that kept the amount would
@@ -1571,7 +1572,7 @@ at lunch, switches to a rapid analogue, and calculates at four o'clock: lunch's 
 still in them, and selecting the analogue must not shrink the window underneath it.
 
 **The rule is the LONGER of old and new**, where "old" is the class in force at the revision that
-stamped the last dose (`settingsHistory.insulinId`, §7.7). It expires by itself — once that dose ages
+stamped the last dose (`settingsHistory.bolusId`, §7.7). It expires by itself — once that dose ages
 past the advise window, both pairs answer `too_old` — so there is no stored switch timestamp and no
 date arithmetic to get wrong.
 
@@ -1720,17 +1721,18 @@ building from this section alone would have dropped it.
 { "schemaVersion": 1,                        // ADDED IN v9 — §11.3 rejects
                                              // future schemas; v8 gave it
                                              // nothing to read
-  "settings":       { target, isf, icr, mode, threshold,
+  "settings":       { target, isf, icr, roundingMode, threshold,
                       basalName, basalUnits, basalTiming,    // §1.3
-                      insulinId, eatDelayMinutes },          // §8.5
+                      bolusId, eatDelayMinutes,              // §8.5
+                      personName },
   "dosingHistoryBeforeApp":                  // §6.7 — present ONLY when the
       { answeredAtMs, text },                // state is `answered`. Absent for
                                              // `unanswered` and `declined`, and
                                              // the state itself is never exported
                                              // (§6.7) — same ruling the empty
                                              // `settings` block got in v14
-  "settingsHistory":[ { revision, changedAtMs, target, isf, icr, mode,
-                        insulinId } ],         // §8.5 — ADDED 2026-09-20
+  "settingsHistory":[ { revision, changedAtMs, target, isf, icr,
+                        roundingMode, bolusId } ],  // §8.5 — ADDED 2026-09-20
   "readings":       [ ...§7.8 rows... ],
   "log":            [ Injection | Tombstone ],   // §7.3 — CHANGED IN v24
                                              // an Injection carries settingsRevision;
@@ -1848,7 +1850,7 @@ recorded so it is not rediscovered as a defect.
 **`settingsHistory` deliberately omits `threshold`** [R1]: it never changes a dose value, so no
 consumer needs its historical setting. Stated so it does not read as an oversight.
 
-**It omits `eatDelayMinutes` on the same test, and carries `insulinId` because that test SEPARATES
+**It omits `eatDelayMinutes` on the same test, and carries `bolusId` because that test SEPARATES
 them.** The reader's own pre-meal wait changes what they were told to do and never what the app
 calculated; the insulin changes §7.4's gate, and a suppressed correction is a different dose. §8.5's
 switch-day rule reads this field, and §7.8's hypo patterns cannot be read through kinetics without
@@ -2576,10 +2578,13 @@ does not know their insulin differs: they cannot pass it without reading it.
 **It is asked BEFORE the three ratios**, on its own screen, because an out-of-model answer ends the
 setup and making someone type three numbers first is a worse way to say the same thing.
 
-**No migration value.** A settings row written before the field existed reads back as `''`, which is
-"never asked", so an install that has been running for months answers it on the next open exactly
-like a fresh one. No `DATABASE_VERSION` bump: no store and no index changed, and the absent field
-already had a meaning.
+**No migration value.** A required question has no tap-through, so an install that predated the
+field met the same gate as a fresh one — the absent field read back as `''`, "never asked", and no
+`DATABASE_VERSION` bump was needed because no store and no index changed. That read was deleted on
+2026-09-21 with every other older-version accommodation. `''` is still "never asked" and still makes
+the gate ask, but **no write path puts it on a settings row** — the question precedes the first
+commit, and "I don't know" is `UNKNOWN_INSULIN`. It reaches a `settingsHistory` row by one route
+only: an import whose stored id matches no brand this build knows.
 
 **Grouped by CLASS, never an alphabetical brand list.** HumuLIN and HumaLOG are on ISMP's
 confused-drug-names list, as are NovoLIN and NovoLOG and both premix pairs, and ISMP's own mitigation
@@ -3023,7 +3028,7 @@ acknowledgement of an unusual-but-intended value, not a warning.
    for either (§1.2, §8.5.1). The insulin comes BEFORE the three ratios because an out-of-model
    answer ends the setup, and making somebody type three numbers only to be told the app does not
    fit their insulin is a worse way to say the same thing. Neither screen has a way past it. An
-   existing install with no insulin recorded meets the same gate on its next open — the question is
+   install whose settings carry no insulin meets the same gate on its next open — the question is
    required, so there is no migration value and no tap-through.
 3. **"What this doesn't know about"**, reachable any time: active insulin, exercise, illness,
    alcohol, fat and protein, time-of-day variation. Exercise and alcohol named as the two most
@@ -3330,23 +3335,26 @@ provides `VersionError` for downgrade detection, which v3 hand-built.
 
 ```
 db: MealUnits   (version = code schema version)
-  store: meta      keyPath "k"   -> { k: "envelope", schemaVersion, recovery },
-                                   { k: "dosingHistory",              // §6.7 v18
+  store: meta      keyPath "key" -> { key: "envelope", schemaVersion, recovery },
+                                   { key: "dosingHistory",            // §6.7 v18
                                      state, text, answeredAtMs },
-                                   { k: "backup",                     // §7.7.1 v22
+                                   { key: "backup",                   // §7.7.1 v22
                                      lastJsonExportAtMs },            // JSON only
-                                   { k: "logRevision", n }            // ADDED IN v23 [R1]
-  store: settings  keyPath "k"   -> revision,                             // §7.7
-                                    target, isf, icr, mode, threshold,
+                                   { key: "logRevision", logRevision, // ADDED IN v23 [R1]
+                                     lastImportAtMs,
+                                     lastLocalInjectionAtMs },        // note 7
+                                   { key: "install", installedAtMs }
+  store: settings  keyPath "key" -> revision,                             // §7.7
+                                    target, isf, icr, roundingMode,
+                                    threshold,
                                     basalName, basalUnits, basalTiming,   // §1.3
-                                    insulinId, eatDelayMinutes            // §8.5
+                                    bolusId, eatDelayMinutes,             // §8.5
+                                    personName
                                     // usualDose REMOVED IN v17 — see §6.7
-                                    // A row written before 2026-09-20 has no
-                                    // insulinId, and `''` is "never asked" —
-                                    // so the gate asks. That is the whole
-                                    // migration: no store and no index moved,
-                                    // so DATABASE_VERSION does not either.
-  store: acks      keyPath "k"   -> disclaimer, ceilMode, out-of-range confirmations
+  store: acks      keyPath "key" -> disclaimer,                     // §9
+                                   "roundingMode:<mode>",           // §5.1
+                                   "setting:<field>:<value>",       // §4.5
+                                   "storage-eviction"               // §12
   store: log       keyPath "id"  -> one record per injection OR one tombstone
                                     (§7.3, `deleted: true`), index on timestamp
   store: readings  keyPath "id"  -> one record per standalone reading (§7.8),
@@ -3354,8 +3362,9 @@ db: MealUnits   (version = code schema version)
   store: settingsHistory
                    keyPath "revision"          // PRIMARY KEY — see the
                                                // allocation rule below
-                                 -> { revision, changedAtMs,
-                                      target, isf, icr, mode }          // ADDED IN v11
+                                 -> { revision, changedAtMs,           // ADDED IN v11
+                                      target, isf, icr, roundingMode,
+                                      bolusId, imported }
 ```
 
 **`logRevision` gets its row in v23** [R1]. The counter the entire cross-tab correctness stack keys
@@ -3464,17 +3473,23 @@ introduced the round's only blocker** (§19).
   an explicit version check backs it up. The calculator refuses.
 - **But the fail-closed screen still renders settings** [R1] so the user is not stranded without
   his numbers — read from the **frozen recovery block** below, never from the live payload.
-- **The recovery block is immutable in format** [R2]: fixed field names and explicit units,
-  versioned independently of the evolving payload, and kept synchronised with committed settings.
-  Plain text prevents injection but does not establish meaning — "a parsed integer does not reveal
-  whether `150` means units, hundredths or mg/dL" — so an older build must never present
-  unknown-schema numbers as verified prescription settings.
-  **`RECOVERY_FORMAT` went to 2 on 2026-09-20** when §8.5's mealtime insulin joined the block, which
-  is what independent versioning is FOR: the addition is what moves it, and a build that does not
-  know the field refuses rather than rendering the half it recognises. The value stored is the
-  **brand in words**, not the row id — this block is copied off a screen by a person, and
-  `novorapid` is not what the box says. A block written at format 1 has no insulin on it and shows
-  none, rather than an empty row.
+- **The recovery block is immutable in format** [R2]: fixed field names and explicit units, kept
+  synchronised with committed settings. Plain text prevents injection but does not establish
+  meaning — "a parsed integer does not reveal whether `150` means units, hundredths or mg/dL" —
+  and the FIELD NAME is the only thing that says which.
+  **What keeps that true is a rule, not a runtime check: a field name is never reused with a
+  different meaning.** Change what a number means and the field is renamed with it, so an older
+  build fails to find it rather than misreading it.
+  A `RECOVERY_FORMAT` integer stood here until 2026-09-21, and this paragraph used to say an older
+  build "must never present unknown-schema numbers as verified prescription settings". **Nothing
+  ever compared it.** It was written as a constant and overwritten on read, so the refusal
+  described here was a mechanism nobody had written — another of the checks this project keeps
+  finding that
+  could not fail. It was deleted rather than implemented, on the reasoning that enforcing it means
+  this screen sometimes shows nothing ON PURPOSE, and showing numbers when everything else has
+  broken is the only reason the screen exists.
+  The insulin is stored as the **brand in words**, not the row id — this block is copied off a
+  screen by a person, and `novorapid` is not what the box says.
 - **Every write is one transaction.** The "I injected" row is a single `add` on `log`, so it
   cannot clobber settings and settings cannot clobber it.
 - **Re-validate on every load and import** — type, presence, finiteness, precision, range.
@@ -3770,7 +3785,7 @@ export const RANGE = {
   icr:        { hard: [1, 100],  soft: [5, 50]   },
   threshold:  { hard: [10, 45],  soft: [15, 35]  },
   basalUnits: { hard: [1, 150],  soft: [5, 80]   },  // §1.3
-  injected:   { hard: [0.01, 100], soft: [0.5, 60] },// §7.1 — ADDED IN v9
+  injected:   { hard: [0.01, 100] },                 // §7.1 — soft band struck 2026-09-11
   eatDelay:   { hard: [0, 45],   soft: [0, 30]   },  // §8.5 — the reader's own
 };                                                   // pre-meal wait. ZERO IS A
                                                      // VALUE: an ultra-rapid
@@ -3824,11 +3839,8 @@ export const POLL_INTERVAL_MS      = 4000;
 
 // ─── SCHEMA (§11.3) ────────────────────────────────────────
 export const SCHEMA_VERSION  = 1;
-// The recovery block, versioned INDEPENDENTLY of the payload — an older
-// build reading a version it does not know must refuse to present the
-// numbers as verified settings rather than render the half it knows.
-// Went to 2 on 2026-09-20 when §8.5's mealtime insulin joined the block.
-export const RECOVERY_FORMAT = 2;
+// RECOVERY_FORMAT stood here until 2026-09-21. Nothing ever compared it;
+// see §11.3 for the rule that replaced it.
 ```
 
 Every value carries a comment naming what it does and which section decided it.
@@ -3844,14 +3856,16 @@ migration for a cosmetic gain"* — and Momin overruled it on a fact that preced
 **nobody is using the app yet.** A name people can read is worth more than compatibility with rows
 that do not exist.
 
-| Renamed | New name | Safety net |
+| Renamed | New name | What reads the old spelling |
 |---|---|---|
-| `SettingsRow`, `SettingsHistoryRow` | `roundingMode` | `readAll` accepts a row written as `mode` |
-| The export envelope | `roundingMode` | `parseEnvelope` accepts either spelling |
-| §5.1's acknowledgement | `roundingMode:` | **None, on purpose** — a reader who had accepted the ceiling gate is asked once more, which is the safe direction for a safety gate and one tap |
+| `SettingsRow`, `SettingsHistoryRow` | `roundingMode` | Nothing, since 2026-09-21 |
+| The export envelope | `roundingMode` | Nothing, since 2026-09-21 |
+| §5.1's acknowledgement | `roundingMode:` | **Nothing, and that was true from the start** — a reader who had accepted the ceiling gate is asked once more, which is the safe direction for a safety gate and one tap |
 
-The fallbacks cost one `??` each and are the difference between a clearer name and somebody's
-prescription refusing to load. They can go the day that data is gone.
+Each of the first two was one `??` at a read boundary, and they lasted a day. **They were deleted
+on 2026-09-21 on Momin's ruling** that nobody has ever held this data but him and he would clear
+his own database: *"don't consider my test phone to be the production phone."* The app carries no
+code for a version of itself that exists nowhere.
 
 **THE LESSON IS NOT THE RENAME.** The file format reached for it *before anybody decided it should*:
 `Envelope['settings']` was `Omit<Settings, 'revision'>`, so it tracked the domain type — rename the
@@ -3867,9 +3881,10 @@ type is a format that moves when the type moves.**
 | `lastLocalWriteAtMs` | `lastLocalInjectionAtMs` | Only an injection stamps it — `appendReading` used to and must not, per §7.8. The domain had been translating around the stored name purely to avoid a migration |
 | `Injection.units` | `Injection.calculatedUnits` | It sat directly beside `injectedUnits`, and §11.2 carries a paragraph about how nearly that cost: a reviewer pinning `lastDose {units, atMs}` would have pinned the wrong figure into §7.4's gate — §13.7's wrong-oracle class, the one mutation testing cannot catch |
 
-`readInjection` accepts a dose row written as `units`. That fallback matters more than the others:
-§11.3 re-validates on load and DROPS a row it cannot read, so without it an old dose would vanish
-from the history that feeds §7.4's gate — silently, and in the dose-raising direction.
+`readInjection` accepted a dose row written as `units` for one day, and that fallback mattered more
+than the others while it existed: §11.3 re-validates on load and DROPS a row it cannot read, so an
+old dose would have vanished from the history that feeds §7.4's gate — silently, and in the
+dose-raising direction. It went on 2026-09-21 with the rest, once nobody held such a row.
 
 #### And five more, 2026-09-21, on the same licence
 
@@ -3885,16 +3900,18 @@ So it is `bolusId` / `bolusName` and `basalName` throughout. **`basal` and `bolu
 and stay out of the interface** — §10.2 bans them from what a reader sees, not from what a
 programmer reads, and `basalName` had been proving that for months.
 
-**`RECOVERY_FORMAT` went to 3**, because that block changed shape. A shape change is a shape change
-whether a field arrives or moves, and the whole point of versioning it independently is that an
-older build refuses rather than rendering the half it recognises.
+**The reads accepted the old spellings for one day, and on 2026-09-21 every one of them was
+deleted** — along with `RECOVERY_FORMAT`, the optional legacy fields that let an old row
+type-check, and the defaults that existed because a field had not always been there. Momin's
+ruling, on being told his own phone probably held a block in the old shape: *"nobody is using the
+app, I was testing it, I am the only one."* He clears his own database through "start over"
+rather than being migrated, and the app carries no code for a version of itself that no longer
+exists anywhere.
 
-**Every read accepts the old spelling**, and one of them is not like the others. The log counter's
-fallback prevents a SILENT RESET: read a pre-rename row without it and the counter restarts at one,
-so every other tab concludes the record went backwards — §11.3's cross-tab correctness argument
-inverted. The recovery block's two are the fail-closed screen's, where a wrong name costs somebody
-their prescription at the moment they most need it. `check-plan.py` pins all six fallbacks with
-seeded mutations.
+**What that leaves is one rule and one check.** The rule is §11.3's: a field name is never reused
+with a different meaning. The check is that the exported settings block stays its OWN type rather
+than an `Omit<>` of a live one — the thing that let the rename reach the FILE FORMAT before anyone
+had decided it should.
 
 **Every persisted name is listed in §11.3's schema block**, which is the place to look before
 renaming one. The question to ask is not "is this name good" but "who already has data under it" —
@@ -4161,9 +4178,14 @@ outcome at all.
 ```json
 {
   "input": { "bloodSugar": 100, "carbs": 60, "target": 150, "isf": 30, "icr": 10,
-             "lastDose": { "units": 6, "atMs": 0 },   // units = INJECTED (§11.2)
-             "nowMs": 7200000,          // == §11.2's decisionTime — same moment,
-                                       // two names. Identity stated in v15 [R1]
+             "lastDose": { "units": 6, "atHoursAgo": 2 }, // units = INJECTED (§11.2)
+                                       // `atHoursAgo`, NOT `atMs`: the fixture
+                                       // carries no clock. `golden.test.ts`
+                                       // holds one fixed NOW_MS and derives
+                                       // `atMs` from this. A case written with
+                                       // `atMs` — which this block said until
+                                       // 2026-09-21 — gets NaN arithmetic and
+                                       // no error
              "stackingOverride": false,
              "carbBaseline": 50, "eligibleEntryCount": 24,
              "historyProvenance": "trusted | suspect",
@@ -4259,7 +4281,7 @@ not, and JSON serialization erases the distinction. [R2]
   carries it; skip -> restart -> export **asks again**; decline -> restart -> export asks nothing
   and carries nothing; import into `unanswered` adopts, import over a local answer does not
 - **Injected-versus-calculated — ADDED IN v8** (§7.1): a row where `injectedUnits` differs from
-  `units` feeds §7.4's stacking gate from `injectedUnits`; the history screen labels both; the
+  `calculatedUnits` feeds §7.4's stacking gate from `injectedUnits`; the history screen labels both; the
   default path leaves them equal
 - **Cache cleanup preserves the blog — ADDED IN v15, RETARGETED IN v22** (§11.7, §11.4) [R1]:
   §11.4's cleanup-on-activation removes only this app's **superseded** caches and **leaves its own

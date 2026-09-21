@@ -466,7 +466,6 @@ CONSTANTS = {
     "RESULT_EXPIRY_MINUTES": "15",
     "POLL_INTERVAL_MS": "4000",
     "SCHEMA_VERSION": "1",
-    "RECOVERY_FORMAT": "2",
 }
 
 # §8.5's per-class clocks, row by row. A table rather than three constants,
@@ -503,9 +502,15 @@ RANGES = {
 # column and §11.8's `soft:` could drift apart from each other silently — [R1]
 # moved both to 90-180 independently and both passed. A gate stated twice needs
 # checking twice.
+#
+# `injected` was in here until 2026-09-21 declaring `[0.5, 60]`, ten days after
+# `config.ts` struck it. Nothing noticed, because these checks only fire on a
+# band a DOCUMENT states — remove the sentence and the stale declaration goes
+# quiet rather than failing. Check 35 below compares this table against
+# `config.ts` so the table cannot outlive the code again.
 SOFT_RANGES = {
     "target": "[90, 140]", "isf": "[20, 100]", "icr": "[5, 50]",
-    "threshold": "[15, 35]", "basalUnits": "[5, 80]", "injected": "[0.5, 60]",
+    "threshold": "[15, 35]", "basalUnits": "[5, 80]",
     "eatDelay": "[0, 30]",
 }
 
@@ -539,7 +544,7 @@ GROUPED = {
 REQUIRED = [
     ("§6.7 three-state model",
      r'state:\s*"unanswered"\s*\|\s*"declined"\s*\|\s*"answered"'),
-    ("§11.3 dosingHistory store row", r'k:\s*"dosingHistory"'),
+    ("§11.3 dosingHistory store row", r'key:\s*"dosingHistory"'),
     ("§6.7 skip re-offers", r"(?i)re-offered at every export"),
     ("§6.7 decline states its consequence", r"you won't be asked again"),
     ("§6.7 empty answer is a skip", r"empty answer is a skip"),
@@ -758,7 +763,7 @@ REQUIRED = [
      r"\*\*The dose values do not survive\*\*"),
     ("§7.3 a tombstone beats a live row on import",
      r"\*\*A tombstone wins over a live row with the same `id` on import\*\*"),
-    ("§11.3 logRevision has a row", r'\{ k: "logRevision", n \}'),
+    ("§11.3 logRevision has a row", r'key: "logRevision", logRevision'),
 ]
 
 
@@ -840,6 +845,16 @@ def check_retired_in_source(_plan):
         rel = os.path.relpath(path, HERE).replace(os.sep, "/")
         with io.open(path, encoding="utf-8") as handle:
             files[rel] = handle.read()
+    # `package.json` joins the sweep 2026-09-21, for the third instance of the
+    # same blind spot. Its `description` still said the app was "for one
+    # person" eight days after the audience change retired the phrase, because
+    # the document corpus is SWEPT_SUFFIXES and the source corpus is
+    # `src/**/*.ts{,x}` — and package.json is in neither. That is exactly how
+    # this phrase survived in page metadata the first time, which check 1c's
+    # own comment records as having lasted "because nobody looked".
+    metadata = os.path.join(HERE, "package.json")
+    if os.path.exists(metadata):
+        files["package.json"] = load(metadata)
     out = []
     for phrase, _expected in RETIRED:
         allowed = RETIRED_IN_SOURCE_OK.get(phrase, 0)
@@ -849,7 +864,7 @@ def check_retired_in_source(_plan):
             total += len(hits)
             where += ["%s:%d" % (rel, line_of(text, m.start())) for m in hits]
         if total != allowed:
-            out.append("retired phrase %r in TypeScript source: expected %d, found %d (%s)"
+            out.append("retired phrase %r in source or package metadata: expected %d, found %d (%s)"
                        " — a doc-retired rule in a docstring is the rule living on; quote it"
                        " to explain the retirement and pin the count, or delete it"
                        % (phrase, allowed, total, ", ".join(where) or "none"))
@@ -3618,30 +3633,26 @@ def check_insulin_timing(corpus):
 def check_persisted_names(corpus):
     """31. A persisted name is renameable ONLY while nobody holds data.
 
-    2026-09-21 renamed `mode` to `roundingMode` everywhere — the stored rows,
-    the export format and §5.1's acknowledgement key included. Momin's ruling:
-    nobody is using the app yet, so a name people can read is worth more than
-    compatibility with rows that do not exist.
+    2026-09-21 renamed the stored rows, the export format and §5.1's
+    acknowledgement key. Momin's ruling, twice: he is the only person who has
+    ever run this app, so a name people can read is worth more than
+    compatibility with rows that do not exist. The reads accepted the old
+    spellings for one day and were deleted the same day, with every other
+    older-version accommodation — he clears his own database through "start
+    over" rather than being migrated.
 
-    What this pins is not the name. It is the TWO THINGS that made the rename
-    safe, because the next one will not have this licence:
-
-      * the reads accept the OLD spelling, so a row or a file written before
-        the rename still opens. It costs one `??` and the alternative is
-        somebody's prescription refusing to load.
-      * the exported settings block is its OWN type rather than an `Omit<>` of
-        a live one. It used to be the latter, which is how this rename reached
-        the file format BEFORE anybody decided it should — a serialisation
-        format derived from a domain type moves when the type moves, silently.
-
-    The second is the one worth keeping forever. The first can go the day
-    somebody decides those fallbacks have outlived the data.
+    What survives is the thing that made the rename DANGEROUS, and it is not
+    about any particular name: THE EXPORTED SETTINGS BLOCK MUST BE ITS OWN TYPE
+    rather than an `Omit<>` of a live one. It used to be the latter, which is
+    how the rename reached the FILE FORMAT before anybody had decided it
+    should — a serialisation format derived from a domain type moves when the
+    type moves, silently, and a file is the one artefact here that outlives the
+    build that wrote it.
     """
     out = []
     try:
         schema = load(os.path.join(HERE, "src", "storage", "schema.ts"))
         envelope = load(os.path.join(HERE, "src", "storage", "envelope.ts"))
-        repo = load(os.path.join(HERE, "src", "storage", "repo.ts"))
     except (IOError, OSError):
         return out
 
@@ -3651,48 +3662,10 @@ def check_persisted_names(corpus):
             out.append("src/storage/schema.ts: could not find %s — the parser "
                        "needs updating (maintenance obligation)" % name)
             continue
-        body = block.group(1)
-        if not re.search(r"^\s*readonly roundingMode\s*:", body, re.M):
+        if not re.search(r"^\s*readonly roundingMode\s*:", block.group(1), re.M):
             out.append("src/storage/schema.ts: %s does not declare "
                        "`roundingMode`; §5's rounding mode has to be stored "
                        "somewhere" % name)
-        for legacy in ("mode", "insulinId"):
-            if not re.search(r"^\s*readonly %s\?\s*:" % legacy, body, re.M):
-                out.append("src/storage/schema.ts: %s no longer declares the "
-                           "legacy `%s?` — a row written before 2026-09-21 "
-                           "would load without it. Drop it only when the "
-                           "fallback in `readAll` goes too" % (name, legacy))
-
-    # The 2026-09-21 key rename, same shape and the same reason: each `??` is
-    # the difference between a clearer name and somebody's data refusing to
-    # load. The counter is the worst of them — a silent reset makes every other
-    # tab believe the record went backwards, which is §11.3's cross-tab
-    # correctness argument inverted.
-    for pattern, lost in (
-        (r"settingsRow\.bolusId \?\? settingsRow\.insulinId",
-         "a settings row written as `insulinId` loses its insulin, and §8.5's "
-         "required question is asked again"),
-        (r"row\.bolusId \?\? row\.insulinId",
-         "a prescription period written as `insulinId` loses the insulin it was "
-         "calculated under"),
-        (r"current\.logRevision \?\? current\.n",
-         "the log counter RESETS when a pre-rename row is read, so every other "
-         "tab believes the record went backwards"),
-        (r"revision\.logRevision \?\? revision\.n",
-         "the log counter reads as zero on load"),
-    ):
-        if not re.search(pattern, repo):
-            out.append("src/storage/repo.ts: a legacy-name fallback is gone — %s"
-                       % lost)
-
-    if not re.search(r"settingsRow\.roundingMode \?\? settingsRow\.mode", repo):
-        out.append("src/storage/repo.ts: `readAll` no longer falls back to the "
-                   "legacy `mode` for the settings row — a row written before "
-                   "2026-09-21 loses its rounding mode silently")
-    if not re.search(r"row\.roundingMode \?\? mode", repo):
-        out.append("src/storage/repo.ts: `readAll` no longer falls back to the "
-                   "legacy `mode` for a history row — an old prescription "
-                   "period loses the rounding mode it was calculated under")
 
     if re.search(r"readonly settings:\s*Omit<Settings", envelope):
         out.append("src/storage/envelope.ts: the exported settings block is an "
@@ -3700,36 +3673,145 @@ def check_persisted_names(corpus):
                    "field silently changes the FILE FORMAT — which is how the "
                    "2026-09-21 rename reached it before anybody decided it "
                    "should. Declare it separately")
-    if not re.search(r"settingsRaw\.roundingMode \?\? settingsRaw\.mode", envelope):
-        out.append("src/storage/envelope.ts: `parseEnvelope` no longer accepts "
-                   "the legacy `mode` in the settings block — an export saved "
-                   "before 2026-09-21 would import with no rounding mode")
-    # The fail-closed screen's own block. Getting a name wrong here costs
-    # somebody their prescription at the moment they most need it.
-    try:
-        opener = load(os.path.join(HERE, "src", "storage", "open.ts"))
-    except (IOError, OSError):
-        opener = ""
-    if opener:
-        for pattern, field in (
-            (r"block\.bolusName \?\? block\.mealtimeInsulin", "bolusName"),
-            (r"block\.basalName \?\? block\.basalInsulinName", "basalName"),
-        ):
-            if not re.search(pattern, opener):
-                out.append("src/storage/open.ts: the recovery block no longer "
-                           "accepts the pre-2026-09-21 spelling of `%s` — the "
-                           "fail-closed screen would show a blank where a "
-                           "prescription should be, on the one screen that "
-                           "exists for when nothing else works" % field)
+    return out
 
-    if not re.search(r"entry\.roundingMode \?\? entry\.mode", envelope):
-        out.append("src/storage/envelope.ts: `parseEnvelope` no longer accepts "
-                   "the legacy `mode` in a history entry")
-    if not re.search(r"value\.calculatedUnits \?\? value\.units", envelope):
-        out.append("src/storage/envelope.ts: `readInjection` no longer accepts "
-                   "the legacy `units` — a dose row written before 2026-09-21 "
-                   "would be DROPPED by §11.3's re-validation, which is a "
-                   "silently shorter history feeding §7.4's gate")
+
+def check_soft_bands_against_config(corpus):
+    """35. `SOFT_RANGES` must name exactly the fields `config.ts` gives a soft band.
+
+    The §4.5 and §11.8 soft-band checks both fire only on a band a DOCUMENT
+    states. That makes them silent in the one direction that matters here: take
+    the band out of `config.ts`, take the sentence out of `PLAN.md`, and a stale
+    row in `SOFT_RANGES` sits there declaring a confirm-once band for a field
+    that has none, with nothing to compare it against.
+
+    That is what happened to `injected`. Its soft band was struck from
+    `config.ts` on 2026-09-11; `PLAN.md` kept saying the band "remains in
+    `config.ts` with no consumer" and `SOFT_RANGES` kept declaring `[0.5, 60]`
+    until 2026-09-21, and the checker passed clean throughout.
+
+    So this reads the file rather than the prose. `config.ts` is the authority
+    on which fields have a confirm-once band and what it is; a disagreement
+    either way is a finding, because a band declared here and absent there is
+    exactly as wrong as the reverse.
+    """
+    out = []
+    try:
+        config = load(os.path.join(HERE, "src", "config.ts"))
+    except (IOError, OSError):
+        return out
+
+    block = re.search(r"export const RANGE = \{(.*?)\n\} as const;", config, re.S)
+    if not block:
+        return ["src/config.ts: could not find `export const RANGE` — check 35's "
+                "parser needs updating (maintenance obligation)"]
+
+    actual = {}
+    for m in re.finditer(r"^\s*(\w+):\s*\{[^}]*?soft:\s*\[([^\]]+)\]",
+                         block.group(1), re.M | re.S):
+        actual[m.group(1)] = "[%s]" % re.sub(r"\s+", " ", m.group(2)).strip()
+
+    for name in sorted(set(SOFT_RANGES) - set(actual)):
+        out.append("check-plan.py's SOFT_RANGES declares a confirm-once band for "
+                   "`%s` (%s) but src/config.ts gives it none — §4.5's band was "
+                   "struck in code and the declaration outlived it"
+                   % (name, SOFT_RANGES[name]))
+    for name in sorted(set(actual) - set(SOFT_RANGES)):
+        out.append("src/config.ts gives `%s` a confirm-once band of %s and "
+                   "check-plan.py's SOFT_RANGES does not declare it — an "
+                   "unpinned gate is one §4.5 can drift on silently"
+                   % (name, actual[name]))
+    for name in sorted(set(actual) & set(SOFT_RANGES)):
+        if actual[name] != SOFT_RANGES[name]:
+            out.append("src/config.ts's soft band for `%s` is %s; check-plan.py "
+                       "declares %s — if the change is intended, change both in "
+                       "one edit" % (name, actual[name], SOFT_RANGES[name]))
+    return out
+
+
+def check_omit_targets(corpus):
+    """34. `Omit<T, 'field'>` naming a field that is not a key of `T`.
+
+    TypeScript does not require it to be one. The lib signature is
+    `Omit<T, K extends keyof any>`, so an `Omit` left pointing at a renamed
+    field keeps compiling and quietly omits NOTHING.
+
+    Both instances were made by the 2026-09-21 rename and found the same day,
+    and neither failed anywhere:
+
+      * `StoredEnvelope` held `Omit<SettingsRow, 'k'>` after the row's key
+        became `key`. Dead code, so the hole was inert — but it is the same
+        trap check 31 exists to keep out of the file format.
+      * `bumpLogRevision` took `Partial<Omit<LogRevisionRow, 'k' | 'n'>>`,
+        which stopped forbidding a patch from rewriting the PRIMARY KEY. Only
+        the `put` re-setting `key` after the spread kept that harmless.
+
+    Interfaces declared outside `src/` cannot be resolved, so an `Omit` of an
+    imported or generic type is SKIPPED rather than guessed at — this reports
+    what it can prove wrong, not what it cannot prove right.
+    """
+    out = []
+    sources = {}
+    for dirpath, dirnames, filenames in os.walk(os.path.join(HERE, "src")):
+        dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+        for name in sorted(filenames):
+            if not name.endswith(SOURCE_SUFFIXES):
+                continue
+            full = os.path.join(dirpath, name)
+            rel = os.path.relpath(full, HERE).replace(os.sep, "/")
+            try:
+                sources[rel] = load(full)
+            except (IOError, OSError):
+                continue
+
+    # `interface X extends Y {` as well as `interface X {`. Without the
+    # `extends` clause `Settings` did not resolve at all, which is a THIRD of
+    # this check's targets skipped silently — and an inherited field must count
+    # as a field, or omitting one would be reported as a mistake.
+    own, parents = {}, {}
+    decl = re.compile(r"interface (\w+)(?:\s+extends\s+([^{]+?))?\s*\{(.*?)\n\}", re.S)
+    for rel, text in sources.items():
+        for m in decl.finditer(text):
+            own[m.group(1)] = set(
+                re.findall(r"^\s*readonly (\w+)\??\s*:", m.group(3), re.M))
+            parents[m.group(1)] = [part.strip()
+                                   for part in (m.group(2) or "").split(",")
+                                   if part.strip()]
+
+    def fields_of(name, seen=None):
+        """Every field, inherited ones included, or None if it cannot be resolved.
+
+        None rather than a partial set: an incomplete field list turns a correct
+        `Omit` of an inherited field into a false report, and this check is only
+        worth having if a finding is always a defect.
+        """
+        seen = set() if seen is None else seen
+        if name in seen or name not in own:
+            return None
+        seen.add(name)
+        total = set(own[name])
+        for parent in parents[name]:
+            inherited = fields_of(parent, seen)
+            if inherited is None:
+                return None
+            total |= inherited
+        return total
+
+    for rel in sorted(sources):
+        text = sources[rel]
+        for m in re.finditer(r"Omit<\s*(\w+)\s*,([^>]*)>", text):
+            target, keys = m.group(1), m.group(2)
+            known = fields_of(target)
+            if known is None:
+                continue
+            for key in re.findall(r"['\"](\w+)['\"]", keys):
+                if key not in known:
+                    out.append("%s:%d: `Omit<%s, '%s'>` — `%s` is not a field "
+                               "of `%s`, so this omits NOTHING and TypeScript "
+                               "does not object. Either the field was renamed "
+                               "and this was left behind, or the name is a typo"
+                               % (rel, text[:m.start()].count("\n") + 1,
+                                  target, key, key, target))
     return out
 
 
@@ -3890,6 +3972,8 @@ CHECKS = [
     ("§8.5's per-class clocks", check_insulin_timing, "corpus"),
     ("§7.7's no-change comparison vs the store", check_period_comparison, "corpus"),
     ("persisted names vs the domain rename", check_persisted_names, "corpus"),
+    ("Omit<> naming a field that is not a key", check_omit_targets, "corpus"),
+    ("soft bands declared vs src/config.ts", check_soft_bands_against_config, "corpus"),
     ("the web manifest is generated from BASE", check_generated_manifest, "corpus"),
     ("BACKLOG stale against PLAN", check_cross_document, "backlog"),
     ("BLOG-FIX names the app path", check_blogfix, "blogfix"),
@@ -4033,7 +4117,7 @@ SELF_TESTS = [
      lambda t: t.replace("target:     { hard: [70, 200]",
                          "target:     { hard: [70, 300]")),
     ("required: dosingHistory store row deleted [R1]", "PLAN.md",
-     lambda t: t.replace('k: "dosingHistory"', 'k: "somethingElse"')),
+     lambda t: t.replace('key: "dosingHistory"', 'key: "somethingElse"')),
     ("required: three states collapsed to a boolean [R1]", "PLAN.md",
      lambda t: t.replace(
          'state: "unanswered" | "declined" | "answered"', "asked: true | false")),
@@ -4197,37 +4281,29 @@ SELF_TESTS = [
      lambda t: t.replace(
          "| Regular human insulin | 20\u201330 minutes",
          "| Regular human insulin | 25\u201335 minutes")),
-    # The 2026-09-21 rename, and the three boundaries it stopped at. Each of
-    # these loses or re-asks for data that is already on somebody's device.
-    ("rename: a stored row drops its legacy fallback", "src/storage/schema.ts",
-     lambda t: t.replace("  readonly mode?: RoundingMode;\n  readonly threshold: number;",
-                         "  readonly threshold: number;")),
-    ("rename: readAll stops accepting the old settings spelling", "src/storage/repo.ts",
-     lambda t: t.replace("settingsRow.roundingMode ?? settingsRow.mode",
-                         "settingsRow.roundingMode")),
     ("rename: the file format tracks the live type again", "src/storage/envelope.ts",
      lambda t: t.replace("readonly settings: ExportedSettings | Record<string, never>;",
                          "readonly settings: Omit<Settings, 'revision'> | Record<string, never>;")),
-    ("rename: a dose row written under the old field name is dropped",
-     "src/storage/envelope.ts",
-     lambda t: t.replace("value.calculatedUnits ?? value.units",
-                         "value.calculatedUnits")),
-    ("rename: parseEnvelope stops accepting the old spelling", "src/storage/envelope.ts",
-     lambda t: t.replace("settingsRaw.roundingMode ?? settingsRaw.mode",
-                         "settingsRaw.roundingMode")),
-    # The 2026-09-21 key rename. Each of these loses or resets data that is
-    # already on somebody's device, and none of them fails loudly.
-    ("rename: a settings row written as insulinId loses its insulin",
-     "src/storage/repo.ts",
-     lambda t: t.replace("settingsRow.bolusId ?? settingsRow.insulinId ?? ''",
-                         "settingsRow.bolusId ?? ''")),
-    ("rename: the log counter resets on a pre-rename row", "src/storage/repo.ts",
-     lambda t: t.replace("current.logRevision ?? current.n ?? 0",
-                         "current.logRevision ?? 0")),
-    ("rename: the fail-closed screen loses the insulin it should show",
-     "src/storage/open.ts",
-     lambda t: t.replace("block.bolusName ?? block.mealtimeInsulin ?? ''",
-                         "block.bolusName ?? ''")),
+    # Check 1c, extended to package.json. The audience change retired "for one
+    # person" on 2026-09-13; package.json kept saying it until 2026-09-21
+    # because it sat outside both corpora.
+    ("retired 'for one person' back in the package description", "package.json",
+     lambda t: t.replace(
+         '"An insulin bolus calculator for people with type 1 diabetes',
+         '"An insulin bolus calculator for one person')),
+    # Check 35. `injected` sat in SOFT_RANGES for ten days after `config.ts`
+    # struck its band, and every soft-band check stayed quiet because they only
+    # fire on a band a DOCUMENT states. This seeds the same drift on a field
+    # that still has one.
+    ("a soft band struck from config.ts, still declared", "src/config.ts",
+     lambda t: t.replace("target: { hard: [70, 200], soft: [90, 140] }",
+                         "target: { hard: [70, 200] }")),
+    # Check 34. This is the exact state `bumpLogRevision` was left in by the
+    # 2026-09-21 rename: an `Omit` still naming the row's OLD key, omitting
+    # nothing, and compiling without complaint.
+    ("Omit<> left pointing at a renamed field", "src/storage/repo.ts",
+     lambda t: t.replace("Partial<Omit<LogRevisionRow, 'key' | 'logRevision'>>",
+                         "Partial<Omit<LogRevisionRow, 'k' | 'n'>>")),
     # T15's generated files. Both hold a deployed address that nothing would
     # rewrite if it went back to being written by hand.
     ("T15: the manifest scope written as a literal again", "vite.config.ts",
@@ -4392,7 +4468,7 @@ SELF_TESTS = [
      lambda t: t.replace("**The dose values do not survive**",
                          "The dose values are kept")),
     ("required: logRevision loses its row again", "PLAN.md",
-     lambda t: t.replace('{ k: "logRevision", n }', '// counter lives somewhere')),
+     lambda t: t.replace('key: "logRevision", logRevision', '// counter lives somewhere')),
     ("required: the commit moves back to the first tap [amount becomes an edit]",
      "PLAN.md",
      lambda t: t.replace("**The commit is the second tap.**",
@@ -4521,7 +4597,7 @@ def self_test():
     # file reports "missing", which the runner counts as an ESCAPE.
     for rel in ("src/storage/repo.ts", "src/storage/schema.ts",
                 "src/storage/envelope.ts", "vite.config.ts",
-                "src/storage/open.ts"):
+                "src/storage/open.ts", "package.json"):
         full = os.path.join(HERE, *rel.split("/"))
         if os.path.exists(full):
             base[rel] = load(full)

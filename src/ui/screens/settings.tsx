@@ -554,9 +554,9 @@ export function SettingsScreen({
             chose and what you see afterwards should look like one thing. */}
         <div class="li insulin-chosen">
           {/* Three states, not two (§4.1). "I don't know" is an ANSWER and
-              says so; `Not recorded` is for a prescription period that
-              predates the question. Showing one as the other tells a reader
-              who answered that the app lost it. */}
+              says so; `Not recorded` is for an imported period this build
+              cannot identify. Showing one as the other tells a reader who
+              answered that the app lost it. */}
           <div class="k">
             <span class="brand">
               {insulinBrand ?? COPY.insulin.notKnownLabel(draft.bolusId)}

@@ -56,9 +56,9 @@ export type Screen =
   /**
    * §8.5 — which mealtime insulin, asked before the ratios and never skipped.
    *
-   * A GATE rather than a settings field, and it opens for an existing install
-   * too: the question is required, so an app that has been running for months
-   * asks it on the next open like a fresh one. Placed BEFORE `first_run_settings`
+   * A GATE rather than a settings field: settings carrying no insulin route
+   * here rather than to the calculator, whatever put them in that state.
+   * Placed BEFORE `first_run_settings`
    * on a new install, because an answer of "premixed" ends the setup and making
    * someone type three ratios first only to be told the app does not fit them
    * is a worse way to say the same thing.

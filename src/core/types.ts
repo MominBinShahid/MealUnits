@@ -305,8 +305,6 @@ export interface Injection {
    * cost: a reviewer pinning `lastDose {units, atMs}` would have pinned the
    * wrong figure into §7.4's gate, which is §13.7's wrong-oracle class — the
    * one mutation testing cannot catch. The names say which is which now.
-   *
-   * `readInjection` still accepts a row written as `units`.
    */
   readonly calculatedUnits: number;
   /** What he actually injected, in hundredths. Defaults to the calculated figure (§7.1). */

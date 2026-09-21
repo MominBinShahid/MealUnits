@@ -284,12 +284,16 @@ pre-written, because the reader on that screen is the one the project most needs
 the one least likely to push through friction.
 
 **Two things this changed that the entry did not predict.** The `settings` row's missing field turned
-out to BE the migration — `''` reads as "never asked", so an existing install meets the same required
-question on its next open, and no `DATABASE_VERSION` bump was needed. And `RECOVERY_FORMAT` went to 2,
-because the mealtime insulin belongs on the block that is copied off the fail-closed screen by hand.
+out to BE the migration — `''` reads as "never asked", so an existing install met the same required
+question on its next open, and no `DATABASE_VERSION` bump was needed. And the mealtime insulin joined
+the block that is copied off the fail-closed screen by hand, which moved `RECOVERY_FORMAT` to 2. Both
+halves of that are now history: every older-version read went on 2026-09-21, and `RECOVERY_FORMAT`
+went with them — nothing had ever compared it. See §11.3.
 
-**The problem.** The dose arithmetic is insulin-agnostic — `DosingSettings` is `{target, isf, icr,
-mode}` and the app does not know which mealtime insulin is in the pen. The molecule reaches exactly
+**The problem.** The dose arithmetic is insulin-agnostic: the formula runs on the target, the ISF
+and the ICR alone, and that has not changed. What had to change is that `DosingSettings` was
+`{target, isf, icr, mode}` and the app did not know which mealtime insulin was in the pen — it
+carries `roundingMode` and `bolusId` now, which is what this entry put there. The molecule reaches exactly
 two clocks: §8.1's 20–30-minute eat delay and §7.4's 4/12-hour stacking windows, plus §7.3's
 delete-confirm window derived from the second, and two sentences in `copy.ts` that interpolate them.
 `settings.insulinAssumption` says all this on screen and ends *"ask your doctor how long before a
@@ -318,7 +322,7 @@ building, and why its numbers need the rigour the dose arithmetic got.
    target — `config.ts` deleted `PRESCRIBED_*` on the ruling that *"a prefilled 150 is a prescription
    wearing the clothes of a default"*. An insulin is the same category. A required question also has
    no tap-through, which is what removes the false-confirmation risk entirely. **No migration value
-   either**: an existing install answers the question on next open like everyone else.
+   either**: settings carrying no insulin meet the question on next open like everyone else.
 
 2. **Grouped by CLASS, never an alphabetical brand list.** HumuLIN / HumaLOG is on ISMP's confused
    drug names list, as are NovoLIN / NovoLOG and both premix pairs — an alphabetical list seats them

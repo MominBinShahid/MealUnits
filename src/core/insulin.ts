@@ -103,9 +103,15 @@ export function isMealtimeClass(value: InsulinClass | null): value is MealtimeCl
  * same as `UNKNOWN_INSULIN`. "Nobody has asked" must produce the question;
  * "I don't know" is an answer, given deliberately, that must not.
  *
- * A settings row written before this field existed reads back as this, so an
- * existing install answers the question on next open like everyone else — which
- * is the whole of the migration.
+ * **It cannot reach the SETTINGS row under this build.** §8.5's question is
+ * asked before the first commit, and "I don't know" is `UNKNOWN_INSULIN`, not
+ * this — so a settings row carrying `''` is a hand-edited or tampered one, and
+ * the gate reading it here is defence in depth that routes to the question
+ * rather than guessing.
+ *
+ * It DOES reach a `settingsHistory` row, by one route: an import whose stored
+ * id matches no brand this build knows. `readInsulinId` sanitises that to `''`,
+ * and the period prints as "not recorded".
  */
 export const UNANSWERED_INSULIN = '';
 

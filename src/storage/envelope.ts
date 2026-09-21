@@ -18,7 +18,7 @@ export interface ExportedSettingsHistory {
   readonly target: number;
   readonly isf: number;
   readonly icr: number;
-  /** §5's rounding mode. Renamed from `mode` on 2026-09-21; `parseEnvelope` still accepts either. */
+  /** §5's rounding mode. Renamed from `mode` on 2026-09-21. */
   readonly roundingMode: RoundingMode;
   /** §8.5 — the insulin in force for this period. `''` when none was recorded. */
   readonly bolusId: string;
@@ -58,7 +58,7 @@ function readInsulinId(value: unknown): string {
  * The 2026-09-21 rename DID reach the file, deliberately — Momin's ruling, on
  * the grounds that nobody is using the app yet, so a name people can read is
  * worth more than compatibility with files that do not exist. `parseEnvelope`
- * accepts either spelling anyway; it costs one `??`.
+ * accepted the old spelling for a day; that went too.
  */
 export interface ExportedSettings {
   readonly target: number;
@@ -219,12 +219,10 @@ function readInjection(value: Record<string, unknown>): Injection | null {
   // precision, range. A row that fails is dropped rather than repaired, because
   // repairing it would invent a dose.
   const { id, timestamp, bloodSugar, carbs, injectedUnits, settingsRevision } = value;
-  // Either spelling. `calculatedUnits` is what this build writes; `units` is
-  // what a row or a file written before 2026-09-21 carries, and the two sat
-  // next to `injectedUnits` for long enough that §11.2 has a paragraph about a
-  // reviewer nearly pinning the wrong one. That ambiguity is the whole reason
-  // for the rename, and one `??` is the whole cost of not losing old rows.
-  const units = value.calculatedUnits ?? value.units;
+  // `calculatedUnits`, never `units`. The short name sat next to
+  // `injectedUnits` for long enough that §11.2 has a paragraph about a reviewer
+  // nearly pinning the wrong one, which is the whole reason for the rename.
+  const units = value.calculatedUnits;
   if (typeof id !== 'string' || id === '') return null;
   if (!finiteNumber(timestamp)) return null;
   if (bloodSugar !== null && !inHardRange(bloodSugar, 'bloodSugar')) return null;
@@ -320,9 +318,7 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
     Object.keys(settingsRaw).length === 0
       ? {}
       : (() => {
-          // Either spelling. `roundingMode` is what this build writes; `mode` is what a
-          // file written before 2026-09-21 carries, and there is no reason to refuse one.
-          const mode = settingsRaw.roundingMode ?? settingsRaw.mode;
+          const mode = settingsRaw.roundingMode;
           if (
             !inHardRange(settingsRaw.target, 'target') ||
             !inHardRange(settingsRaw.isf, 'isf') ||
@@ -353,7 +349,8 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
             // Validated as a STRING and nothing more. It is untrusted text from
             // a file, it enters no calculation, and the readable export escapes
             // it — §7.7.1's escaping rule is what makes that safe. A file
-            // written before this field existed simply has no name.
+            // that simply has no name here is not an error: this is arbitrary
+            // JSON, and every field has to survive being absent.
             personName:
               typeof settingsRaw.personName === 'string'
                 ? settingsRaw.personName.slice(0, MAX_NAME_LENGTH)
@@ -365,7 +362,7 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
   const settingsHistory: ExportedSettingsHistory[] = [];
   for (const entry of historyRaw) {
     if (!isRecord(entry)) continue;
-    const mode = entry.roundingMode ?? entry.mode;
+    const mode = entry.roundingMode;
     if (
       !Number.isInteger(entry.revision) ||
       !finiteNumber(entry.changedAtMs) ||

@@ -132,10 +132,9 @@ describe('§7.7 the envelope', () => {
    * `mode` became `roundingMode` on 2026-09-21, the file format included —
    * Momin's ruling, on the grounds that nobody is using the app yet.
    *
-   * These two cases pin both halves of that. The file writes the new name, and
-   * an older file written under the old one still imports, because the fallback
-   * costs one `??` and the alternative is somebody's saved record refusing to
-   * open.
+   * `parseEnvelope` accepted the old spelling for a day; that fallback went on
+   * 2026-09-21 with every other older-version read. What is left to pin is the
+   * half that was never about a name.
    *
    * The format is declared as `ExportedSettings` rather than
    * `Omit<Settings, 'revision'>`, which is what it used to be — so the rename
@@ -154,42 +153,6 @@ describe('§7.7 the envelope', () => {
     expect(Object.keys(envelope.settings)).toContain('roundingMode');
     expect(envelope.settings).toMatchObject({ roundingMode: SETTINGS.roundingMode });
     expect(Object.keys(envelope.settingsHistory[0] ?? {})).toContain('roundingMode');
-  });
-
-  it('§7.7 — and still reads a file written under the OLD spelling', () => {
-    // `parseEnvelope` takes the PARSED object, not the text.
-    const parsed = parseEnvelope(
-      {
-        schemaVersion: 1,
-        settings: {
-          target: 150,
-          isf: 30,
-          icr: 10,
-          mode: 'half',
-          threshold: 20,
-          basalName: 'Lantus',
-          basalUnits: 36,
-          basalTiming: 'early morning',
-          personName: '',
-        },
-        settingsHistory: [
-          { revision: 1, changedAtMs: AUG_18, target: 150, isf: 30, icr: 10, mode: 'ceil' },
-        ],
-        readings: [],
-        log: [],
-      },
-    );
-    expect(parsed.ok).toBe(true);
-    if (!parsed.ok) return;
-    // A file that predates BOTH the rename and §8.5 — no `bolusId` either.
-    // Written as `mode`, read as `roundingMode`. One `??` at the boundary, and
-    // the reason it is there at all: an export already saved to somebody's
-    // phone should not stop importing because a name got clearer.
-    expect(parsed.envelope.settings).toMatchObject({ roundingMode: 'half' });
-    expect(parsed.envelope.settingsHistory[0]).toMatchObject({
-      roundingMode: 'ceil',
-      bolusId: '',
-    });
   });
 
   it('omits `threshold` and `imported` from the history, and carries the insulin', () => {

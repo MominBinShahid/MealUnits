@@ -19,7 +19,7 @@
  * row means a blind safety gate.
  */
 
-import { RECOVERY_FORMAT, SCHEMA_VERSION } from '../config.js';
+import { SCHEMA_VERSION } from '../config.js';
 import type { RoundingMode } from '../core/types.js';
 
 export const DATABASE_NAME = 'MealUnits';
@@ -75,21 +75,23 @@ export const META_KEY = {
  * finite integer. String ordering and `NaN` never decide compatibility.
  *
  * The recovery block is IMMUTABLE IN FORMAT [R2]: fixed field names, explicit
- * units, versioned independently of the evolving payload, kept synchronised with
- * committed settings. "Plain text prevents injection but does not establish
- * meaning" — a parsed integer does not reveal whether `150` means units,
- * hundredths or mg/dL — so an older build must never present unknown-schema
- * numbers as verified prescription settings.
+ * units, kept synchronised with committed settings. "Plain text prevents
+ * injection but does not establish meaning" — a parsed integer does not reveal
+ * whether `150` means units, hundredths or mg/dL.
+ *
+ * **What keeps that true is a rule, not a runtime check**, and it is the only
+ * thing standing behind these numbers: A FIELD NAME IS NEVER REUSED WITH A
+ * DIFFERENT MEANING. Change the meaning and you rename the field, so an older
+ * build does not find it rather than misreading it.
+ *
+ * A `recoveryFormat` integer sat here until 2026-09-21 claiming to enforce
+ * exactly that. Nothing ever compared it — it was written as a constant and
+ * overwritten on read — so the comment describing a refusal described a
+ * mechanism nobody had written. It was deleted rather than implemented:
+ * enforcing it means this screen sometimes shows nothing on purpose, and
+ * showing numbers when everything else has broken is the only reason it exists.
  */
 export interface RecoveryBlock {
-  /**
-   * **3 since 2026-09-21.** The block renamed two of its fields —
-   * `mealtimeInsulin` to `bolusName`, `basalInsulinName` to `basalName` — and
-   * this number going up is exactly what independent versioning is for: a build
-   * that does not know the shape refuses rather than rendering the half it
-   * recognises. `readRecoveryBlock` accepts the old spellings.
-   */
-  readonly recoveryFormat: typeof RECOVERY_FORMAT;
   readonly targetMgDl: number;
   readonly oneUnitLowersMgDl: number;
   readonly oneUnitCoversGramsCarbohydrate: number;
@@ -99,16 +101,8 @@ export interface RecoveryBlock {
   /**
    * §8.5's brand, in WORDS rather than as a row id — this block is copied down
    * off a screen by hand, and `novorapid` is not what the vial says.
-   *
-   * The format is versioned independently and this is an addition to it, so
-   * `recoveryFormat` goes to 2. An older build reading a 2 refuses to present
-   * the numbers as verified settings, which is the behaviour §11.3 asks for and
-   * the reason the field is versioned at all.
    */
   readonly bolusName: string;
-  /** Pre-2026-09-21 spellings. Read, never written. */
-  readonly mealtimeInsulin?: string;
-  readonly basalInsulinName?: string;
   /** Optional; '' means not given. See `Settings.personName`. */
   readonly personName: string;
 }
@@ -165,8 +159,6 @@ export interface LogRevisionRow {
    * that nobody holds data yet.
    */
   readonly logRevision: number;
-  /** The pre-2026-09-21 spelling. Read, never written. */
-  readonly n?: number;
   readonly lastImportAtMs: number | null;
   /**
    * When this install last appended an INJECTION — not a reading. After note
@@ -215,14 +207,10 @@ export interface SettingsRow {
    * §5's rounding mode. **Renamed from `mode` on 2026-09-21 [Momin]**, stored
    * key included — *"nobody is using this right now"*, and a name nobody can
    * read from is worth more than compatibility with rows that do not exist.
-   *
-   * `readAll` still accepts a row written as `mode`. That is three characters
-   * of fallback against losing somebody's prescription, and the one device that
-   * does hold data is Hasham's.
+   * `readAll` accepted a row written as `mode` for one day; that fallback went
+   * with every other older-version read on 2026-09-21.
    */
   readonly roundingMode: RoundingMode;
-  /** The pre-2026-09-21 spelling. Read, never written. See `roundingMode`. */
-  readonly mode?: RoundingMode;
   readonly threshold: number;
   readonly basalName: string;
   readonly basalUnits: number;
@@ -230,15 +218,14 @@ export interface SettingsRow {
   /**
    * §8.5 — the mealtime insulin, as a row id from `src/data/insulins.ts`.
    *
-   * **A row written before 2026-09-20 does not have this field, and that is the
-   * whole migration.** `repo.ts` reads a missing value back as `''`, which is
-   * `UNANSWERED_INSULIN` — so the gate asks, exactly as it does on a fresh
-   * install. No `DATABASE_VERSION` bump: no store and no index changed, and the
-   * one absent field already has a meaning.
+   * `''` is `UNANSWERED_INSULIN`, and under this build it cannot get here:
+   * §8.5's question is asked before the first commit, and "I don't know" is
+   * `UNKNOWN_INSULIN` rather than this. A settings row carrying `''` has been
+   * hand-edited, and the gate that reads it asks the question rather than
+   * guessing. Nothing maps a MISSING field to it any more — that read was
+   * §8.5's whole migration and went on 2026-09-21 with the rest.
    */
   readonly bolusId: string;
-  /** The pre-2026-09-21 spelling. Read, never written. */
-  readonly insulinId?: string;
   /** §8.5 — the reader's own pre-meal wait in minutes, or null for the class range. */
   readonly eatDelayMinutes: number | null;
   /** Optional; '' means not given. See `Settings.personName`. */
@@ -254,9 +241,10 @@ export interface SettingsRow {
  * consumer needs its historical setting, and an identical-values row would be
  * noise. Stated so it does not read as an oversight.
  *
- * `imported` is not in §11.3's list. See BUILD-NOTES.md — §7.7.1's timeline rule
- * asks whether a revision was ever in force ON THIS INSTALL, and nothing else in
- * the schema can answer that.
+ * `imported` joined §11.3's list on 2026-09-21, when the schema block was
+ * rewritten against this file. See BUILD-NOTES.md for why it exists — §7.7.1's
+ * timeline rule asks whether a revision was ever in force ON THIS INSTALL, and
+ * nothing else in the schema can answer that.
  */
 export interface SettingsHistoryRow {
   readonly revision: number;
@@ -264,22 +252,19 @@ export interface SettingsHistoryRow {
   readonly target: number;
   readonly isf: number;
   readonly icr: number;
-  /** See `SettingsRow.roundingMode` — renamed with it, fallback and all. */
+  /** See `SettingsRow.roundingMode`. */
   readonly roundingMode: RoundingMode;
-  /** The pre-2026-09-21 spelling. Read, never written. */
-  readonly mode?: RoundingMode;
   /**
    * §8.5 — present for the same reason the ratios are and `threshold` is not:
    * it changes what a dose came out as, through §7.4's gate. `eatDelayMinutes`
    * is absent on that same test — it changes what the reader was told to do,
    * never what the app calculated.
    *
-   * A row written before the field existed reads back as `''` and prints as
-   * "not recorded".
+   * `''` reaches a history row by ONE route: an import whose stored id matched
+   * no brand this build knows, which `readInsulinId` sanitises to `''`. It
+   * prints as "not recorded" rather than as a guess.
    */
   readonly bolusId: string;
-  /** The pre-2026-09-21 spelling. Read, never written. */
-  readonly insulinId?: string;
   readonly imported: boolean;
 }
 
@@ -318,8 +303,11 @@ export const ACK_KEY = {
 } as const;
 
 export function ackKeyForMode(roundingMode: RoundingMode): string {
-  // `mode:` — a PERSISTED ACK KEY. Renaming it would silently re-ask §5.1's
-  // ceil acknowledgement of every reader who had already given it.
+  // A PERSISTED ACK KEY, and it was renamed from `mode:` on 2026-09-21 knowing
+  // exactly what that costs: every reader who had accepted §5.1's ceiling gate
+  // is asked once more. That is the safe direction for a safety gate and one
+  // tap, which is why this is the one rename that took no fallback even on the
+  // day the others had them.
   return `roundingMode:${roundingMode}`;
 }
 
@@ -336,12 +324,3 @@ export interface AckRow {
 // ─── stored rows ────────────────────────────────────────────────────────────
 
 export const TIMESTAMP_INDEX = 'by_timestamp';
-
-export interface StoredEnvelope {
-  readonly schemaVersion: number;
-  readonly settings: Omit<SettingsRow, 'k'> | Record<string, never>;
-  readonly dosingHistoryBeforeApp?: { readonly answeredAtMs: number; readonly text: string };
-  readonly settingsHistory: readonly Omit<SettingsHistoryRow, 'imported'>[];
-  readonly readings: readonly unknown[];
-  readonly log: readonly unknown[];
-}
