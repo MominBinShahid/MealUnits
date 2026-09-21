@@ -4826,6 +4826,24 @@ checker is worse than none — it reports "clean" while the document rots undern
 seeded mutation in `SELF_TESTS`, in the same edit — see §19. `--self-test` also reports a mutation
 that changes nothing, because a test whose anchor has moved verifies nothing while still passing.
 
+**And a check that resolves its own inputs must report how many it resolved — ADDED 2026-09-21.**
+The two rules above catch a check that can never fire, and a seed that has stopped pointing at
+anything. Neither catches the third case: a check that runs, examines *some* of what it is supposed
+to, silently skips the rest, and reports clean. `INPUT_FLOORS` guards this at the level of FILES; it
+does not reach inside one.
+
+Check 34 is the worked example. It resolves every `Omit<T, 'field'>` against the interface `T`, and
+its parser did not match `interface Settings extends DosingSettings` — so one target in three was
+invisible, the report was clean, and **a seeded mutation landing on either of the two it could see
+would have certified it.** It was found by counting what the check resolved against what existed in
+the repository, which nothing required anyone to do.
+
+So: where a check resolves, matches or looks up its inputs, an input it cannot resolve is a
+FINDING, not a skip. If a skip is genuinely correct it is declared by name with its reason — check
+34's `OMIT_UNRESOLVED_OK`, which is empty and should stay empty. **The count is the check.** A
+clean report from a check that examined half its input is worse than no check at all, because it
+produces evidence.
+
 #### A change here is a change everywhere
 
 **Momin's rule.** Editing `PLAN.md` is not finishing a change. Every edit is followed by a sweep of
