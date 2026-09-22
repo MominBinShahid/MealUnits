@@ -1368,6 +1368,20 @@ PUBLIC_PRECACHED = {"fonts", "icons"}
 # path — and `check_generated_manifest` pins the generation.
 PUBLIC_CRAWLER_ONLY = {"social", "404.html"}
 
+# A THIRD kind, added 2026-09-22 with 10a's Urdu faces, because neither of the
+# two above describes them. They are not precached — an English reader, the
+# majority, never renders an Arabic character and Momin ruled directly that they
+# must not take the hit. And they are emphatically not crawler-only: the APP
+# requests them, the worker intercepts them, and it keeps what it fetches in a
+# cache no deploy clears, which is what makes Urdu work offline from the second
+# session on.
+#
+# So the two halves pull opposite ways and both are checked. Excluded in
+# `vite.config.ts` like a crawler file; ABSENT from the worker's NOT_THE_APP,
+# unlike one, because a path the worker refuses to handle is a path it cannot
+# cache.
+PUBLIC_ON_DEMAND = {"fonts-urdu"}
+
 # Crawler-only files the BUILD writes, which therefore never appear in `public/`
 # but are every bit as much not-the-app. The worker must keep both out of the
 # precache and out of the shell fallback.
@@ -1402,20 +1416,31 @@ def check_public_assets_classified(_plan):
         return ["public/ is missing, and the build copies it verbatim"]
 
     found = {name for name in os.listdir(public) if not name.startswith(".")}
-    classified = PUBLIC_PRECACHED | PUBLIC_CRAWLER_ONLY
+    classified = PUBLIC_PRECACHED | PUBLIC_CRAWLER_ONLY | PUBLIC_ON_DEMAND
     for name in sorted(found - classified):
         out.append("public/%s is not classified — add it to PUBLIC_PRECACHED if it belongs"
-                   " on every phone, or to PUBLIC_CRAWLER_ONLY (and exclude it in"
-                   " vite.config.ts) if only a crawler reads it" % name)
+                   " on every phone, to PUBLIC_CRAWLER_ONLY (and exclude it in"
+                   " vite.config.ts) if only a crawler reads it, or to"
+                   " PUBLIC_ON_DEMAND if the app fetches it when someone asks for"
+                   " it" % name)
     for name in sorted(classified - found):
         out.append("public/%s is pinned but no longer exists — drop it from the pin" % name)
 
-    config = os.path.join(HERE, "vite.config.ts")
-    with io.open(config, encoding="utf-8") as handle:
-        text = handle.read()
+    # `load`, never `open`. `self_test` seeds its mutations by overriding `load`,
+    # so a direct disk read reports clean on a file the harness has already
+    # broken — and this check did exactly that until 2026-09-22, when a seed
+    # deleting the precache exclusion escaped and said so. Every rule this
+    # function enforces about `vite.config.ts` was unverifiable before that.
+    text = load(os.path.join(HERE, "vite.config.ts"))
     for name in sorted(PUBLIC_CRAWLER_ONLY & found):
         if "'%s'" % name not in text:
             out.append("public/%s is pinned as crawler-only but vite.config.ts never names it,"
+                       " so the precache walk still ships it to every phone" % name)
+    # Same exclusion, different reason: an on-demand file is fetched when asked
+    # for, and precaching it hands the cost to everyone who never asks.
+    for name in sorted(PUBLIC_ON_DEMAND & found):
+        if "'%s'" % name not in text:
+            out.append("public/%s is pinned as on-demand but vite.config.ts never names it,"
                        " so the precache walk still ships it to every phone" % name)
     return out
 
@@ -1541,8 +1566,9 @@ def check_worker_knows_non_app_files(_plan):
     crawler-only must also be excluded from the shell fallback.
     """
     out = []
-    with io.open(os.path.join(HERE, "src", "sw.ts"), encoding="utf-8") as handle:
-        worker = handle.read()
+    # `load`, never `open` — see `check_public_assets_classified`. Two seeds
+    # against `src/sw.ts` escaped this check on 2026-09-22 for the same reason.
+    worker = load(os.path.join(HERE, "src", "sw.ts"))
     m = re.search(r"const NOT_THE_APP = \[(.*?)\];", worker, re.S)
     if not m:
         return ["src/sw.ts no longer declares NOT_THE_APP, so a navigation to any path"
@@ -1569,6 +1595,36 @@ def check_worker_knows_non_app_files(_plan):
     for name in sorted(listed - expected):
         out.append("src/sw.ts excludes %r from the shell fallback but nothing classifies it as"
                    " crawler-only — add it to PUBLIC_CRAWLER_ONLY or drop it" % name)
+
+    # The OPPOSITE requirement, for the third bucket. An on-demand file is the
+    # app's, so the worker must handle it — and must know about it by name,
+    # because it goes in a cache that `activate` does not clear. Listing one in
+    # NOT_THE_APP would return before `respondWith` and leave the browser to
+    # fetch it, which works online and loses the face on the first deploy.
+    for name in sorted(PUBLIC_ON_DEMAND):
+        if "%s/" % name in listed or name in listed:
+            out.append("src/sw.ts lists %s in NOT_THE_APP, so the worker never handles it"
+                       " — an on-demand file it does not intercept is one it cannot keep"
+                       " across a deploy" % name)
+        if "%s/" % name not in worker:
+            out.append("src/sw.ts never names %s/, so nothing routes it to the cache that"
+                       " survives an activation and Urdu goes offline-blank after the next"
+                       " deploy" % name)
+
+    # And the cache it routes them to must outlive the build that fetched them.
+    # `activate` sweeps every `mealunits-` cache that is not the current one, and
+    # the font cache carries that prefix deliberately — §11.7's shared origin
+    # makes the prefix the only thing keeping this app's cleanup off the blog's
+    # caches. So the exemption is spelled out in that filter, and checked here:
+    # delete it and the faces vanish on the next deploy with nothing failing.
+    sweep = re.search(r"\.filter\(\(name\)\s*=>(.*?)\)\s*\n\s*\.map", worker, re.S)
+    if sweep is None:
+        out.append("src/sw.ts's activate sweep could not be read, so nothing verifies that"
+                   " the Urdu faces survive it")
+    elif "FONT_CACHE" not in sweep.group(1):
+        out.append("src/sw.ts's activate sweep no longer exempts FONT_CACHE — the next deploy"
+                   " deletes a face an Urdu reader downloaded on purpose, and they find out"
+                   " by opening the app offline")
     return out
 
 
@@ -4842,6 +4898,20 @@ SELF_TESTS = [
      "src/ui/styles.css",
      lambda t: t.replace("border-start-start-radius: 0;",
                          "border-top-left-radius: 0;", 1)),
+    # 10a's faces, 2026-09-22. Three seeds because the rule has three halves and
+    # each fails a different way: shipped to everyone, never intercepted, or
+    # intercepted and then swept away by the next deploy.
+    ("faces: the precache exclusion deleted, so 448 KB ships to every phone",
+     "vite.config.ts",
+     lambda t: t.replace("if (at === 'fonts-urdu') return [];", "")),
+    ("faces: routed to NOT_THE_APP, so the worker never caches one",
+     "src/sw.ts",
+     lambda t: t.replace("const NOT_THE_APP = [",
+                         "const NOT_THE_APP = [\n    `${__SCOPE_PATH__}fonts-urdu/`,", 1)),
+    ("faces: the activate sweep stops exempting FONT_CACHE [lost on deploy]",
+     "src/sw.ts",
+     lambda t: t.replace("name.startsWith(CACHE_PREFIX) && name !== CACHE && name !== FONT_CACHE",
+                         "name.startsWith(CACHE_PREFIX) && name !== CACHE")),
 ]
 
 
@@ -4892,7 +4962,7 @@ def self_test():
     for rel in ("src/storage/repo.ts", "src/storage/schema.ts",
                 "src/storage/envelope.ts", "vite.config.ts",
                 "src/storage/open.ts", "package.json",
-                "src/ui/styles.css"):
+                "src/ui/styles.css", "src/sw.ts"):
         full = os.path.join(HERE, *rel.split("/"))
         if os.path.exists(full):
             base[rel] = load(full)

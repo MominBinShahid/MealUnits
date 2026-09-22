@@ -1,4 +1,5 @@
 @import './fonts.css';
+@import './fonts-urdu.css';
 
 /*
  * §10.9's accessibility rules, and the Step design's visual language.
@@ -38,6 +39,19 @@
                            prominent thing on an entry screen, and this is the
                            control a shaking hand uses most. */
   --gap: 0.5rem; /* §10.7 — 8 dp */
+
+  /*
+   * Line heights that have to TRANSLATE, which is why they are tokens and the
+   * rest are literals. Nastaliq is drawn on a steep diagonal — a word starts
+   * high and ends low — and at 1.45 the descenders of one line land on the next.
+   * 10a's four faces each set their own in `fonts-urdu.css`.
+   *
+   * Only RUNNING PROSE is here. The tight line heights elsewhere (0.96 on the
+   * dose figure, 1.08 on the readout) belong to ASCII digits, which render in
+   * Space Grotesk in every language because 10a keeps them Latin.
+   */
+  --lh-body: 1.5;
+  --lh-prose: 1.45;
   --radius: 0.875rem;
   --column: 30rem; /* the app's measure. EVERYTHING is inside it. */
 
@@ -148,7 +162,7 @@ body {
      already resident, no delay, no blank text. */
   font-family: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 1rem;
-  line-height: 1.5;
+  line-height: var(--lh-body);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
 
@@ -265,7 +279,7 @@ body {
 .hint {
   font-size: 0.8125rem;
   color: var(--ink-2);
-  line-height: 1.45;
+  line-height: var(--lh-prose);
   margin: 0.5rem 0 0;
 }
 
@@ -554,7 +568,7 @@ body {
   border-radius: 0.8125rem;
   padding: 0.6875rem 0.8125rem;
   font-size: 0.8125rem;
-  line-height: 1.45;
+  line-height: var(--lh-prose);
   color: var(--ink);
 }
 
@@ -736,7 +750,7 @@ body {
   /* Reads as ON the page rather than part of it. */
   box-shadow: 0 -8px 28px -12px rgba(0, 0, 0, 0.55);
   font-size: 0.8125rem;
-  line-height: 1.45;
+  line-height: var(--lh-prose);
   color: var(--ink);
 }
 
@@ -865,7 +879,7 @@ body {
   margin: 0;
   font-size: 0.875rem;
   color: var(--ink-2);
-  line-height: 1.5;
+  line-height: var(--lh-body);
 }
 
 /* ── lists and rows ─────────────────────────────────────────────────────── */

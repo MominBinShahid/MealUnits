@@ -49,6 +49,23 @@ declare const __SCOPE_PATH__: string;
  */
 const CACHE_PREFIX = 'mealunits-';
 const CACHE = `${CACHE_PREFIX}${__BUILD_ID__}`;
+/**
+ * 10a's Urdu faces, and the ONE cache here that is not versioned.
+ *
+ * Everything else is content-hashed and belongs to a build, so `activate`
+ * deletes the previous build's cache and the next request re-fetches. A font
+ * cannot work that way. It is 156 KB that an Urdu reader downloaded once on
+ * purpose, it is byte-identical across deploys, and the deploy that dropped it
+ * would be discovered by that reader opening the app offline and finding their
+ * own language gone — which is the single failure the offline guarantee exists
+ * to prevent. BACKLOG 10a rejected an eviction timer on exactly that reasoning.
+ *
+ * So it is held apart from the version sweep below and keyed by PATH. The
+ * prefix is still `mealunits-`, because §11.7's shared origin makes the prefix
+ * the only thing keeping this app's cleanup away from the blog's caches.
+ */
+const FONT_CACHE = `${CACHE_PREFIX}fonts-urdu`;
+const FONT_PATH = `${__SCOPE_PATH__}fonts-urdu/`;
 const SHELL = `${__SCOPE_PATH__}index.html`;
 /**
  * §11.4 — "a policy for hanging requests". A promise that never settles is a
@@ -88,7 +105,8 @@ sw.addEventListener('activate', (event) => {
       const names = await caches.keys();
       await Promise.all(
         names
-          .filter((name) => name.startsWith(CACHE_PREFIX) && name !== CACHE)
+          .filter((name) =>
+            name.startsWith(CACHE_PREFIX) && name !== CACHE && name !== FONT_CACHE)
           .map((name) => caches.delete(name)),
       );
       // Take over open clients so the blog's root-scoped worker stops serving
@@ -194,12 +212,26 @@ sw.addEventListener('fetch', (event) => {
       // version. §11.4's "old-asset retention while old clients still need them"
       // falls out of that: the previous version's cache is only deleted once its
       // worker has been replaced.
-      const cached = await caches.match(request);
+      //
+      // An Urdu face is the exception and reads and writes `FONT_CACHE`, which
+      // no activation clears. It is not in the precache at all, so the first
+      // request for one is always a miss and always reaches the network — which
+      // is the whole shape 10a ruled: the download happens when Urdu is chosen,
+      // it happens once, and offline works from then on.
+      const isFace = url.pathname.startsWith(FONT_PATH);
+      const cacheName = isFace ? FONT_CACHE : CACHE;
+      // `caches.match` without a name searches EVERY cache at this origin, the
+      // blog's included. That is right for a hashed asset and wrong for a face:
+      // a stale copy under the previous build's key would answer, and then be
+      // deleted by the next activation with nothing having written it here.
+      const cached = isFace
+        ? await (await caches.open(FONT_CACHE)).match(request)
+        : await caches.match(request);
       if (cached) return cached;
       try {
         const response = await fetchWithTimeout(request);
         if (response.ok) {
-          const cache = await caches.open(CACHE);
+          const cache = await caches.open(cacheName);
           await cache.put(request, response.clone());
         }
         return response;
