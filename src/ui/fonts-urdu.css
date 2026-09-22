@@ -1,0 +1,119 @@
+/*
+ * 10a's four faces, for the choice that is still open.
+ *
+ * All four ship at once so Momin's mother can see the same screens in each and
+ * say which one she reads. THREE OF THESE GET DELETED once she has — this file
+ * is a test rig with a deadline, not a typography system.
+ *
+ * Nastaliq or Naskh is the real split. Urdu is conventionally set in Nastaliq,
+ * and the two Nastaliq faces cost what they cost: Noto Nastaliq Urdu 156 KB,
+ * Gulzar 187 KB, against Noto Naskh Arabic at 52 KB and Noto Sans Arabic at 48.
+ * The app's entire Latin typography is 42 KB, so the Nastaliq options are
+ * roughly four times it.
+ *
+ * NOTHING HERE IS DOWNLOADED BY AN ENGLISH READER, and that is the browser's
+ * doing rather than a rule we enforce: a `@font-face` is not requested until a
+ * character in its `unicode-range` needs it, and an English interface has none.
+ * §11.5's `default-src 'self'` is also why the files are here at all — the
+ * mockup's `fonts.googleapis.com` link is refused outright by the policy.
+ *
+ * ARABIC RANGE ONLY, and this is load-bearing rather than a size saving. The
+ * subsets carry NO Latin and no digits — verified, all four — so every ASCII
+ * digit in the app keeps rendering in Space Grotesk however deep in an Urdu
+ * sentence it sits. §10.4's digit rules and the tabular figures they depend on
+ * are untouched by the language, which is what BACKLOG 10a requires.
+ *
+ * ONE WEIGHT EACH, 400, with synthesis switched off below. Faux bold on
+ * Nastaliq thickens the nuqte — the dots that are the only difference between
+ * ب پ ت ث — so a synthesised heading is not a heavier face, it is a face whose
+ * letters have started to merge. Shipping a real 700 for the two Naskh options
+ * and not the two Nastaliq ones would also bias the comparison this file exists
+ * to run. The winning face gets its 700 weight if it has one.
+ */
+
+@font-face {
+  font-family: 'Noto Nastaliq Urdu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/MealUnits/fonts-urdu/NotoNastaliqUrdu.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-family: 'Gulzar';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/MealUnits/fonts-urdu/Gulzar.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-family: 'Noto Naskh Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/MealUnits/fonts-urdu/NotoNaskhArabic.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/MealUnits/fonts-urdu/NotoSansArabic.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+/*
+ * Which face, and the line box it needs. Set from the language setting as
+ * `data-urdu-face` on the root element.
+ *
+ * The two Nastaliq faces are drawn on a steep diagonal: a word starts high and
+ * ends low, so a line needs room the Latin 1.45 does not give it and the
+ * descenders of one line land on the next. The Naskh faces sit on a level
+ * baseline and need only a little more than Latin.
+ */
+:root[data-urdu-face='nastaliq'] {
+  --urdu-family: 'Noto Nastaliq Urdu';
+  --lh-body: 2.3;
+  --lh-prose: 2.2;
+}
+
+:root[data-urdu-face='gulzar'] {
+  --urdu-family: 'Gulzar';
+  --lh-body: 2.3;
+  --lh-prose: 2.2;
+}
+
+:root[data-urdu-face='naskh'] {
+  --urdu-family: 'Noto Naskh Arabic';
+  --lh-body: 1.75;
+  --lh-prose: 1.7;
+}
+
+:root[data-urdu-face='sans'] {
+  --urdu-family: 'Noto Sans Arabic';
+  --lh-body: 1.7;
+  --lh-prose: 1.65;
+}
+
+/*
+ * `:lang(ur)` rather than `[lang="ur"]`, on the W3C i18n rule: the pseudo-class
+ * INHERITS, so one `lang` on the root element makes every descendant match,
+ * while the attribute selector matches only the element carrying it.
+ *
+ * `font-synthesis: none` is the nuqte argument above, and it belongs here rather
+ * than on the Nastaliq rules: the Naskh faces ship at one weight too, so a
+ * synthesised 600 would be a smeared Naskh instead of a smeared Nastaliq.
+ *
+ * Space Grotesk stays in the stack BEHIND the Urdu face and is not decoration:
+ * it renders every digit, every brand name and `mg/dL`, all of which stay Latin
+ * by 10a's ruling because they are printed on a meter, a vial or a box.
+ */
+body:lang(ur) {
+  font-family: var(--urdu-family), 'Noto Naskh Arabic', 'Space Grotesk', system-ui, sans-serif;
+  font-synthesis: none;
+}

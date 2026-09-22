@@ -273,6 +273,16 @@ function serviceWorker(outDir: string): Plugin {
           const at = `${prefix}${entry.name}`;
           if (entry.isDirectory()) {
             if (at === 'social') return [];
+            // 10a's Urdu faces, on the SAME argument and a ruling that says so.
+            // The four of them are 448 KB, ten times this app's Latin
+            // typography, and an English reader — the majority — renders not one
+            // Arabic character. Momin ruled it directly: precaching for everyone
+            // was rejected because "every English user, the majority, will take
+            // this hit", and the face is fetched and cached the first time Urdu
+            // is selected instead. `sw.ts` keeps what it fetches in a cache that
+            // survives the next deploy, which is the half this exclusion cannot
+            // do on its own.
+            if (at === 'fonts-urdu') return [];
             return walk(join(dir, entry.name), `${at}/`);
           }
           if (entry.name.endsWith('.map')) return [];

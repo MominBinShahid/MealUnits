@@ -33,7 +33,12 @@ hypoglycaemic event, not a bug report.** Read that sentence before changing anyt
    what makes the golden cases, the boundary sweep and the 100% mutation gate possible.
 5. **Clamp the total, never the correction** (§2.1). Flooring a negative correction discards the
    fact that the reading is low, in the direction that gives more insulin.
-6. **Run `python3 check-plan.py` before finishing** — CI runs it too, as the `plan` job, so this
+6. **One intent per pull request.** Momin's rule, stated 2026-09-21 and followed since: *"that PR
+   should contain only one intent."* A fix and the cleanup you noticed while making it are two
+   changes, and the second one is what makes the first unreviewable. Splitting costs a branch; not
+   splitting costs the review that would have caught the defect — #70 shipped a repair engine that
+   would have deleted the dose log, inside a PR about something else.
+7. **Run `python3 check-plan.py` before finishing** — CI runs it too, as the `plan` job, so this
    is about finding a defect in seconds rather than in a failed pipeline. It checks the documents
    against each other and against the code. If it reports a defect it could have caught earlier,
    add that check in the same edit that fixes the document — §20.3 makes that an obligation, not a
