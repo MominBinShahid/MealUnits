@@ -719,8 +719,7 @@ body {
  */
 .prompt-bar {
   position: fixed;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   bottom: 0;
   z-index: 20;
   box-sizing: border-box;
@@ -742,19 +741,22 @@ body {
 }
 
 /*
- * A bar that WARNS rather than offers, per the design's `.alert.warn`: a left
- * accent in the caution colour on a soft caution ground. The design marks
- * severity with a 3px left border rather than a ring, so the eye reads the
- * colour before the words — §10.5's advisories use the same two tokens.
+ * A bar that WARNS rather than offers, per the design's `.alert.warn`: an
+ * accent in the caution colour down the edge the reader starts from, on a soft
+ * caution ground. The design marks severity with a 3px border there rather than
+ * a ring, so the eye reads the colour before the words — §10.5's advisories use
+ * the same two tokens.
  *
- * The radius stays square on that edge, or the accent tapers away at the corner
- * and reads as a rendering artefact rather than a deliberate mark.
+ * The radius stays square where that accent meets the top of the bar, or the
+ * accent tapers away at the corner and reads as a rendering artefact rather than
+ * a deliberate mark. `border-start-start-radius` names exactly that corner in
+ * both directions; `border-top-left-radius` named it only in English.
  */
 .prompt-bar.warn {
   background: var(--warn-bg);
   border-color: var(--warn-line);
-  border-left: 3px solid var(--warn);
-  border-top-left-radius: 0;
+  border-inline-start: 3px solid var(--warn);
+  border-start-start-radius: 0;
 }
 
 /* T26's write-failure prompt. It wears §11.4's furniture because it is the same
@@ -823,7 +825,7 @@ body {
   text-decoration: underline;
   cursor: pointer;
   padding: 0.5rem 0;
-  text-align: left;
+  text-align: start;
   min-height: var(--touch);
 }
 
@@ -1136,15 +1138,16 @@ body {
    * inside it. A Range over the text node is what shows the 7px.
    */
   align-content: center;
-  text-align: left;
+  text-align: start;
   border-radius: 0.875rem;
   padding: 0.75rem 0.875rem;
 }
 
 /*
  * The one row that is not a name. `.insulin` rows are a column of brands read
- * down the left edge; this is an action under its own heading, and left-aligned
- * among them it read as an unfinished row rather than a deliberate alternative.
+ * down the edge the line starts at; this is an action under its own heading, and
+ * aligned with them it read as an unfinished row rather than a deliberate
+ * alternative.
  */
 .go.insulin.sole {
   justify-items: center;
@@ -1396,13 +1399,13 @@ p.keep {
 }
 
 .field-icon {
-  margin-right: 0.375rem;
+  margin-inline-end: 0.375rem;
   font-size: 0.9em;
 }
 
 .tag {
   font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  margin-left: 0.5rem;
+  margin-inline-start: 0.5rem;
   padding: 0.0625rem 0.375rem;
   border: 1px solid var(--line);
   border-radius: 0.25rem;
@@ -1517,7 +1520,7 @@ p.keep {
   cursor: pointer;
   padding: 0.5rem;
   min-height: var(--touch);
-  text-align: left;
+  text-align: start;
 }
 
 .link.mark {

@@ -961,6 +961,12 @@ INPUT_FLOORS = {
     "check_note_references: src, test, tools": 20,
     "check_reference_data: src/data/**": 1,
     "check_number_unit_nowrap: src/**": 20,
+    # 1, not the 2 stylesheets that exist today. The floor above are all "well
+    # below today's count"; here there is no room to be below. Folding
+    # `fonts.css` back into `styles.css` is a refactor, not a check going
+    # blind, and failing the build for it is the crying-wolf this file warns
+    # against. Zero stylesheets is the state worth reporting.
+    "check_logical_properties: src/**": 1,
 }
 
 
@@ -3141,6 +3147,99 @@ def check_number_unit_nowrap(_plan):
     return out
 
 
+def check_logical_properties(_plan):
+    r"""10a — a stylesheet declaration that assumes the line starts on the left.
+
+    10a's RTL piece is `dir="rtl"` plus "converting the physical CSS properties
+    that remain to logical ones — small and mechanical, but IT HAS TO BE SWEPT
+    FOR RATHER THAN ASSUMED DONE." The sweep happened. This is what keeps it
+    done: a `margin-left` added next month puts the tag back on the
+    wrong side of the heading in Urdu, and nothing else in the build would say
+    so, because every test this project runs reads text and not layout.
+
+    Only the INLINE axis is banned. `dir` flips the inline axis and leaves the
+    block axis alone, so `bottom: 0` on a bar pinned to the foot of the screen is
+    correct in both directions and stays. `top`/`bottom`, `margin-block-*` and
+    `env(safe-area-inset-bottom)` are all untouched by this.
+
+    **What it does NOT catch**, because a check whose docstring overclaims is the
+    defect this file's overclaiming-docstring rule exists to delete. It reads property NAMES at declaration
+    position, so it is blind to a physical direction expressed some other way: a
+    `background-position: left`, a `::before` holding a rightwards arrow, a
+    `transform: translateX()` whose sign is only right in English, a shadow
+    offset, or a physical value reached through a custom property. It is also
+    blind to anything outside `src/**/*.css` — an inline `style` attribute, or a
+    stylesheet that arrives with a dependency. It narrows the next call site; it
+    does not make the mistake impossible.
+    """
+    src = os.path.join(HERE, "src")
+    if not os.path.isdir(src):
+        return []
+
+    # Spelled out rather than derived. The radius corners are why: the logical
+    # name of `border-top-left-radius` is `border-start-start-radius`, naming the
+    # block axis and then the inline one — NOT `border-top-start-radius`, which
+    # is what a rule mapping only the left/right half produces and which is not a
+    # property at all.
+    BANNED = {
+        "left": "inset-inline-start",
+        "right": "inset-inline-end",
+        "border-top-left-radius": "border-start-start-radius",
+        "border-top-right-radius": "border-start-end-radius",
+        "border-bottom-left-radius": "border-end-start-radius",
+        "border-bottom-right-radius": "border-end-end-radius",
+    }
+    for box in ("margin", "padding"):
+        BANNED[box + "-left"] = box + "-inline-start"
+        BANNED[box + "-right"] = box + "-inline-end"
+    for part in ("", "-width", "-style", "-color"):
+        BANNED["border-left" + part] = "border-inline-start" + part
+        BANNED["border-right" + part] = "border-inline-end" + part
+
+    # These are physical in their VALUE, not their name, so they are matched on
+    # the pair. `text-align: left` is the one that actually shipped, three times.
+    BY_VALUE = {
+        ("text-align", "left"): "text-align: start",
+        ("text-align", "right"): "text-align: end",
+        ("float", "left"): "float: inline-start",
+        ("float", "right"): "float: inline-end",
+        ("clear", "left"): "clear: inline-start",
+        ("clear", "right"): "clear: inline-end",
+    }
+
+    out = []
+    for path in source_files("check_logical_properties: src/**", src, (".css",)):
+        # `load`, never `open`: `self_test` seeds its mutations by overriding
+        # `load`, so reading the disk directly reports "clean" on a file the
+        # harness has already broken.
+        body = without_block_comments(load(path))
+        rel = os.path.relpath(path, HERE)
+        for line_no, line in enumerate(body.splitlines(), 1):
+            # A declaration, not a line. Compact CSS puts several on one line and
+            # a selector shares the line with its first one, so the separators
+            # are split on rather than assumed absent.
+            for fragment in re.split(r"[;{}]", line):
+                if ":" not in fragment:
+                    continue
+                name, _, value = fragment.partition(":")
+                name, value = name.strip().lower(), value.strip().lower()
+                if not re.match(r"^[a-z-]+$", name):
+                    continue
+                if name in BANNED:
+                    out.append(
+                        "%s:%d declares `%s`, which points at a side rather than "
+                        "at where the line starts — 10a puts this app in "
+                        "`dir=\"rtl\"`. Write `%s`"
+                        % (rel, line_no, name, BANNED[name]))
+                if (name, value) in BY_VALUE:
+                    out.append(
+                        "%s:%d declares `%s: %s`, which points at a side rather "
+                        "than at where the line starts — 10a puts this app in "
+                        "`dir=\"rtl\"`. Write `%s`"
+                        % (rel, line_no, name, value, BY_VALUE[(name, value)]))
+    return out
+
+
 def check_routes_do_not_collide(_plan):
     r"""BACKLOG 24 — a route named like a file, or a file named like a route.
 
@@ -4134,6 +4233,7 @@ CHECKS = [
     ("BACKLOG 24: the app's default title vs index.html", check_route_titles_agree, "plan"),
     ("404.html's links vs BASE", check_404_paths_agree, "plan"),
     ("§10.4: a number joined to its unit by a plain space", check_number_unit_nowrap, "plan"),
+    ("10a: a stylesheet declaration that names a side", check_logical_properties, "plan"),
     ("tests missing from the mutation run", check_mutation_coverage_list, "plan"),
     ("§20.5 listing vs the directory", check_file_listing, "plan"),
     ("NEXT-STEPS.md has come back", check_next_steps, "plan"),
@@ -4729,6 +4829,19 @@ SELF_TESTS = [
     ("404: the way back points outside BASE",
      "public/404.html",
      lambda t: t.replace('href="/MealUnits/"', 'href="/"', 1)),
+    # 10a's RTL sweep, 2026-09-22, seeded three ways because the check has three
+    # shapes of finding and one seed would certify only the shape it lands on.
+    # Each of these is a real declaration this file carried until that day.
+    ("logical: the tag's margin points at a side again",
+     "src/ui/styles.css",
+     lambda t: t.replace("margin-inline-start: 0.5rem;", "margin-left: 0.5rem;", 1)),
+    ("logical: text aligned to the left rather than to the start",
+     "src/ui/styles.css",
+     lambda t: t.replace("text-align: start;", "text-align: left;", 1)),
+    ("logical: the warning accent back on a named corner",
+     "src/ui/styles.css",
+     lambda t: t.replace("border-start-start-radius: 0;",
+                         "border-top-left-radius: 0;", 1)),
 ]
 
 
@@ -4772,9 +4885,14 @@ def self_test():
     # check, ADDED 2026-09-20 — same reason as every file above: a seed cannot
     # mutate what the harness does not hold, and a seed that cannot find its
     # file reports "missing", which the runner counts as an ESCAPE.
+    # `src/ui/styles.css` joins them 2026-09-22 with 10a's RTL sweep, and it is
+    # the first NON-TypeScript source file here: the `src/ui` walk below filters
+    # on SOURCE_SUFFIXES, which is `.ts` and `.tsx`, so a stylesheet seed would
+    # report "target file is missing" and count as an escape.
     for rel in ("src/storage/repo.ts", "src/storage/schema.ts",
                 "src/storage/envelope.ts", "vite.config.ts",
-                "src/storage/open.ts", "package.json"):
+                "src/storage/open.ts", "package.json",
+                "src/ui/styles.css"):
         full = os.path.join(HERE, *rel.split("/"))
         if os.path.exists(full):
             base[rel] = load(full)
