@@ -15,6 +15,22 @@ import {
   UPDATE_LOOK_INTERVAL_MS,
 } from './config.js';
 import { COPY } from './ui/copy.js';
+import type { Copy } from './ui/copy.js';
+
+/**
+ * `10a` — the words the SHELL's own bars are in.
+ *
+ * Everything inside the app root reads through `CopyContext`; these three bars
+ * cannot, because they live OUTSIDE it — fixed to the foot, offsetting the page
+ * through `--prompt-h` — and are built in plain closures where no hook can
+ * answer. So `start()` tells this file instead, through `onCopy`, once at boot
+ * and again on every change.
+ *
+ * `let`, and it is the only mutable module state here. The alternative is
+ * threading a `copy` parameter through four closures that are wired up before
+ * the database has been read, which is where the language lives.
+ */
+let copy: Copy = COPY;
 import { createBarSlot } from './ui/bar-slot.js';
 
 /**
@@ -192,10 +208,10 @@ function registerServiceWorker(): void {
     if (offered) return;
     offered = true;
     bars.raise('update', {
-      text: 'A newer version is ready.',
-      actionLabel: 'Use it now',
+      text: copy.update.ready,
+      actionLabel: copy.update.useNow,
       onAction: () => { waiting.postMessage({ type: 'SKIP_WAITING' }); },
-      dismissLabel: 'Later',
+      dismissLabel: copy.update.later,
     });
   };
 
@@ -381,10 +397,10 @@ function offerInstall(): { routine: () => void; atRisk: (show: boolean) => void 
       if (prompt === null || shown) return;
       shown = true;
       bars.raise('install', {
-        text: 'Add this to your home screen?',
-        actionLabel: 'Add it',
+        text: copy.install.offer,
+        actionLabel: copy.install.add,
         onAction: () => { void prompt.prompt(); },
-        dismissLabel: 'Not now',
+        dismissLabel: copy.install.notNow,
       });
     },
     /**
@@ -414,10 +430,10 @@ function offerInstall(): { routine: () => void; atRisk: (show: boolean) => void 
       const prompt = pending;
       if (prompt !== null) {
         bars.raise('install', {
-          text: 'Add this to your home screen?',
-          actionLabel: 'Add it',
+          text: copy.install.offer,
+          actionLabel: copy.install.add,
           onAction: () => { void prompt.prompt(); },
-          dismissLabel: 'Not now',
+          dismissLabel: copy.install.notNow,
         });
         return;
       }
@@ -425,8 +441,8 @@ function offerInstall(): { routine: () => void; atRisk: (show: boolean) => void 
         // The steps are in the TEXT. Behind a button they would need a second
         // bar, which is the stacking this arrangement exists to avoid — and on
         // WebKit there is nothing else a button could do.
-        text: `${COPY.storage.atRiskBar} ${COPY.installSteps(navigator.maxTouchPoints)} ${COPY.storage.barOptOut}`,
-        dismissLabel: COPY.storage.atRiskDismiss,
+        text: `${copy.storage.atRiskBar} ${copy.installSteps(navigator.maxTouchPoints)} ${copy.storage.barOptOut}`,
+        dismissLabel: copy.storage.atRiskDismiss,
         variant: 'warn',
       });
     },
@@ -545,15 +561,22 @@ if (root) {
     // not in the record and he is the only one who can carry it. A bar rather
     // than a line on the logged screen because `committing` outlives that
     // screen now: by the time this fires he may be two screens away.
+    // `10a` — the bars above are outside the app root and no provider reaches
+    // them. This is how they learn the language.
+    onCopy: (next) => { copy = next; },
     onSaveStuck: (amount, retry) => {
       bars.raise('stuck', {
-        text: COPY.log.stuck(amount),
-        actionLabel: COPY.log.stuckAction,
+        text: copy.log.stuck(amount),
+        actionLabel: copy.log.stuckAction,
         onAction: retry,
-        dismissLabel: COPY.log.stuckDismiss,
+        dismissLabel: copy.log.stuckDismiss,
       });
     },
   }).catch((cause: unknown) => {
-    root.textContent = `${COPY.appName} could not start: ${String(cause)}`;
+    // `COPY`, deliberately, not `copy`. This fires when `start()` itself
+    // rejected — so the database was never read, no language was ever loaded,
+    // and `copy` is still English anyway. Naming the constant says that rather
+    // than implying a choice was made.
+    root.textContent = `${COPY.couldNotStart(COPY.appName)}${String(cause)}`;
   });
 }

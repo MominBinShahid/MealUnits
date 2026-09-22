@@ -10,6 +10,35 @@ import type { InsulinClass } from './insulin.js';
 
 export type RoundingMode = 'nearest' | 'half' | 'ceil' | 'floor' | 'off';
 
+/**
+ * `10a` — the interface languages, and which Arabic-script face Urdu is set in
+ * while that choice is still open.
+ *
+ * They are HERE rather than beside the list that renders them because the
+ * stored row is in `src/storage/schema.ts`, and storage importing from `src/ui`
+ * would invert the layering. Everything else about the choice — the four faces,
+ * their sizes, which is the default, what the document element carries — lives
+ * in `src/ui/language.ts`, which is written to be mostly deleted when she picks.
+ */
+export type Language = 'en' | 'ur';
+
+/** See `Language`. Three of these four go when the face is chosen. */
+export type UrduFace = 'nastaliq' | 'gulzar' | 'naskh' | 'sans';
+
+/**
+ * What an install with no stored choice runs as, and what `10a` ruled: *"default
+ * is always English"*.
+ *
+ * NOT a guess from `navigator.language`. What the phone is set to is a different
+ * question from which language this reader wants their insulin instructions in,
+ * and being handed an unreviewed translation because of an OS setting is exactly
+ * what the in-testing label exists to prevent.
+ */
+export const DEFAULT_LANGUAGE: Language = 'en';
+
+/** Arbitrary among the four, and it is the one Urdu is conventionally set in. */
+export const DEFAULT_FACE: UrduFace = 'nastaliq';
+
 /** §3's bands. C and D are terminal; B and E can co-occur with nothing else. */
 export type Band = 'A' | 'B' | 'C' | 'D' | 'E';
 

@@ -34,20 +34,31 @@ import type { LexicalReason, RoundingMode } from '../core/types.js';
 const [MIN_BLOOD_SUGAR, MAX_BLOOD_SUGAR] = RANGE.bloodSugar.hard;
 const [, MAX_INJECTED] = RANGE.injected.hard;
 
-/**
- * §10.4 — "units", spelled out, always. `4U` has been misread as 40.
- *
- * The space is U+00A0, so the line cannot break between the number and the
- * word. A break renders "10" above "units", which rejoins in the reader's
- * head as "10Units" — the same misreading, by a different route.
- */
-export function units(hundredths: number): string {
-  const value = formatHundredths(hundredths);
-  return `${value}\u00A0${value === '1' ? 'unit' : 'units'}`;
-}
-
 export const COPY = {
   appName: 'MealUnits',
+
+  /**
+   * §10.4 — "units", spelled out, always. `4U` has been misread as 40.
+   *
+   * The space is U+00A0, so the line cannot break between the number and the
+   * word. A break renders "10" above "units", which rejoins in the reader's
+   * head as "10Units" — the same misreading, by a different route.
+   *
+   * **MOVED INTO `COPY` on 2026-09-22, from a module-level `export function`.**
+   * It formats a dose and then names its unit, and the name of a unit is a
+   * word — so the old shape rendered "4 units" inside an Urdu sentence on every
+   * screen that shows a dose, which is most of them. It is the one string the
+   * `10a` translation could not have reached by translating this object,
+   * because it was not in it.
+   *
+   * The plural ternary is English's and does not survive: یونٹ is invariant
+   * after a numeral, so the Urdu is one form. That collapse is why this is a
+   * function per language rather than a shared function taking a word.
+   */
+  units: (hundredths: number): string => {
+    const value = formatHundredths(hundredths);
+    return `${value}\u00A0${value === '1' ? 'unit' : 'units'}`;
+  },
 
   /**
    * §10.6's explanation page — five sections added 2026-09-12, each for a term
@@ -1152,6 +1163,15 @@ export const COPY = {
     /** §10.1.6 — the delta confirmation. A ratio fat-fingered 10→40 is inside
      * the accepted range, produces 5 units instead of 20 on a 200 g meal, and
      * passes every other check. */
+    /**
+     * §10.1.6's before-and-after rows, which were `` `was: ${...}` `` and
+     * `` `now: ${...}` `` in `settings.tsx` until 2026-09-22 — two English words
+     * on the screen that confirms a changed dosing ratio, and both would have
+     * stayed English in Urdu. One word each, so the two-word rule never saw
+     * them.
+     */
+    deltaWas: (value: string): string => `was: ${value}`,
+    deltaNow: (value: string): string => `now: ${value}`,
     deltaTitle: 'Check this change',
     softConfirm: 'That is outside the usual range. Is it right?',
     /**
@@ -1432,6 +1452,21 @@ export const COPY = {
      * to be short.
      */
     deleteLabel: 'delete',
+    /**
+     * The step counter above the keypad — "2 of 3".
+     *
+     * It was `` `${String(step)} of ${String(TOTAL_STEPS)}` `` in
+     * `calculator.tsx` until 2026-09-22, which is one English word on the
+     * screen this app is used on most. `check_ui_text_outside_copy` could not
+     * see it: it wants two consecutive words inside backticks, and "of" sits
+     * alone between two interpolations.
+     *
+     * A FUNCTION, not a separator, because the order is not universal. English
+     * counts up — "2 of 3"; Urdu names the total first — «3 میں سے 2». A format
+     * string with the numbers pinned in place would have made that impossible
+     * to express without reordering the arguments at the call site.
+     */
+    stepOf: (step: string, total: string): string => `${step} of ${total}`,
     stepCheck: 'Check',
     stepRecording: 'Recording',
     stepLogged: 'Logged',
@@ -1700,6 +1735,73 @@ export const COPY = {
     body: 'This screen is out of date. Setup will run again.',
   },
 
+  /**
+   * `10a`'s language list.
+   *
+   * FOUR Urdu rows, not one, because which face Urdu is set in is still open
+   * and the only way to answer it is to read the same screens in each. Three of
+   * those rows get deleted when Momin's mother has chosen, and this block
+   * shrinks to two entries.
+   *
+   * The warning is not decoration and it is not hedging. Momin ruled Urdu ships
+   * in PRODUCTION rather than behind a flag, and the thing he ruled it ON is
+   * that the option says plainly what it is before it is taken: *"we have
+   * locked the warning — somebody ignored the warning, this is not something
+   * that we report that we are supporting."* The concern was raised twice and
+   * overruled twice. The warning is what makes that a decision rather than a
+   * risk, so it has to actually be there and it has to be legible.
+   *
+   * `urdu` is the word اردو in Urdu in BOTH languages, which is how a language
+   * list works everywhere: you name a language in its own language, because the
+   * person looking for it cannot necessarily read the one they are looking at.
+   */
+  language: {
+    label: 'Language',
+    english: 'English',
+    urdu: '\u0627\u0631\u062F\u0648',
+    /** On every Urdu row, in both languages, as the ruling requires. */
+    inTesting: 'In testing',
+    inUse: 'In use',
+    /** The confirmation, shown once when English changes to Urdu. */
+    confirmTitle: 'The Urdu has not been checked yet.',
+    confirmBody:
+      'A native reader has not reviewed these words, and no doctor has checked '
+      + 'them. Every number, every insulin name and every calculation stays '
+      + 'exactly the same — only the words change.',
+    confirmSafety: 'If anything reads wrong, switch back to English here.',
+    confirmAction: 'Use Urdu anyway',
+    /** The row that goes back, and it must be findable by someone who cannot read the rest. */
+    backToEnglish: 'English',
+  },
+
+  /**
+   * §11.4's update offer and §12's install offer — the SHELL's two bars.
+   *
+   * They were nine string literals inside `main.ts` until 2026-09-22, and
+   * nothing reported them: `check_ui_text_outside_copy` walks `src/ui`, and
+   * `main.ts` is not in it. So the file whose opening line says "every
+   * user-facing string, in one file" was wrong about nine of them for as long
+   * as the bars have existed, and `10a` would have shipped an Urdu interface
+   * whose two interruptions were in English.
+   *
+   * Read at the moment a bar is RAISED. A bar already standing keeps the words
+   * it was raised with until it is retired — the alternative is re-raising
+   * everything on a language change, which is machinery for a case that lasts
+   * seconds and ends the moment the reader taps either button.
+   */
+  update: {
+    ready: 'A newer version is ready.',
+    useNow: 'Use it now',
+    later: 'Later',
+  },
+  install: {
+    offer: 'Add this to your home screen?',
+    add: 'Add it',
+    notNow: 'Not now',
+  },
+  /** When the app could not start at all. `${cause}` is appended by the shell. */
+  couldNotStart: (name: string): string => `${name} could not start: `,
+
   /** §10.8 — show the running build version. */
   build: (version: string, build: string): string => `${version} (${build})`,
 
@@ -1718,8 +1820,38 @@ export const COPY = {
   done: 'Done',
 } as const;
 
-/** The shape a language must fill in full — `10a`'s Urdu object will be one of these. */
-export type Copy = typeof COPY;
+/**
+ * The shape a language must fill in full.
+ *
+ * **`typeof COPY` is not that shape, and this is the defect `10a` found the day
+ * it had a second language to check.** `COPY` ends in `as const`, so every
+ * string in it is a LITERAL type — `'Whole units'`, not `string` — and an object
+ * typed `typeof COPY` can therefore only ever hold the English words. The seam
+ * #74 built compiled perfectly and would have rejected the first translation
+ * offered to it, with an error naming the English sentence it wanted instead.
+ *
+ * So the literals are widened and everything else is kept. `readonly` survives,
+ * the tuple in `rounding.modes` stays a tuple, and each function keeps its
+ * parameters exactly — a language may not change what a string is interpolated
+ * WITH, only what it says around it.
+ *
+ * The function arm recurses into the RETURN type rather than passing it
+ * through, because a template literal in a function body infers a template
+ * literal type: `` `${string} hours` `` is as narrow as a plain literal and
+ * fails the same way.
+ *
+ * `as const` stays on `COPY` itself. It is what makes `rounding.modes`'s
+ * `roundingMode` values discriminate, and dropping it to solve this would trade
+ * a real guarantee for a type alias.
+ */
+type Words<T> =
+  T extends string
+    ? string
+    : T extends (...args: infer A) => infer R
+      ? (...args: A) => Words<R>
+      : { readonly [K in keyof T]: Words<T[K]> };
+
+export type Copy = Words<typeof COPY>;
 
 /**
  * The seam `10a` (Urdu) needs, added before any second language exists.

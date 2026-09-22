@@ -27,7 +27,8 @@ import { modeNeedsAcknowledgement } from '../core/round.js';
 import { classOf } from '../core/insulin.js';
 import { INSULINS } from '../data/insulins.js';
 import { InsulinScreen, InsulinUnsupportedScreen } from './screens/insulin.js';
-import type { Injection, Reading, RoundingMode, Settings } from '../core/types.js';
+import { DEFAULT_FACE, DEFAULT_LANGUAGE } from '../core/types.js';
+import type { Injection, Language, Reading, RoundingMode, Settings, UrduFace } from '../core/types.js';
 import { buildEnvelope, parseEnvelope } from '../storage/envelope.js';
 import { importEnvelope } from '../storage/importer.js';
 import { deleteDatabase, openDatabase, readRecoveryBlock } from '../storage/open.js';
@@ -45,6 +46,7 @@ import {
   readAll,
   recordJsonExport,
   writeDosingHistory,
+  writeLanguage,
 } from '../storage/repo.js';
 import type { StoredState } from '../storage/repo.js';
 import { stateToken, watchForChanges } from '../storage/sync.js';
@@ -53,7 +55,10 @@ import type { Action, AppState, FrozenLogPayload, RecordContext } from '../state
 import { formatDate, localDayKey } from '../core/calendar.js';
 import { newId } from '../core/ids.js';
 import { FoodListScreen } from './screens/foods.js';
-import { COPY, units } from './copy.js';
+import { COPY, CopyContext } from './copy.js';
+import type { Copy } from './copy.js';
+import { COPY_UR } from './copy-ur.js';
+import { documentAttributes } from './language.js';
 import { Button } from './components.js';
 import { CalculatorScreen } from './screens/calculator.js';
 import { deriveThreshold } from '../core/threshold.js';
@@ -103,6 +108,18 @@ interface ViewState {
   amountDiverging: boolean;
   pendingDelete: string | null;
   clearConfirming: 'record' | 'startOver' | null;
+  /**
+   * `10a` — the Urdu face awaiting confirmation, or `null`.
+   *
+   * A face rather than a boolean, because the tap that raises the warning is
+   * the tap that says WHICH of the four she chose, and losing it would mean
+   * asking her twice.
+   *
+   * Here in ViewState rather than in the reducer for the reason the rest of
+   * this object is: it is a half-finished gesture on one screen, and nothing
+   * about a dose depends on it.
+   */
+  confirmingUrdu: UrduFace | null;
   failClosedConfirming: boolean;
   failClosedBlocked: boolean;
   readingNote: Reading['note'] | undefined;
@@ -290,12 +307,63 @@ export interface Host {
    * on tap come back rather than vanishing on a failure.
    */
   readonly onSaveStuck?: ((amount: string, retry: () => void) => void) | undefined;
+  /**
+   * `10a` — which language the SHELL's own strings are in.
+   *
+   * Everything inside the app root reads its words through `CopyContext`, which
+   * is the seam #74 built. `main.ts` cannot: the update bar, the storage bar and
+   * the stuck-dose bar live OUTSIDE the root — fixed to the foot and offsetting
+   * the page through `--prompt-h` — so no provider reaches them, and they are
+   * built in plain closures where no hook can answer.
+   *
+   * So the app tells the shell instead. Called once at boot and again whenever
+   * the choice changes, never from a render that did not change it.
+   */
+  readonly onCopy?: ((copy: Copy) => void) | undefined;
 }
 
 export async function start(host: Host): Promise<void> {
   let state = initialState();
   let db: IDBDatabase | null = null;
   let stored: StoredState | null = null;
+  /**
+   * `10a` — the words this render is using. English until a stored choice says
+   * otherwise, and RE-DERIVED FROM `stored` at the top of every render rather
+   * than assigned at each of the five places `stored` is re-read: the row is the
+   * single source of truth, and a language that can be set from two places is a
+   * language that can disagree with the database it was chosen in.
+   */
+  let copy: Copy = COPY;
+
+  /**
+   * `lang`, `dir` and the face, on the document element.
+   *
+   * Through `host.root.ownerDocument` rather than a global `document`, for the
+   * reason `now` and `scrollY` are on the Host: `src/ui` is driven by a jsdom
+   * harness, and a module that reaches for a global document is a module that
+   * harness cannot steer. The root element it was handed knows which document
+   * it is in.
+   *
+   * `lang` is what `fonts-urdu.css` selects on — `:lang(ur)`, the pseudo-class
+   * rather than `[lang="ur"]`, because it INHERITS, so this one attribute
+   * reaches every descendant. `dir` is what the RTL sweep made meaningful:
+   * every inline-axis property in the stylesheet is logical now, so this one
+   * attribute mirrors the interface. And `data-urdu-face` is the only thing
+   * that causes a font file to be requested at all.
+   *
+   * Written unconditionally rather than diffed. They are three attribute
+   * assignments on one element, the browser does nothing when a value is
+   * unchanged, and a diff here would be a cache to keep in step with the DOM
+   * for no measurable gain.
+   */
+  function applyDocumentAttributes(language: Language, face: UrduFace): void {
+    const root = host.root.ownerDocument.documentElement;
+    const attributes = documentAttributes(language, face);
+    root.lang = attributes.lang;
+    root.dir = attributes.dir;
+    if (attributes.face === null) delete root.dataset['urduFace'];
+    else root.dataset['urduFace'] = attributes.face;
+  }
   let recovery: RecoveryBlock | null = null;
 
   const view: ViewState = {
@@ -308,6 +376,7 @@ export async function start(host: Host): Promise<void> {
     amountDiverging: false,
     pendingDelete: null,
     clearConfirming: null,
+    confirmingUrdu: null,
     failClosedConfirming: false,
     failClosedBlocked: false,
     readingNote: undefined,
@@ -610,7 +679,7 @@ export async function start(host: Host): Promise<void> {
       }
       // Twice is not transient. Hand it to something that follows him off this
       // screen, because `committing` now outlives the logged step.
-      host.onSaveStuck?.(units(payload.injectedUnits), retryPendingSave);
+      host.onSaveStuck?.(copy.units(payload.injectedUnits), retryPendingSave);
     }
   };
 
@@ -746,10 +815,10 @@ export async function start(host: Host): Promise<void> {
   const advisoryStatus = (): string => {
     const status = evaluateCarbAdvisory(1, state.record.carbBaseline, state.record.eligibleEntryCount);
     if (!status.enabled) {
-      return COPY.advisory.notEnoughHistory(state.record.eligibleEntryCount, ADVISORY_MIN_ELIGIBLE);
+      return copy.advisory.notEnoughHistory(state.record.eligibleEntryCount, ADVISORY_MIN_ELIGIBLE);
     }
-    if (!status.highTriggerAvailable) return COPY.advisory.highDisabled;
-    return COPY.advisory.active(String(state.record.carbBaseline));
+    if (!status.highTriggerAvailable) return copy.advisory.highDisabled;
+    return copy.advisory.active(String(state.record.carbBaseline));
   };
 
   /**
@@ -847,12 +916,12 @@ export async function start(host: Host): Promise<void> {
         // sentence ("Setup will run again.") is true now: `boot()` is running.
         return view.recordDeletedElsewhere ? (
           <div class="screen">
-            <h2>{COPY.recordDeleted.title}</h2>
-            <p>{COPY.recordDeleted.body}</p>
+            <h2>{copy.recordDeleted.title}</h2>
+            <p>{copy.recordDeleted.body}</p>
           </div>
         ) : (
           <div class="screen">
-            <p>{COPY.screens.opening}</p>
+            <p>{copy.screens.opening}</p>
           </div>
         );
 
@@ -943,6 +1012,9 @@ export async function start(host: Host): Promise<void> {
             return { period: latest, changedAt: formatDate(latest.changedAtMs, host.timeZone) };
           })()}
           storageDurable={storageDurable}
+          language={stored?.language ?? DEFAULT_LANGUAGE}
+          urduFace={stored?.urduFace ?? DEFAULT_FACE}
+          confirmingUrdu={view.confirmingUrdu}
           storageWarningOff={stored?.acks.has(ackKeys.storageEviction) ?? false}
           onStopStorageWarning={() => {
             if (db !== null) { const handle = db; guardWrite(() => acknowledge(handle, ackKeys.storageEviction, host.now()).then(refresh)); }
@@ -955,6 +1027,47 @@ export async function start(host: Host): Promise<void> {
           },
           ceilAcknowledged: stored?.acks.has(ackKeys.forMode(view.draft.roundingMode)) ?? false,
           advisoryStatus: advisoryStatus(),
+          /**
+           * `10a` — English applies at once; Urdu asks first, and only when it
+           * is a CHANGE of language.
+           *
+           * Switching between the four faces while already in Urdu does not
+           * re-ask. The confirmation is about the words being unreviewed, which
+           * is a property of the language and not of the typeface — asking
+           * again for a face would train her to tap through it, which is how a
+           * warning stops being read.
+           *
+           * Going BACK to English never asks. Nothing about that direction
+           * needs a caution, and putting one there would sit between a reader
+           * and the language they can definitely read.
+           */
+          onChooseLanguage: (language, face) => {
+            const current = stored?.language ?? DEFAULT_LANGUAGE;
+            if (language === 'ur' && current !== 'ur') {
+              view.confirmingUrdu = face;
+              render();
+              return;
+            }
+            view.confirmingUrdu = null;
+            if (db === null) return;
+            const handle = db;
+            guardWrite(() =>
+              writeLanguage(handle, { language, urduFace: face }).then(refresh),
+            );
+          },
+          onConfirmUrdu: () => {
+            const face = view.confirmingUrdu;
+            view.confirmingUrdu = null;
+            if (face === null || db === null) return;
+            const handle = db;
+            guardWrite(() =>
+              writeLanguage(handle, { language: 'ur', urduFace: face }).then(refresh),
+            );
+          },
+          onCancelUrdu: () => {
+            view.confirmingUrdu = null;
+            render();
+          },
           onChange: (field, value) => {
             view.draft = { ...view.draft, [field]: field === 'roundingMode' ? (value as RoundingMode) : value };
             // §6.2's threshold is DERIVED from the three ratios rather than
@@ -1322,15 +1435,15 @@ export async function start(host: Host): Promise<void> {
     const goBack = backAction();
     const items: JSX.Element[] = [];
     if (goBack !== null) {
-      items.push(<Button key="back" class="link" onPress={goBack}>{COPY.back}</Button>);
+      items.push(<Button key="back" class="link" onPress={goBack}>{copy.back}</Button>);
     }
     if (state.screen === 'calculator' && state.step === 'reading') {
       items.push(
         <Button key="settings" class="link" onPress={() => { dispatch({ type: 'go', screen: 'settings' }); }}>
-          {COPY.nav.settings}
+          {copy.nav.settings}
         </Button>,
         <Button key="history" class="link" onPress={() => { dispatch({ type: 'go', screen: 'history' }); }}>
-          {COPY.nav.history}
+          {copy.nav.history}
         </Button>,
       );
     }
@@ -1340,7 +1453,7 @@ export async function start(host: Host): Promise<void> {
     if (state.screen === 'calculator' && state.step === 'carbs') {
       items.push(
         <Button key="foods" class="link" onPress={() => { dispatch({ type: 'go', screen: 'food_list' }); }}>
-          {COPY.foods.navLabel}
+          {copy.foods.navLabel}
         </Button>,
       );
     }
@@ -1351,15 +1464,34 @@ export async function start(host: Host): Promise<void> {
           class="link mark"
           onPress={() => { showClear = false; dispatch({ type: 'go', screen: 'export' }); }}
         >
-          {COPY.nav.saveACopy}
+          {copy.nav.saveACopy}
         </Button>,
       );
     }
     if (items.length === 0) return null;
-    return <nav class="foot-nav" aria-label={COPY.nav.label}>{items}</nav>;
+    return <nav class="foot-nav" aria-label={copy.nav.label}>{items}</nav>;
   }
 
   function render(): void {
+    /**
+     * `10a` — the language, derived from the stored row and nowhere else.
+     *
+     * `stored === null` is a database that has not been read yet, not a reader
+     * who has chosen English, and both render English — which is why the
+     * default is a constant rather than a branch.
+     *
+     * `host.onCopy` fires only on a CHANGE. The shell's bars are built once and
+     * left standing; calling it every render would rebuild text that is already
+     * correct, on every keystroke.
+     */
+    const language = stored?.language ?? DEFAULT_LANGUAGE;
+    const next = language === 'ur' ? COPY_UR : COPY;
+    if (next !== copy) {
+      copy = next;
+      host.onCopy?.(copy);
+    }
+    applyDocumentAttributes(language, stored?.urduFace ?? DEFAULT_FACE);
+
     if (!settled && state.screen === 'calculator') {
       settled = true;
       host.onSettled?.();
@@ -1484,7 +1616,12 @@ export async function start(host: Host): Promise<void> {
      * handler here already depends on.
      */
     mount(
-      <>
+      /**
+       * The provider #74 built the seam for. Every screen under here reads its
+       * words through `useCopy()`, so the day a second language exists — today —
+       * not one call site changes.
+       */
+      <CopyContext.Provider value={copy}>
         {/* ABOVE the screen, not inside one, because three of the four writes it
             reports fire from different screens and a panel each would be three
             places for the wording to drift. */}
@@ -1501,8 +1638,8 @@ export async function start(host: Host): Promise<void> {
             diagnose a report." Deliberately small and quiet: it is for the one
             moment someone is diagnosing a report, not for every moment of every
             day. */}
-        <div class="foot">{COPY.build(host.appVersion, host.buildId)}</div>
-      </>,
+        <div class="foot">{copy.build(host.appVersion, host.buildId)}</div>
+      </CopyContext.Provider>,
       host.root,
     );
 

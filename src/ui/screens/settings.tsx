@@ -17,7 +17,8 @@ import type { JSX } from 'preact';
 import { useCopy } from '../copy.js';
 import type { Copy } from '../copy.js';
 import { Button, TextInput } from '../components.js';
-import type { RoundingMode, Settings } from '../../core/types.js';
+import type { Language, RoundingMode, Settings, UrduFace } from '../../core/types.js';
+import { URDU_FACES } from '../language.js';
 import { classEatDelay } from '../../core/insulin.js';
 import type { InsulinClass } from '../../core/insulin.js';
 import { INSULINS } from '../../data/insulins.js';
@@ -240,6 +241,16 @@ export interface SettingsHandlers {
   readonly onOpenExport: () => void;
   readonly onOpenHowItWorks: () => void;
   readonly onOpenSettingsAsText: () => void;
+  /**
+   * `10a` — choose a language, and the face if it is Urdu.
+   *
+   * Takes BOTH, always. A tap on an Urdu row is a choice of language and of
+   * face at once, and a tap on English still carries the face so switching back
+   * and forth does not lose the one she was in the middle of comparing.
+   */
+  readonly onChooseLanguage: (language: Language, face: UrduFace) => void;
+  readonly onConfirmUrdu: () => void;
+  readonly onCancelUrdu: () => void;
   readonly ceilAcknowledged: boolean;
   readonly firstRun: boolean;
   readonly advisoryStatus: string;
@@ -517,6 +528,9 @@ export function SettingsScreen({
   storageWarningOff,
   onStopStorageWarning,
   rebuilt,
+  language,
+  urduFace,
+  confirmingUrdu,
 }: {
   readonly draft: SettingsDraft;
   readonly settings: Settings | null;
@@ -537,6 +551,17 @@ export function SettingsScreen({
    * so this is `null` on every ordinary first run.
    */
   readonly rebuilt: { readonly period: SettingsPeriod; readonly changedAt: string } | null;
+  /** `10a` — the language in force, and the face it is set in. */
+  readonly language: Language;
+  readonly urduFace: UrduFace;
+  /**
+   * The face awaiting confirmation, or `null`.
+   *
+   * A face rather than a boolean, because the tap that opens the confirmation
+   * is the tap that names which of the four the reader chose — losing it would
+   * mean asking twice.
+   */
+  readonly confirmingUrdu: UrduFace | null;
 }): JSX.Element {
   const COPY = useCopy();
   /**
@@ -858,8 +883,8 @@ export function SettingsScreen({
           {deltas.map((delta) => (
             <div key={delta.label}>
               <div>{`${delta.label}:`}</div>
-              <div>{`was: ${delta.was}`}</div>
-              <div>{`now: ${delta.now}`}</div>
+              <div>{COPY.settings.deltaWas(delta.was)}</div>
+              <div>{COPY.settings.deltaNow(delta.now)}</div>
             </div>
           ))}
         </div>
@@ -912,6 +937,83 @@ export function SettingsScreen({
           <p class="hint">
             {storageDurable === true ? COPY.storage.durable : COPY.storage.unknown}
           </p>
+        </div>
+      )}
+
+      {/*
+          `10a`'s language list. NOT on first run: setup is a sequence with one
+          job, and a stranger choosing an unreviewed translation before they
+          have read the disclosure is the wrong order for both of those things.
+
+          FOUR Urdu rows while the face is undecided. Each row is the word اردو
+          and the typeface's own name — never a SAMPLE of the face, because
+          rendering the word in four families would make the browser fetch all
+          four, 448 KB, for anyone who ever scrolled this far in English. She
+          picks one, reads the app in it, comes back and picks another; that is
+          also the better test than reading one word four times.
+      */}
+      {handlers.firstRun ? null : (
+        <div class="card">
+          <b>{COPY.language.label}</b>
+          {confirmingUrdu === null ? (
+            <div class="list">
+              <Button
+                class="go quiet insulin"
+                aria-current={language === 'en'}
+                onPress={() => { handlers.onChooseLanguage('en', urduFace); }}
+              >
+                <span class="brand">{COPY.language.english}</span>
+                {language === 'en' ? <span class="tag">{COPY.language.inUse}</span> : null}
+              </Button>
+              {URDU_FACES.map((face) => (
+                <Button
+                  key={face.id}
+                  class="go quiet insulin"
+                  aria-current={language === 'ur' && urduFace === face.id}
+                  onPress={() => { handlers.onChooseLanguage('ur', face.id); }}
+                >
+                  {/* `lang` on the span so a reader's browser picks a sensible
+                      system face for the three words of Urdu on an English
+                      screen. It does NOT match `body:lang(ur)`, which is what
+                      keeps this from downloading anything. */}
+                  <span class="brand" lang="ur">{COPY.language.urdu}</span>
+                  <span class="molecule">{face.name}</span>
+                  {language === 'ur' && urduFace === face.id ? (
+                    <span class="tag">{COPY.language.inUse}</span>
+                  ) : (
+                    <span class="tag">{COPY.language.inTesting}</span>
+                  )}
+                </Button>
+              ))}
+            </div>
+          ) : (
+            /*
+               The confirmation Momin's ruling is conditional on. Urdu ships in
+               production rather than behind a flag, and what makes that a
+               decision rather than a risk is that the option says plainly what
+               it is BEFORE it is taken.
+
+               §10.5's advisory treatment, because this is a caution and the
+               form has to carry that as well as the words. The way back out is
+               named in the warning itself — a reader who cannot read the Urdu
+               they just switched to needs to know that this list is where
+               English lives, and needs to have been told in the language they
+               could still read.
+            */
+            <div class="flag warn">
+              <b>{COPY.language.confirmTitle}</b>
+              <p>{COPY.language.confirmBody}</p>
+              <p>{COPY.language.confirmSafety}</p>
+              <div class="card-actions-row">
+                <Button class="link" onPress={handlers.onCancelUrdu}>
+                  {COPY.cancel}
+                </Button>
+                <Button class="link mark" onPress={handlers.onConfirmUrdu}>
+                  {COPY.language.confirmAction}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -6,8 +6,17 @@
  */
 
 import { DELETE_CONFIRM_WINDOW_HOURS, SCHEMA_VERSION } from '../config.js';
-import { isInjection } from '../core/types.js';
-import type { Injection, LogRow, Reading, RoundingMode, Settings, Tombstone } from '../core/types.js';
+import { DEFAULT_FACE, DEFAULT_LANGUAGE, isInjection } from '../core/types.js';
+import type {
+  Injection,
+  Language,
+  LogRow,
+  Reading,
+  RoundingMode,
+  Settings,
+  Tombstone,
+  UrduFace,
+} from '../core/types.js';
 import type { SettingsPeriod } from '../core/periods.js';
 import { hasRowInsideWindow } from '../core/history.js';
 import {
@@ -26,6 +35,7 @@ import type {
   DosingHistoryRow,
   EnvelopeRow,
   InstallRow,
+  LanguageRow,
   LogRevisionRow,
   RecoveryBlock,
   SettingsHistoryRow,
@@ -83,6 +93,9 @@ export interface StoredState {
   readonly acks: ReadonlySet<string>;
   readonly dosingHistory: DosingHistoryRow;
   readonly lastJsonExportAtMs: number | null;
+  /** `10a`. A database with no stored choice reads as `'en'`; see `writeLanguage`. */
+  readonly language: Language;
+  readonly urduFace: UrduFace;
 }
 
 /** One read of everything the reducer needs, in one transaction. */
@@ -92,7 +105,7 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
     [STORE.meta, STORE.settings, STORE.acks, STORE.log, STORE.readings, STORE.settingsHistory],
     'readonly',
     async (tx) => {
-      const [settingsRow, history, log, readings, acks, revision, install, dosing, backup] =
+      const [settingsRow, history, log, readings, acks, revision, install, dosing, backup, language] =
         await Promise.all([
           get<SettingsRow>(tx, STORE.settings, SETTINGS_KEY),
           getAll<SettingsHistoryRow>(tx, STORE.settingsHistory),
@@ -103,6 +116,7 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
           get<InstallRow>(tx, STORE.meta, META_KEY.install),
           get<DosingHistoryRow>(tx, STORE.meta, META_KEY.dosingHistory),
           get<BackupRow>(tx, STORE.meta, META_KEY.backup),
+          get<LanguageRow>(tx, STORE.meta, META_KEY.language),
         ]);
 
       const settings: Settings | null =
@@ -175,6 +189,15 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
           answeredAtMs: null,
         },
         lastJsonExportAtMs: backup?.lastJsonExportAtMs ?? null,
+        // `10a` — A MISSING ROW READS AS ENGLISH, on the same argument as the
+        // dosing note above: the row is not seeded at database creation, so an
+        // install predating this feature has not chosen a language rather than
+        // having chosen this one. `10a`'s ruling is that the default is always
+        // English and never a guess from `navigator.language` — what the phone
+        // is set to is not the same question as which language this reader
+        // wants their insulin instructions in.
+        language: language?.language ?? DEFAULT_LANGUAGE,
+        urduFace: language?.urduFace ?? DEFAULT_FACE,
       } satisfies StoredState;
     },
   );
@@ -547,5 +570,29 @@ export function writeDosingHistory(
 ): Promise<IDBValidKey> {
   return runTransaction(db, [STORE.meta], 'readwrite', (tx) =>
     put(tx, STORE.meta, { ...row, key: META_KEY.dosingHistory } satisfies DosingHistoryRow),
+  );
+}
+
+// ─── 10a's language ─────────────────────────────────────────────────────────
+
+/**
+ * Its OWN write, not part of a settings commit, and that is the point.
+ *
+ * Choosing a language must not travel through `commitSettings`: that path
+ * allocates a prescription revision when a provenance field moves, and a
+ * language is not a dosing input. Nor should switching language require saving
+ * the prescription — the reader is on the settings screen looking at typefaces,
+ * not at ratios, and a control that silently commits the form under them is the
+ * kind of side-effect §7.9 ruled against in the other direction.
+ *
+ * The face rides along even when the language is English, so switching back and
+ * forth does not lose the one she was in the middle of comparing.
+ */
+export function writeLanguage(
+  db: IDBDatabase,
+  row: Omit<LanguageRow, 'key'>,
+): Promise<IDBValidKey> {
+  return runTransaction(db, [STORE.meta], 'readwrite', (tx) =>
+    put(tx, STORE.meta, { ...row, key: META_KEY.language } satisfies LanguageRow),
   );
 }

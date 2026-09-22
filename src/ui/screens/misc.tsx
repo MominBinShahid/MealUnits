@@ -18,7 +18,6 @@ import {
   MS_PER_HOUR,
 } from '../../config.js';
 import { formatClockTime, formatDate } from '../../core/calendar.js';
-import { formatHundredths } from '../../core/decimal.js';
 import { hasRowInsideWindow } from '../../core/history.js';
 import { isInjection } from '../../core/types.js';
 import { classOf, eatDelayFor } from '../../core/insulin.js';
@@ -26,7 +25,7 @@ import { INSULINS } from '../../data/insulins.js';
 import { waitInWords } from './insulin.js';
 import type { LogRow, Reading, Settings } from '../../core/types.js';
 import type { RecoveryBlock } from '../../storage/schema.js';
-import { units, useCopy } from '../copy.js';
+import { useCopy } from '../copy.js';
 import type { Copy } from '../copy.js';
 import { Button, TextInput } from '../components.js';
 
@@ -131,7 +130,7 @@ function DoseRow({
           ))}
         </div>
         <div>
-          {COPY.screens.historyDose(units(row.calculatedUnits), units(row.injectedUnits)).map((part) => (
+          {COPY.screens.historyDose(COPY.units(row.calculatedUnits), COPY.units(row.injectedUnits)).map((part) => (
             <Fragment key={part.label}>
               {part.label}
               <b class="fig">{part.value}</b>
@@ -145,7 +144,7 @@ function DoseRow({
               {/* §7.3 — the confirmation quotes the INJECTED figure, "the number
                   §7.4 is using and the number he acted on". */}
               {COPY.log.deleteTitle(
-                units(row.injectedUnits),
+                COPY.units(row.injectedUnits),
                 formatClockTime(row.timestamp, handlers.timeZone),
               )}
             </b>
@@ -680,7 +679,12 @@ export function FailClosedScreen({
             )}
             <li class="li">
               <div class="k">{recovery.basalName}</div>
-              <div class="v">{`${String(recovery.basalUnitsPerDay)}\u00A0units`}</div>
+              {/* `COPY.units`, not a hand-built `${n} units`. This line and the
+                  one in the settings-as-text block below were the last two
+                  places the word was spelled out in a template literal, which
+                  is why `check_ui_text_outside_copy` never saw them: it wants
+                  two consecutive words inside backticks, and "units" is one. */}
+              <div class="v">{COPY.units(recovery.basalUnitsPerDay * HUNDREDTHS_SCALE)}</div>
             </li>
           </ul>
           <p class="hint">{COPY.failClosed.copyThemDown}</p>
@@ -890,7 +894,7 @@ export function SettingsAsTextScreen({
         </li>
         <li class="li">
           <div class="k">{COPY.screens.asTextThreshold}</div>
-          <div class="v">{units(settings.threshold * HUNDREDTHS_SCALE)}</div>
+          <div class="v">{COPY.units(settings.threshold * HUNDREDTHS_SCALE)}</div>
         </li>
         {/* §8.5 — this screen exists to be PHOTOGRAPHED and shown to a doctor,
             and the mealtime insulin is the first thing they would ask. Below
@@ -916,9 +920,7 @@ export function SettingsAsTextScreen({
             <div class="k">
               {settings.basalName.trim() === '' ? COPY.settings.basalNameMissing : settings.basalName}
             </div>
-            <div class="v">
-              {`${formatHundredths(settings.basalUnits * HUNDREDTHS_SCALE)}\u00A0units`}
-            </div>
+            <div class="v">{COPY.units(settings.basalUnits * HUNDREDTHS_SCALE)}</div>
           </li>
           <li class="li">
             <div class="k">{settings.basalTiming}</div>

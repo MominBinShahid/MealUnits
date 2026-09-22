@@ -394,7 +394,15 @@ RETIRED_IN_SOURCE_OK = {
     "for one person": 1,
     # copy.ts's band E docstring quotes v8's wrong compact copy, twice, to
     # explain why the instruction never changes between forms.
-    "Above 250 again": 2,
+    #
+    # FOUR since 2026-09-22, not two, and the doubling is the translation
+    # working as intended. `copy-ur.ts` carries the English doc comments
+    # verbatim — they cite `§` sections and build notes that exist in English
+    # only, and the note explaining why band E's instruction never changes is
+    # exactly as load-bearing for whoever maintains the Urdu. Translating a
+    # historical quotation would also destroy it: the point of the quote is the
+    # words v8 actually shipped.
+    "Above 250 again": 4,
     # misc.ts's dosing-history docstring names the cut §6.7 setting to explain
     # what replaced it.
     "usualDose": 1,
@@ -896,6 +904,18 @@ UI_TEXT_OK = {
     # class value in EXPRESSION position — single-quoted in code, so the
     # attribute arm never sees it.
     "field wide",
+    # `10a`'s four typeface names, in `src/ui/language.ts`. They ARE rendered —
+    # each sits beside the row that selects it — and they are exempt for the
+    # same reason the insulin brands are: **a typeface name is a proper noun
+    # printed by its foundry, and it does not translate.** "Noto Nastaliq Urdu"
+    # is what the file is called, what the reader will find if they look it up,
+    # and what tells Momin which of the four to keep when his mother has chosen.
+    # A transliterated one would name nothing.
+    #
+    # Note they are NOT the row's label. Each row is written in the face it
+    # names, in Urdu, and those words are in `copy.ts` where they belong; these
+    # are the Latin identifier beside them.
+    "Noto Nastaliq Urdu", "Gulzar", "Noto Naskh Arabic", "Noto Sans Arabic",
 }
 
 # JSX attributes whose values are markup, ids or machine names rather than words
@@ -1240,10 +1260,37 @@ def check_ui_text_outside_copy(_plan):
     standard: it verifies the check once, on the day someone remembers to do it.
     """
     out = []
+    # `src/main.ts` JOINED THE WALK 2026-09-22, and it had been outside it since
+    # this check was written. The shell raises three bars — the update offer, the
+    # install offer, the stuck-dose escalation — and nine of their strings were
+    # literals in that file: "A newer version is ready.", "Use it now", "Later",
+    # "Add this to your home screen?", "Add it", "Not now" twice over.
+    #
+    # Nothing reported them, because the walk was `src/ui` and `main.ts` is one
+    # directory up. So `copy.ts`'s own opening line — "every user-facing string,
+    # in one file" — was wrong about nine of them for as long as the bars have
+    # existed, and `10a` would have shipped an Urdu interface whose only two
+    # interruptions were in English. The header's claim is what made it
+    # invisible, which is the same sentence this check's docstring already used
+    # about the eighty it was written for.
+    #
+    # The file passed as a one-element list rather than a directory, because it
+    # is a FILE and `source_files` walks directories — `src/` whole would pull in
+    # `core`, `state` and `storage`, none of which render anything.
     for path in source_files("check_ui_text_outside_copy: src/ui/**",
-                             os.path.join(HERE, "src", "ui"), SOURCE_SUFFIXES):
+                             os.path.join(HERE, "src", "ui"), SOURCE_SUFFIXES) + [
+                                 os.path.join(HERE, "src", "main.ts")]:
         name = os.path.basename(path)
-        if name == "copy.ts":
+        # The LANGUAGE FILES, both of them. This check exists to keep strings in
+        # one place per language, and these are those places — `copy-ur.ts`
+        # joined 2026-09-22 with `10a`.
+        #
+        # Exempting a second file is safe here in a way it would not be
+        # elsewhere, and the reason is structural rather than a promise: every
+        # translation is typed `Copy`, `Copy` is derived from `typeof COPY`, and
+        # the compiler therefore refuses a key the English does not have. A
+        # stray string cannot hide in a translation — there is nowhere to put it.
+        if name in ("copy.ts", "copy-ur.ts"):
             continue
         rel = os.path.relpath(path, HERE).replace(os.sep, "/")
         # `load`, not a direct read. `--self-test` swaps this function out to
@@ -1274,7 +1321,27 @@ def check_ui_text_outside_copy(_plan):
                 # The `${...}` holes are values, not words. What is left is
                 # the prose the template wraps around them.
                 prose = re.sub(r"\$\{[^}]*\}", " ", match.group(1))
-                if not re.search(r"[A-Za-z]{2,}\s+[A-Za-z]{2,}", prose):
+                # Two consecutive words, OR one word from the list below.
+                #
+                # Two words was the whole rule until 2026-09-22, and `10a` found
+                # three escapes through the gap in one afternoon: `${step} of
+                # ${total}` on the step counter, `was: ${x}` and `now: ${y}` on
+                # the ratio-change confirmation. All three are prose GLUE between
+                # interpolations, all three are one word, and all three would
+                # have stayed English in an Urdu interface.
+                #
+                # Lowering the rule to any single word was tried first and
+                # reported nineteen findings, fourteen of them class names, ids,
+                # `px` and `sw.js`. That is the crying-wolf this file warns
+                # about, so the widening is a CLOSED LIST of English function
+                # words instead — words that join a value to another value and
+                # cannot plausibly be a class name or an identifier.
+                #
+                # It is not a general solution and does not claim to be. A
+                # single CONTENT word between two holes still escapes.
+                GLUE = r"(?:of|was|now|and|or|to|from|at|in|per|then|for|with|by|than)"
+                if not (re.search(r"[A-Za-z]{2,}\s+[A-Za-z]{2,}", prose)
+                        or re.search(r"(?<![\w-])" + GLUE + r"(?![\w-])", prose)):
                     continue
                 if prose.strip() in UI_TEXT_OK:
                     continue
@@ -3182,25 +3249,32 @@ def check_number_unit_nowrap(_plan):
                     % (rel, line_no, m.group()))
 
     # The formatter every dose goes through, pinned separately — and it has to
-    # be. `units()` picks "unit" or "units" with a ternary, so its source holds
+    # be. `units` picks "unit" or "units" with a ternary, so its source holds
     # no literal `} units` for the sweep above to match: revert its no-break
     # space and the sweep reports clean. The one string that matters most is the
     # one the general rule structurally cannot see.
-    copy_path = os.path.join(HERE, "src", "ui", "copy.ts")
-    if os.path.exists(copy_path):
+    #
+    # **PINNED PER LANGUAGE since 2026-09-22.** It was an `export function` in
+    # `copy.ts` until `10a` moved it INTO the copy object, because the name of a
+    # unit is a word: the old shape rendered "4 units" inside an Urdu sentence on
+    # every screen that shows a dose. Each language now writes its own, so each
+    # language can lose the no-break space on its own, and both are checked.
+    # A language file that does not exist is not a finding; one that exists and
+    # has dropped the character is.
+    for rel in ("copy.ts", "copy-ur.ts"):
+        copy_path = os.path.join(HERE, "src", "ui", rel)
+        if not os.path.exists(copy_path):
+            continue
         body = load(copy_path)
-        m = re.search(r"export function units\([^)]*\)[^{]*\{(.*?)\n\}", body, re.S)
+        m = re.search(r"\n  units: \([^)]*\)[^=]*=>(.*?)\n  /\*\*", body, re.S)
         if m is None:
-            out.append("src/ui/copy.ts no longer defines units() — §10.4's "
-                       "no-break space was pinned to it and that pin is now blind")
-        elif "export function" in m.group(1):
-            out.append("src/ui/copy.ts: units() could not be read as a block — "
-                       "the §10.4 pin matched past its own closing brace, so it "
-                       "is checking somebody else's body")
+            out.append("src/ui/%s no longer defines a `units:` member — §10.4's "
+                       "no-break space was pinned to it and that pin is now blind"
+                       % rel)
         elif "\\u00A0" not in m.group(1):
-            out.append("src/ui/copy.ts: units() no longer joins the number to "
-                       "its word with \\u00A0 — §10.4's rule is enforced there "
-                       "and nowhere else for a dose figure")
+            out.append("src/ui/%s: `units` no longer joins the number to its word "
+                       "with \\u00A0 — §10.4's rule is enforced there and nowhere "
+                       "else for a dose figure" % rel)
     return out
 
 
@@ -3294,6 +3368,58 @@ def check_logical_properties(_plan):
                         "than at where the line starts — 10a puts this app in "
                         "`dir=\"rtl\"`. Write `%s`"
                         % (rel, line_no, name, value, BY_VALUE[(name, value)]))
+    return out
+
+
+def check_rtl_ranges_isolated(_plan):
+    r"""10a — a number RANGE in a right-to-left language, painted backwards.
+
+    `20-30` renders as `30-20` in Urdu. Not a font problem and not a translation
+    problem: bidi rule N1 treats a European number as right-to-left when it
+    resolves the neutral character between two of them, so the dash takes the
+    paragraph's direction and the two numbers swap around it. A colon does not —
+    `1:10` survives, because `:` is a Common Separator that binds its neighbours
+    — which is why an ICR reads correctly and a range does not.
+
+    **It shipped.** The result screen's timing card told a reader to inject
+    `30-20` minutes before eating, and it took putting a built app in `dir="rtl"`
+    with Urdu around the number to see it. Nothing else could have: every test
+    here reads `textContent`, and `textContent` is the SOURCE order — it says
+    `20-30` whichever way the glyphs are painted.
+
+    So the fix is a character, and this is what keeps it there. A range inside a
+    right-to-left string must sit inside `isolate(...)`, which wraps it in U+2068
+    and U+2069 — the same thing `<bdi>` does in markup.
+
+    **What it does NOT catch.** It reads the RTL language files only, matches a
+    dash between two interpolations or two digit runs on one line, and asks
+    whether `isolate` appears on that line. A range assembled across two lines,
+    or built from a variable that already holds `"20-30"`, escapes. It is also
+    blind to every other bidi hazard — a Latin unit after a number reorders too,
+    and that one is cosmetic rather than wrong, so it is deliberately not here.
+    """
+    out = []
+    # The right-to-left languages. English cannot have this defect: in an
+    # left-to-right paragraph the algorithm never reorders the run at all.
+    for rel in ("copy-ur.ts",):
+        path = os.path.join(HERE, "src", "ui", rel)
+        if not os.path.exists(path):
+            continue
+        body = without_block_comments(load(path))
+        for number, line in enumerate(body.splitlines(), 1):
+            if line.lstrip().startswith("//"):
+                continue
+            for pattern in (r"\$\{[^}]*\}\s*[-\u2013]\s*\$\{", r"[0-9]\s*[-\u2013]\s*[0-9]"):
+                if re.search(pattern, line) is None:
+                    continue
+                if "isolate(" in line:
+                    continue
+                out.append(
+                    "src/ui/%s:%d builds a number range that nothing isolates — in"
+                    " right-to-left text the two numbers swap around the dash, so"
+                    " `20-30` is painted `30-20`. Wrap it in `isolate(...)`"
+                    % (rel, number))
+                break
     return out
 
 
@@ -4291,6 +4417,7 @@ CHECKS = [
     ("404.html's links vs BASE", check_404_paths_agree, "plan"),
     ("§10.4: a number joined to its unit by a plain space", check_number_unit_nowrap, "plan"),
     ("10a: a stylesheet declaration that names a side", check_logical_properties, "plan"),
+    ("10a: a number range that bidi will reverse", check_rtl_ranges_isolated, "plan"),
     ("tests missing from the mutation run", check_mutation_coverage_list, "plan"),
     ("§20.5 listing vs the directory", check_file_listing, "plan"),
     ("NEXT-STEPS.md has come back", check_next_steps, "plan"),
@@ -4913,6 +5040,26 @@ SELF_TESTS = [
      "src/sw.ts",
      lambda t: t.replace("name.startsWith(CACHE_PREFIX) && name !== CACHE && name !== FONT_CACHE",
                          "name.startsWith(CACHE_PREFIX) && name !== CACHE")),
+    # `src/main.ts` joining the UI-text walk, 2026-09-22. The literal below is
+    # the exact one that was there — the update bar's headline, English in an
+    # Urdu interface for as long as the bar has existed, with nothing reporting
+    # it because the walk stopped one directory short.
+    ("ui text: the update bar goes back to a literal in main.ts",
+     "src/main.ts",
+     lambda t: t.replace("text: copy.update.ready,", "text: 'A newer version is ready.',", 1)),
+    # The glue-word widening, 2026-09-22. This is the literal that was on the
+    # step counter — one English word between two interpolations, on the screen
+    # this app is used on most, invisible to the two-word rule for as long as
+    # the check has existed.
+    ("ui text: the step counter goes back to a one-word template literal",
+     "src/ui/screens/calculator.tsx",
+     lambda t: t.replace("label={COPY.calculator.stepOf(String(step), String(TOTAL_STEPS))}",
+                         "label={`${String(step)} of ${String(TOTAL_STEPS)}`}", 1)),
+    # The bidi range, 2026-09-22. This is the exact line that shipped `30-20` on
+    # the result screen's timing card.
+    ("rtl: the eat-delay range loses its isolation [renders backwards]",
+     "src/ui/copy-ur.ts",
+     lambda t: t.replace("${isolate(`${lo}\u2013${hi}`)}", "${lo}\u2013${hi}", 1)),
 ]
 
 
@@ -5031,7 +5178,8 @@ def self_test():
     for rel in ("src/storage/repo.ts", "src/storage/schema.ts",
                 "src/storage/envelope.ts", "vite.config.ts",
                 "src/storage/open.ts", "package.json",
-                "src/ui/styles.css", "src/sw.ts"):
+                "src/ui/styles.css", "src/sw.ts", "src/main.ts",
+                "src/ui/copy-ur.ts", "src/ui/screens/calculator.tsx"):
         full = os.path.join(HERE, *rel.split("/"))
         if os.path.exists(full):
             base[rel] = load(full)
