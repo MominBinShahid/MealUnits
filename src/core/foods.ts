@@ -15,7 +15,8 @@
 /** The minimum a row must offer to be findable. */
 export interface Searchable {
   readonly name: string;
-  readonly urdu: string;
+  /** Roman Urdu. Named for the SCRIPT, not the language — see `Food.roman`. */
+  readonly roman: string;
   readonly aliases: readonly string[];
 }
 
@@ -65,7 +66,7 @@ export function matchFoods<T extends Searchable>(foods: readonly T[], query: str
   // and read like a decision, which is worse than absent.
   return foods.filter((food) => {
     if (fold(food.name).includes(needle)) return true;
-    if (fold(food.urdu).includes(needle)) return true;
+    if (fold(food.roman).includes(needle)) return true;
     return food.aliases.some((alias) => fold(alias).includes(needle));
   });
 }

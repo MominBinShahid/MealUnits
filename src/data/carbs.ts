@@ -35,8 +35,13 @@ export interface Food {
   readonly id: string;
   /** English name, as the list is read. */
   readonly name: string;
-  /** Roman Urdu, because that is what the food is called out loud. */
-  readonly urdu: string;
+  /**
+   * Roman Urdu, because that is what the food is called out loud. NAMED FOR THE
+   * SCRIPT, not the language: an Urdu-script name is a separate field when it
+   * arrives, and two fields where one is called `urdu` is how the wrong one
+   * gets filled in.
+   */
+  readonly roman: string;
   /**
    * Spelling variants, so search finds the row however it is typed. An explicit
    * list rather than fuzzy matching: fuzzy matching on food names in a dosing
@@ -68,7 +73,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'phulka',
     name: 'Thin flatbread, small',
-    urdu: 'Phulka',
+    roman: 'Phulka',
     aliases: ['phulka', 'chapati', 'chapatti', 'roti', 'fulka'],
     portion: '1 small, about 35\u00A0g',
     grams: 12,
@@ -80,7 +85,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'roti-medium',
     name: 'Home flatbread, medium',
-    urdu: 'Roti',
+    roman: 'Roti',
     aliases: ['roti', 'chapati', 'chapatti', 'chappati', 'rotli', 'phulka'],
     portion: '1 medium, 7\u00A0inch, about 40\u00A0g',
     grams: 18,
@@ -92,7 +97,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'roti-thin-8',
     name: 'Home flatbread, large and thin',
-    urdu: 'Roti',
+    roman: 'Roti',
     aliases: ['roti', 'chapati', 'chapatti', 'badi roti'],
     portion: '1 large, 8\u00A0inch, about 50\u00A0g',
     grams: 23,
@@ -104,7 +109,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'moti-roti',
     name: 'Home flatbread, thick',
-    urdu: 'Moti roti',
+    roman: 'Moti roti',
     aliases: ['moti roti', 'ghar ki roti', 'thick roti', 'roti'],
     portion: '1 thick, 8\u00A0inch, 60 to 80\u00A0g',
     grams: 28,
@@ -116,7 +121,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'chapatti-large',
     name: 'Large flatbread, 12\u00A0inch',
-    urdu: 'Bari chapatti',
+    roman: 'Bari chapatti',
     aliases: ['chapatti', 'chapati', 'large roti', 'bari roti', 'tandoori roti'],
     portion: '1 large, about 92\u00A0g',
     grams: 40,
@@ -128,7 +133,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'naan-small',
     name: 'Tandoor naan, small tier',
-    urdu: 'Naan',
+    roman: 'Naan',
     aliases: ['naan', 'nan', 'tandoori naan', 'khamiri roti'],
     portion: '1 naan, 120\u00A0g — the cheapest at the tandoor',
     grams: 60,
@@ -140,7 +145,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'naan-middle',
     name: 'Tandoor naan, middle tier',
-    urdu: 'Naan',
+    roman: 'Naan',
     aliases: ['naan', 'nan', 'tandoori naan'],
     portion: '1 naan, 140 to 150\u00A0g',
     grams: 70,
@@ -152,8 +157,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'naan-large',
     name: 'Tandoor naan, large tier',
-    urdu: 'Naan',
-    aliases: ['naan', 'nan', 'bara naan'],
+    roman: 'Naan',
+    aliases: ['naan', 'nan', 'tandoori naan', 'bara naan'],
     portion: '1 naan, 180\u00A0g',
     grams: 90,
     gramsMax: null,
@@ -164,8 +169,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'naan-restaurant',
     name: 'Restaurant naan, butter or garlic',
-    urdu: 'Naan',
-    aliases: ['butter naan', 'garlic naan', 'naan', 'restaurant naan'],
+    roman: 'Naan',
+    aliases: ['naan', 'nan', 'butter naan', 'garlic naan', 'restaurant naan'],
     portion: '1 plate-sized, 10\u00A0inch or more',
     grams: 85,
     gramsMax: 95,
@@ -176,8 +181,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'naan-afghani-half',
     name: 'Afghani naan, half',
-    urdu: 'Afghani naan',
-    aliases: ['afghani naan', 'afghan naan', 'naan'],
+    roman: 'Afghani naan',
+    aliases: ['naan', 'nan', 'afghani naan', 'afghan naan'],
     portion: 'half a piece, about 145\u00A0g',
     grams: 72,
     gramsMax: null,
@@ -188,8 +193,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'naan-roghni',
     name: 'Roghni naan',
-    urdu: 'Roghni naan',
-    aliases: ['roghni naan', 'roghani naan', 'ghee naan', 'naan'],
+    roman: 'Roghni naan',
+    aliases: ['naan', 'nan', 'roghni naan', 'roghani naan', 'ghee naan'],
     portion: '1 piece, about 150\u00A0g',
     grams: 72,
     gramsMax: 78,
@@ -200,8 +205,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'kulcha-tandoor',
     name: 'Kulcha, tandoor',
-    urdu: 'Kulcha',
-    aliases: ['kulcha', 'cholay wala kulcha', 'kulcha naan'],
+    roman: 'Kulcha',
+    aliases: ['kulcha', 'nan', 'cholay wala kulcha', 'kulcha naan'],
     portion: '1 piece, about 200\u00A0g',
     grams: 100,
     gramsMax: null,
@@ -214,8 +219,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'rice-katori',
     name: 'Plain boiled rice, small bowl',
-    urdu: 'Sada chawal',
-    aliases: ['rice', 'chawal', 'chaawal', 'boiled rice', 'ublay chawal', 'sada chawal'],
+    roman: 'Sada chawal',
+    aliases: ['rice', 'chawal', 'chaawal', 'chaval', 'boiled rice', 'ublay chawal', 'sada chawal'],
     portion: '1 katori, 150\u00A0g',
     grams: 42,
     gramsMax: 47,
@@ -226,8 +231,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'rice-cup',
     name: 'Plain boiled rice, cup',
-    urdu: 'Sada chawal',
-    aliases: ['rice', 'chawal', 'boiled rice', 'sada chawal'],
+    roman: 'Sada chawal',
+    aliases: ['rice', 'chawal', 'chaawal', 'chaval', 'boiled rice', 'ublay chawal', 'sada chawal'],
     portion: '1 cup, 160\u00A0g',
     grams: 50,
     gramsMax: null,
@@ -238,8 +243,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'rice-plate',
     name: 'Plain boiled rice, full plate',
-    urdu: 'Sada chawal',
-    aliases: ['rice', 'chawal', 'plate of rice'],
+    roman: 'Sada chawal',
+    aliases: ['rice', 'chawal', 'chaawal', 'chaval', 'boiled rice', 'ublay chawal', 'sada chawal', 'plate of rice'],
     portion: '1 plate, 300\u00A0g',
     grams: 84,
     gramsMax: 94,
@@ -250,7 +255,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'biryani',
     name: 'Biryani, chicken mutton or beef',
-    urdu: 'Biryani',
+    roman: 'Biryani',
     aliases: ['biryani', 'biriyani', 'briyani', 'biriani'],
     portion: '1 cup, 160\u00A0g, including 85\u00A0g rice',
     grams: 27,
@@ -262,8 +267,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'pulao',
     name: 'Pulao, meat',
-    urdu: 'Pulao',
-    aliases: ['pulao', 'pilau', 'pilaf', 'yakhni pulao', 'polao'],
+    roman: 'Pulao',
+    aliases: ['pulao', 'pulav', 'pilau', 'pilaf', 'yakhni pulao', 'polao'],
     portion: '1 cup, 160 to 180\u00A0g',
     grams: 29,
     gramsMax: 44,
@@ -274,8 +279,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'pulao-kabuli',
     name: 'Kabuli pulao',
-    urdu: 'Kabuli pulao',
-    aliases: ['kabuli pulao', 'kabli pulao', 'pulao'],
+    roman: 'Kabuli pulao',
+    aliases: ['kabuli pulao', 'kabli pulao', 'pulao', 'pulav'],
     portion: '1 cup, 180\u00A0g',
     grams: 44,
     gramsMax: null,
@@ -286,8 +291,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'pulao-matar',
     name: 'Pea pulao',
-    urdu: 'Matar pulao',
-    aliases: ['matar pulao', 'peas pulao', 'pulao'],
+    roman: 'Matar pulao',
+    aliases: ['matar pulao', 'peas pulao', 'pulao', 'pulav'],
     portion: '1 cup, 180\u00A0g',
     grams: 42,
     gramsMax: null,
@@ -298,8 +303,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'pulao-chana',
     name: 'Chickpea pulao',
-    urdu: 'Chana pulao',
-    aliases: ['chana pulao', 'chanay walay chawal', 'chola pulao', 'pulao'],
+    roman: 'Chana pulao',
+    aliases: ['chana pulao', 'chanay walay chawal', 'chola pulao', 'pulao', 'pulav'],
     portion: '1 cup, 188\u00A0g',
     grams: 44,
     gramsMax: null,
@@ -312,7 +317,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'daal-thin',
     name: 'Lentils, thin',
-    urdu: 'Patli daal',
+    roman: 'Patli daal',
     aliases: ['daal', 'dal', 'dhal', 'patli daal', 'tarka daal', 'lentils'],
     portion: '1 katori, 150\u00A0g',
     grams: 13,
@@ -324,7 +329,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'daal-thick',
     name: 'Lentils, thick',
-    urdu: 'Gaarhi daal',
+    roman: 'Gaarhi daal',
     aliases: ['daal', 'dal', 'dhal', 'gaarhi daal', 'thick daal', 'lentils'],
     portion: '1 katori, 150\u00A0g',
     grams: 23,
@@ -336,7 +341,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'karahi',
     name: 'Karahi, chicken or mutton',
-    urdu: 'Karahi',
+    roman: 'Karahi',
     aliases: ['karahi', 'kadhai', 'karhai'],
     portion: '1 katori',
     grams: 4,
@@ -348,7 +353,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'korma',
     name: 'Korma',
-    urdu: 'Qorma',
+    roman: 'Qorma',
     aliases: ['korma', 'qorma', 'kurma'],
     portion: '1 katori',
     grams: 7,
@@ -362,7 +367,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'samosa-aloo',
     name: 'Potato samosa, large',
-    urdu: 'Aloo samosa',
+    roman: 'Aloo samosa',
     aliases: ['samosa', 'samoosa', 'sambosa', 'aloo samosa'],
     portion: '1 large, 100\u00A0g',
     grams: 30,
@@ -374,7 +379,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'samosa-qeema',
     name: 'Mince samosa',
-    urdu: 'Qeema samosa',
+    roman: 'Qeema samosa',
     aliases: ['qeema samosa', 'keema samosa', 'kheema samosa', 'samosa'],
     portion: '1 piece, 45\u00A0g',
     grams: 8,
@@ -386,7 +391,7 @@ export const FOODS: readonly Food[] = [
   {
     id: 'kachori-qeema',
     name: 'Mince kachori',
-    urdu: 'Qeema kachori',
+    roman: 'Qeema kachori',
     aliases: ['kachori', 'qeema kachori', 'keema kachori'],
     portion: '1 piece, 126\u00A0g',
     grams: 33,
@@ -402,8 +407,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'chai-150-1',
     name: 'Tea with milk, small cup, 1 sugar',
-    urdu: 'Chai',
-    aliases: ['chai', 'chaa', 'tea', 'doodh wali chai'],
+    roman: 'Chai',
+    aliases: ['chai', 'chaa', 'chaye', 'tea', 'doodh wali chai'],
     portion: '1 Pakistani cup, 150\u00A0ml',
     grams: 8,
     gramsMax: null,
@@ -414,8 +419,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'chai-150-2',
     name: 'Tea with milk, small cup, 2 sugars',
-    urdu: 'Chai',
-    aliases: ['chai', 'chaa', 'tea', 'doodh wali chai'],
+    roman: 'Chai',
+    aliases: ['chai', 'chaa', 'chaye', 'tea', 'doodh wali chai'],
     portion: '1 Pakistani cup, 150\u00A0ml',
     grams: 12,
     gramsMax: null,
@@ -426,8 +431,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'chai-200-2',
     name: 'Tea with milk, mug, 2 sugars',
-    urdu: 'Chai',
-    aliases: ['chai', 'tea', 'mug of chai'],
+    roman: 'Chai',
+    aliases: ['chai', 'chaa', 'chaye', 'tea', 'doodh wali chai', 'mug of chai'],
     portion: '1 standard mug, 200\u00A0ml',
     grams: 13,
     gramsMax: null,
@@ -438,8 +443,8 @@ export const FOODS: readonly Food[] = [
   {
     id: 'chai-250-2',
     name: 'Tea with milk, large mug, 2 sugars',
-    urdu: 'Chai',
-    aliases: ['chai', 'tea', 'large chai'],
+    roman: 'Chai',
+    aliases: ['chai', 'chaa', 'chaye', 'tea', 'doodh wali chai', 'large chai'],
     portion: '1 large mug, 250\u00A0ml',
     grams: 15,
     gramsMax: null,

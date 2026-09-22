@@ -3790,14 +3790,14 @@ def check_reference_data(_plan):
         doc = fh.read().lower()
 
     for name, body in sources.items():
-        for m in re.finditer(r"^\s*urdu:\s*'([^']+)'", body, re.M):
-            urdu = m.group(1)
-            if urdu.lower() not in doc:
+        for m in re.finditer(r"^\s*roman:\s*'([^']+)'", body, re.M):
+            roman = m.group(1)
+            if roman.lower() not in doc:
                 out.append(
                     "src/data/%s offers \"%s\" but docs/CARBS.md never mentions "
                     "it — §11.8's exemption requires every row to carry a source "
                     "and a confidence the document can be checked against"
-                    % (name, urdu))
+                    % (name, roman))
     return out
 
 

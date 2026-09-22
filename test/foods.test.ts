@@ -3,9 +3,9 @@ import { matchFoods } from '../src/core/foods.js';
 import type { Searchable } from '../src/core/foods.js';
 import { FOODS } from '../src/data/carbs.js';
 
-const ROTI: Searchable = { name: 'Home flatbread, medium', urdu: 'Roti', aliases: ['roti', 'chapati', 'chappati'] };
-const NAAN: Searchable = { name: 'Tandoor naan, small tier', urdu: 'Naan', aliases: ['naan', 'nan'] };
-const QEEMA: Searchable = { name: 'Mince samosa', urdu: 'Qeema samosa', aliases: ['keema samosa', 'kheema samosa'] };
+const ROTI: Searchable = { name: 'Home flatbread, medium', roman: 'Roti', aliases: ['roti', 'chapati', 'chappati'] };
+const NAAN: Searchable = { name: 'Tandoor naan, small tier', roman: 'Naan', aliases: ['naan', 'nan'] };
+const QEEMA: Searchable = { name: 'Mince samosa', roman: 'Qeema samosa', aliases: ['keema samosa', 'kheema samosa'] };
 const ALL = [ROTI, NAAN, QEEMA];
 
 describe('searching the carbohydrate reference', () => {
@@ -83,8 +83,70 @@ describe('the shipped table — §11.8\'s exemption conditions, as tests', () =>
     // A row nobody can search for is a row nobody will read, and the Urdu name
     // is the one a person in Karachi reaches for first.
     for (const food of FOODS) {
-      expect(matchFoods(FOODS, food.urdu), food.id).toContain(food);
+      expect(matchFoods(FOODS, food.roman), food.id).toContain(food);
     }
+  });
+
+  it('every spelling of a dish finds every row of that dish', () => {
+    // The aliases are hand-written, and a hand-written list drifts: a variant
+    // gets added to whichever row was being edited that day. `chaawal` reached
+    // ONE of the three plain-rice rows, so a reader who spells it with the long
+    // vowel saw the 42 g bowl and never learned the plate is 84 g. `nan` reached
+    // three of the seven naans.
+    //
+    // A partial answer is worse than an empty one. An empty result makes you
+    // retype; three rows out of seven looks like the whole truth, and the count
+    // line beside it says so.
+    // The rows each spelling must reach, named rather than counted: a count
+    // passes when the right number of WRONG rows come back.
+    const FAMILIES: ReadonlyArray<readonly [string, readonly string[], readonly string[]]> = [
+      [
+        'plain rice',
+        ['rice', 'chawal', 'chaawal', 'chaval', 'sada chawal', 'ublay chawal'],
+        ['rice-katori', 'rice-cup', 'rice-plate'],
+      ],
+      [
+        'naan',
+        ['naan', 'nan'],
+        ['naan-small', 'naan-middle', 'naan-large', 'naan-restaurant',
+          'naan-afghani-half', 'naan-roghni', 'kulcha-tandoor'],
+      ],
+      [
+        'chai',
+        ['chai', 'chaye', 'doodh wali chai'],
+        ['chai-150-1', 'chai-150-2', 'chai-200-2', 'chai-250-2'],
+      ],
+      [
+        'pulao',
+        ['pulao', 'pulav'],
+        ['pulao', 'pulao-kabuli', 'pulao-matar', 'pulao-chana'],
+      ],
+    ];
+    // A superset, not an equality: `chawal` also reaches `pulao-chana`, because
+    // chana pulao genuinely is «chanay walay chawal». Reaching a related dish is
+    // not the failure this test is for — MISSING one is.
+    for (const [family, spellings, expected] of FAMILIES) {
+      for (const spelling of spellings) {
+        const ids = matchFoods(FOODS, spelling).map((f) => f.id);
+        for (const id of expected) {
+          expect(ids, `${family}: "${spelling}" does not reach ${id}`).toContain(id);
+        }
+      }
+    }
+  });
+
+  it('"chaa" reaches rice as well as tea, and that is known', () => {
+    // NOT an assertion that this is right. `chaa` is a real spelling of chai and
+    // it is also the first four letters of `chaawal`, so substring matching
+    // cannot separate them and neither can prefix matching. Pinned so the
+    // overlap is a decision on the record rather than a surprise later.
+    //
+    // It predates the alias sweep: `chaa` already reached `rice-katori` on the
+    // deployed app. The sweep widened it to all three rice rows by giving them
+    // the `chaawal` spelling they were missing.
+    const ids = matchFoods(FOODS, 'chaa').map((f) => f.id);
+    expect(ids).toContain('chai-150-1');
+    expect(ids).toContain('rice-katori');
   });
 
   it('a name carrying §10.4\'s no-break space is still found by typing a space', () => {
