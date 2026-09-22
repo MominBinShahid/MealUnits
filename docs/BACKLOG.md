@@ -902,8 +902,8 @@ able to see, because its walk stopped at `src/ui` on a comment asserting that `c
 | file | what | why it is not fixed here |
 |---|---|---|
 | `src/core/calendar.ts` | every month name, `AM`/`PM`, `noon`, `midnight` — so **every dose timestamp and every history row** | `src/core` imports nothing by design. The fix is a language seam into the domain, not a `COPY` key |
-| `src/routes.ts` | `document.title`, on every screen — the tab, the app-switcher card, the default bookmark | pinned against `index.html` by `check_route_titles_agree`, so translating it is that check's business too |
-| `src/data/insulins.ts` | "another brand", "Two insulins in a fixed ratio", the class descriptions | reference data, like the food table. Same task, same owner |
+| ~~`src/routes.ts`~~ | ~~`document.title`~~ | **DONE 2026-09-22.** `tabTitles` overrides per language; English stays empty so `routes.ts` keeps owning the value pinned to `index.html` |
+| ~~`src/data/insulins.ts`~~ | ~~the description rows~~ | **DONE 2026-09-22**, after counting: of 21 rows, 16 carry a real brand and a real INN molecule and stay Latin — the field exists so a reader can match the box. Four were the app's own words |
 | `src/storage/readable.ts` | the doctor's export, headings and all | **ruled English.** Pinned rather than exempted, so the ruling has to be restated rather than assumed if it ever moves |
 
 All four are in the walk now with their current count pinned in `UI_TEXT_PENDING`. The number must
@@ -915,6 +915,21 @@ matters while the seams are written.
 reconstructs it. That is the timestamp on a dose record. It is the same class as the range reversal
 and it needs the calendar seam above before it can be fixed properly, because the fix is to stop
 assembling the date in `src/core` and hand the pieces to a language.
+
+**Ruled 2026-09-22, so nobody re-asks.**
+
+- **The bottom navigation MIRRORS and the keypad does not**, and the rule that separates them is whether
+  the position carries READING ORDER or a fixed convention. Nav order is "first, then second", and in
+  right-to-left the first thing is on the right — every RTL app does this. A number pad is a fixed
+  physical layout: 1 is top-left on every dialer in Arabic, Hebrew and Urdu, because the digits
+  themselves read left-to-right. Momin raised it as a bilingual-reader concern; the answer is that the
+  reader this is for is not switching back and forth, and for her the right-hand side is where the eye
+  starts.
+- **INN molecule names stay Latin.** "Insulin aspart" is printed on the box. A description wearing the
+  field — "another brand", "Two insulins in a fixed ratio" — is not, and translates.
+- **`index.html`'s `<title>` stays English for ever.** It is the search headline and the link preview,
+  read by strangers and crawlers. Only the RUNTIME title follows the language.
+- **The 17 KB stays in the bundle.** See above; revisit at a third language.
 
 **Also not done, and hers to rule:** every open question the seven translators raised — the four
 register pairs (سیٹنگز/ترتیبات، محفوظ کریں/سیو کریں، ڈیلیٹ کریں/مٹا دیں، اندراج/انٹری), round-up and
