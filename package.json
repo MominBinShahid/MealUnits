@@ -18,7 +18,8 @@
     "test:watch": "vitest",
     "mutate": "stryker run",
     "check": "npm run typecheck && npm run lint && npm run test",
-    "smoke": "node tools/smoke.mjs"
+    "smoke": "node tools/smoke.mjs",
+    "smoke:serve": "node tools/smoke.mjs --serve"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
