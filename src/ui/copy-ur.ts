@@ -1956,6 +1956,7 @@ export const COPY_UR: Copy = {
    */
   mgdl: (value: string): string => isolate(`${value}\u00A0mg/dL`),
   timestamp: (date: string, time: string): string => isolate(`${date}, ${time}`),
+  asEntered: (value: string): string => isolate(value),
 
   /**
    * The tab, the Android app-switcher card, and the default bookmark name.

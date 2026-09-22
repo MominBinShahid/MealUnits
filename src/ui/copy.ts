@@ -1861,6 +1861,20 @@ export const COPY = {
   timestamp: (date: string, time: string): string => `${date}, ${time}`,
 
   /**
+   * Text the READER typed, printed back. Same seam as `mgdl` above and the same
+   * reason: `10 PM` paints as `PM 10` in an Urdu paragraph, because the clock is
+   * a number run and `PM` is a Latin run and the space between them is neutral.
+   *
+   * Measured on the settings-as-text screen, which exists to be photographed and
+   * shown to a doctor — so the failure is a doctor reading the wrong time for a
+   * long-acting insulin, off a screen whose whole job is being accurate.
+   *
+   * Nothing in English, an isolate in Urdu. A component holding user text cannot
+   * reach `isolate()`, which is why this is a copy entry and not a helper.
+   */
+  asEntered: (value: string): string => value,
+
+  /**
    * `document.title` per screen, and it is EMPTY IN ENGLISH on purpose.
    *
    * The English titles live in `src/routes.ts`, because `DEFAULT_TITLE` there
