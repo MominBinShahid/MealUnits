@@ -672,30 +672,65 @@ the first minute of looking at a real build in `dir="rtl"`.
    `check-plan.py` grew `check_logical_properties` the same day, so the next `margin-left` fails
    the build with a file and a line — named rather than numbered, per §20.3. `dir="rtl"` itself
    is not set anywhere yet: nothing selects a language.
-4. **The font.** Nastaliq needs a real face. **Noto Nastaliq Urdu is 156 KB** — this entry said
-   "several hundred kilobytes" until 2026-09-21, which was wrong. Measured from the Google Fonts
-   Arabic-subset `.woff2`, which is the whole download: `.woff2` is already Brotli-compressed, so
-   there is no smaller gzipped figure, and the Arabic subset is the only slice an Urdu interface
-   fetches. Against a **42 KB** font budget — Space Grotesk at 22 KB plus two weights of IBM Plex
-   Mono at 10 KB each, re-measured the same day — so it is 3.7x the app's entire current typography.
-   Gulzar, the only other Nastaliq face on Google Fonts, is larger still at 187 KB.
+4. **The font — SHIPPED 2026-09-22, all four, so she can choose.** Nastaliq needs a real face, and
+   which one is still hers to say. The four candidates ship together under `public/fonts-urdu/` with
+   `src/ui/fonts-urdu.css` declaring them; **three get deleted the moment she picks.**
 
-   **Self-hosted, and lazily fetched — those are two separate things and both hold.** The `.woff2` is
-   downloaded once at build time into `public/fonts/` and served from `'self'`, so §11.5's policy
-   needs no change and Google is never contacted at runtime. A `@font-face` rule does not request
-   the file until something on screen uses that family, so **an English user never downloads a byte
-   of it** — the laziness comes from the browser, not from who hosts it.
+   | | measured | |
+   |---|---|---|
+   | Noto Nastaliq Urdu | 156 KB | Nastaliq |
+   | Gulzar | 187 KB | Nastaliq, and the only other one on Google Fonts |
+   | Noto Naskh Arabic | 52 KB | Naskh |
+   | Noto Sans Arabic | 48 KB | Naskh |
+
+   Measured from the Google Fonts Arabic-subset `.woff2`, which is the whole download: `.woff2` is
+   already Brotli-compressed, so there is no smaller gzipped figure. Against a **42 KB** budget for
+   the app's entire Latin typography — Space Grotesk at 22 KB plus two weights of IBM Plex Mono at
+   10 KB each — so a Nastaliq face is roughly four times it. This entry said "several hundred
+   kilobytes" until 2026-09-21, which was wrong in the other direction.
+
+   **Self-hosted, and lazily fetched — those are two separate things and both hold.** The files are
+   served from `'self'`, so §11.5's policy needs no change and Google is never contacted at runtime.
+   A `@font-face` rule does not request its file until a character in its `unicode-range` needs it,
+   so **an English reader downloads not one byte** — measured, not assumed: `performance` reports
+   zero `fonts-urdu` requests on a first visit, and choosing a face fetches exactly that one file.
+
+   **ARABIC RANGE ONLY, and that is load-bearing rather than a size saving.** All four subsets carry
+   no Latin and no digits — verified against the shipped files — so every ASCII figure keeps
+   rendering in Space Grotesk however deep in an Urdu sentence it sits. §10.4's digit rules and the
+   tabular figures they depend on are untouched by the language, which is what piece 1 requires.
+
+   **One weight each, 400, with `font-synthesis: none`.** Faux bold on Nastaliq thickens the nuqte —
+   the dots that are the only difference between ب پ ت ث — so a synthesised heading is not a heavier
+   face, it is a face whose letters have begun to merge. Shipping a real 700 for the two Naskh
+   options and not the two Nastaliq ones would also bias the comparison. **The winning face gets its
+   700 weight if it has one.**
 
    **OFFLINE — RULED BY MOMIN, 2026-09-21: fetch and cache it the first time Urdu is selected.** The
-   cost falls only on Urdu users, and offline works from the second session onward. Precaching for
-   everyone was rejected on his reasoning that "every English user, the majority, will take this
-   hit".
+   cost falls only on Urdu users, and offline works from that moment on. Precaching for everyone was
+   rejected on his reasoning that "every English user, the majority, will take this hit". Built as
+   two halves that pull opposite ways: `vite.config.ts` keeps `fonts-urdu/` out of the precache walk,
+   and `src/sw.ts` intercepts it and keeps what it fetches in `mealunits-fonts-urdu` — the one cache
+   here that is **not** versioned, exempted by name from the sweep `activate` runs over every other
+   one. Verified by bumping the build id and activating for real: the previous build's cache was
+   deleted and all four faces were still there.
 
    **An eviction timer was considered and rejected in the same conversation.** Momin's idea was to
    drop the face after 15 or 30 days of Urdu not being used. It is not worth it: a returning Urdu
    reader opens the app offline and finds their own language gone, which is the one failure the
    offline guarantee exists to prevent, and it saves 156 KB on a device already holding the app.
    Keep it while Urdu is selected; drop it if they switch back to English.
+
+   **`check_public_assets_classified` grew a third bucket for this.** `PUBLIC_ON_DEMAND` is neither
+   precached nor crawler-only: excluded from the precache walk like a crawler file, and absent from
+   the worker's `NOT_THE_APP` unlike one, because a path the worker refuses to handle is a path it
+   cannot cache. The activate exemption is pinned too. Three seeded mutations, one per way it fails.
+
+   **Still open, and it is hers:** whether Nastaliq's line box wants more or less than the 2.3 this
+   ships at, and whether the type wants to be larger — a Nastaliq face reads smaller at the same
+   pixel size, and guessing a scale per face before she has seen one is the kind of unverified
+   change this app avoids. `.li .k` keeps a literal 1.4 line-height and is the one block of prose
+   the two tokens do not reach; worth a look on a real screen.
 
 #### The rulings, 2026-09-21 — all of these were decided in conversation and lived nowhere
 
@@ -2011,6 +2046,16 @@ once inside a full `vitest run` and passed on two full re-runs and two file-only
 after. Same shape as this one — a timing-sensitive case losing a race under contention — but it is
 an ASSERTION rather than a timeout, so the fix is not a number and it needs looking at rather than
 raising. Recorded so the next sighting is a second data point rather than a first.
+
+**A THIRD sighting, 2026-09-22, and this one is a timeout again.** `integration.test.ts`'s "names
+the injected figure and what deleting it changes" reported 5829ms against the 5000ms default, twice,
+with eighty-eight Chrome processes left behind by a smoke run competing for the cores. It passed
+alone in 2.01s, passed 125/125 with the change stashed, and passed 125/125 again with the change
+applied once the browsers were killed — which is the sequence that separates load from regression,
+and it was run in that order rather than assumed. Different case from the 2026-09-21 one, same
+family, and it is the timeout shape this entry opened with rather than the assertion shape. The fix
+that worked for `lint-config` — an explicit timeout stated as being about the machine — is available
+here if there is a fourth.
 
 ---
 

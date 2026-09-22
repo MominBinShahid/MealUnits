@@ -396,6 +396,70 @@ await session('/tmp/mealunits-smoke-cold', 9301, 412, async ({ send, ev, open })
   check('no unstyled flash: a webfont is in use', await ev(`getComputedStyle(document.body).fontFamily.split(',')[0]`), '"Space Grotesk"');
 });
 
+// 1b. 10a's Urdu faces: nothing for an English reader, one file for an Urdu one.
+//
+// This is the layer that can show it. The `@font-face` rules are inert text to
+// jsdom, `check-plan.py` can only read the precache exclusion and the worker's
+// cache names, and the guarantee is about what a browser DOES — which bytes it
+// asks for and which cache they land in.
+// Wiped first, like every other session here — and this one cannot skip it. The
+// whole first half asks what a reader who has NEVER chosen Urdu downloads, and a
+// profile left over from the previous run answers with the previous run's cache.
+// It reported exactly that on the first attempt.
+rmSync('/tmp/mealunits-smoke-faces', { recursive: true, force: true });
+await session('/tmp/mealunits-smoke-faces', 9309, 412, async ({ ev, open }) => {
+  await open(URL_UNDER_TEST);
+  await wait(4000);
+  const asked = `performance.getEntriesByType('resource').filter((e) => e.name.includes('fonts-urdu'))`;
+  // The whole reason the faces are excluded from the precache. 448 KB across
+  // four files, against an app whose entire Latin typography is 42 KB.
+  check('faces: an English reader downloads not one Urdu byte', await ev(`${asked}.length`), 0);
+  check('faces: and no cache has been opened for them', await ev(
+    `caches.keys().then((n) => n.includes('mealunits-fonts-urdu'))`), false);
+
+  // Selecting a face is one attribute and one `lang`. Nothing else is wired yet
+  // — the language list is the next change — so this drives it directly.
+  await ev(`(() => {
+    document.documentElement.lang = 'ur';
+    document.documentElement.dataset.urduFace = 'nastaliq';
+    const p = document.createElement('p');
+    p.id = 'urdu-probe';
+    p.textContent = 'انسولین نہ لگائیں';
+    document.body.append(p);
+    return 'ok';
+  })()`);
+  await ev(`document.fonts.ready.then(() => 'ok')`);
+  await wait(1500);
+
+  check('faces: choosing one fetches exactly that one', await ev(
+    `${asked}.map((e) => e.name.split('/').pop()).join()`), 'NotoNastaliqUrdu.woff2');
+  check('faces: and it is what the page renders Urdu in', await ev(
+    `getComputedStyle(document.body).fontFamily.split(',')[0]`), '"Noto Nastaliq Urdu"');
+  // The Arabic-only `unicode-range` is what keeps this true. The subsets carry
+  // no Latin and no digits, so §10.4's figures stay in the face its rules were
+  // written for however deep in an Urdu sentence they sit.
+  check('faces: synthetic bold is off, so the nuqte cannot merge', await ev(
+    `getComputedStyle(document.body).fontSynthesis`), 'none');
+
+  // Where it landed is the half that matters on the second morning. The
+  // versioned cache is deleted by the next deploy's `activate`; this one is not.
+  check('faces: the file is in the cache that survives a deploy', await ev(
+    `(async () => {
+       const held = await (await caches.open('mealunits-fonts-urdu')).keys();
+       return held.map((r) => r.url.split('/').pop()).join();
+     })()`), 'NotoNastaliqUrdu.woff2');
+  check('faces: and not in the one that does not', await ev(
+    `(async () => {
+       const versioned = (await caches.keys()).filter((n) =>
+         n.startsWith('mealunits-') && n !== 'mealunits-fonts-urdu');
+       for (const name of versioned) {
+         const held = await (await caches.open(name)).keys();
+         if (held.some((r) => r.url.includes('fonts-urdu'))) return name;
+       }
+       return 'none';
+     })()`), 'none');
+});
+
 // 2. Layout, at a phone width and a desktop width.
 for (const [width, port] of [[412, 9302], [1440, 9303]]) {
   rmSync(`/tmp/mealunits-smoke-${width}`, { recursive: true, force: true });
