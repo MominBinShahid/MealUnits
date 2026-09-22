@@ -1009,12 +1009,29 @@ everything — don't use anything in English that will be in Urdu even if it's i
 fallback for the safety strings was proposed and declined.
 
 **The food list needs no search work, and does need data work.** `matchFoods` already searches three
-fields per row — the English `name`, the `urdu` field and `aliases` — so typing `roti` on a QWERTY
+fields per row — the English `name`, the `roman` field and `aliases` — so typing `roti` on a QWERTY
 keyboard finds it regardless of interface language, which is what Momin asked for. But **the field
-called `urdu` does not contain Urdu**: all 32 rows hold Roman transliterations (`'Roti'`,
-`'Phulka'`, `'Bari chapatti'`), and there are ZERO Urdu-script characters in `src/data/carbs.ts`. So
-an Urdu interface would render Latin food names beside Urdu chrome. Those 32 names are a small,
-self-contained task his mother could do, unlike the clinical copy.
+does not contain Urdu script**: all 31 rows hold Roman transliterations (`'Roti'`, `'Phulka'`,
+`'Bari chapatti'`), and there are ZERO Urdu-script characters in `src/data/carbs.ts`. It was renamed
+`urdu` → `roman` on 2026-09-23 (#87) so the script field has a name left to take.
+
+**PARKED 2026-09-23 — showing the food list in Urdu script.** Momin's decision, in his words: *"I
+will be searching in English / Roman"*, and the Urdu display waits until after phases 2 and 3. Two
+findings are worth keeping, because both change the size of the job:
+
+- **13 of the 31 rows stop being distinguishable if only the NAME is translated.** The English name
+  carries the qualifier and the Roman name does not: four rows read «نان» with grams of 60, 70, 90
+  and 85; four read «چائے» at 8, 12, 13 and 15; three read «سادہ چاول» at 42, 50 and 84; two read
+  «روٹی» at 18 and 23. A 30-gram spread behind one label is three units at a 1:10 ICR. So the task
+  is 31 names **with their qualifiers** («تندوری نان، چھوٹا»), not 31 translations — or the row
+  keeps rendering a qualifier from `portion`, which is also still English.
+- **Urdu-script search would be silently weaker than Roman search.** Aliases are Roman-only, so
+  `roti` reaches 6 rows while «روٹی» would reach 3 — پھلکا and چپاتی are different words. The fix is
+  putting Urdu into `aliases` as well as into the name; `fold()` treats every alias identically, so
+  a mixed-script alias array needs no code change at all.
+- `fold()` would also want about seven lines of Unicode normalisation — Arabic yeh and heh folded
+  onto the Urdu ones, harakat stripped, NFC — no dependency needed. `src/core/foods.ts` is inside
+  the 100% mutation gate, so budget one killing test per line.
 
 **Typeface comparison, for the choice that is still open:**
 <https://claude.ai/code/artifact/acfb8392-1a00-4814-8451-9556610691db> — ten faces on Google Fonts,
@@ -2511,6 +2528,39 @@ row" as a result. Moved back to `T5`, and the citation with it.
 
 That is the argument for doing this prune rather than skipping it: a duplicate number is cosmetic,
 and the thing it was hiding was not.
+
+### T27. The footer version string has the bidi defect the rest of the app was fixed for
+**Found 2026-09-23 while fixing the same class of defect on `settings_text` (#88).**
+
+`.foot` renders `0.1.0 (local)` and paints `(local) 0.1.0` under `dir="rtl"`, parentheses mirrored
+with it. Measured with `getBoundingClientRect` per character on the Urdu build, not eyeballed.
+
+Same cause as the food ranges and the dose timestamp: the version is a number run, `(local)` is a
+Latin run in brackets, and the neutrals between them resolve to the paragraph direction. Same fix —
+route it through a copy entry that is identity in English and `isolate()` in Urdu. `COPY.asEntered`
+(`src/ui/copy.ts`) already exists and is the right shape.
+
+**Left out of #88 deliberately.** That change was scoped to the one screen built to be photographed
+for a doctor. `.foot` renders on EVERY screen, which is a different blast radius and wants its own
+change and its own look at whether `check_rtl_ranges_isolated` should have caught it — that check
+reads only `copy-ur.ts`, and this string is built in a component.
+
+### T26. `npm run smoke` does not run on Chrome 153 locally
+**Found 2026-09-23. CI is unaffected — smoke passes there (1m47s on #87, 1m55s on #88).**
+
+Every probe returns `undefined` and every computed style returns the UA default: the webfont
+assertion reports `system-ui` instead of `Space Grotesk`, `font-synthesis` reports the initial
+`weight style small-caps` instead of `none`, and the run dies at `waited 5000ms for the disclaimer
+... On screen: (no #app)`. **It fails identically on a clean tree**, so it is the harness meeting a
+newer Chrome, not a regression in the app.
+
+Ruled out: swapping the deprecated `--headless=new` for `--headless` changes nothing. Not yet
+investigated: whether Chrome 153 changed the CDP target/navigation handshake `tools/smoke.mjs` waits
+on, and whether the served build is reached at all before the first probe.
+
+The cost is that the one layer which sees layout, fonts, CSP and the service worker cannot be run
+before pushing — which is exactly the layer this project keeps finding defects in. Until it is
+fixed, browser verification means driving a real Chrome by hand, and CI is the gate.
 
 ### T10. A sanity suite, separate from smoke — decide whether two files are worth it
 
