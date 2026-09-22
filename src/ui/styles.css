@@ -277,14 +277,21 @@ body {
    `font-weight` on any of its three mono rules — `.eyebrow`, `.chip` or `.ref`
    — so all three are 400. The 500 on `.entry .u` and the 600 on `.tag` arrived
    in the first commit, when the mockup was turned into code, and matched
-   nothing in it. The 600 was worse than cosmetic: no 600 file was ever shipped,
-   so it was synthesised, and measured at 12px the fake was +10.7% ink over 400
-   where the real 500 was +23.5% — a browser smearing a stroke rather than
-   drawing a heavier one.
+   nothing in it.
 
-   Nothing in these three slots is meant to be bold. They are quiet labels, and
-   the border, the tracking and the uppercase already separate them from body
-   text. So the face ships at 400 alone and the 500 file is gone. */
+   CORRECTED: the commit that removed them said the 600 was SYNTHESISED, and it
+   was not. CSS font matching does not fake a weight a family can nearly serve —
+   for a desired weight above 500 it searches upward first and then downward, so
+   `600` against faces at 400 and 500 selects the real 500. Measured in the DOM
+   at 40px on the two static Urdu faces, which ship 400 and 700: a request for
+   600 renders at exactly the 700 file's width, and 500 at exactly the 400
+   file's. The earlier claim came from a canvas measurement, and canvas does not
+   follow the same matching rules. Nothing was ever faked on screen.
+
+   The reason for one weight is the mockup, not synthesis. Nothing in these
+   three slots is meant to be bold: they are quiet labels, and the border, the
+   tracking and the uppercase already separate them from body text. So the face
+   ships at 400 alone and the 500 file is gone. */
 .dots .where {
   font-family: 'IBM Plex Mono', 'Noto Sans Arabic', ui-monospace,
     SFMono-Regular, Menlo, monospace;
