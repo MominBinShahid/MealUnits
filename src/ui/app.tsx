@@ -1633,7 +1633,17 @@ export async function start(host: Host): Promise<void> {
     // from the same `backAction` the on-screen control uses — so the gesture and
     // the button can never disagree.
     host.syncHistory(backAction() !== null, pathForScreen(state.screen, BASE_PATH));
-    host.setTitle(titleForScreen(state.screen));
+    // The language's own title if it has one, the route's otherwise. English has
+    // none by design — `routes.ts` owns those, because `DEFAULT_TITLE` is pinned
+    // against `index.html`'s `<title>` and a second English copy would be a
+    // second place to drift.
+    // Its own title, then the language's fallback for a screen with no address,
+    // then the route's. English supplies neither override, so it lands on
+    // `routes.ts` — which is where `DEFAULT_TITLE` is pinned to `index.html`.
+    host.setTitle(
+      copy.tabTitles[state.screen]
+      ?? (copy.tabTitleFallback === '' ? titleForScreen(state.screen) : copy.tabTitleFallback),
+    );
 
     /**
      * Compared against the view rendered LAST TIME, held across calls.

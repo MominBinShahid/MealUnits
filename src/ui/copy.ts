@@ -958,6 +958,25 @@ export const COPY = {
       }
     },
     alsoSoldAs: (name: string): string => `also sold as ${name}`,
+    /**
+     * The five rows in `src/data/insulins.ts` whose `brand` or `molecule` is a
+     * DESCRIPTION rather than anything printed on a vial.
+     *
+     * Counted before deciding: of 21 rows, 16 carry only a real brand and a real
+     * INN molecule — "NovoRapid", "Insulin aspart" — and those stay Latin under
+     * the standing rule, because the field exists so a reader can match the box
+     * in their hand. The others do not. "Insulin aspart, another brand" is not a
+     * brand, it is the app offering a fallback; "Two insulins in a fixed ratio"
+     * is not a molecule, it is a sentence.
+     *
+     * EMPTY IN ENGLISH, like `tabTitles`: those words already live in the data
+     * file, which is where a maintainer looks for them, and a second copy here
+     * would be a second place to drift. Keyed by row id so an override cannot
+     * attach to the wrong insulin — a cross-class mispick is the one dangerous
+     * mistake this screen exists to prevent.
+     */
+    generic: {} as Readonly<Record<string, { readonly brand?: string; readonly molecule?: string }>>,
+
     unknownHeading: 'Not sure',
     unknownLabel: "I don't know, or mine isn't listed",
     unknownNote:
@@ -1840,6 +1859,29 @@ export const COPY = {
    */
   mgdl: (value: string): string => `${value}\u00A0mg/dL`,
   timestamp: (date: string, time: string): string => `${date}, ${time}`,
+
+  /**
+   * `document.title` per screen, and it is EMPTY IN ENGLISH on purpose.
+   *
+   * The English titles live in `src/routes.ts`, because `DEFAULT_TITLE` there
+   * must equal `index.html`'s `<title>` — `check_route_titles_agree` pins the
+   * two against each other, and a second English copy here would be a second
+   * place for them to drift. A language that is not English has no such
+   * constraint: the shipped shell is a crawler's and a link preview's, both of
+   * which read English.
+   *
+   * So this overrides, rather than replaces. Empty means "use the route's own",
+   * which is what English wants.
+   */
+  tabTitles: {} as Readonly<Record<string, string>>,
+  /**
+   * The title for every screen without an address of its own — the insulin
+   * picker, the export sheet, the first-run gates. `routes.ts` answers these
+   * with `DEFAULT_TITLE`, which is pinned to `index.html` and therefore English.
+   *
+   * `''` means "no override", which is what English wants.
+   */
+  tabTitleFallback: '',
 
   /** §10.8 — show the running build version. */
   build: (version: string, build: string): string => `${version} (${build})`,

@@ -1066,6 +1066,20 @@ export const COPY_UR: Copy = {
       }
     },
     alsoSoldAs: (name: string): string => `${name} کے نام سے بھی ملتی ہے`,
+    /**
+     * Brands and INN molecule names stay Latin — they are printed on the vial.
+     * These are the app's own words, so they translate.
+     */
+    generic: {
+      'aspart-other': { brand: 'انسولین اسپارٹ، کوئی اور برانڈ' },
+      'lispro-other': { brand: 'انسولین لسپرو، کوئی اور برانڈ' },
+      'regular-other': { brand: 'ریگولر ہیومن انسولین، کوئی اور برانڈ' },
+      'premix-other': {
+        brand: 'کوئی اور پری مکس انسولین',
+        molecule: 'ایک مقررہ تناسب میں دو انسولین',
+      },
+    },
+
     unknownHeading: 'یقین نہیں',
     unknownLabel: 'مجھے معلوم نہیں، یا میری والی فہرست میں نہیں ہے',
     unknownNote:
@@ -1942,6 +1956,21 @@ export const COPY_UR: Copy = {
    */
   mgdl: (value: string): string => isolate(`${value}\u00A0mg/dL`),
   timestamp: (date: string, time: string): string => isolate(`${date}, ${time}`),
+
+  /**
+   * The tab, the Android app-switcher card, and the default bookmark name.
+   *
+   * `MealUnits` stays Latin in all of them, by the same ruling that keeps it
+   * Latin everywhere else. Only the description beside it translates.
+   */
+  tabTitleFallback: 'MealUnits — ٹائپ 1 ذیابیطس کے لیے کھانے کی انسولین کا حساب',
+  tabTitles: {
+    how_it_works: 'یہ کیسے کام کرتی ہے — MealUnits',
+    food_list: 'پاکستانی کھانوں میں کاربوہائیڈریٹ — MealUnits',
+    history: 'آپ کا ریکارڈ — MealUnits',
+    settings: 'سیٹنگز — MealUnits',
+    calculator: 'MealUnits — ٹائپ 1 ذیابیطس کے لیے کھانے کی انسولین کا حساب',
+  },
 
   /** §10.8 — show the running build version. */
   // NOTE (Urdu): pure formatting, no words — kept identical to the English.

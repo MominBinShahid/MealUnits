@@ -116,12 +116,16 @@ function Row({
         onPick(insulin.id);
       }}
     >
-      <span class="brand">{insulin.brand}</span>
+      {/* The language's own words for a row whose "brand" is a DESCRIPTION —
+          "Insulin aspart, another brand" is the app offering a fallback, not
+          anything printed on a box. Sixteen of the twenty-one rows have no
+          override and render the Latin exactly as the vial does. */}
+      <span class="brand">{COPY.insulin.generic[insulin.id]?.brand ?? insulin.brand}</span>
       {/* The molecule, always — it is printed under the brand on the box, and
           it is how somebody whose local brand is missing finds the right class
           anyway. */}
       <span class="molecule">
-        {insulin.molecule}
+        {COPY.insulin.generic[insulin.id]?.molecule ?? insulin.molecule}
         {insulin.alsoSoldAs === null ? '' : ` · ${COPY.insulin.alsoSoldAs(insulin.alsoSoldAs)}`}
       </span>
     </Button>
