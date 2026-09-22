@@ -2545,22 +2545,29 @@ for a doctor. `.foot` renders on EVERY screen, which is a different blast radius
 change and its own look at whether `check_rtl_ranges_isolated` should have caught it — that check
 reads only `copy-ur.ts`, and this string is built in a component.
 
-### T26. `npm run smoke` does not run on Chrome 153 locally
-**Found 2026-09-23. CI is unaffected — smoke passes there (1m47s on #87, 1m55s on #88).**
+### T26. `npm run smoke` said `(no #app)` when the thing it needed was not running — FIXED 2026-09-23
+**This entry previously claimed Chrome 153 had broken the harness. That was wrong**, and it is kept
+rather than deleted because a false entry in this file is the failure mode the file exists to avoid.
 
-Every probe returns `undefined` and every computed style returns the UA default: the webfont
-assertion reports `system-ui` instead of `Space Grotesk`, `font-synthesis` reports the initial
-`weight style small-caps` instead of `none`, and the run dies at `waited 5000ms for the disclaimer
-... On screen: (no #app)`. **It fails identically on a clean tree**, so it is the harness meeting a
-newer Chrome, not a regression in the app.
+Smoke does not serve anything. It drives a browser at a build someone else is serving, and when that
+server is absent every check fails with `waited 5000ms for the disclaimer ... On screen: (no #app)`.
+Chrome is fine, the app is fine, and the message describes neither — so the run was misread as a
+browser regression, and the misreading was written down here as fact.
 
-Ruled out: swapping the deprecated `--headless=new` for `--headless` changes nothing. Not yet
-investigated: whether Chrome 153 changed the CDP target/navigation handshake `tools/smoke.mjs` waits
-on, and whether the served build is reached at all before the first probe.
+Three separate causes, all operator error, none of them Chrome:
 
-The cost is that the one layer which sees layout, fonts, CSP and the service worker cannot be run
-before pushing — which is exactly the layer this project keeps finding defects in. Until it is
-fixed, browser verification means driving a real Chrome by hand, and CI is the gate.
+1. no preview server running at all;
+2. `vite preview` bound to localhost, so the LAN origin refused — and that session fails LAST, after
+   a minute of green, which is what made it look like a browser problem rather than a missing flag;
+3. a browser left behind by an earlier crashed run, holding the next port.
+
+`tools/smoke.mjs` now checks both origins are reachable before it starts a browser and names the
+exact cause and command for each. Verified by reproducing all three states. The full suite is clean
+on Chrome 153: **115 checks**.
+
+The real lesson is the one the header states: the failure message has to describe the failure. A
+check that fails the same way for "your code is broken" and "you forgot to start the server" spends
+an afternoon and can end up lying in the documentation.
 
 ### T10. A sanity suite, separate from smoke — decide whether two files are worth it
 
