@@ -155,7 +155,28 @@ const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
 export function Keypad({ decimal, onDigit, onBackspace, action }: KeypadProps): JSX.Element {
   const COPY = useCopy();
   return (
-    <div class="pad">
+    /*
+     * `dir="ltr"`, ALWAYS, whatever direction the page runs in.
+     *
+     * The RTL sweep mirrored the interface and took the keypad with it: in Urdu
+     * the leftmost column became 3/6/9 instead of 1/4/7. Measured on the
+     * deployed build, not assumed.
+     *
+     * **A NUMBER PAD DOES NOT MIRROR.** Every dialer and every numeric keyboard
+     * on the phone this runs on keeps 1 at the top left in Arabic, Hebrew and
+     * Urdu, because the digits themselves read left-to-right — `10` is one then
+     * zero in every script this app supports, which is why §4.2 keeps them
+     * ASCII in the first place. Mirroring the grid puts this app's keypad out of
+     * step with every other keypad its reader touches.
+     *
+     * The stake is the usual one. The thing typed here is a blood sugar, often
+     * by someone whose hands are unsteady, and muscle memory reaching for 1 and
+     * landing on 3 is a reading the app then does arithmetic on.
+     *
+     * On the CONTAINER rather than the buttons: the grid's column order is what
+     * flips, so the fix belongs where the columns are laid out.
+     */
+    <div class="pad" dir="ltr">
       {DIGITS.map((digit) => (
         <Button key={digit} class="key" onPress={() => { onDigit(digit); }}>
           {digit}
