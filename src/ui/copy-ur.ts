@@ -1963,6 +1963,9 @@ export const COPY_UR: Copy = {
    * `MealUnits` stays Latin in all of them, by the same ruling that keeps it
    * Latin everywhere else. Only the description beside it translates.
    */
+  /** Digits and a colon, so it is identical in both languages. */
+  ratioShorthand: (one: string, other: string): string => `${one}:${other}`,
+
   tabTitleFallback: 'MealUnits — ٹائپ 1 ذیابیطس کے لیے کھانے کی انسولین کا حساب',
   tabTitles: {
     how_it_works: 'یہ کیسے کام کرتی ہے — MealUnits',

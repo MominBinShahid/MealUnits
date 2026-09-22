@@ -901,11 +901,17 @@ export function SettingsAsTextScreen({
           <div class="k">{COPY.screens.recordTarget}</div>
           <div class="v">{COPY.mgdl(String(settings.target))}</div>
         </li>
+        {/* The sentence explains it to the reader; the shorthand on the right
+            is what the doctor reading the photograph actually writes. Both rows
+            had an EMPTY right column, which made this list read as two
+            different kinds of row. */}
         <li class="li">
           <div class="k">{COPY.settings.isfSentence(String(settings.isf))}</div>
+          <div class="v">{COPY.ratioShorthand('1', String(settings.isf))}</div>
         </li>
         <li class="li">
           <div class="k">{COPY.settings.icrSentence(String(settings.icr))}</div>
+          <div class="v">{COPY.ratioShorthand('1', String(settings.icr))}</div>
         </li>
         <li class="li">
           <div class="k">{COPY.screens.asTextRounding}</div>
@@ -941,8 +947,13 @@ export function SettingsAsTextScreen({
             </div>
             <div class="v">{COPY.units(toHundredths(settings.basalUnits))}</div>
           </li>
+          {/* LABELLED. It was the reader's own words alone — "morning" — in a
+              list where every other row names what it is, so a doctor reading
+              the photograph met a bare word with nothing saying it was a time.
+              The same label the settings field uses. */}
           <li class="li">
-            <div class="k">{settings.basalTiming}</div>
+            <div class="k">{COPY.settings.basalTimingLabel}</div>
+            <div class="v">{settings.basalTiming}</div>
           </li>
         </ul>
       </div>

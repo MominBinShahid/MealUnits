@@ -1873,6 +1873,24 @@ export const COPY = {
    * So this overrides, rather than replaces. Empty means "use the route's own",
    * which is what English wants.
    */
+  /**
+   * The doctor's own notation, for the screen that exists to be PHOTOGRAPHED
+   * and shown to one.
+   *
+   * Three of that screen's rows were a full sentence with an empty right-hand
+   * column while the rest were label-and-value, so the list read as two
+   * different kinds of row. `1:30` fills it — and it is what the prescription
+   * says: `settings.isfClinical` already tells the reader "often written
+   * '1 to 30'". The sentence stays on the left, so the screen still explains
+   * itself to the person holding the phone while speaking the doctor's shorthand
+   * to the person reading the photograph.
+   *
+   * A colon and not a dash, because `:` is a Common Separator: it binds the two
+   * numbers into one run and survives right-to-left text intact, which a dash
+   * does not — `1-30` would paint `30-1` in Urdu.
+   */
+  ratioShorthand: (one: string, other: string): string => `${one}:${other}`,
+
   tabTitles: {} as Readonly<Record<string, string>>,
   /**
    * The title for every screen without an address of its own — the insulin

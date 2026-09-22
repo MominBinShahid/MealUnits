@@ -523,10 +523,18 @@ await session('/tmp/mealunits-smoke-language', 9310, 412, async ({ ev, send, ope
   check('language: confirming flips lang, dir and the face together', await ev(
     `[document.documentElement.lang, document.documentElement.dir,
       document.documentElement.dataset.urduFace].join(',')`), 'ur,rtl,nastaliq');
-  check('language: and NOW the face is fetched — exactly one', await ev(
+  // The CHOSEN face and nothing else — both its weights, and none of the other
+  // three. It read "exactly one" until the real 700 shipped, which is a second
+  // FILE for the same face: `font-synthesis: none` means a missing 700 renders
+  // as 400, so every `<b>` in the app silently lost its emphasis.
+  //
+  // Sorted, because the order the browser asks in is the order it met the
+  // weights on screen and not a guarantee.
+  check('language: and NOW the chosen face is fetched, and only it', await ev(
     `performance.getEntriesByType('resource')
        .filter((e) => e.name.includes('fonts-urdu'))
-       .map((e) => e.name.split('/').pop()).join()`), 'NotoNastaliqUrdu.woff2');
+       .map((e) => e.name.split('/').pop()).sort().join()`),
+    'NotoNastaliqUrdu-700.woff2,NotoNastaliqUrdu.woff2');
   check('language: the interface is actually in Urdu', await ev(
     `document.querySelector('h1')?.textContent`), '\u0633\u06CC\u0679\u0646\u06AF\u0632');
 
