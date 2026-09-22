@@ -1825,6 +1825,22 @@ export const COPY = {
   /** When the app could not start at all. `${cause}` is appended by the shell. */
   couldNotStart: (name: string): string => `${name} could not start: `,
 
+  /**
+   * A blood sugar with its unit, and a timestamp — the two things every screen
+   * builds by hand and both of which REORDER in right-to-left text.
+   *
+   * `160 mg/dL` paints as `mg/dL 160`, and `22 Sep 2026, 6:38 PM` comes apart
+   * entirely: measured as `Sep 2026 6:38 PM 22`, the clock wedged between the
+   * year and the day, with no reading direction that reconstructs it. That is
+   * the timestamp on a dose record.
+   *
+   * Here rather than at the seven call sites because the fix is per LANGUAGE —
+   * English needs nothing, Urdu needs the run isolated — and a value built in a
+   * component cannot reach `isolate()`. The same reason the food ranges moved.
+   */
+  mgdl: (value: string): string => `${value}\u00A0mg/dL`,
+  timestamp: (date: string, time: string): string => `${date}, ${time}`,
+
   /** §10.8 — show the running build version. */
   build: (version: string, build: string): string => `${version} (${build})`,
 

@@ -1935,6 +1935,14 @@ export const COPY_UR: Copy = {
   /** The app failed to start. `MealUnits` stays Latin, as everywhere. */
   couldNotStart: (name: string): string => `${name} شروع نہیں ہو سکی: `,
 
+  /**
+   * Both ISOLATED. The month names stay English — that is a separate task — but
+   * the date must not come apart while they do, and `isolate` is what stops it:
+   * measured, `Sep 2026 6:38 PM 22` bare against `22 Sep 2026, 6:38 PM` wrapped.
+   */
+  mgdl: (value: string): string => isolate(`${value}\u00A0mg/dL`),
+  timestamp: (date: string, time: string): string => isolate(`${date}, ${time}`),
+
   /** §10.8 — show the running build version. */
   // NOTE (Urdu): pure formatting, no words — kept identical to the English.
   build: (version: string, build: string): string => `${version} (${build})`,

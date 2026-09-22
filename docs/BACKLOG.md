@@ -835,6 +835,31 @@ sees "Thin flatbread, about 25 g" under Urdu chrome. This entry has always scope
 ("those 32 names are a small, self-contained task his mother could do, unlike the clinical copy")
 and the field called `urdu` still holds Roman transliterations rather than Urdu script.
 
+**The Nastaliq line box, and three more things found by looking at screenshots.** Momin reported
+all four; every one was measured before it was believed.
+
+| what | measured |
+|---|---|
+| `.ask` — the question on every entry screen — **overlapped itself in Nastaliq** | line box 1.08 on a 32px font; the two lines sat at a gap of **−6px**. Now +20px |
+| negative letter-spacing on Arabic script | −0.03em on a CONNECTED script pulls a word's joining stroke into the letter beside it. `normal` for all four faces |
+| the history date came apart | `Sep 2026 6:38 PM 22`. Isolated, now `22 Sep 2026, 6:38 PM` |
+| `160 mg/dL` painted `mg/dL 160` | isolated too |
+| **every figure in a history row was its own full-width line** | `.li .k b { display: block }` was meant for the DATE and matched `.fig` as well. Row height **246px → 82px in Urdu, 164px → 55px in English** |
+
+That last one is a **latent English defect** the translation made visible — the fourth of those. English
+had been stacking its figures the whole time; the longer English words between them made it read as a
+loose paragraph instead of a column.
+
+Tokenised rather than special-cased: `--lh-ask`, `--lh-list` and four `--track-*` tokens, with the
+English value as the `var()` fallback so English is provably untouched — `34.56px / -0.96px` before
+and after.
+
+**And §10.4's no-break-space rule did not cover the translation at all.** Its unit list was
+`units|grams|mg/dL|ml|inch|g` — English only — so «15 گرام» could break across a line on the band C
+screen and nothing would say so. Found because a seeded mutation lost its anchor, was re-aimed at a
+translated string, and then **landed and survived**. A seed that cannot find its anchor is a warning;
+a seed that lands and survives is a finding. گرام، یونٹ، منٹ، گھنٹے، گھنٹہ are in the pattern now.
+
 **The keypad mirrored, and it should not have.** `dir="rtl"` flipped the whole interface, the grid
 included: in Urdu the leftmost column became 3/6/9 instead of 1/4/7. Measured on the deployed build
 by painted position, because the DOM order never changed — which is exactly why nothing caught it.

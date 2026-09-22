@@ -113,13 +113,16 @@ function DoseRow({
   const COPY = useCopy();
   const asking = handlers.pendingDelete === row.id;
   const inWindow = hasRowInsideWindow([row], handlers.nowMs, DELETE_CONFIRM_WINDOW_HOURS);
-  const reading = row.bloodSugar === null ? COPY.screens.noReading : `${String(row.bloodSugar)}\u00A0mg/dL`;
+  const reading = row.bloodSugar === null ? COPY.screens.noReading : COPY.mgdl(String(row.bloodSugar));
 
   return (
     <li class="li">
       <div class="k">
         <b>
-          {`${formatDate(row.timestamp, handlers.timeZone)}, ${formatClockTime(row.timestamp, handlers.timeZone)}`}
+          {COPY.timestamp(
+            formatDate(row.timestamp, handlers.timeZone),
+            formatClockTime(row.timestamp, handlers.timeZone),
+          )}
         </b>
         <div>
           {COPY.screens.historyIntake(reading, String(row.carbs)).map((part) => (
@@ -186,7 +189,10 @@ function ReadingRow({
     <li class="li">
       <div class="k">
         <b>
-          {`${formatDate(row.timestamp, handlers.timeZone)}, ${formatClockTime(row.timestamp, handlers.timeZone)}`}
+          {COPY.timestamp(
+            formatDate(row.timestamp, handlers.timeZone),
+            formatClockTime(row.timestamp, handlers.timeZone),
+          )}
         </b>
         {COPY.screens.readingOnly(String(row.bloodSugar), note)}
       </div>
@@ -657,11 +663,11 @@ export function FailClosedScreen({
           <ul class="list">
             <li class="li">
               <div class="k">{COPY.screens.recordTarget}</div>
-              <div class="v">{`${String(recovery.targetMgDl)}\u00A0mg/dL`}</div>
+              <div class="v">{COPY.mgdl(String(recovery.targetMgDl))}</div>
             </li>
             <li class="li">
               <div class="k">{COPY.screens.recordIsf}</div>
-              <div class="v">{`${String(recovery.oneUnitLowersMgDl)}\u00A0mg/dL`}</div>
+              <div class="v">{COPY.mgdl(String(recovery.oneUnitLowersMgDl))}</div>
             </li>
             <li class="li">
               <div class="k">{COPY.screens.recordIcr}</div>
@@ -893,7 +899,7 @@ export function SettingsAsTextScreen({
       <ul class="list">
         <li class="li">
           <div class="k">{COPY.screens.recordTarget}</div>
-          <div class="v">{`${String(settings.target)}\u00A0mg/dL`}</div>
+          <div class="v">{COPY.mgdl(String(settings.target))}</div>
         </li>
         <li class="li">
           <div class="k">{COPY.settings.isfSentence(String(settings.isf))}</div>

@@ -270,8 +270,21 @@ body {
 .ask {
   font-size: clamp(1.5rem, 6vw, 2rem);
   font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
+  /*
+   * Both of these are wrong for a connected script, and the English value is
+   * the fallback so nothing changes here.
+   *
+   * NEGATIVE TRACKING CRUSHES A JOIN. Latin letters sit apart and -0.03em
+   * tightens the gaps; Arabic letters are JOINED, and pulling them together
+   * pulls a word's connecting stroke into the letter beside it.
+   *
+   * And 1.08 is a line box for a script that sits on one baseline. Nastaliq
+   * runs on a diagonal — a word starts high and ends low — so at 1.08 the lines
+   * do not merely touch, they OVERLAP: measured at 41px on the deployed build,
+   * which the reader sees as two sentences printed on top of each other.
+   */
+  letter-spacing: var(--track-display, -0.03em);
+  line-height: var(--lh-ask, 1.08);
   margin: 1rem 0 0;
   text-wrap: balance;
 }
@@ -871,7 +884,7 @@ body {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 700;
-  letter-spacing: -0.022em;
+  letter-spacing: var(--track-halt, -0.022em);
   color: var(--ink);
 }
 
@@ -928,12 +941,48 @@ body {
 .li .k {
   font-size: 0.8125rem;
   color: var(--ink-2);
-  line-height: 1.4;
+  line-height: var(--lh-list, 1.4);
+  /*
+   * CLAIM THE ROW. `.li` is a flex row with `space-between`, and this was the
+   * default `flex: 0 1 auto` — free to shrink and never asked to grow. In
+   * English the text is narrow enough that nothing showed; in Urdu the words
+   * are wider and the action beside them is longer («ڈیلیٹ کریں» against
+   * "Delete"), so a history row squeezed its content into a column one word
+   * wide with empty space beside it. Reported by Momin off a screenshot, which
+   * is now the fourth layout defect found that way.
+   *
+   * `min-width: 0` because a flex item will not shrink below its longest
+   * unbreakable word without it, which is what turns "squeezed" into
+   * "overflowing" rather than fixing it.
+   *
+   * Latent in English rather than introduced by Urdu: the row would have done
+   * the same thing to a long enough English entry.
+   */
+  flex: 1;
+  min-width: 0;
 }
 
 .li .k b {
   color: var(--ink);
   font-weight: 600;
+}
+
+/*
+ * The DATE, and only the date. `> b` is a DIRECT child, which the timestamp is
+ * and `.fig` is not — the figures sit one level down, inside the prose divs.
+ *
+ * It was `.li .k b`, which matched both, so **every figure in a history row was
+ * a full-width block and every one took its own line.** In English that reads
+ * as a loose paragraph and nobody questioned it; in Urdu, where the words
+ * between the figures are shorter, the row collapsed into a column one phrase
+ * wide with the delete button stranded beside it. Momin reported the Urdu one
+ * off a screenshot, and measuring it found English doing the same thing —
+ * 164px of row height for what should be three lines.
+ *
+ * So this is a LATENT ENGLISH DEFECT that Urdu made visible, which is the
+ * fourth one this translation has turned up.
+ */
+.li .k > b {
   display: block;
 }
 
@@ -1544,14 +1593,14 @@ p.keep {
 
 h1 {
   font-size: 1.375rem;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--track-heading, -0.02em);
   margin: 0.5rem 0 0;
   text-wrap: balance;
 }
 
 h2 {
   font-size: 1.0625rem;
-  letter-spacing: -0.015em;
+  letter-spacing: var(--track-sub, -0.015em);
   margin: 1.5rem 0 0;
 }
 

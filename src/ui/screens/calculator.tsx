@@ -478,7 +478,7 @@ function ConfirmInputs({
   const reading =
     state.inputs.bloodSugar === ''
       ? COPY.confirm.noReading
-      : `${state.inputs.bloodSugar}\u00A0mg/dL`;
+      : COPY.mgdl(state.inputs.bloodSugar);
   return (
     <div class="screen">
       <StepDots current={TOTAL_STEPS} total={TOTAL_STEPS} label={COPY.calculator.stepCheck} />
