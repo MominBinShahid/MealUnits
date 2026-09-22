@@ -413,7 +413,11 @@ await session('/tmp/mealunits-smoke-faces', 9309, 412, async ({ ev, open }) => {
   const asked = `performance.getEntriesByType('resource').filter((e) => e.name.includes('fonts-urdu'))`;
   // The whole reason the faces are excluded from the precache. 448 KB across
   // four files, against an app whose entire Latin typography is 42 KB.
-  check('faces: an English reader downloads not one Urdu byte', await ev(`${asked}.length`), 0);
+  // "not one FONT byte", and the precision matters: the WORDS are in the main
+  // bundle, which every phone precaches. That is a recorded trade-off, not an
+  // oversight — see BACKLOG 10a — and a check named "not one Urdu byte" would
+  // have been literally false the day the translation landed.
+  check('faces: an English reader downloads not one font byte', await ev(`${asked}.length`), 0);
   check('faces: and no cache has been opened for them', await ev(
     `caches.keys().then((n) => n.includes('mealunits-fonts-urdu'))`), false);
 

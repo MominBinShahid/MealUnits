@@ -210,6 +210,18 @@ export const COPY = {
      * difference between those is the difference this table is built on.
      */
     confidenceLabel: { high: 'well established', medium: 'varies', low: 'poorly measured' } as const,
+    /**
+     * The gram figure on a food row, and the one place a RANGE reaches a screen.
+     *
+     * Built in `foods.tsx` until 2026-09-22, which put it out of reach of both
+     * things that needed it: the word "g" could not translate, and the range
+     * could not be direction-isolated. Measured on the live Urdu food list,
+     * **14 of the 31 rows painted their two numbers the wrong way round** —
+     * `12–15 g` reading as `15–12`. That is the number the reader then types
+     * into the carbohydrate field.
+     */
+    gramsOne: (grams: string): string => `${grams}\u00A0g`,
+    gramsRange: (lo: string, hi: string): string => `${lo}–${hi}\u00A0g`,
     variesPrefix: 'Varies: ',
     sourcePrefix: 'Source: ',
     /**
@@ -1277,6 +1289,19 @@ export const COPY = {
      */
     fieldRequired: 'This is needed before a dose can be worked out.',
     outOfHardRange: (lo: string, hi: string): string => `Must be between ${lo} and ${hi}.`,
+    /**
+     * Four words that sat in JSX ATTRIBUTES until 2026-09-22 — `tag="TARGET"`,
+     * `suffix="minutes"` and `suffix="units"` twice — and rendered English on
+     * the Urdu settings screen every visit.
+     *
+     * `suffix="mg/dL"` and `tag="ISF"` / `tag="ICR"` beside them stay literals
+     * and are correctly exempt: those are printed on a meter and said by a
+     * doctor. `TARGET` is neither — `copy-ur` writes it ٹارگٹ everywhere else in
+     * the same screen.
+     */
+    targetTag: 'TARGET',
+    eatDelaySuffix: 'minutes',
+    unitsSuffix: 'units',
     isfSuffix: 'mg/dL per unit',
     icrSuffix: 'grams of carbohydrate',
     titleFirstRun: 'Your prescription',
@@ -1770,8 +1795,6 @@ export const COPY = {
       + 'exactly the same — only the words change.',
     confirmSafety: 'If anything reads wrong, switch back to English here.',
     confirmAction: 'Use Urdu anyway',
-    /** The row that goes back, and it must be findable by someone who cannot read the rest. */
-    backToEnglish: 'English',
   },
 
   /**
@@ -1845,11 +1868,29 @@ export const COPY = {
  * a real guarantee for a type alias.
  */
 type Words<T> =
-  T extends string
-    ? string
-    : T extends (...args: infer A) => infer R
-      ? (...args: A) => Words<R>
-      : { readonly [K in keyof T]: Words<T[K]> };
+  // A ROUNDING MODE IS NOT A WORD, and it is the one value in `COPY` that is
+  // not. `rounding.modes` pairs each button's name with the mode it sets, and
+  // `copy.ts` already spells out what that pairing is worth: "reorder these five
+  // and the button reading 'Always round up' would quietly set `floor`. A label
+  // that says the opposite of what the control does is a dosing error, not a
+  // copy defect."
+  //
+  // `typeof COPY` pinned element 0 to `'nearest'`, element 1 to `'half'`, and so
+  // on. The first version of this alias widened them with everything else — so a
+  // translation could pair «ہمیشہ اوپر راؤنڈ کریں» with `roundingMode: 'floor'`
+  // and compile clean, and nothing downstream would have caught it:
+  // `settings.tsx` types the handler as `string`, `app.tsx` casts to
+  // `RoundingMode`, and `roundToHundredths`'s switch has no default.
+  //
+  // `copy-ur.ts` happened to survive only because it re-applies its own
+  // `as const satisfies` clause. A third language would not have.
+  T extends RoundingMode
+    ? T
+    : T extends string
+      ? string
+      : T extends (...args: infer A) => infer R
+        ? (...args: A) => Words<R>
+        : { readonly [K in keyof T]: Words<T[K]> };
 
 export type Copy = Words<typeof COPY>;
 

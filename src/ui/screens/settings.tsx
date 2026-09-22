@@ -18,7 +18,7 @@ import { useCopy } from '../copy.js';
 import type { Copy } from '../copy.js';
 import { Button, TextInput } from '../components.js';
 import type { Language, RoundingMode, Settings, UrduFace } from '../../core/types.js';
-import { URDU_FACES } from '../language.js';
+import { LANGUAGE_IN_TESTING, URDU_FACES } from '../language.js';
 import { classEatDelay } from '../../core/insulin.js';
 import type { InsulinClass } from '../../core/insulin.js';
 import { INSULINS } from '../../data/insulins.js';
@@ -668,7 +668,7 @@ export function SettingsScreen({
         onChange={handlers.onChange}
         decimal={false}
         suffix="mg/dL"
-        tag="TARGET"
+        tag={COPY.settings.targetTag}
         icon={'\u{1FA78}'}
         clinical={COPY.settings.targetClinical}
       />
@@ -765,7 +765,7 @@ export function SettingsScreen({
           problem={problemFor('eatDelay')}
           onChange={handlers.onChange}
           decimal={false}
-          suffix="minutes"
+          suffix={COPY.settings.eatDelaySuffix}
         />
         <p class="hint">
           {insulinClass === null ? COPY.insulin.waitOwnHintUnknown : COPY.insulin.waitOwnHint}
@@ -833,7 +833,7 @@ export function SettingsScreen({
         problem={problemFor('threshold')}
         onChange={handlers.onChange}
         decimal={false}
-        suffix="units"
+        suffix={COPY.settings.unitsSuffix}
       />
       <p class="hint">{handlers.advisoryStatus}</p>
 
@@ -864,7 +864,7 @@ export function SettingsScreen({
           problem={problemFor('basalUnits')}
           onChange={handlers.onChange}
           decimal
-          suffix="units"
+          suffix={COPY.settings.unitsSuffix}
         />
         <TextField
           id="basalTiming"
@@ -978,11 +978,19 @@ export function SettingsScreen({
                       keeps this from downloading anything. */}
                   <span class="brand" lang="ur">{COPY.language.urdu}</span>
                   <span class="molecule">{face.name}</span>
+                  {/* The in-testing label is the condition Momin's ruling
+                      rests on — Urdu ships in production BECAUSE the option
+                      says what it is. It reads `LANGUAGE_IN_TESTING` rather
+                      than hard-coding "the Urdu rows": the constant existed
+                      with a docstring claiming it made the warning checkable,
+                      and nothing read it, so the claim was decoration. The day
+                      a reviewed language ships, clearing that constant clears
+                      the badge and this row stops lying. */}
                   {language === 'ur' && urduFace === face.id ? (
                     <span class="tag">{COPY.language.inUse}</span>
-                  ) : (
+                  ) : LANGUAGE_IN_TESTING === 'ur' ? (
                     <span class="tag">{COPY.language.inTesting}</span>
-                  )}
+                  ) : null}
                 </Button>
               ))}
             </div>

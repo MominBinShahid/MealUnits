@@ -2,18 +2,34 @@
  * Every user-facing string, in Urdu. `10a`.
  *
  * The English original in `copy.ts` is the specification; this is that object
- * with the words changed and NOTHING ELSE. Same keys, same order, same function
- * signatures, same interpolations — and the compiler enforces it, because this
- * export is typed `Copy` and `Copy` is `typeof COPY`. A key renamed or a
- * placeholder dropped is a build failure rather than a missing sentence on a
- * screen somebody finds later.
+ * with the words changed and as little else as possible.
+ *
+ * **WHAT THE COMPILER ACTUALLY ENFORCES, stated exactly**, because an earlier
+ * version of this paragraph claimed more and was wrong twice over. The export is
+ * typed `Copy`, and `Copy` is a MAPPED TYPE over `typeof COPY` — not `typeof
+ * COPY` itself, which is the defect this file's arrival exposed: `COPY` ends in
+ * `as const`, so every string in it is a literal type and nothing but the
+ * English words could ever satisfy it.
+ *
+ * So the compiler catches: a key renamed, a key deleted, a key added, a
+ * parameter whose TYPE changed, and a rounding mode paired with the wrong label.
+ *
+ * It does NOT catch a dropped interpolation. `` `${days} days` `` becoming
+ * `` `days` `` compiles clean whenever the parameter is still mentioned
+ * somewhere — `days === 0` is enough — and TypeScript permits a function with
+ * FEWER parameters than the type declares, so dropping them entirely compiles
+ * too. Both were tried against this file and both passed `typecheck`,
+ * `check-plan.py` and all 802 tests. `test/interpolation.test.ts` is what covers
+ * that gap; the type does not.
  *
  * **IN TESTING, AND NOT REVIEWED BY A NATIVE READER.** Momin ruled Urdu ships
  * in production rather than behind a flag, with a label on the option saying so
  * and a confirmation when it is chosen. Nothing here is his mother's review.
- * The drafts were produced against `urdu-glossary.md`, which fixes 49 terms and
- * the alternatives each one beat, so that seven sections translated in parallel
- * could not quietly disagree about what a dose is called.
+ * The drafts were produced against `docs/URDU.md`, which fixes 49 terms and the
+ * alternatives each one beat, so that seven sections translated in parallel
+ * could not quietly disagree about what a dose is called. It did not stop them
+ * entirely — a glossary fixes WORDS, and two sections still disagreed about an
+ * arrow glyph and about how to quote a control by name.
  *
  * Three things this file does NOT translate, all ruled:
  *
@@ -193,7 +209,12 @@ export const COPY_UR: Copy = {
       'اگر آپ کو کریکشن پھر بھی چاہیے — کیونکہ ٹیکے کی جگہ نے اسے جذب نہیں کیا، یا انسولین گرمی میں پڑی رہی ہے، یا آپ بیمار ہیں — تو نتیجے کی اسکرین پر «یہ چھوٹی کیوں ہے؟» اسے واپس شامل کر دیتا ہے۔ پہلے وہ آپ کو یہ بتاتا ہے کہ پہلے والی ڈوز اکیلی ہی آپ کو ابھی کتنا نیچے لے جا سکتی ہے۔ اس کا استعمال اندراج میں ریکارڈ ہو جاتا ہے، تاکہ پیٹرن آپ کی ہسٹری میں موجود رہے۔',
     ] as const,
 
-    missingTitle: '«کوئی حالیہ ڈوز ریکارڈ میں نہیں»',
+    /**
+     * Quotes `stacking.missingHistory` VERBATIM, the way the English does. It
+     * said «…ریکارڈ میں نہیں» while the message says «…درج نہیں», so the help
+     * page was defining a sentence the app never prints.
+     */
+    missingTitle: '«کوئی حالیہ ڈوز درج نہیں»',
     missingBody: `اسٹیکنگ کی جانچ صرف ایک چیز جانتی ہے: جو آپ نے درج کیا۔ یہ لائن صرف اس وقت آتی ہے جب دو باتیں ایک ساتھ سچ ہوں: ایپ کے پاس کوئی ایسی حالیہ ڈوز نہیں جس سے وہ حساب لگا سکے، اور اسے ریکارڈ پر بھروسا بھی نہیں۔ اس کا مطلب یہ نہیں کہ آپ کے اندر کوئی انسولین کام نہیں کر رہی۔ ایپ آپ کو یہ نہیں بتائے گی، کیونکہ وہ اسے جان ہی نہیں سکتی۔ اگر آپ نے پچھلے ${String(STACK_SUPPRESS_HOURS)}\u00A0گھنٹوں میں ٹیکہ لگایا ہے تو آپ کے سامنے والی ڈوز میں سے کچھ نہیں روکا گیا — اسے ایسی کریکشن سمجھیں جو پہلے سے کام کرتی انسولین کے اوپر جا رہی ہے، اور اسی کو سامنے رکھ کر فیصلہ کریں۔ اگر آپ ہر ٹیکہ درج کریں تو اس جانچ کو کبھی سامنے آنا ہی نہیں پڑتا۔`,
     /**
      * BOTH halves of the condition are load-bearing and were got wrong once: the
@@ -254,6 +275,9 @@ export const COPY_UR: Copy = {
      * difference between those is the difference this table is built on.
      */
     confidenceLabel: { high: 'اچھی طرح معلوم', medium: 'کم زیادہ ہوتا ہے', low: 'ٹھیک سے ناپا نہیں گیا' } as const,
+    /** The range is isolated; see `isolate`. 14 of 31 rows read backwards without it. */
+    gramsOne: (grams: string): string => `${grams}\u00A0گرام`,
+    gramsRange: (lo: string, hi: string): string => `${isolate(`${lo}–${hi}`)}\u00A0گرام`,
     variesPrefix: 'کم زیادہ: ',
     sourcePrefix: 'حوالہ: ',
     /**
@@ -379,9 +403,22 @@ export const COPY_UR: Copy = {
       'وقت تب شروع ہوتا ہے جب آپ اگلی اسکرین پر مقدار کنفرم کریں — ابھی سے نہیں، اور نہ اُس وقت سے جب ڈوز کا حساب لگا تھا۔',
     // §8.1 — band B INVERTS it. A 30-minute fast at 71 mg/dL is wrong.
     eatFirst: 'بلڈ شوگر ذرا کم ہے — پہلے کھائیں، پھر انسولین لگائیں۔',
-    injectedAt: (at: string, eatBy: string): string => `${at} پر ٹیکہ لگا → ${eatBy} کے آس پاس کھا لیں۔`,
+    /**
+     * Urdu: the arrow is ← rather than the English →, for the reason
+     * `stacking.overrideAction` already gives — ARROWS DO NOT BIDI-MIRROR. In an
+     * RTL line the injection phrase is painted on the right and the eat
+     * instruction on the left (measured: 579px against 416px), so a → points
+     * back at the timestamp, away from the instruction it introduces.
+     *
+     * This file shipped both conventions: the agent who translated the stacking
+     * section flipped it and wrote down why, and the agent who translated this
+     * one did not. Same file, opposite answers — which is exactly what a
+     * glossary exists to prevent and exactly what a glossary cannot cover, since
+     * it fixes 49 WORDS and this is a glyph.
+     */
+    injectedAt: (at: string, eatBy: string): string => `${at} پر ٹیکہ لگا ← ${eatBy} کے آس پاس کھا لیں۔`,
     /** A zero-width window: the instruction is a moment, not a span. */
-    injectedAtEatNow: (at: string): string => `${at} پر ٹیکہ لگا → ابھی کھائیں۔`,
+    injectedAtEatNow: (at: string): string => `${at} پر ٹیکہ لگا ← ابھی کھائیں۔`,
     injectedAtOnly: (at: string): string => `${at} پر ٹیکہ لگا۔`,
   },
 
@@ -492,7 +529,7 @@ export const COPY_UR: Copy = {
   // ── §4.6's blank reading ──────────────────────────────────────────────────
   blankReading: {
     title: 'کوئی ریڈنگ درج نہیں ہوئی۔',
-    body: `یہ حساب صرف کاربوہائیڈریٹ کا ہے — یہ نہیں بتا سکتا کہ آپ کی بلڈ شوگر کم تو نہیں۔ اگر لگے کہ شوگر کم ہو رہی ہے تو پہلے چیک کریں۔ اگر امکان ہو کہ آپ ${String(HYPO_LEVEL_1)}\u00A0mg/dL سے نیچے ہیں تو اسے استعمال نہ کریں۔`,
+    body: `یہ حساب صرف کاربوہائیڈریٹ کا ہے — یہ نہیں بتا سکتا کہ آپ کی بلڈ شوگر کم تو نہیں۔ اگر لگے کہ بلڈ شوگر کم ہو رہی ہے تو پہلے چیک کریں۔ اگر امکان ہو کہ آپ ${String(HYPO_LEVEL_1)}\u00A0mg/dL سے نیچے ہیں تو اسے استعمال نہ کریں۔`,
     accept: 'سمجھ آ گئی — صرف کاربوہائیڈریٹ',
   },
 
@@ -540,7 +577,7 @@ export const COPY_UR: Copy = {
      */
     missingHistory: `کوئی حالیہ ڈوز درج نہیں۔ اگر آپ نے پچھلے ${String(STACK_SUPPRESS_HOURS)}\u00A0گھنٹوں میں انسولین لگائی ہے تو یہ کریکشن اسٹیک ہو سکتی ہے۔`,
     /** §7.6 — the app never converts "untrustworthy record" into "no insulin". */
-    invalidTime: 'ایک ڈوز کے ریکارڈ میں وقت درست نہیں، اس لیے اسے نظر انداز کیا جا رہا ہے۔',
+    invalidTime: 'ایک ڈوز کے ریکارڈ میں وقت درست نہیں، اس لیے اسے نظرانداز کیا جا رہا ہے۔',
     negativeApplied:
       'آپ نے کچھ دیر پہلے انسولین لگائی ہے۔ آپ کی ریڈنگ ٹارگٹ سے نیچے ہے، اس لیے کریکشن پوری کی پوری لاگو کی جا رہی ہے — اسے روک لینے سے آپ کو انسولین زیادہ ملتی، کم نہیں۔',
     suppressedTitle: 'کریکشن روک لی گئی',
@@ -685,7 +722,7 @@ export const COPY_UR: Copy = {
     notes: {
       before_bed: 'سونے سے پہلے',
       overnight: 'رات کے دوران',
-      felt_low: 'شوگر کم لگ رہی تھی',
+      felt_low: 'بلڈ شوگر کم لگ رہی تھی',
       after_exercise: 'ورزش کے بعد',
     },
     save: 'یہ ریڈنگ محفوظ کریں',
@@ -1249,15 +1286,19 @@ export const COPY_UR: Copy = {
      *
      * Urdu note: ISF stays Latin and the full name is a transliterated gloss —
      * the doctor says the English letters, so a translated name would match
+     * ISOLATED, because the two numbers swap around the Latin "to" otherwise —
+     * measured on the live settings screen as "30 to 1". The string exists so a
+     * reader can match their doctor's notation, and it was showing its inverse.
+     *
      * nothing said aloud. The quoted "1 to 30" stays Latin: it is what the
      * prescription paper has written on it.
      */
     isfClinical:
-      'انسولین سینسیٹیویٹی فیکٹر (ISF)۔ اکثر "1 to 30" لکھا جاتا ہے — یعنی ایک یونٹ آپ کی بلڈ شوگر 30\u00A0mg/dL نیچے لاتا ہے۔ Hasham کا 30 ہے۔',
+      `انسولین سینسیٹیویٹی فیکٹر (ISF)۔ اکثر ${isolate('"1 to 30"')} لکھا جاتا ہے — یعنی ایک یونٹ آپ کی بلڈ شوگر 30\u00A0mg/dL نیچے لاتا ہے۔ Hasham کا 30 ہے۔`,
     icrSentence: (value: string): string => `1\u00A0یونٹ ${value}\u00A0گرام کاربوہائیڈریٹ کے لیے کافی ہے`,
     icrQuestion: 'ایک یونٹ کتنے کاربوہائیڈریٹ کے لیے کافی ہے؟',
     icrClinical:
-      'انسولین اور کاربوہائیڈریٹ کا تناسب (ICR)۔ اکثر "1 to 10" لکھا جاتا ہے — یعنی ایک یونٹ 10\u00A0گرام کاربوہائیڈریٹ کے لیے کافی ہے۔ Hasham کا 10 ہے۔',
+      `انسولین اور کاربوہائیڈریٹ کا تناسب (ICR)۔ اکثر ${isolate('"1 to 10"')} لکھا جاتا ہے — یعنی ایک یونٹ 10\u00A0گرام کاربوہائیڈریٹ کے لیے کافی ہے۔ Hasham کا 10 ہے۔`,
     /** §10.1.6 — the delta confirmation. A ratio fat-fingered 10→40 is inside
      * the accepted range, produces 5 units instead of 20 on a 200 g meal, and
      * passes every other check. */
@@ -1376,6 +1417,9 @@ export const COPY_UR: Copy = {
      */
     fieldRequired: 'اس کے بغیر ڈوز کا حساب نہیں لگ سکتا۔',
     outOfHardRange: (lo: string, hi: string): string => `${lo} اور ${hi} کے درمیان ہونا ضروری ہے۔`,
+    targetTag: 'ٹارگٹ',
+    eatDelaySuffix: 'منٹ',
+    unitsSuffix: 'یونٹ',
     isfSuffix: 'mg/dL فی یونٹ',
     icrSuffix: 'گرام کاربوہائیڈریٹ',
     titleFirstRun: 'آپ کا نسخہ',
@@ -1388,7 +1432,7 @@ export const COPY_UR: Copy = {
     saveFirstRun: 'محفوظ کر کے شروع کریں',
     openAsText: 'میری سیٹنگز ٹیکسٹ کی شکل میں دکھائیں',
     openHowItWorks: 'یہ کیسے کام کرتی ہے',
-    openExport: 'ریکارڈ محفوظ کریں یا منتقل کریں',
+    openExport: 'ریکارڈ محفوظ کریں یا لے جائیں',
     openClear: 'صاف کریں یا نئے سرے سے شروع کریں',
     /** §7.5's change list names the field that moved, in the words it uses. */
     deltaIcr: 'ایک یونٹ کتنے کے لیے کافی ہے',
@@ -1522,7 +1566,7 @@ export const COPY_UR: Copy = {
     amountDownLabel: 'آدھا یونٹ کم',
     amountUpLabel: 'آدھا یونٹ زیادہ',
     meterHiLoHint: (maxReading: string): string =>
-      `میٹر HI دکھا رہا ہے؟ ${maxReading} درج کریں۔ LO دکھا رہا ہے؟ کوئی نمبر درج نہ کریں — پہلے فوری کچھ میٹھا کھائیں۔`,
+      `میٹر HI دکھا رہا ہے؟ ${maxReading} درج کریں۔ LO دکھا رہا ہے؟ کوئی نمبر درج نہ کریں — پہلے فوری کچھ میٹھا کھائیں یا پیئں۔`,
     eatAround: (at: string): string => `${at} کے آس پاس کھائیں۔`,
     /** §8.5 — an ultra-rapid analogue's wait is zero, and zero is an instruction. */
     eatNow: 'ابھی کھائیں۔',
@@ -1565,7 +1609,18 @@ export const COPY_UR: Copy = {
       'اور کھانے کے وقت کا مشورہ بند ہے — ریڈنگ کے بغیر ایپ نہیں بتا سکتی کہ کب کھانا ہے۔',
     goBackAndTest: 'واپس جا کر پہلے بلڈ شوگر چیک کریں',
     startAgain: 'دوبارہ شروع کریں',
-    whySmaller: 'یہ کم کیوں ہے؟',
+    /**
+     * «چھوٹی», not «کم». Two screens quote this control BY NAME — the explainer
+     * and the Settings note on the stacking windows — and the English comment
+     * on both demands a character-for-character match. They said چھوٹی and the
+     * button said کم, so the help page named a control that did not exist.
+     *
+     * چھوٹی is also the right word on its own: کم is the glossary's word for a
+     * LOW blood sugar, so «یہ کم کیوں ہے؟» on a result screen reads as a
+     * question about the reading rather than about the dose. And it agrees with
+     * ڈوز, which is feminine.
+     */
+    whySmaller: 'یہ چھوٹی کیوں ہے؟',
     checkAgain: 'دوبارہ چیک کریں',
     withheldBoth: 'دونوں نمبر اتنے بڑے ہیں کہ دوبارہ دیکھنے کی ضرورت ہے، اس لیے یہاں دونوں میں سے کوئی نہیں دکھایا گیا۔',
     keepSmaller: 'چھوٹی ڈوز رکھیں',
@@ -1682,7 +1737,8 @@ export const COPY_UR: Copy = {
       'کریکشن یوں نکلتی ہے: آپ اپنے ٹارگٹ سے کتنا اوپر ہیں، تقسیم اس پر کہ ایک یونٹ آپ کو کتنا نیچے لاتا ہے۔ کھانے کی ڈوز یوں: کتنا کاربوہائیڈریٹ ہے، تقسیم اس پر کہ ایک یونٹ کتنے کے لیے کافی ہے۔ پھر دونوں جمع کی جاتی ہیں، اور منفی کریکشن کو نظرانداز نہیں کیا جاتا بلکہ کھانے کی ڈوز میں سے کاٹ لیا جاتا ہے۔',
     arithmeticFloor: 'اگر دونوں ملا کر صفر سے نیچے آئیں تو جواب صفر یونٹ ہے — منفی کبھی نہیں۔',
     anyOfThese: 'ان میں سے کوئی ایک بھی کافی ہے:',
-    mealCheckTitle: 'کھانے کی مقدار کی جانچ',
+    /** The name the two status lines in `advisory` already use. */
+    mealCheckTitle: 'کھانے کے سائز کی جانچ',
     asTextTitle: 'میری سیٹنگز',
     asTextRounding: 'ڈوز راؤنڈ ہوتی ہے:',
     /**
@@ -1724,9 +1780,16 @@ export const COPY_UR: Copy = {
      * defect, so the pairing is written down instead of counted.
      */
     // NOTE (Urdu fragment): the English closes this array with
-    // `as const satisfies readonly { roundingMode: RoundingMode; … }[]`.
-    // Dropped here because this fragment carries no imports and no `as const`;
-    // restore the clause when merging into copy.ts.
+    // `as const satisfies readonly { roundingMode: RoundingMode; … }[]`, and it
+    // is LOAD-BEARING — do not remove it. It is what keeps each label paired
+    // with the mode it actually sets: reorder these five and the button reading
+    // «ہمیشہ اوپر راؤنڈ کریں» would quietly set `floor`, which `copy.ts` calls
+    // "a dosing error, not a copy defect".
+    //
+    // A note here used to say the clause had been "dropped … restore it when
+    // merging", left over from assembling this file out of seven fragments. It
+    // sat two lines above the clause it said was missing, instructing the next
+    // reader to delete the guard.
     modes: [
       { roundingMode: 'nearest', name: 'پورے یونٹ', what: 'سب سے قریبی پورے یونٹ تک، یعنی 4.4 بن جاتا ہے 4 اور 4.6 بن جاتا ہے 5۔ ٹھیک آدھا صفر سے دور راؤنڈ ہوتا ہے: 4.5 بن جاتا ہے 5۔ عام U-100 سرنج کے لیے یہی درست ہے، جس پر نشان پورے یونٹ کے ہوتے ہیں۔' },
       { roundingMode: 'half', name: 'آدھے یونٹ', what: 'سب سے قریبی آدھے تک، یعنی 4.37 بن جاتا ہے 4.5۔ یہ صرف اس صورت میں چنیں جب آپ کے پین یا سرنج پر واقعی آدھے یونٹ کے نشان ہوں — جیسے NovoPen Echo یا Humalog Junior KwikPen۔ پورے یونٹ والی سرنج پر یہ آپ سے وہ چیز ناپنے کو کہتا ہے جو آپ دیکھ ہی نہیں سکتے۔' },
@@ -1837,10 +1900,11 @@ export const COPY_UR: Copy = {
    * The language list, as seen by someone already reading Urdu.
    *
    * The warning is not softened for the reader who already took it, because
-   * this is also the screen she comes back to. `backToEnglish` is the way out
-   * and it is deliberately the English word "English", never «انگریزی»: someone
-   * who switched by mistake, or who has just found a string she cannot trust,
-   * has to be able to find the way back WITHOUT reading Urdu to do it.
+   * this is also the screen she comes back to. `english` stays the English word
+   * "English", never «انگریزی»: someone who switched by mistake, or who has just
+   * found a string she cannot trust, has to be able to find the way back WITHOUT
+   * reading Urdu to do it. A second key named `backToEnglish` held the same
+   * three letters for a day and was never rendered — one string, one place.
    */
   language: {
     label: 'زبان',
@@ -1855,7 +1919,6 @@ export const COPY_UR: Copy = {
       + 'رہتا ہے — صرف الفاظ بدلتے ہیں۔',
     confirmSafety: 'اگر کوئی بات غلط لگے تو یہیں سے واپس English پر آ جائیں۔',
     confirmAction: 'پھر بھی اردو استعمال کریں',
-    backToEnglish: 'English',
   },
 
   /** §11.4's update offer and §12's install offer — the shell's two bars. */
@@ -1865,8 +1928,8 @@ export const COPY_UR: Copy = {
     later: 'بعد میں',
   },
   install: {
-    offer: 'اسے اپنی ہوم اسکرین پر لگائیں؟',
-    add: 'لگا دیں',
+    offer: 'اسے اپنی ہوم اسکرین پر شامل کریں؟',
+    add: 'شامل کریں',
     notNow: 'ابھی نہیں',
   },
   /** The app failed to start. `MealUnits` stays Latin, as everywhere. */

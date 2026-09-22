@@ -25,19 +25,16 @@ export type Language = 'en' | 'ur';
 /** See `Language`. Three of these four go when the face is chosen. */
 export type UrduFace = 'nastaliq' | 'gulzar' | 'naskh' | 'sans';
 
-/**
- * What an install with no stored choice runs as, and what `10a` ruled: *"default
- * is always English"*.
+/*
+ * The DEFAULTS are deliberately not here, in `src/ui/language.ts` instead.
  *
- * NOT a guess from `navigator.language`. What the phone is set to is a different
- * question from which language this reader wants their insulin instructions in,
- * and being handed an unreviewed translation because of an OS setting is exactly
- * what the in-testing label exists to prevent.
+ * Only the types belong in core: a type is erased at compile time, and a value
+ * is not. §13.4's gate holds `src/core` at 100% mutation, and two string
+ * constants that no core test reads are two mutants nothing can kill — which is
+ * how the gate reported them, correctly. They are not core domain values, they
+ * are what the INTERFACE does when nobody has chosen, so they live beside the
+ * list that renders the choice.
  */
-export const DEFAULT_LANGUAGE: Language = 'en';
-
-/** Arbitrary among the four, and it is the one Urdu is conventionally set in. */
-export const DEFAULT_FACE: UrduFace = 'nastaliq';
 
 /** §3's bands. C and D are terminal; B and E can co-occur with nothing else. */
 export type Band = 'A' | 'B' | 'C' | 'D' | 'E';

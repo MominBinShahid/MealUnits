@@ -490,7 +490,7 @@ function ConfirmInputs({
         </div>
         <div class="row">
           <span>{COPY.calculator.rowCarbohydrate}</span>
-          <b>{`${state.inputs.carbs}\u00A0g`}</b>
+          <b>{COPY.foods.gramsOne(state.inputs.carbs)}</b>
         </div>
       </div>
       <p class="hint">

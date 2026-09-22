@@ -14,7 +14,6 @@ import {
   ADVISORY_MIN_ELIGIBLE,
   DELETE_CONFIRM_WINDOW_HOURS,
   HOURS_PER_DAY,
-  HUNDREDTHS_SCALE,
   MS_PER_HOUR,
 } from '../../config.js';
 import { formatClockTime, formatDate } from '../../core/calendar.js';
@@ -25,6 +24,7 @@ import { INSULINS } from '../../data/insulins.js';
 import { waitInWords } from './insulin.js';
 import type { LogRow, Reading, Settings } from '../../core/types.js';
 import type { RecoveryBlock } from '../../storage/schema.js';
+import { toHundredths } from '../../core/decimal.js';
 import { useCopy } from '../copy.js';
 import type { Copy } from '../copy.js';
 import { Button, TextInput } from '../components.js';
@@ -665,7 +665,9 @@ export function FailClosedScreen({
             </li>
             <li class="li">
               <div class="k">{COPY.screens.recordIcr}</div>
-              <div class="v">{`${String(recovery.oneUnitCoversGramsCarbohydrate)}\u00A0g`}</div>
+              <div class="v">
+                {COPY.foods.gramsOne(String(recovery.oneUnitCoversGramsCarbohydrate))}
+              </div>
             </li>
             {/* §8.5 — the mealtime insulin, on the screen whose whole purpose
                 is that the settings survive a database this build cannot open.
@@ -683,8 +685,19 @@ export function FailClosedScreen({
                   one in the settings-as-text block below were the last two
                   places the word was spelled out in a template literal, which
                   is why `check_ui_text_outside_copy` never saw them: it wants
-                  two consecutive words inside backticks, and "units" is one. */}
-              <div class="v">{COPY.units(recovery.basalUnitsPerDay * HUNDREDTHS_SCALE)}</div>
+                  two consecutive words inside backticks, and "units" is one.
+
+                  `toHundredths`, NOT `* HUNDREDTHS_SCALE`. `COPY.units` reaches
+                  `formatHundredths`, which THROWS on a non-integer — and
+                  `16.1 * 100` is 1610.0000000000002. `decimal.ts` says so in its
+                  own words: "4587 of the 45001 two-decimal values in the
+                  reachable dose range fail the same way". A throw here takes out
+                  the fail-closed screen, whose entire job is to show a reader
+                  their prescription when the database will not open. The hand
+                  multiplication was here before and under `String()` it was
+                  harmless; routing it through the formatter is what made it
+                  reachable. */}
+              <div class="v">{COPY.units(toHundredths(recovery.basalUnitsPerDay))}</div>
             </li>
           </ul>
           <p class="hint">{COPY.failClosed.copyThemDown}</p>
@@ -894,7 +907,7 @@ export function SettingsAsTextScreen({
         </li>
         <li class="li">
           <div class="k">{COPY.screens.asTextThreshold}</div>
-          <div class="v">{COPY.units(settings.threshold * HUNDREDTHS_SCALE)}</div>
+          <div class="v">{COPY.units(toHundredths(settings.threshold))}</div>
         </li>
         {/* §8.5 — this screen exists to be PHOTOGRAPHED and shown to a doctor,
             and the mealtime insulin is the first thing they would ask. Below
@@ -920,7 +933,7 @@ export function SettingsAsTextScreen({
             <div class="k">
               {settings.basalName.trim() === '' ? COPY.settings.basalNameMissing : settings.basalName}
             </div>
-            <div class="v">{COPY.units(settings.basalUnits * HUNDREDTHS_SCALE)}</div>
+            <div class="v">{COPY.units(toHundredths(settings.basalUnits))}</div>
           </li>
           <li class="li">
             <div class="k">{settings.basalTiming}</div>

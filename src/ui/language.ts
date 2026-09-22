@@ -16,7 +16,24 @@
 
 import type { Language, UrduFace } from '../core/types.js';
 
-export { DEFAULT_FACE, DEFAULT_LANGUAGE } from '../core/types.js';
+/**
+ * What an install with no stored choice runs as, and what `10a` ruled: *"default
+ * is always English"*.
+ *
+ * NOT a guess from `navigator.language`. What the phone is set to is a different
+ * question from which language this reader wants their insulin instructions in,
+ * and being handed an unreviewed translation because of an OS setting is exactly
+ * what the in-testing label exists to prevent.
+ *
+ * Here rather than in `src/core/types.js` beside the types they annotate, and
+ * the split is not arbitrary: a type is erased and a value is not, §13.4 holds
+ * `src/core` at 100% mutation, and a constant no core test reads is a mutant
+ * nothing can kill. These are interface defaults, and this is the interface.
+ */
+export const DEFAULT_LANGUAGE: Language = 'en';
+
+/** Arbitrary among the four, and it is the one Urdu is conventionally set in. */
+export const DEFAULT_FACE: UrduFace = 'nastaliq';
 
 /**
  * The language whose strings have not been reviewed by a native reader yet.

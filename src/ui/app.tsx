@@ -27,7 +27,6 @@ import { modeNeedsAcknowledgement } from '../core/round.js';
 import { classOf } from '../core/insulin.js';
 import { INSULINS } from '../data/insulins.js';
 import { InsulinScreen, InsulinUnsupportedScreen } from './screens/insulin.js';
-import { DEFAULT_FACE, DEFAULT_LANGUAGE } from '../core/types.js';
 import type { Injection, Language, Reading, RoundingMode, Settings, UrduFace } from '../core/types.js';
 import { buildEnvelope, parseEnvelope } from '../storage/envelope.js';
 import { importEnvelope } from '../storage/importer.js';
@@ -58,7 +57,7 @@ import { FoodListScreen } from './screens/foods.js';
 import { COPY, CopyContext } from './copy.js';
 import type { Copy } from './copy.js';
 import { COPY_UR } from './copy-ur.js';
-import { documentAttributes } from './language.js';
+import { DEFAULT_FACE, DEFAULT_LANGUAGE, documentAttributes } from './language.js';
 import { Button } from './components.js';
 import { CalculatorScreen } from './screens/calculator.js';
 import { deriveThreshold } from '../core/threshold.js';
@@ -334,6 +333,35 @@ export async function start(host: Host): Promise<void> {
    * language that can disagree with the database it was chosen in.
    */
   let copy: Copy = COPY;
+  /*
+   * `COPY_UR` IS IMPORTED STATICALLY, AND THAT IS A DECISION, NOT AN OVERSIGHT.
+   *
+   * Two reviews flagged it, and both were right about the cost: the words are 66
+   * KB — 18 KB gzipped — inside the bundle the service worker precaches on every
+   * phone, re-downloads on every deploy and parses at every boot. 448 KB of
+   * typefaces were kept off that path with a dedicated cache, a precache
+   * exclusion and three seeded checks, while the WORDS walked straight onto it.
+   *
+   * `import()` was implemented and measured — 173 KB main, 63 KB chunk, and an
+   * English reader fetches none of the second. It was REVERTED, because the
+   * font's design does not transfer and the difference is the whole point:
+   *
+   *   A MISSING FONT DEGRADES TO A FONT. The system Arabic face renders, the
+   *   words are still Urdu, and the reader loses typography.
+   *
+   *   A MISSING COPY MODULE DEGRADES TO A DIFFERENT LANGUAGE. An Urdu reader
+   *   who opens the app offline the morning after a deploy — when the new chunk
+   *   has never been fetched and the old build's cache is gone — gets English.
+   *   `BACKLOG` 10a rejected an eviction timer in exactly those words: "a
+   *   returning Urdu reader opens the app offline and finds their own language
+   *   gone, which is the one failure the offline guarantee exists to prevent."
+   *
+   * A design that keeps both — the worker precaching the chunk only for installs
+   * that have already chosen Urdu, which the durable font cache can tell it — is
+   * written up in `BACKLOG` 10a. It belongs in its own change: `src/sw.ts` is
+   * where this project shipped the defect that would have deleted the dose log,
+   * and it is not the file to improvise in at the end of a long one.
+   */
 
   /**
    * `lang`, `dir` and the face, on the document element.
@@ -784,6 +812,32 @@ export async function start(host: Host): Promise<void> {
     });
   };
 
+  /**
+   * `guardWrite` for a write that needs the connection, with the null case
+   * taking the SAME path as a rejection.
+   *
+   * #72's ruling: a connection that is gone is a failed write, not a quiet
+   * no-op. Every call site that wants `db` had been spelling
+   * `if (db === null) return;` and capturing a `handle` — which is the shape
+   * that ruling exists to delete, and `10a`'s language handlers reintroduced it
+   * twice. The reader taps, nothing is written, and nothing says so.
+   *
+   * It takes the connection as an argument rather than letting the body close
+   * over `db`, so the narrowing is the helper's and cannot be forgotten.
+   */
+  const guardConnectedWrite = (write: (connection: IDBDatabase) => Promise<unknown>): void => {
+    const connection = db;
+    if (connection === null) {
+      view.writeFailed = true;
+      render();
+      return;
+    }
+    // Captured, so the narrowing survives into the closure — `db` is reassigned
+    // by `startOver` and by `onVersionChange`, and TypeScript is right to refuse
+    // to carry a narrowing across that.
+    guardWrite(() => write(connection));
+  };
+
   const startOver = async (): Promise<void> => {
     // §7.9 — the app must close its OWN connection first, on both paths, or it
     // blocks on itself.
@@ -806,6 +860,7 @@ export async function start(host: Host): Promise<void> {
     view.thresholdIsDerived = true;
     view.disclaimerChecked = false;
     view.clearConfirming = null;
+    view.confirmingUrdu = null;
     view.failClosedConfirming = false;
     await boot();
   };
@@ -1012,8 +1067,8 @@ export async function start(host: Host): Promise<void> {
             return { period: latest, changedAt: formatDate(latest.changedAtMs, host.timeZone) };
           })()}
           storageDurable={storageDurable}
-          language={stored?.language ?? DEFAULT_LANGUAGE}
-          urduFace={stored?.urduFace ?? DEFAULT_FACE}
+          language={stored?.languageChoice?.language ?? DEFAULT_LANGUAGE}
+          urduFace={stored?.languageChoice?.urduFace ?? DEFAULT_FACE}
           confirmingUrdu={view.confirmingUrdu}
           storageWarningOff={stored?.acks.has(ackKeys.storageEviction) ?? false}
           onStopStorageWarning={() => {
@@ -1042,27 +1097,37 @@ export async function start(host: Host): Promise<void> {
            * and the language they can definitely read.
            */
           onChooseLanguage: (language, face) => {
-            const current = stored?.language ?? DEFAULT_LANGUAGE;
+            const current = stored?.languageChoice?.language ?? DEFAULT_LANGUAGE;
             if (language === 'ur' && current !== 'ur') {
               view.confirmingUrdu = face;
               render();
               return;
             }
             view.confirmingUrdu = null;
-            if (db === null) return;
-            const handle = db;
-            guardWrite(() =>
-              writeLanguage(handle, { language, urduFace: face }).then(refresh),
-            );
+            // A LOST CONNECTION IS A FAILED WRITE, not a quiet no-op — #72's
+            // ruling, and this handler broke it twice. `if (db === null) return`
+            // left the panel on screen with the model saying it was closed, so a
+            // second tap read `face === null` and did nothing: a dead control,
+            // and no feedback at all. `guardWrite` is what raises the panel
+            // saying the write failed, and it cannot do that from outside itself.
+            guardConnectedWrite(async (connection) => {
+              await writeLanguage(connection, { language, urduFace: face });
+              return refresh();
+            });
           },
           onConfirmUrdu: () => {
             const face = view.confirmingUrdu;
             view.confirmingUrdu = null;
-            if (face === null || db === null) return;
-            const handle = db;
-            guardWrite(() =>
-              writeLanguage(handle, { language: 'ur', urduFace: face }).then(refresh),
-            );
+            // `render()` on the way out, or the panel stays on screen while the
+            // model says it is closed.
+            if (face === null) {
+              render();
+              return;
+            }
+            guardConnectedWrite(async (connection) => {
+              await writeLanguage(connection, { language: 'ur', urduFace: face });
+              return refresh();
+            });
           },
           onCancelUrdu: () => {
             view.confirmingUrdu = null;
@@ -1484,13 +1549,13 @@ export async function start(host: Host): Promise<void> {
      * left standing; calling it every render would rebuild text that is already
      * correct, on every keystroke.
      */
-    const language = stored?.language ?? DEFAULT_LANGUAGE;
+    const language = stored?.languageChoice?.language ?? DEFAULT_LANGUAGE;
     const next = language === 'ur' ? COPY_UR : COPY;
     if (next !== copy) {
       copy = next;
       host.onCopy?.(copy);
     }
-    applyDocumentAttributes(language, stored?.urduFace ?? DEFAULT_FACE);
+    applyDocumentAttributes(language, stored?.languageChoice?.urduFace ?? DEFAULT_FACE);
 
     if (!settled && state.screen === 'calculator') {
       settled = true;

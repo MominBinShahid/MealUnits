@@ -752,9 +752,24 @@ the first minute of looking at a real build in `dir="rtl"`.
 
 #### Urdu is selectable — SHIPPED 2026-09-22. What is done, and what is not.
 
-**Done.** `src/ui/copy-ur.ts` is the whole of `copy.ts` in Urdu — 53 top-level keys, every function
-signature and every interpolation identical, and the COMPILER enforces that rather than a reviewer:
-the export is typed `Copy`, so a renamed key or a dropped placeholder is a build failure. Settings
+**Done.** `src/ui/copy-ur.ts` is the whole of `copy.ts` in Urdu — **57 top-level keys, 434 leaves,
+71 functions, in identical order**, counted at runtime rather than estimated. (This paragraph said
+53 until an audit counted them: 52 at the base plus `units`, written before `language`, `update`,
+`install` and `couldNotStart` were added, and never re-counted. The same wrong number reached the
+commit message and the pull request.)
+
+**What the compiler enforces, stated exactly**, because the first version of this paragraph claimed
+more and was wrong. The export is typed `Copy`, and `Copy` is a mapped type over `typeof COPY`, so
+the compiler catches a key renamed, a key deleted, a key added, a parameter whose TYPE changed, and
+a rounding mode paired with the wrong label.
+
+It does **not** catch a dropped interpolation. `` `${days} days` `` becoming `` `days` `` compiles
+clean whenever the parameter is still mentioned anywhere — `days === 0` is enough — and TypeScript
+permits a function with FEWER parameters than its type declares, so dropping them outright compiles
+too. Both were executed against this file and both passed `typecheck`, `check-plan.py` and all 802
+tests. `test/interpolation.test.ts` closes that gap by calling every function in both languages with
+the same arguments and requiring that a value reaching the English output reaches the Urdu one;
+verified against the exact mutation that escaped. Settings
 grows a language list of English plus one row per face, each Urdu row labelled *in testing*, with a
 confirmation before the first switch. `lang`, `dir` and `data-urdu-face` go on the document
 together; the face is fetched at that moment and not before.
@@ -788,11 +803,80 @@ and reported nineteen findings, fourteen of them class names and `px` and `sw.js
 this file warns about. The narrow rule is not a general solution and its docstring says so: a single
 CONTENT word between two interpolations still escapes.
 
+**What five independent reviews found after this shipped, and what was done about it.** The change
+was reviewed from five angles at once — a back-translation of the safety copy, a glossary-conformance
+audit, an adversarial code review, a bidi-and-leftover-English hunt against the running app, and a
+fact-check of the claims made for it. Between them they found more than the work itself did.
+
+*Fixed in the same change:*
+
+| what | why it mattered |
+|---|---|
+| `COPY.units(n * HUNDREDTHS_SCALE)` threw `RangeError` | `16.1 * 100` is not an integer, `formatHundredths` refuses one, and one of the three sites was the FAIL-CLOSED screen. `decimal.ts` had the exact converter and said so in its own comment. Pinned by `test/units-scaling.test.ts` over every reachable value |
+| `Words<>` widened `RoundingMode` | it unpinned the five rounding modes, so a translation could pair «ہمیشہ اوپر راؤنڈ کریں» with `floor` and compile. `copy.ts` calls that "a dosing error, not a copy defect" |
+| the §10.4 no-break-space pin lost its overrun arm | it reported clean while `units` had lost the character. Restored as a length bound |
+| food ranges painted backwards | **14 of 31 rows**. `12–15 g` read as `15–12` — the number the reader then types. Built in `foods.tsx`, where `isolate()` could not reach it |
+| `"1 to 30"` and `"1 to 10"` inverted | the two strings that exist so a reader can match their doctor's notation, showing its inverse |
+| two arrows pointed the wrong way | one section flipped `→` to `←` and wrote down why; another did not. Same file, opposite answers |
+| the explainer named a control that did not exist | «یہ کم کیوں ہے؟» on the button, «یہ چھوٹی کیوں ہے؟» in the two places that quote it — and کم is the word for a LOW reading. Pinned by `test/cross-reference.test.ts` |
+| a dead confirm panel | `if (db === null) return` left the panel on screen with the model saying it was closed, and dropped the write with no feedback. `guardConnectedWrite` routes it to the failure path #72 ruled for |
+| `TARGET`, `minutes`, `units`, `g` | four JSX attribute words and three hardcoded grams, all rendering English on the Urdu screen |
+| `LANGUAGE_IN_TESTING` did nothing | its docstring claimed it made the warning checkable. It decides the badge now |
+| `docs/URDU.md` did not exist | `copy-ur.ts` cited it as the artifact a maintainer should open |
+
+*Ruled and recorded rather than fixed:* the register and spelling variations a native reader should
+settle (بلڈ شوگر leaking to bare شوگر in two strings, «پہلے/اب» versus other pairs, پتہ/پتا), and the
+ذیابیطس gloss appearing twice where the ruling says once — two is not "everywhere", and deleting a
+clarification is a copy decision rather than a consistency fix.
+
 **NOT done, and it is the documented next task: the food table.** `src/data/carbs.ts` is still
 entirely English — 32 names, their notes and their sources — so an Urdu reader opening the food list
 sees "Thin flatbread, about 25 g" under Urdu chrome. This entry has always scoped that separately
 ("those 32 names are a small, self-contained task his mother could do, unlike the clinical copy")
 and the field called `urdu` still holds Roman transliterations rather than Urdu script.
+
+**The Urdu words ship to every English phone, and that is a ruling waiting to be made.**
+`copy-ur.ts` is imported statically, so its 66 KB — 18 KB gzipped — sit inside the bundle the worker
+precaches on every install, re-downloads on every deploy and parses at every boot. Two reviews
+flagged it against the care the FONTS got: a dedicated cache, a precache exclusion, three seeded
+checks, all so 448 KB never reaches an English reader.
+
+`import()` was implemented and measured — 173 KB main plus a 63 KB chunk, and an English reader
+fetches none of the second — then **reverted**, because the font's design does not transfer:
+
+- a missing **font** degrades to a font. The system Arabic face renders, the words are still Urdu.
+- a missing **copy module** degrades to a different LANGUAGE. An Urdu reader opening the app offline
+  the morning after a deploy, when the new chunk has never been fetched and the old build's cache is
+  gone, gets English — which is the failure this entry rejected an eviction timer over, in those
+  words.
+
+**The design that keeps both** is for the worker to precache the chunk only on installs that have
+already chosen Urdu — and the durable font cache is exactly the signal that tells it so: a non-empty
+`mealunits-fonts-urdu` means this reader uses Urdu. Perhaps fifteen lines in `src/sw.ts`, and it is
+deliberately not in the change that found it. That file is where this project shipped the defect that
+would have deleted the dose log, and the end of a long change is not when to improvise in it.
+
+**Also not done, and it is larger than it looks: English that is not in `copy.ts` at all.** An audit
+of the running app in Urdu found four files rendering English that the string check had never been
+able to see, because its walk stopped at `src/ui` on a comment asserting that `core`, `state` and
+`storage` "render nothing":
+
+| file | what | why it is not fixed here |
+|---|---|---|
+| `src/core/calendar.ts` | every month name, `AM`/`PM`, `noon`, `midnight` — so **every dose timestamp and every history row** | `src/core` imports nothing by design. The fix is a language seam into the domain, not a `COPY` key |
+| `src/routes.ts` | `document.title`, on every screen — the tab, the app-switcher card, the default bookmark | pinned against `index.html` by `check_route_titles_agree`, so translating it is that check's business too |
+| `src/data/insulins.ts` | "another brand", "Two insulins in a fixed ratio", the class descriptions | reference data, like the food table. Same task, same owner |
+| `src/storage/readable.ts` | the doctor's export, headings and all | **ruled English.** Pinned rather than exempted, so the ruling has to be restated rather than assumed if it ever moves |
+
+All four are in the walk now with their current count pinned in `UI_TEXT_PENDING`. The number must
+go down and cannot go up — new English in any of them fails the build, which is the half that
+matters while the seams are written.
+
+**And the date is torn apart in RTL, measured.** `22 Sep 2026, 3:30 PM` paints as
+`Sep 2026 3:30 PM 22` — the clock wedged between the year and the day, and no scan direction
+reconstructs it. That is the timestamp on a dose record. It is the same class as the range reversal
+and it needs the calendar seam above before it can be fixed properly, because the fix is to stop
+assembling the date in `src/core` and hand the pieces to a language.
 
 **Also not done, and hers to rule:** every open question the seven translators raised — the four
 register pairs (سیٹنگز/ترتیبات، محفوظ کریں/سیو کریں، ڈیلیٹ کریں/مٹا دیں، اندراج/انٹری), round-up and

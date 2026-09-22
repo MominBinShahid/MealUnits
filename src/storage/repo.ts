@@ -6,16 +6,14 @@
  */
 
 import { DELETE_CONFIRM_WINDOW_HOURS, SCHEMA_VERSION } from '../config.js';
-import { DEFAULT_FACE, DEFAULT_LANGUAGE, isInjection } from '../core/types.js';
+import { isInjection } from '../core/types.js';
 import type {
   Injection,
-  Language,
   LogRow,
   Reading,
   RoundingMode,
   Settings,
   Tombstone,
-  UrduFace,
 } from '../core/types.js';
 import type { SettingsPeriod } from '../core/periods.js';
 import { hasRowInsideWindow } from '../core/history.js';
@@ -93,9 +91,17 @@ export interface StoredState {
   readonly acks: ReadonlySet<string>;
   readonly dosingHistory: DosingHistoryRow;
   readonly lastJsonExportAtMs: number | null;
-  /** `10a`. A database with no stored choice reads as `'en'`; see `writeLanguage`. */
-  readonly language: Language;
-  readonly urduFace: UrduFace;
+  /**
+   * `10a` — the stored language choice, or `null` when there is none.
+   *
+   * **NULL RATHER THAN A DEFAULT, and the schema comment says why**: a database
+   * with no row has not CHOSEN English, it has not been asked. Those are the
+   * same thing to render and a different thing to reason about, and a storage
+   * layer that collapses them has thrown away the distinction before anything
+   * can use it. The interface applies `DEFAULT_LANGUAGE`; this reports what is
+   * there.
+   */
+  readonly languageChoice: LanguageRow | null;
 }
 
 /** One read of everything the reducer needs, in one transaction. */
@@ -189,15 +195,12 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
           answeredAtMs: null,
         },
         lastJsonExportAtMs: backup?.lastJsonExportAtMs ?? null,
-        // `10a` — A MISSING ROW READS AS ENGLISH, on the same argument as the
-        // dosing note above: the row is not seeded at database creation, so an
-        // install predating this feature has not chosen a language rather than
-        // having chosen this one. `10a`'s ruling is that the default is always
-        // English and never a guess from `navigator.language` — what the phone
-        // is set to is not the same question as which language this reader
-        // wants their insulin instructions in.
-        language: language?.language ?? DEFAULT_LANGUAGE,
-        urduFace: language?.urduFace ?? DEFAULT_FACE,
+        // `10a` — reported as it is, `null` and all. The row is not seeded at
+        // database creation, so its absence means the question has not been
+        // asked, and deciding what that RENDERS as is the interface's business
+        // rather than this function's. Unlike the dosing note above, which has
+        // three states of its own and defaults to the one that keeps asking.
+        languageChoice: language ?? null,
       } satisfies StoredState;
     },
   );
