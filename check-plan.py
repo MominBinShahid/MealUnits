@@ -3325,7 +3325,28 @@ def check_number_unit_nowrap(_plan):
     # Case-sensitive, so a hypothetical "150 mL" escapes — consistent with the
     # narrows-not-prevents charter stated above.
     unit = r"(?:units?|grams?|mg/dL|ml|inch(?:es)?|g)"
-    pattern = re.compile(r"(?:[0-9]|\}) " + unit + r"\b")
+    # THE URDU UNITS, added 2026-09-22 — and until then this rule did not cover
+    # the translation at all. §10.4 exists because "10" above "units" rejoins in
+    # a reader's head as "10Units", and nothing about that misreading is English:
+    # «15 گرام» broken across a line is the same defect in the same app, on the
+    # band C screen, in the language the reader is least able to double-check.
+    #
+    # Found by a SEED. The one covering "a screen builds its own pair" lost its
+    # anchor when `10a` moved every such pair into `copy.ts`; re-aimed at a
+    # translated string, it applied cleanly and was NOT CAUGHT, which is how the
+    # hole surfaced. A seed that cannot find its anchor is a warning; a seed that
+    # lands and survives is a finding.
+    #
+    # No `\b` after the Urdu alternatives: `\b` is defined by the `\w` class and
+    # Arabic letters are word characters, so a boundary after گرام only exists
+    # where the next character is not a letter — which is exactly where a
+    # suffixed form like «گراموں» should still match. The lookahead for a
+    # non-letter would exclude it; going without means the pattern matches the
+    # stem wherever it appears, which is the direction this rule should err in.
+    urdu_unit = r"(?:\u06af\u0631\u0627\u0645|\u06cc\u0648\u0646\u0679|\u0645\u0646\u0679"
+    urdu_unit += r"|\u06af\u06be\u0646\u0679\u06d2|\u06af\u06be\u0646\u0679\u06c1)"
+    pattern = re.compile(
+        r"(?:[0-9]|\}) (?:" + unit + r"\b|" + urdu_unit + r")")
     out = []
     for path in source_files("check_number_unit_nowrap: src/**", src, (".ts", ".tsx")):
         if "__lint-fixtures" in path:
@@ -5130,19 +5151,23 @@ SELF_TESTS = [
     ("nowrap: the no-break space in units() reverted to a plain space",
      "src/ui/copy.ts",
      lambda t: t.replace(r"${value}\u00A0${value", "${value} ${value")),
-    # RE-AIMED 2026-09-22. It pointed at `foods.tsx`'s `${grams}\u00A0g`, which
-    # `10a` moved into `copy.ts` — the word "g" is a word and had to translate —
-    # so the seed edited nothing and the self-test reported it, which is exactly
-    # what a seed knowing whether its anchor still exists is for.
+    # RE-AIMED TWICE on 2026-09-22, and the second time it changed SHAPE.
     #
-    # Aimed at an `mg/dL` pair now, deliberately. That token is ruled to appear
-    # as printed in every language, so this anchor cannot move for a translation
-    # reason the way the last one did — while still being a SCREEN building its
-    # own number-unit pair, which is the third shape this seed exists to cover.
-    ("nowrap: a ported screen builds its own plain-space pair",
-     "src/ui/screens/misc.tsx",
-     lambda t: t.replace(r"${String(recovery.targetMgDl)}\u00A0mg/dL",
-                         "${String(recovery.targetMgDl)} mg/dL")),
+    # It pointed at `foods.tsx`, then at `misc.tsx` — a screen building its own
+    # `${n}\u00A0unit` pair. Both anchors are gone, because `10a` moved every
+    # one of them into `copy.ts`: the unit word is a WORD and had to translate.
+    # `grep -rn 'u00A0' src/ui/screens` is now empty, so the shape this seed was
+    # written for has no instance left to seed.
+    #
+    # It could have been retired. Instead it is aimed at the shape that replaced
+    # it and has 53 instances: a TRANSLATION losing the character. The rule is
+    # per language and so is the risk — `copy-ur.ts` was assembled from seven
+    # fragments by seven agents, and 52 of its no-break spaces were normalised by
+    # hand on the day it landed.
+    ("nowrap: a translated safety string loses its no-break space",
+     "src/ui/copy-ur.ts",
+     lambda t: t.replace(r"${String(FAST_CARB_GRAMS)}\u00A0" + "گرام",
+                         "${String(FAST_CARB_GRAMS)} گرام", 1)),
     # A third, 2026-09-17, when `ml` and `inch` joined the list: the food table
     # is a THIRD shape — not a formatter, not a screen, a data row someone edits
     # by copying the row above. It is also the seed that proves `src/data` is

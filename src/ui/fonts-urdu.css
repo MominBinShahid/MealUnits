@@ -76,28 +76,64 @@
  * descenders of one line land on the next. The Naskh faces sit on a level
  * baseline and need only a little more than Latin.
  */
+/*
+ * NO NEGATIVE TRACKING IN ARABIC SCRIPT, whichever face is chosen.
+ *
+ * The display sizes carry -0.02em to -0.055em, which is right for Latin: the
+ * letters stand apart and tightening the gaps makes a heading read as one word.
+ * Arabic letters are JOINED. Tightening them does not close a gap, it pulls a
+ * word's connecting stroke into the letter beside it — and on Nastaliq, where
+ * the join is the shape, it is the difference between a word and a smudge.
+ *
+ * On `[data-urdu-face]` with no value, so it holds for all four: this is a
+ * property of the SCRIPT, not of the typeface.
+ */
+:root[data-urdu-face] {
+  --track-display: normal;
+  --track-heading: normal;
+  --track-sub: normal;
+  --track-halt: normal;
+}
+
+/*
+ * `--lh-ask` is the one that was actually broken rather than merely tight.
+ *
+ * `.ask` is the question at the top of every entry screen, set at 32px with a
+ * line box of 1.08. In Nastaliq that is not a tight line, it is an OVERLAPPING
+ * one — measured at 41px of collision on the deployed build, which reads as two
+ * sentences printed over each other. Momin found it by looking at a screenshot,
+ * which is the third time this project has found a layout defect that way.
+ */
 :root[data-urdu-face='nastaliq'] {
   --urdu-family: 'Noto Nastaliq Urdu';
   --lh-body: 2.3;
   --lh-prose: 2.2;
+  --lh-ask: 1.9;
+  --lh-list: 2.1;
 }
 
 :root[data-urdu-face='gulzar'] {
   --urdu-family: 'Gulzar';
   --lh-body: 2.3;
   --lh-prose: 2.2;
+  --lh-ask: 1.9;
+  --lh-list: 2.1;
 }
 
 :root[data-urdu-face='naskh'] {
   --urdu-family: 'Noto Naskh Arabic';
   --lh-body: 1.75;
   --lh-prose: 1.7;
+  --lh-ask: 1.45;
+  --lh-list: 1.6;
 }
 
 :root[data-urdu-face='sans'] {
   --urdu-family: 'Noto Sans Arabic';
   --lh-body: 1.7;
   --lh-prose: 1.65;
+  --lh-ask: 1.4;
+  --lh-list: 1.55;
 }
 
 /*
