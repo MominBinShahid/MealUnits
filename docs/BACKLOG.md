@@ -835,6 +835,38 @@ sees "Thin flatbread, about 25 g" under Urdu chrome. This entry has always scope
 ("those 32 names are a small, self-contained task his mother could do, unlike the clinical copy")
 and the field called `urdu` still holds Roman transliterations rather than Urdu script.
 
+**A fourth typeface nobody chose, and the bold that never arrived.** Both reported off screenshots.
+
+**The mono face has no Arabic.** Three labels use IBM Plex Mono — the step counter, the unit under
+the entry field, and the `.tag` badges — so in Urdu all three fell through to whatever Arabic face
+the phone happened to have, at mono tracking, and looked like a fourth face beside the chosen one.
+`var(--urdu-family, …)` now sits BEHIND the mono face in those stacks: Latin still renders in mono
+(the version string, `ISF`, `mg/dL`), Arabic falls to the face the reader picked. The Arabic-only
+`unicode-range` makes that safe in either order.
+
+Their tracking went too — `0.14em` opens the gaps between Latin letters, which is what an eyebrow
+wants and what a JOINED script cannot survive. Same defect as the negative tracking on the headings,
+in the other direction.
+
+**Bold had never arrived.** `font-synthesis: none` is right — faux bold thickens the nuqte, the dots
+that are the only difference between ب پ ت ث — but with no 700 file every `<b>` rendered at 400. This
+app bolds "type 1" in the disclosure, the dose figure in a history row, and the band C title.
+
+A real 700 now ships for the three faces that have one. Measured, not assumed: «ٹائپ 1 ذیابیطس»
+renders 123px at 400 and 133px at 700 in Nastaliq.
+
+**GULZAR HAS NO BOLD, and that is the typeface rather than a gap here** — Google Fonts ships it in
+one weight. Choosing Gulzar means an interface with no emphasis anywhere, for ever. Left as it is
+rather than papered over with a synthesised weight the other three do not use, because it is
+information for the person choosing.
+
+**And the doctor's screen had two kinds of row.** The ISF and ICR lines were full sentences with an
+empty right-hand column while every other row was label-and-value; the basal timing was the reader's
+own word — "morning" — with nothing saying it was a time. The sentences stay, `1:30` and `1:10` fill
+the empty column in the notation a prescription actually uses, and the timing row gets its label. A
+COLON and not a dash: `:` is a Common Separator, so it binds the two numbers into one run and
+survives right-to-left text, which `1-30` would not.
+
 **The Nastaliq line box, and three more things found by looking at screenshots.** Momin reported
 all four; every one was measured before it was believed.
 

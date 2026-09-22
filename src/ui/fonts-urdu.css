@@ -23,12 +23,25 @@
  * sentence it sits. §10.4's digit rules and the tabular figures they depend on
  * are untouched by the language, which is what BACKLOG 10a requires.
  *
- * ONE WEIGHT EACH, 400, with synthesis switched off below. Faux bold on
- * Nastaliq thickens the nuqte — the dots that are the only difference between
- * ب پ ت ث — so a synthesised heading is not a heavier face, it is a face whose
- * letters have started to merge. Shipping a real 700 for the two Naskh options
- * and not the two Nastaliq ones would also bias the comparison this file exists
- * to run. The winning face gets its 700 weight if it has one.
+ * A REAL 700 FOR THE THREE FACES THAT HAVE ONE, added 2026-09-22 after Momin
+ * asked where the bold had gone. It had gone nowhere — it had never arrived.
+ *
+ * `font-synthesis: none` stays, and it is why the weight had to be shipped
+ * rather than faked: faux bold on Nastaliq thickens the nuqte, the dots that are
+ * the only difference between ب پ ت ث, so a synthesised heading is not a heavier
+ * face but a face whose letters have begun to merge. With synthesis off and no
+ * 700 file, every `<b>` in the app rendered at 400 — and this app bolds "type 1"
+ * in the disclosure, the dose figure in a history row, and the band C title.
+ *
+ * **GULZAR HAS NO BOLD AT ALL**, and that is a property of the typeface rather
+ * than a gap in this file: Google Fonts ships it in a single weight. Choosing
+ * Gulzar means choosing an interface with no emphasis anywhere, for ever. That
+ * is information for the person choosing, so it is left as it is rather than
+ * papered over with a synthesised weight the other three do not use.
+ *
+ * The cost is paid by Urdu readers only and once: Nastaliq 156 + 154 KB, Naskh
+ * 52 + 52, Sans 48 + 49. The second weight is fetched the first time something
+ * bold renders, which on this app is the first screen.
  */
 
 @font-face {
@@ -37,6 +50,15 @@
   font-weight: 400;
   font-display: swap;
   src: url('/MealUnits/fonts-urdu/NotoNastaliqUrdu.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-family: 'Noto Nastaliq Urdu';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/MealUnits/fonts-urdu/NotoNastaliqUrdu-700.woff2') format('woff2');
   unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
 }
 
@@ -55,6 +77,24 @@
   font-weight: 400;
   font-display: swap;
   src: url('/MealUnits/fonts-urdu/NotoNaskhArabic.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-family: 'Noto Naskh Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/MealUnits/fonts-urdu/NotoNaskhArabic-700.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/MealUnits/fonts-urdu/NotoSansArabic-700.woff2') format('woff2');
   unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
 }
 
@@ -93,6 +133,15 @@
   --track-heading: normal;
   --track-sub: normal;
   --track-halt: normal;
+  /*
+   * The POSITIVE ones, from the three mono labels. `0.14em` opens the gaps
+   * between Latin letters, which is what an eyebrow wants and what a joined
+   * script cannot survive: widening Arabic pulls a word apart at its joins.
+   * Same defect as the negative tracking above, in the other direction.
+   */
+  --track-eyebrow: normal;
+  --track-unit: normal;
+  --track-tag: normal;
 }
 
 /*
