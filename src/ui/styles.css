@@ -166,6 +166,20 @@ body {
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
 
+  /*
+   * ENGLISH WAS UNGUARDED. This lived only on `body:lang(ur)`, where the
+   * argument is the nuqte — faux bold thickens the dots that tell ب پ ت ث
+   * apart. But the guard is not Urdu-specific, and English now needs it more
+   * than it did: IBM Plex Mono ships ONE weight, so the day someone bolds
+   * `.tag`, `.dots .where` or `.entry .u`, that family has no bold at all and
+   * the browser smears the 400 instead of refusing.
+   *
+   * Space Grotesk is variable across 300–700 so it can serve any weight asked
+   * of it, which is exactly why this hole was invisible: the only family that
+   * could show it is the one nothing currently bolds.
+   */
+  font-synthesis: none;
+
   /* Flat, so overscroll and the area behind a short screen match. The wash
      itself sits on #app — see there for why. */
   background: var(--bg);

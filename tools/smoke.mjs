@@ -492,8 +492,8 @@ await session('/tmp/mealunits-smoke-faces', 9309, 412, async ({ ev, open }) => {
   await open(URL_UNDER_TEST);
   await wait(4000);
   const asked = `performance.getEntriesByType('resource').filter((e) => e.name.includes('fonts-urdu'))`;
-  // The whole reason the faces are excluded from the precache. 448 KB across
-  // four files, against an app whose entire Latin typography is 42 KB.
+  // The whole reason the faces are excluded from the precache. 708 KB across
+  // seven files, against an app whose entire Latin typography is 32 KB.
   // "not one FONT byte", and the precision matters: the WORDS are in the main
   // bundle, which every phone precaches. That is a recorded trade-off, not an
   // oversight — see BACKLOG 10a — and a check named "not one Urdu byte" would
