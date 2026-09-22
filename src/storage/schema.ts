@@ -20,7 +20,7 @@
  */
 
 import { SCHEMA_VERSION, STRUCTURE_VERSION } from '../config.js';
-import type { RoundingMode } from '../core/types.js';
+import type { Language, RoundingMode, UrduFace } from '../core/types.js';
 
 export const DATABASE_NAME = 'MealUnits';
 /**
@@ -77,6 +77,7 @@ export const META_KEY = {
   backup: 'backup',
   logRevision: 'logRevision',
   install: 'install',
+  language: 'language',
 } as const;
 
 /**
@@ -189,7 +190,40 @@ export interface InstallRow {
   readonly installedAtMs: number;
 }
 
-export type MetaRow = EnvelopeRow | DosingHistoryRow | BackupRow | LogRevisionRow | InstallRow;
+/**
+ * `10a` — which language the interface is in, and which Urdu face while that
+ * choice is still open.
+ *
+ * In `meta` rather than in `settings`, and the distinction is not filing. The
+ * settings row is a PRESCRIPTION: §11.3 gives it a revision, §7.7 gives every
+ * revision a period, and §7.7.1's export prints those periods as the clinical
+ * record of what produced which dose. A language is not a dosing input and must
+ * not open a period — putting it there would either bump the revision (a new
+ * prescription period identical to the last, which is the noise `BACKLOG` T18
+ * was fixed to stop) or sit in the one store whose every other field does.
+ *
+ * A MISSING ROW READS AS ENGLISH, and the row is not seeded at database
+ * creation. The same three-state reasoning as `DosingHistoryRow`: an install
+ * predating this feature, or a partial restore, has not chosen a language, and
+ * "has not chosen" and "chose English" are the same thing to render and a
+ * different thing to reason about.
+ *
+ * `urduFace` is kept even while the language is English, so switching back and
+ * forth does not lose the face she was in the middle of comparing.
+ */
+export interface LanguageRow {
+  readonly key: typeof META_KEY.language;
+  readonly language: Language;
+  readonly urduFace: UrduFace;
+}
+
+export type MetaRow =
+  | EnvelopeRow
+  | DosingHistoryRow
+  | BackupRow
+  | LogRevisionRow
+  | InstallRow
+  | LanguageRow;
 
 // ─── settings ───────────────────────────────────────────────────────────────
 

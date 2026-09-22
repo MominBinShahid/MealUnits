@@ -7,7 +7,14 @@
 
 import { DELETE_CONFIRM_WINDOW_HOURS, SCHEMA_VERSION } from '../config.js';
 import { isInjection } from '../core/types.js';
-import type { Injection, LogRow, Reading, RoundingMode, Settings, Tombstone } from '../core/types.js';
+import type {
+  Injection,
+  LogRow,
+  Reading,
+  RoundingMode,
+  Settings,
+  Tombstone,
+} from '../core/types.js';
 import type { SettingsPeriod } from '../core/periods.js';
 import { hasRowInsideWindow } from '../core/history.js';
 import {
@@ -26,6 +33,7 @@ import type {
   DosingHistoryRow,
   EnvelopeRow,
   InstallRow,
+  LanguageRow,
   LogRevisionRow,
   RecoveryBlock,
   SettingsHistoryRow,
@@ -83,6 +91,17 @@ export interface StoredState {
   readonly acks: ReadonlySet<string>;
   readonly dosingHistory: DosingHistoryRow;
   readonly lastJsonExportAtMs: number | null;
+  /**
+   * `10a` — the stored language choice, or `null` when there is none.
+   *
+   * **NULL RATHER THAN A DEFAULT, and the schema comment says why**: a database
+   * with no row has not CHOSEN English, it has not been asked. Those are the
+   * same thing to render and a different thing to reason about, and a storage
+   * layer that collapses them has thrown away the distinction before anything
+   * can use it. The interface applies `DEFAULT_LANGUAGE`; this reports what is
+   * there.
+   */
+  readonly languageChoice: LanguageRow | null;
 }
 
 /** One read of everything the reducer needs, in one transaction. */
@@ -92,7 +111,7 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
     [STORE.meta, STORE.settings, STORE.acks, STORE.log, STORE.readings, STORE.settingsHistory],
     'readonly',
     async (tx) => {
-      const [settingsRow, history, log, readings, acks, revision, install, dosing, backup] =
+      const [settingsRow, history, log, readings, acks, revision, install, dosing, backup, language] =
         await Promise.all([
           get<SettingsRow>(tx, STORE.settings, SETTINGS_KEY),
           getAll<SettingsHistoryRow>(tx, STORE.settingsHistory),
@@ -103,6 +122,7 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
           get<InstallRow>(tx, STORE.meta, META_KEY.install),
           get<DosingHistoryRow>(tx, STORE.meta, META_KEY.dosingHistory),
           get<BackupRow>(tx, STORE.meta, META_KEY.backup),
+          get<LanguageRow>(tx, STORE.meta, META_KEY.language),
         ]);
 
       const settings: Settings | null =
@@ -175,6 +195,12 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
           answeredAtMs: null,
         },
         lastJsonExportAtMs: backup?.lastJsonExportAtMs ?? null,
+        // `10a` — reported as it is, `null` and all. The row is not seeded at
+        // database creation, so its absence means the question has not been
+        // asked, and deciding what that RENDERS as is the interface's business
+        // rather than this function's. Unlike the dosing note above, which has
+        // three states of its own and defaults to the one that keeps asking.
+        languageChoice: language ?? null,
       } satisfies StoredState;
     },
   );
@@ -547,5 +573,29 @@ export function writeDosingHistory(
 ): Promise<IDBValidKey> {
   return runTransaction(db, [STORE.meta], 'readwrite', (tx) =>
     put(tx, STORE.meta, { ...row, key: META_KEY.dosingHistory } satisfies DosingHistoryRow),
+  );
+}
+
+// ─── 10a's language ─────────────────────────────────────────────────────────
+
+/**
+ * Its OWN write, not part of a settings commit, and that is the point.
+ *
+ * Choosing a language must not travel through `commitSettings`: that path
+ * allocates a prescription revision when a provenance field moves, and a
+ * language is not a dosing input. Nor should switching language require saving
+ * the prescription — the reader is on the settings screen looking at typefaces,
+ * not at ratios, and a control that silently commits the form under them is the
+ * kind of side-effect §7.9 ruled against in the other direction.
+ *
+ * The face rides along even when the language is English, so switching back and
+ * forth does not lose the one she was in the middle of comparing.
+ */
+export function writeLanguage(
+  db: IDBDatabase,
+  row: Omit<LanguageRow, 'key'>,
+): Promise<IDBValidKey> {
+  return runTransaction(db, [STORE.meta], 'readwrite', (tx) =>
+    put(tx, STORE.meta, { ...row, key: META_KEY.language } satisfies LanguageRow),
   );
 }

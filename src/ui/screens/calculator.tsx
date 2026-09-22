@@ -25,7 +25,7 @@ import { classOf, eatDelayFor } from '../../core/insulin.js';
 import type { EatDelay } from '../../core/insulin.js';
 import { INSULINS } from '../../data/insulins.js';
 import type { JSX } from 'preact';
-import { units, useCopy } from '../copy.js';
+import { useCopy } from '../copy.js';
 import type { Copy } from '../copy.js';
 import { Advisories, Button, Keypad, Readout, StepDots } from '../components.js';
 import type { AdvisoryView } from '../components.js';
@@ -125,7 +125,7 @@ function advisoryViews(state: AppState, list: readonly Advisory[], copy: Copy): 
             kind,
             title: null,
             body: COPY.stacking.recentDose(
-              units(last.injectedHundredths),
+              COPY.units(last.injectedHundredths),
               elapsedHours(last, state.snapshot?.decisionTime ?? 0),
             ),
           });
@@ -208,7 +208,7 @@ function Working({
 
       <div class="row total">
         <span>{COPY.calculator.rowTotal}</span>
-        <b>{units(doseHundredths)}</b>
+        <b>{COPY.units(doseHundredths)}</b>
       </div>
 
       {breakdown.componentsSumToTotal ? null : (
@@ -399,7 +399,7 @@ function EntryScreen({
       <StepDots
         current={step}
         total={TOTAL_STEPS}
-        label={`${String(step)} of ${String(TOTAL_STEPS)}`}
+        label={COPY.calculator.stepOf(String(step), String(TOTAL_STEPS))}
       />
       {/* Every navigation control — Back, Settings, History — is rendered by the
           shell at the FOOT of the screen (§10.7). Nothing here draws chrome.
@@ -490,7 +490,7 @@ function ConfirmInputs({
         </div>
         <div class="row">
           <span>{COPY.calculator.rowCarbohydrate}</span>
-          <b>{`${state.inputs.carbs}\u00A0g`}</b>
+          <b>{COPY.foods.gramsOne(state.inputs.carbs)}</b>
         </div>
       </div>
       <p class="hint">
@@ -730,7 +730,7 @@ function OverrideScreen({
       {last !== null && outcome.stackingCeilingMgDl !== null ? (
         <p class="hint">
           {COPY.stacking.ceiling(
-            units(last.injectedHundredths),
+            COPY.units(last.injectedHundredths),
             elapsedHours(last, state.snapshot?.decisionTime ?? 0),
             outcome.stackingCeilingMgDl,
           )}
@@ -742,7 +742,7 @@ function OverrideScreen({
         <div class="working">
           <div class="row">
             <span>{COPY.stacking.mealOnly}</span>
-            <b>{units(outcome.hundredths)}</b>
+            <b>{COPY.units(outcome.hundredths)}</b>
           </div>
         </div>
       )}
@@ -750,7 +750,7 @@ function OverrideScreen({
         <Button class="go quiet" onPress={handlers.onTakeOverride}>
           {withheld || outcome.overrideCandidateHundredths === null
             ? COPY.stacking.overrideWithheld
-            : COPY.stacking.overrideAction(units(outcome.overrideCandidateHundredths))}
+            : COPY.stacking.overrideAction(COPY.units(outcome.overrideCandidateHundredths))}
         </Button>
         <Button class="go" onPress={handlers.onBack}>{COPY.calculator.keepSmaller}</Button>
       </div>
@@ -821,7 +821,7 @@ function AmountScreen({
       )}
       {handlers.amountDiverging && Number.isInteger(draft) ? (
         <div class="flag" aria-live="polite">
-          {COPY.log.divergent(units(outcome.hundredths), units(draft))}
+          {COPY.log.divergent(COPY.units(outcome.hundredths), COPY.units(draft))}
         </div>
       ) : null}
       <div class="flag">{COPY.log.amountOnlyChance}</div>
@@ -855,7 +855,7 @@ function LoggedScreen({
         <div role="status">
           <div class="ask">
             {COPY.log.saved(
-              units(payload.injectedUnits),
+              COPY.units(payload.injectedUnits),
               formatClockTime(payload.timestamp, handlers.timeZone),
             )}
           </div>

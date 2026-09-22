@@ -4955,6 +4955,17 @@ MealUnits/
                                 translates away from. Reference only, not shipped
   docs/CLINICAL.md           <- §15 item 3: one section per clinical decision,
                                 with its source and its reversals
+  docs/URDU.md               <- `10a`'s translation glossary: 49 terms, the Urdu
+                                chosen for each, and what was rejected. It exists
+                                because seven agents translated seven sections of
+                                copy.ts in parallel and a glossary is the only
+                                thing that stops them disagreeing about what a
+                                dose is called. DATA of record for the language,
+                                the way CARBS.md is for the food table, and cited
+                                from copy-ur.ts's own header — it lived in a
+                                scratch directory until 2026-09-22, which made
+                                that citation a dangling reference to a file no
+                                maintainer could open
   docs/design/screens.html   <- 8 screens, Card design, annotated
   docs/design/looks.html     <- three interfaces compared: Card / Band / Step
   docs/design/step-flow.html <- 44 screens, the Step design in full

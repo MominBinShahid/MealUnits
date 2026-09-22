@@ -12,3 +12,6 @@ reports/
 # version. One was committed on 2026-09-13 by a `git add -A`.
 __pycache__/
 *.pyc
+
+# Agent worktrees and session scratch. Not project files.
+.claude/

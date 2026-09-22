@@ -10,6 +10,32 @@ import type { InsulinClass } from './insulin.js';
 
 export type RoundingMode = 'nearest' | 'half' | 'ceil' | 'floor' | 'off';
 
+/**
+ * `10a` — the interface languages, and which Arabic-script face Urdu is set in
+ * while that choice is still open.
+ *
+ * They are HERE rather than beside the list that renders them because the
+ * stored row is in `src/storage/schema.ts`, and storage importing from `src/ui`
+ * would invert the layering. Everything else about the choice — the four faces,
+ * their sizes, which is the default, what the document element carries — lives
+ * in `src/ui/language.ts`, which is written to be mostly deleted when she picks.
+ */
+export type Language = 'en' | 'ur';
+
+/** See `Language`. Three of these four go when the face is chosen. */
+export type UrduFace = 'nastaliq' | 'gulzar' | 'naskh' | 'sans';
+
+/*
+ * The DEFAULTS are deliberately not here, in `src/ui/language.ts` instead.
+ *
+ * Only the types belong in core: a type is erased at compile time, and a value
+ * is not. §13.4's gate holds `src/core` at 100% mutation, and two string
+ * constants that no core test reads are two mutants nothing can kill — which is
+ * how the gate reported them, correctly. They are not core domain values, they
+ * are what the INTERFACE does when nobody has chosen, so they live beside the
+ * list that renders the choice.
+ */
+
 /** §3's bands. C and D are terminal; B and E can co-occur with nothing else. */
 export type Band = 'A' | 'B' | 'C' | 'D' | 'E';
 

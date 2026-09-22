@@ -43,6 +43,7 @@ export default defineConfig({
       'test/threshold.test.ts',
       'test/sweep.test.ts',
       'test/timing.test.ts',
+      'test/units-scaling.test.ts',
       'test/types.test.ts',
     ],
   },

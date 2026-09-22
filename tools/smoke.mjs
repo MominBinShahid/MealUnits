@@ -413,7 +413,11 @@ await session('/tmp/mealunits-smoke-faces', 9309, 412, async ({ ev, open }) => {
   const asked = `performance.getEntriesByType('resource').filter((e) => e.name.includes('fonts-urdu'))`;
   // The whole reason the faces are excluded from the precache. 448 KB across
   // four files, against an app whose entire Latin typography is 42 KB.
-  check('faces: an English reader downloads not one Urdu byte', await ev(`${asked}.length`), 0);
+  // "not one FONT byte", and the precision matters: the WORDS are in the main
+  // bundle, which every phone precaches. That is a recorded trade-off, not an
+  // oversight — see BACKLOG 10a — and a check named "not one Urdu byte" would
+  // have been literally false the day the translation landed.
+  check('faces: an English reader downloads not one font byte', await ev(`${asked}.length`), 0);
   check('faces: and no cache has been opened for them', await ev(
     `caches.keys().then((n) => n.includes('mealunits-fonts-urdu'))`), false);
 
@@ -458,6 +462,82 @@ await session('/tmp/mealunits-smoke-faces', 9309, 412, async ({ ev, open }) => {
        }
        return 'none';
      })()`), 'none');
+});
+
+// 1c. `10a` — the language list, driven the way a person drives it.
+//
+// Everything in 1b sets `lang` and `data-urdu-face` by hand, which proves the
+// stylesheet and the worker and nothing about the interface. This completes
+// setup and taps the real rows: English, four faces, a confirmation before the
+// first Urdu, and the whole document flipped afterwards.
+rmSync('/tmp/mealunits-smoke-language', { recursive: true, force: true });
+await session('/tmp/mealunits-smoke-language', 9310, 412, async ({ ev, send, open }) => {
+  await open(URL_UNDER_TEST);
+  await setUp({ ev, send });
+  await wait(600);
+  await ev(`(() => {
+    const nav = [...document.querySelectorAll('.foot-nav button')]
+      .find((b) => /Settings/.test(b.textContent));
+    nav?.click();
+    return 'ok';
+  })()`);
+  await wait(700);
+
+  // Found by STRUCTURE, not by its heading. The heading is «زبان» once the
+  // switch has happened, so matching on "Language" would make every check after
+  // the switch report `null` — which is what the first version of this session
+  // did, and it looked exactly like the app having lost the English row.
+  const rows = `(() => {
+    const card = [...document.querySelectorAll('.card')]
+      .find((c) => [...c.querySelectorAll('button')].some((b) => /^English/.test(b.textContent.trim())));
+    return card ? [...card.querySelectorAll('button')].map((b) => b.textContent.trim()) : null;
+  })()`;
+  check('language: English plus one row per face', await ev(`${rows}?.length ?? 'no card'`), 5);
+  // The label the whole ruling is conditional on. Momin allowed Urdu in
+  // production rather than behind a flag BECAUSE the option says what it is.
+  check('language: every Urdu row says it is in testing', await ev(
+    `${rows}?.filter((t) => /In testing/.test(t)).length`), 4);
+
+  // Tapping an Urdu row must WARN before it does anything — and before it has
+  // downloaded anything either.
+  await ev(`(() => {
+    const card = [...document.querySelectorAll('.card')]
+      .find((c) => /Language/.test(c.textContent));
+    [...card.querySelectorAll('button')].find((b) => /Nastaliq/.test(b.textContent))?.click();
+    return 'ok';
+  })()`);
+  await wait(500);
+  check('language: choosing Urdu warns first', await ev(
+    `/has not been checked yet/.test(document.body.innerText)`), true);
+  check('language: and has downloaded nothing yet', await ev(
+    `performance.getEntriesByType('resource').filter((e) => e.name.includes('fonts-urdu')).length`), 0);
+  check('language: the document is still English', await ev(
+    `document.documentElement.lang + ',' + document.documentElement.dir`), 'en,ltr');
+
+  await ev(`(() => {
+    [...document.querySelectorAll('button')]
+      .find((b) => /Use Urdu anyway/.test(b.textContent))?.click();
+    return 'ok';
+  })()`);
+  await wait(1200);
+  check('language: confirming flips lang, dir and the face together', await ev(
+    `[document.documentElement.lang, document.documentElement.dir,
+      document.documentElement.dataset.urduFace].join(',')`), 'ur,rtl,nastaliq');
+  check('language: and NOW the face is fetched — exactly one', await ev(
+    `performance.getEntriesByType('resource')
+       .filter((e) => e.name.includes('fonts-urdu'))
+       .map((e) => e.name.split('/').pop()).join()`), 'NotoNastaliqUrdu.woff2');
+  check('language: the interface is actually in Urdu', await ev(
+    `document.querySelector('h1')?.textContent`), '\u0633\u06CC\u0679\u0646\u06AF\u0632');
+
+  // §10.4's figures do not move. The subsets carry no digits, so every number
+  // keeps rendering in the face its rules were written for.
+  check('language: and the digits are still Latin', await ev(
+    `/[0-9]/.test(document.body.innerText) && !/[\u06F0-\u06F9]/.test(document.body.innerText)`), true);
+
+  // The way back has to be findable by someone who cannot read the rest.
+  check('language: English is still spelled "English"', await ev(
+    `${rows}?.some((t) => /English/.test(t))`), true);
 });
 
 // 2. Layout, at a phone width and a desktop width.
