@@ -1530,6 +1530,18 @@ p.keep {
   display: grid;
   gap: 0.125rem;
   justify-items: start;
+  /*
+   * NOT the body line-height. `--lh-body` is 2.3 under Nastaliq because
+   * PARAGRAPHS of it collide without that much leading — the script descends
+   * steeply and a tight setting makes one line sit inside the next. These two
+   * spans are one short line each, so they were paying paragraph leading for
+   * nothing and «اردو» ended up floating a long way above its own face name.
+   *
+   * 1.5 measured rather than guessed: «اردو ٹیسٹنگ میں ہے» inks 19px at 1rem in
+   * all four faces, and 1.5 gives a 24px line box. Five pixels of slack, and
+   * nothing here ever wraps to a second line where the leading would matter.
+   */
+  line-height: 1.5;
   /* Claim the row so the tag is pushed to the edge rather than sitting beside
      the text — `min-width: 0` for the reason the history row needed it. */
   flex: 1;
