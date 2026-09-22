@@ -17,7 +17,9 @@
  *     replaces an old one. Tapping "Log this injection" at the wrong moment
  *     blanked the screen and looked like the tap was ignored.
  *
- * Run against a served build:
+ * Run it:  npm run smoke:serve      builds, serves, tests, cleans up
+ *
+ * Against a build something else is already serving:
  *   npm run build && npm run preview -- --port 4173 --host & npm run smoke
  *
  * `--host` matters: without it `vite preview` binds to localhost only and the
@@ -36,7 +38,7 @@
  * this rule was written for; two qualified and two did not, and the two that did
  * are below.
  */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { setTimeout as wait } from 'node:timers/promises';
 import { existsSync, rmSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
@@ -409,6 +411,39 @@ const reachable = async (url) => {
     return true;
   } catch { return false; }
 };
+
+/**
+ * `--serve` does the two steps this file needs someone else to have done.
+ *
+ * The preflight below turns "(no #app)" into a sentence naming the missing
+ * step, which is most of the fix. This is the rest of it: the steps are
+ * `npm run build` and `npm run preview -- --port 4173 --host`, in that order,
+ * and forgetting EITHER produces a confusing run rather than an obvious one.
+ * A stale `dist` is the worse of the two, because everything goes green against
+ * code you are not testing.
+ *
+ * CI keeps using the plain `npm run smoke` — it serves the build itself and
+ * sets SMOKE_LAN_URL=none, and a run that starts its own server would hide a
+ * broken one.
+ */
+const SERVE = process.argv.includes('--serve');
+let server = null;
+if (SERVE) {
+  console.log('smoke: --serve — building, then serving on 4173');
+  const built = spawnSync('npm', ['run', 'build'], { stdio: 'inherit', shell: false });
+  if (built.status !== 0) { console.log('smoke: the build failed; nothing to test'); process.exit(1); }
+  // `--host` so the insecure-origin session has a LAN address to reach. Without
+  // it that session fails LAST, after a minute of green, which is exactly the
+  // shape of failure this flag exists to stop happening.
+  server = spawn('npx', ['vite', 'preview', '--port', '4173', '--host'], { stdio: 'ignore' });
+  const stop = () => { if (server && !server.killed) server.kill(); };
+  process.on('exit', stop);
+  for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { stop(); process.exit(1); });
+  for (let i = 0; i < 100; i++) {
+    if (await reachable(SECURE_URL)) break;
+    await wait(200);
+  }
+}
 
 if (!(await reachable(SECURE_URL))) {
   console.log(`smoke: nothing is serving ${SECURE_URL}`);
