@@ -1971,6 +1971,7 @@ export const COPY_UR: Copy = {
     how_it_works: 'یہ کیسے کام کرتی ہے — MealUnits',
     food_list: 'پاکستانی کھانوں میں کاربوہائیڈریٹ — MealUnits',
     history: 'آپ کا ریکارڈ — MealUnits',
+    settings_text: 'میری سیٹنگز — MealUnits',
     settings: 'سیٹنگز — MealUnits',
     calculator: 'MealUnits — ٹائپ 1 ذیابیطس کے لیے کھانے کی انسولین کا حساب',
   },

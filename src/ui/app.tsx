@@ -1174,8 +1174,7 @@ export async function start(host: Host): Promise<void> {
           },
           onOpenSettingsAsText: () => {
             view.screenBefore = state.screen;
-            showAsText = true;
-            dispatch({ type: 'go', screen: 'how_it_works' });
+            dispatch({ type: 'go', screen: 'settings_text' });
           },
         }} />;
 
@@ -1312,10 +1311,24 @@ export async function start(host: Host): Promise<void> {
           />
         );
 
-      case 'how_it_works':
-        return showAsText && state.settings !== null ? (
-          <SettingsAsTextScreen settings={state.settings} />
+      case 'settings_text':
+        // `state.settings === null` cannot be reached from the control that
+        // opens this — it lives on a settings screen that has them — but the
+        // reducer's type allows it and an ADDRESS now reaches this screen
+        // directly, so the null case is a real arrival rather than a
+        // hypothetical. How-it-works is the honest thing to show: it explains
+        // the numbers this screen would have printed.
+        return state.settings === null ? (
+          <HowItWorksScreen
+            advisoryStatus={advisoryStatus()}
+            insulinBrand={brandFor(view.draft.bolusId) || null}
+          />
         ) : (
+          <SettingsAsTextScreen settings={state.settings} />
+        );
+
+      case 'how_it_works':
+        return (
           <HowItWorksScreen
             advisoryStatus={advisoryStatus()}
             insulinBrand={brandFor(view.draft.bolusId) || null}
@@ -1404,7 +1417,6 @@ export async function start(host: Host): Promise<void> {
   // The view rendered last, so `render` can tell a redraw from a navigation.
   let lastViewKey = '';
   let showClear = false;
-  let showAsText = false;
 
   let settled = false;
   /** §12's answer once it lands; `undefined` until then, which is not `null`. */
@@ -1471,14 +1483,12 @@ export async function start(host: Host): Promise<void> {
         return (): void => { dispatch({ type: 'go', screen: 'calculator' }); };
 
       case 'how_it_works':
-        // Back goes where you CAME from, not to a fixed screen. The two entry
-        // points both sit in settings today, so this reads as "settings" either
-        // way — but it is the mechanism that lets first-run setup link here
-        // without handing out an exit from itself.
-        return (): void => {
-          showAsText = false;
-          dispatch({ type: 'go', screen: view.screenBefore });
-        };
+      case 'settings_text':
+        // Back goes where you CAME from, not to a fixed screen. The entry points
+        // both sit in settings today, so this reads as "settings" either way —
+        // but it is the mechanism that lets first-run setup link here without
+        // handing out an exit from itself.
+        return (): void => { dispatch({ type: 'go', screen: view.screenBefore }); };
       // §10.6 and §11.3 — the first run and the fail-closed screen are
       // deliberately inescapable. No back, and no hardware back either.
       //
