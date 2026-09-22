@@ -835,6 +835,24 @@ sees "Thin flatbread, about 25 g" under Urdu chrome. This entry has always scope
 ("those 32 names are a small, self-contained task his mother could do, unlike the clinical copy")
 and the field called `urdu` still holds Roman transliterations rather than Urdu script.
 
+**"Show my settings as text" was never a screen.** It rendered from `how_it_works` behind a boolean
+living outside the reducer, so the address read `/how-it-works/` while the page said "My settings",
+`document.title` named the wrong page in the tab and the app-switcher card, and the address did not
+ROUND-TRIP — a bookmark to it reopened the real how-it-works once the boolean reset. A screen the
+reader is told to photograph and hand to a clinician is not one to leave un-addressable. It is
+`settings_text` at `/my-settings/` now, with its own title in both languages.
+
+**The language list, laid out for a list where every row carries a status.** The tags followed the
+text inline, so the badge landed in a different place on every row and nothing aligned down the
+column; they sit on the trailing edge now and form a column of their own. The row in use is marked
+by a lit leading edge as well as a word — a list of five where the only difference is a badge to read
+is a list you check twice.
+
+**Amber for "in testing", the mark colour for "in use", and the split is deliberate.** §10.5 already
+owns `--warn` on `--warn-bg` for "read this before acting on it", and an unreviewed translation is
+exactly that. Colouring "in use" the same would say a reader's current language is a warning, and
+would spend the one colour this app reserves for stop-and-read.
+
 **A fourth typeface nobody chose, and the bold that never arrived.** Both reported off screenshots.
 
 **The mono face has no Arabic.** Three labels use IBM Plex Mono — the step counter, the unit under

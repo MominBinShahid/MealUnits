@@ -957,27 +957,36 @@ export function SettingsScreen({
           <b>{COPY.language.label}</b>
           {confirmingUrdu === null ? (
             <div class="list">
+              {/* `lang-row` rather than `insulin`: the same card, but the tag
+                  moves to the TRAILING edge and the name and face sit together
+                  on the leading one. Stacked, the three lines never lined up
+                  with each other or with the next row. */}
               <Button
-                class="go quiet insulin"
+                class={`go quiet lang-row${language === 'en' ? ' picked' : ''}`}
                 aria-current={language === 'en'}
                 onPress={() => { handlers.onChooseLanguage('en', urduFace); }}
               >
-                <span class="brand">{COPY.language.english}</span>
-                {language === 'en' ? <span class="tag">{COPY.language.inUse}</span> : null}
+                <span class="lang-name">
+                  <span class="brand">{COPY.language.english}</span>
+                </span>
+                {language === 'en' ? <span class="tag in-use">{COPY.language.inUse}</span> : null}
               </Button>
               {URDU_FACES.map((face) => (
                 <Button
                   key={face.id}
-                  class="go quiet insulin"
+                  class={`go quiet lang-row${
+                    language === 'ur' && urduFace === face.id ? ' picked' : ''}`}
                   aria-current={language === 'ur' && urduFace === face.id}
                   onPress={() => { handlers.onChooseLanguage('ur', face.id); }}
                 >
-                  {/* `lang` on the span so a reader's browser picks a sensible
-                      system face for the three words of Urdu on an English
-                      screen. It does NOT match `body:lang(ur)`, which is what
-                      keeps this from downloading anything. */}
-                  <span class="brand" lang="ur">{COPY.language.urdu}</span>
-                  <span class="molecule">{face.name}</span>
+                  <span class="lang-name">
+                    {/* `lang` on the span so a reader's browser picks a sensible
+                        system face for the three words of Urdu on an English
+                        screen. It does NOT match `body:lang(ur)`, which is what
+                        keeps this from downloading anything. */}
+                    <span class="brand" lang="ur">{COPY.language.urdu}</span>
+                    <span class="molecule">{face.name}</span>
+                  </span>
                   {/* The in-testing label is the condition Momin's ruling
                       rests on — Urdu ships in production BECAUSE the option
                       says what it is. It reads `LANGUAGE_IN_TESTING` rather
@@ -987,9 +996,9 @@ export function SettingsScreen({
                       a reviewed language ships, clearing that constant clears
                       the badge and this row stops lying. */}
                   {language === 'ur' && urduFace === face.id ? (
-                    <span class="tag">{COPY.language.inUse}</span>
+                    <span class="tag in-use">{COPY.language.inUse}</span>
                   ) : LANGUAGE_IN_TESTING === 'ur' ? (
-                    <span class="tag">{COPY.language.inTesting}</span>
+                    <span class="tag in-testing">{COPY.language.inTesting}</span>
                   ) : null}
                 </Button>
               ))}

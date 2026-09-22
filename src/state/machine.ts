@@ -80,6 +80,23 @@ export type Screen =
   | 'export'
   | 'how_it_works'
   /**
+   * §7.7's settings, written out to be PHOTOGRAPHED and shown to a doctor.
+   *
+   * Its own screen since 2026-09-22, and it was not one before: it rendered
+   * from `how_it_works` behind a `showAsText` boolean living outside the
+   * reducer. Three things were wrong with that and all three are addressable
+   * from the browser, which is where they were found —
+   *
+   *   the address read `/how-it-works/` while the page said "My settings";
+   *   `document.title` said "How this works", so the tab and the app-switcher
+   *   card named the wrong page; and the address did not ROUND-TRIP, because a
+   *   bookmark to it reopened the real how-it-works once the boolean reset.
+   *
+   * A screen the reader is told to photograph and hand to a clinician is not a
+   * screen to leave un-addressable.
+   */
+  | 'settings_text'
+  /**
    * §11.8's reference data, as a screen. Read-only by design: it never writes
    * into the carbohydrate field, so a wrong row can mislead but can never
    * silently drive a dose — the property §7.8 gives readings, applied to food.

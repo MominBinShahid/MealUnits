@@ -1488,6 +1488,82 @@ p.keep {
   font-size: 0.9em;
 }
 
+/*
+ * `10a`'s language rows. The same card as an insulin row, laid out for a list
+ * whose every entry carries a STATUS rather than only a name.
+ *
+ * `.insulin` stacks its two lines and lets the tag follow the text inline,
+ * which put the badge in a different place on every row — after "English" on
+ * one, under a typeface name on the next — and left nothing aligned down the
+ * column. Here the name and the face are one leading block and the tag is
+ * pinned to the trailing edge, so the badges form a column of their own and a
+ * reader can compare status without reading.
+ */
+.lang-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  text-align: start;
+  /* Shorter than a `.go` row: these carry two short lines, not a sentence. */
+  min-height: var(--touch);
+  padding: 0.625rem 0.875rem;
+}
+
+.lang-name {
+  display: grid;
+  gap: 0.125rem;
+  justify-items: start;
+  /* Claim the row so the tag is pushed to the edge rather than sitting beside
+     the text — `min-width: 0` for the reason the history row needed it. */
+  flex: 1;
+  min-width: 0;
+}
+
+/*
+ * THE ONE IN USE, marked by more than a word. A list of five where the only
+ * difference is a badge somebody has to read is a list you check twice; a lit
+ * edge is answerable at a glance, which is what a reader comparing typefaces is
+ * doing several times a minute.
+ *
+ * `--mark` on the leading edge, the same accent §10.5's warning bar uses on its
+ * own edge and the same one the primary action is filled with, so "this is the
+ * live one" reads in the vocabulary the rest of the app already speaks.
+ */
+.lang-row.picked {
+  border-color: var(--mark);
+  box-shadow: inset 2px 0 0 0 var(--mark);
+}
+
+/*
+ * `inset 2px 0` is a LOGICAL problem the shorthand cannot express: `box-shadow`
+ * has no inline-axis form, so the offset is physical and would sit on the right
+ * in Urdu, away from where the line starts. Flipped explicitly.
+ */
+:root[dir='rtl'] .lang-row.picked {
+  box-shadow: inset -2px 0 0 0 var(--mark);
+}
+
+/*
+ * IN TESTING IS A CAUTION AND IS COLOURED LIKE ONE. §10.5 already owns this
+ * pair — `--warn` on `--warn-bg` is what the app uses when something needs
+ * reading before it is acted on, and an unreviewed translation is exactly that.
+ *
+ * IN USE IS NOT A CAUTION, so it takes `--mark`. Colouring both amber would say
+ * the reader's current language is a warning, which it is not, and would spend
+ * the one colour this app reserves for "stop and read".
+ */
+.tag.in-testing {
+  color: var(--warn);
+  border-color: var(--warn-line);
+  background: var(--warn-bg);
+}
+
+.tag.in-use {
+  color: var(--mark);
+  border-color: var(--mark);
+}
+
 .tag {
   font-family: 'IBM Plex Mono', var(--urdu-family, ui-monospace), ui-monospace,
     SFMono-Regular, Menlo, monospace;

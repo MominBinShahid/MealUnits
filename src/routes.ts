@@ -24,7 +24,12 @@
  */
 
 /** The screen names this table may address. Kept structural rather than imported — see above. */
-export type RoutableScreen = 'settings' | 'history' | 'how_it_works' | 'food_list';
+export type RoutableScreen =
+  | 'settings'
+  | 'settings_text'
+  | 'history'
+  | 'how_it_works'
+  | 'food_list';
 
 export interface Route {
   /** The path segment under `BASE`. No leading or trailing slash. */
@@ -54,6 +59,17 @@ export const ROUTES: readonly Route[] = [
     title: 'Carbohydrate in Pakistani food — MealUnits',
     description:
       'Carbohydrate per real portion for everyday Pakistani food, each value with its source and how well measured it is.',
+  },
+  {
+    // The screen the reader is told to photograph for a doctor. It answered to
+    // `/how-it-works/` until 2026-09-22, because it rendered from that screen
+    // behind a boolean — so the address, the tab and the app-switcher card all
+    // named a different page, and a bookmark to it reopened the wrong one.
+    segment: 'my-settings',
+    screen: 'settings_text',
+    title: 'My settings — MealUnits',
+    description:
+      'The three numbers your doctor set, written out on one screen to be photographed and shown to them.',
   },
   {
     segment: 'history',

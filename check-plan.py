@@ -911,9 +911,16 @@ UI_TEXT_PENDING = {
     # history row. `src/core` imports nothing by design, so it cannot read a copy
     # object; the fix is a language seam into the domain, not a `COPY` key.
     "src/core/calendar.ts": 3,
-    # `document.title`, on every screen. Pinned against `index.html` by
-    # `check_route_titles_agree`, so translating it is that check's business too.
-    "src/routes.ts": 9,
+    # `document.title` and the meta description, per route. 9 until 2026-09-22,
+    # when the settings-as-text screen got an address of its own and brought a
+    # title and a description with it.
+    #
+    # Rising is LEGITIMATE here and only here, which is why the number is
+    # explained rather than just bumped: a route's English title is the shipped
+    # value — the crawler's, the link preview's — and `copy.ts`'s `tabTitles`
+    # overrides it per language at runtime. The English cannot leave this file
+    # without breaking `check_route_titles_agree`'s pin against `index.html`.
+    "src/routes.ts": 11,
     # "another brand", "Two insulins in a fixed ratio". Reference data, like the
     # food table — the same task and the same owner.
     "src/data/insulins.ts": 59,
@@ -941,6 +948,10 @@ UI_TEXT_OK = {
     # class value in EXPRESSION position — single-quoted in code, so the
     # attribute arm never sees it.
     "field wide",
+    # `10a`'s language rows build their class list with a ternary, which puts the
+    # value in EXPRESSION position where the attribute arm cannot see it — the
+    # same shape, and the same reason, as "field wide" above.
+    " picked", "go quiet lang-row",
     # `10a`'s four typeface names, in `src/ui/language.ts`. They ARE rendered —
     # each sits beside the row that selects it — and they are exempt for the
     # same reason the insulin brands are: **a typeface name is a proper noun
