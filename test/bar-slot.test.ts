@@ -107,13 +107,46 @@ describe('§10.5 — one bar at a time, by priority, the rest queued', () => {
     expect(b.removed).toEqual([]);
   });
 
-  it('replaces the spec when the same bar is raised again', () => {
-    const { slot, painted } = spy();
+  /**
+   * CORRECTED 2026-09-22, and the old assertion is worth recording because the
+   * test's own NAME and COMMENT already described the right behaviour while the
+   * expectation encoded the wrong one.
+   *
+   * It asserted `painted === ['first']` — the second spec queued and the painted
+   * text left alone — under a name reading "replaces the spec" and a comment
+   * reading "§7.2's retry updates the amount". Two things were conflated: not
+   * opening a SECOND bar (right, and still asserted below) and not updating the
+   * FIRST one (wrong).
+   *
+   * Two defects rode on it. §7.2's stuck-dose bar is re-raised when a retry
+   * fails, with a different amount, and kept showing the first. And `10a`'s
+   * language switch re-raises whatever is standing so its words follow the
+   * choice — the install offer sat in English on an Urdu screen on the deployed
+   * build, which is how this was found.
+   */
+  it('repaints the same bar with the new spec, without opening a second', () => {
+    const { slot, painted, removed } = spy();
     slot.raise('stuck', 'first');
     slot.raise('stuck', 'second');
-    // Same kind, so the slot does not churn — §7.2's retry updates the amount
-    // rather than opening a second bar about the same dose.
-    expect(painted).toEqual(['first']);
+    // The words follow the re-raise...
+    expect(painted).toEqual(['first', 'second']);
+    // ...and the first one came DOWN rather than being covered by the second.
+    expect(removed).toEqual(['first']);
+    expect(slot.showing()).toBe('stuck');
+  });
+
+  /**
+   * The other direction, which the corrected test above must not have broken: a
+   * bar raised BEHIND the one on screen still only queues. Taking the showing
+   * bar down to queue something lower is the replacement behaviour this slot
+   * exists to prevent.
+   */
+  it('and a lower-priority bar raised behind it still only queues', () => {
+    const { slot, painted, removed } = spy();
+    slot.raise('stuck', 'stuck');
+    slot.raise('install', 'install');
+    expect(painted).toEqual(['stuck']);
+    expect(removed).toEqual([]);
     expect(slot.showing()).toBe('stuck');
   });
 

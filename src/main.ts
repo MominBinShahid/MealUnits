@@ -31,6 +31,7 @@ import type { Copy } from './ui/copy.js';
  * the database has been read, which is where the language lives.
  */
 let copy: Copy = COPY;
+
 import { createBarSlot } from './ui/bar-slot.js';
 
 /**
@@ -135,6 +136,27 @@ interface BarSpec {
 const bars = createBarSlot<BarSpec>((spec, gone) => paintBar(spec, gone));
 
 /**
+ * How a standing bar learns the language, keyed by kind.
+ *
+ * `10a` taught these three bars to READ their words from `copy`; it did not
+ * teach them to read them AGAIN. They are raised once and latched — `offered`
+ * and `shown` exist so a bar cannot stack on itself — and the update offer is
+ * raised from `whenLoaded`, which runs SYNCHRONOUSLY on a revisit served from
+ * cache. That is before `start()` has opened the database, so before the
+ * language is known.
+ *
+ * It was visible on the deployed build: an install offer reading "Add this to
+ * your home screen?" under an interface in Urdu. On screen, not theorised.
+ *
+ * Only the bar `bars.showing()` names is repainted, which is what keeps a
+ * DISMISSED one from being resurrected by a language change. The limit that
+ * leaves: a bar sitting in the queue behind another keeps the words it was
+ * raised with until it surfaces. One bar at a time is the normal case and the
+ * queue is rarely deeper than one, so this is stated rather than solved.
+ */
+const redraw = new Map<string, () => void>();
+
+/**
  * Builds one bar and returns its close. Knows nothing about priority or the
  * queue — `reconcileBar` owns which bar exists, this owns what it looks like.
  *
@@ -207,12 +229,16 @@ function registerServiceWorker(): void {
     // page grows a stack of identical bars.
     if (offered) return;
     offered = true;
-    bars.raise('update', {
-      text: copy.update.ready,
-      actionLabel: copy.update.useNow,
-      onAction: () => { waiting.postMessage({ type: 'SKIP_WAITING' }); },
-      dismissLabel: copy.update.later,
-    });
+    const paint = (): void => {
+      bars.raise('update', {
+        text: copy.update.ready,
+        actionLabel: copy.update.useNow,
+        onAction: () => { waiting.postMessage({ type: 'SKIP_WAITING' }); },
+        dismissLabel: copy.update.later,
+      });
+    };
+    redraw.set('update', paint);
+    paint();
   };
 
   /**
@@ -396,12 +422,16 @@ function offerInstall(): { routine: () => void; atRisk: (show: boolean) => void 
       const prompt = pending;
       if (prompt === null || shown) return;
       shown = true;
-      bars.raise('install', {
-        text: copy.install.offer,
-        actionLabel: copy.install.add,
-        onAction: () => { void prompt.prompt(); },
-        dismissLabel: copy.install.notNow,
-      });
+      const paint = (): void => {
+        bars.raise('install', {
+          text: copy.install.offer,
+          actionLabel: copy.install.add,
+          onAction: () => { void prompt.prompt(); },
+          dismissLabel: copy.install.notNow,
+        });
+      };
+      redraw.set('install', paint);
+      paint();
     },
     /**
      * §12 — the same offer, when the browser has not promised to keep the
@@ -562,8 +592,13 @@ if (root) {
     // than a line on the logged screen because `committing` outlives that
     // screen now: by the time this fires he may be two screens away.
     // `10a` — the bars above are outside the app root and no provider reaches
-    // them. This is how they learn the language.
-    onCopy: (next) => { copy = next; },
+    // them. This is how they learn the language, and the redraw is why they
+    // learn it even when they were raised before the database was read.
+    onCopy: (next) => {
+      copy = next;
+      const standing = bars.showing();
+      if (standing !== null) redraw.get(standing)?.();
+    },
     onSaveStuck: (amount, retry) => {
       bars.raise('stuck', {
         text: copy.log.stuck(amount),

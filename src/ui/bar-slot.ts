@@ -84,8 +84,33 @@ export function createBarSlot<Spec>(
   };
 
   return {
+    /**
+     * Raise a bar, or REPLACE the words of one already on screen.
+     *
+     * `reconcile` returns early when the winner has not changed, which is right
+     * for the queue and wrong for the spec: re-raising the bar that is showing
+     * used to update the queue and leave the painted text alone. Two things
+     * depended on that being wrong —
+     *
+     *   §7.2's stuck-dose bar is raised again when a RETRY fails, with a
+     *   different amount, and kept displaying the first one.
+     *
+     *   `10a`'s language switch re-raises whatever is standing so its words
+     *   follow the choice. The install offer sat in English on an Urdu screen on
+     *   the deployed build, which is how this was found.
+     *
+     * So a re-raise of the showing kind tears it down first. A re-raise of any
+     * other kind still only queues, because taking a bar down to queue one
+     * BEHIND it is the replacement behaviour this slot exists to prevent.
+     */
     raise: (kind, spec) => {
+      const replacing = showing === kind;
       queued.set(kind, spec);
+      if (replacing) {
+        close?.();
+        close = null;
+        showing = null;
+      }
       reconcile();
     },
     retire: (kind) => {
