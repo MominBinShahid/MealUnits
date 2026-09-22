@@ -36,6 +36,7 @@ Exit code 0 = clean, 1 = findings.
 """
 
 import io
+import multiprocessing
 import json
 import math
 import os
@@ -4918,11 +4919,79 @@ SELF_TESTS = [
 # --- DECLARED TABLES END ---
 
 
+# The corpus every seeded run starts from, filled in by `self_test` before the
+# pool is forked. It is module-level rather than a closure for one reason: a
+# forked child inherits module globals, and `Pool.map` pickles the function it is
+# given BY NAME, which a nested one does not have.
+_SELF_TEST_BASE = {}
+
+
+def _self_test_run(overrides):
+    """One full run of the checker over `_SELF_TEST_BASE` plus `overrides`.
+
+    Every check in this file is supposed to read through `load`, which is what
+    makes a seeded mutation visible to it — the override below is the entire
+    mechanism. Two checks were reading the disk directly as late as 2026-09-22,
+    and the only reason anyone found out is that a seed against them escaped.
+    """
+    files = dict(_SELF_TEST_BASE)
+    files.update(overrides)
+    saved = globals()["load"]
+    globals()["load"] = lambda p: files.get(
+        _corpus_key(os.path.relpath(p, HERE).replace(os.sep, "/")), saved(p))
+    try:
+        buf = io.StringIO()
+        stdout, sys.stdout = sys.stdout, buf
+        try:
+            rc = main(_inner=True)
+        finally:
+            sys.stdout = stdout
+        return rc
+    finally:
+        globals()["load"] = saved
+
+
+def _self_test_seed(index):
+    """Run seed `index` and return `(label, why)` if it escaped, else `None`.
+
+    Takes an INDEX rather than the seed itself because the seeds are lambdas and
+    a lambda cannot be pickled to a worker process. The index can; the child
+    already has `SELF_TESTS` from the fork.
+    """
+    label, rel, fn = SELF_TESTS[index]
+    if rel not in _SELF_TEST_BASE:
+        return (label, "target file %s is missing" % rel)
+    mutated = fn(_SELF_TEST_BASE[rel])
+    if mutated == _SELF_TEST_BASE[rel]:
+        return (label, "mutation changed nothing — the anchor it edits "
+                       "has moved, so this test verifies nothing")
+    if _self_test_run({rel: mutated}) == 0:
+        return (label, "NOT CAUGHT")
+    return None
+
+
 def self_test():
     """Run every seeded mutation and report which the checker fails to catch.
 
     A check that cannot be shown to fail on a real defect is not a check. This
     runs entirely in memory: nothing on disk is read twice or written once.
+
+    ACROSS EVERY CORE, since 2026-09-22. The seeds are independent by
+    construction — each is one mutation applied to a private copy of an
+    in-memory corpus — so the serial loop was costing about three minutes of a
+    developer's attention per verification pass, on a machine with ten cores
+    sitting idle. Momin asked why the loop was so slow; this was the largest
+    single answer.
+
+    `fork` explicitly, not the platform default. macOS defaults to `spawn`, which
+    re-imports the module — and this file is a SCRIPT, so a spawned child would
+    execute it from the top rather than import it. Fork also hands each child the
+    corpus for free, which is the expensive thing to set up. This process has no
+    threads, which is the condition that makes fork safe.
+
+    Order is preserved and the serial path is kept, so the output is identical
+    either way: `Pool.map` returns results in input order, and a platform without
+    fork falls back rather than failing.
     """
     # Keyed the same way `load_all` keys the corpus, so a seed naming `PLAN.md`
     # still finds it after the documents moved into docs/. Keying by raw path
@@ -4991,39 +5060,32 @@ def self_test():
                 full = os.path.join(dirpath, name)
                 base[os.path.relpath(full, HERE).replace(os.sep, "/")] = load(full)
 
-    def run(overrides):
-        files = dict(base)
-        files.update(overrides)
-        saved = globals()["load"]
-        globals()["load"] = lambda p: files.get(
-            _corpus_key(os.path.relpath(p, HERE).replace(os.sep, "/")), saved(p))
-        try:
-            buf = io.StringIO()
-            stdout, sys.stdout = sys.stdout, buf
-            try:
-                rc = main(_inner=True)
-            finally:
-                sys.stdout = stdout
-            return rc
-        finally:
-            globals()["load"] = saved
+    _SELF_TEST_BASE.clear()
+    _SELF_TEST_BASE.update(base)
 
-    if run({}) != 0:
+    # Serial, and BEFORE the fork. A checker that is already failing makes every
+    # seed below meaningless — each one would be "caught" by the defect that was
+    # there to begin with — and the children inherit this corpus, so it is also
+    # the last chance to find out cheaply.
+    if _self_test_run({}) != 0:
         print("SELF-TEST ABORTED: the checker is not clean on the real files.")
         return 1
 
     escaped = []
-    for label, rel, fn in SELF_TESTS:
-        if rel not in base:
-            escaped.append((label, "target file %s is missing" % rel))
-            continue
-        mutated = fn(base[rel])
-        if mutated == base[rel]:
-            escaped.append((label, "mutation changed nothing — the anchor it edits "
-                                   "has moved, so this test verifies nothing"))
-            continue
-        if run({rel: mutated}) == 0:
-            escaped.append((label, "NOT CAUGHT"))
+    try:
+        pool = multiprocessing.get_context("fork").Pool(
+            min(len(SELF_TESTS), os.cpu_count() or 1))
+    except ValueError:
+        # No fork on this platform. Serial rather than spawn: a spawned child
+        # re-executes this file from the top, because it is a script and not a
+        # module.
+        pool = None
+    if pool is None:
+        results = [_self_test_seed(i) for i in range(len(SELF_TESTS))]
+    else:
+        with pool:
+            results = pool.map(_self_test_seed, range(len(SELF_TESTS)))
+    escaped = [r for r in results if r is not None]
 
     for label, why in escaped:
         print("  ESCAPE: %-52s %s" % (label, why))
