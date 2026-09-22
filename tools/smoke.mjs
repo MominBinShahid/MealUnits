@@ -538,6 +538,43 @@ await session('/tmp/mealunits-smoke-language', 9310, 412, async ({ ev, send, ope
   // The way back has to be findable by someone who cannot read the rest.
   check('language: English is still spelled "English"', await ev(
     `${rows}?.some((t) => /English/.test(t))`), true);
+
+  /*
+   * THE KEYPAD DOES NOT MIRROR, and jsdom cannot answer this — it has no
+   * layout, so the grid's column order does not exist there.
+   *
+   * The RTL sweep mirrored the interface and took the keypad with it: in Urdu
+   * the leftmost column was 3/6/9 instead of 1/4/7, found by looking at the
+   * deployed build. Every dialer on the phone keeps 1 at the top left in Arabic,
+   * Hebrew and Urdu, because digits read left-to-right whatever surrounds them.
+   * The thing typed here is a blood sugar, often by unsteady hands.
+   *
+   * Measured by PAINTED POSITION rather than DOM order, because DOM order never
+   * changed — that is exactly why nothing caught it.
+   */
+  // BACK to the calculator: the switch happened on Settings, and the keypad is
+  // on the entry screen. The first version of this check measured on Settings
+  // and reported "no keypad", which is a check answering a question it could
+  // not see.
+  await ev(`(() => {
+    const back = [...document.querySelectorAll('.foot-nav button')].find(
+      (b) => /\u0648\u0627\u067E\u0633|Back/.test(b.textContent));
+    back?.click();
+    return 'ok';
+  })()`);
+  await wait(900);
+  const columns = `(() => {
+    const pad = document.querySelector('.pad');
+    if (!pad) return 'no keypad';
+    return [...pad.querySelectorAll('button')]
+      .map((b) => ({ t: b.textContent.trim(), x: Math.round(b.getBoundingClientRect().left) }))
+      .filter((k) => /^[0-9]$/.test(k.t))
+      .sort((a, b) => a.x - b.x)
+      .map((k) => k.t)
+      .join(' ');
+  })()`;
+  check('keypad: 1 is still on the left in Urdu, as on every dialer',
+    await ev(columns), '1 4 7 2 5 8 0 3 6 9');
 });
 
 // 2. Layout, at a phone width and a desktop width.

@@ -835,6 +835,19 @@ sees "Thin flatbread, about 25 g" under Urdu chrome. This entry has always scope
 ("those 32 names are a small, self-contained task his mother could do, unlike the clinical copy")
 and the field called `urdu` still holds Roman transliterations rather than Urdu script.
 
+**The keypad mirrored, and it should not have.** `dir="rtl"` flipped the whole interface, the grid
+included: in Urdu the leftmost column became 3/6/9 instead of 1/4/7. Measured on the deployed build
+by painted position, because the DOM order never changed — which is exactly why nothing caught it.
+
+**A number pad does not mirror.** Every dialer and every numeric keyboard on the phone this runs on
+keeps 1 at the top left in Arabic, Hebrew and Urdu, because digits read left-to-right whatever
+surrounds them — the same property §4.2 relies on keeping them ASCII for. The stake is the usual
+one: what is typed there is a blood sugar, often by unsteady hands, and muscle memory reaching for 1
+and landing on 3 is a reading the app then does arithmetic on.
+
+`dir="ltr"` on the container, and a smoke check that measures painted positions rather than DOM
+order — verified by reintroducing the mirroring and watching it fail.
+
 **The Urdu words ship to every English phone, and that is a ruling waiting to be made.**
 `copy-ur.ts` is imported statically, so its 66 KB — 18 KB gzipped — sit inside the bundle the worker
 precaches on every install, re-downloads on every deploy and parses at every boot. Two reviews
