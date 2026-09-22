@@ -1008,6 +1008,22 @@ body {
   display: block;
 }
 
+/*
+ * The left column carrying DATA rather than a label. `.li .k` is deliberately
+ * quiet — it names the row — but the basal row's left column is the drug the
+ * reader typed, and quiet was wrong for it: the name sat smaller and greyer
+ * than the dose next to it, on a screen whose whole purpose is being
+ * photographed for a doctor.
+ *
+ * Body size rather than the label's 0.8125rem, because it should not be the
+ * smallest thing on a screen where it is the first thing looked for.
+ */
+.li .k.named {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
 .li .v {
   font-variant-numeric: tabular-nums;
   font-weight: 600;

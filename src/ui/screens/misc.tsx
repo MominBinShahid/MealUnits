@@ -942,8 +942,16 @@ export function SettingsAsTextScreen({
         <p class="hint">{COPY.settings.basalNote}</p>
         <ul class="list">
           <li class="li">
-            <div class="k">
-              {settings.basalName.trim() === '' ? COPY.settings.basalNameMissing : settings.basalName}
+            {/* NOT a label. Every other row in this list puts the name of the
+                thing on the left and its value on the right; this row puts the
+                DRUG on the left, and it was wearing the muted label styling
+                while its dose beside it was bold. A doctor reading the
+                photograph looks for the drug name first, and it was the
+                smallest thing on the screen. */}
+            <div class="k named">
+              {settings.basalName.trim() === ''
+                ? COPY.settings.basalNameMissing
+                : COPY.asEntered(settings.basalName)}
             </div>
             <div class="v">{COPY.units(toHundredths(settings.basalUnits))}</div>
           </li>
@@ -953,7 +961,7 @@ export function SettingsAsTextScreen({
               The same label the settings field uses. */}
           <li class="li">
             <div class="k">{COPY.settings.basalTimingLabel}</div>
-            <div class="v">{settings.basalTiming}</div>
+            <div class="v">{COPY.asEntered(settings.basalTiming)}</div>
           </li>
         </ul>
       </div>
