@@ -70,9 +70,21 @@ describe('the shipped table — §11.8\'s exemption conditions, as tests', () =>
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('no row claims zero or negative carbohydrate, and a range never runs backwards', () => {
+  it('no row claims NEGATIVE carbohydrate, and a range never runs backwards', () => {
+    // Zero is a real answer and the table has to be able to give it. Grilled
+    // meat, tikka, fish and eggs are 0–4 g [CoFID; USDA, HIGH] — and "do not
+    // dose for this" is one of the more useful things a bolus calculator can
+    // say. The rule read `> 0` and forbade it.
+    //
+    // It was written in the same batch as the unique-id and
+    // range-not-backwards checks, as a guard against a half-filled row. That
+    // job is already done, properly, by the source-and-confidence test above:
+    // a forgotten row has no source, and a row that has one was filled in on
+    // purpose. `> 0` added nothing to it and cost a true value.
+    //
+    // Negative stays impossible, because nothing contains less than none.
     for (const food of FOODS) {
-      expect(food.grams, food.id).toBeGreaterThan(0);
+      expect(food.grams, food.id).toBeGreaterThanOrEqual(0);
       if (food.gramsMax !== null) {
         expect(food.gramsMax, food.id).toBeGreaterThan(food.grams);
       }
