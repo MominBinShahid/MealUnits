@@ -17,7 +17,12 @@
  *     replaces an old one. Tapping "Log this injection" at the wrong moment
  *     blanked the screen and looked like the tap was ignored.
  *
- * Run against a served build:  npm run build && npm run preview & npm run smoke
+ * Run against a served build:
+ *   npm run build && npm run preview -- --port 4173 --host & npm run smoke
+ *
+ * `--host` matters: without it `vite preview` binds to localhost only and the
+ * insecure-origin session has no LAN address to reach. Use SMOKE_LAN_URL=none
+ * to skip that session deliberately, which is what CI does.
  *
  * WHAT EARNS A PLACE HERE, added 2026-09-11 so this file does not become the
  * place every new assertion lands. A check belongs in this file only if BOTH:
@@ -378,6 +383,47 @@ const setUp = async ({ ev, send }) => {
   await tap('/^Save and start$/'); await wait(600);
   return tap;
 };
+
+/**
+ * NOTHING IS SERVED BY THIS FILE. It drives a browser at a build someone else
+ * is serving, and when that server is missing every check fails the same way:
+ * `waited 5000ms for the disclaimer ... On screen: (no #app)`. Chrome is fine,
+ * the app is fine, and the message describes neither.
+ *
+ * Added 2026-09-23 after that exact message cost an afternoon and produced a
+ * BACKLOG entry blaming a Chrome upgrade. Three things were wrong and all three
+ * now say so by name:
+ *
+ *   1. nothing serving the secure origin at all
+ *   2. `vite preview` bound to localhost, so the LAN origin refuses — the
+ *      insecure half of this run is the one that caught note 48, and it fails
+ *      LAST, after a minute of green
+ *   3. a browser left behind by a crashed run holding the next port
+ *
+ * Reachability, not correctness — a 404 still counts as served, because the
+ * checks themselves are what judge the page.
+ */
+const reachable = async (url) => {
+  try {
+    await fetch(url, { signal: AbortSignal.timeout(3000) });
+    return true;
+  } catch { return false; }
+};
+
+if (!(await reachable(SECURE_URL))) {
+  console.log(`smoke: nothing is serving ${SECURE_URL}`);
+  console.log(`       This file drives a browser; it does not serve the build.`);
+  console.log(`       Run:  npm run build && npm run preview -- --port 4173 --host &`);
+  process.exit(1);
+}
+if (LAN_URL !== null && LAN_URL.toLowerCase() !== NO_LAN && !(await reachable(LAN_URL))) {
+  console.log(`smoke: ${SECURE_URL} is served but ${LAN_URL} is not.`);
+  console.log(`       \`vite preview\` binds to localhost unless you pass --host, and the`);
+  console.log(`       insecure-origin session needs the LAN address — it is the half that`);
+  console.log(`       catches what only breaks off localhost.`);
+  console.log(`       Re-run the preview with --host, or SMOKE_LAN_URL=none to skip it.`);
+  process.exit(1);
+}
 
 console.log(`smoke: ${URL_UNDER_TEST}`);
 
