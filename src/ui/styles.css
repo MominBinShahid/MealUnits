@@ -1482,6 +1482,18 @@ p.keep {
  * The secondary actions sit side by side. They keep §10.7's 48px touch target,
  * which is not negotiable; what changes is that they stop each claiming a row.
  */
+/*
+ * The settings screen spaces its sections with a margin on each one — `h2` 24px,
+ * `.basal` 32px, `.hint` 8px — rather than a gap on the flex parent. `.card` had
+ * no rule at all, so "Keeping your record" and "Language" sat flush against each
+ * other with a measured 0px between them and read as one section.
+ *
+ * 2rem to match `.basal`, which is the other whole-section block on this screen.
+ */
+.card {
+  margin-block-start: 2rem;
+}
+
 .card-actions {
   display: grid;
   gap: var(--gap);
