@@ -271,11 +271,22 @@ body {
  */
 
 /* The mockup's `.eyebrow`: IBM Plex Mono at 400, wide tracking, uppercase, in
-   the mark colour. It is the only place weight 400 of that face is used — the
-   file was otherwise 10 KB of unreferenced payload, which is the kind of thing
-   that ships once and is never noticed again. */
+   the mark colour.
+
+   ONE WEIGHT, and the mockup is why. `docs/design/step-flow.html` sets no
+   `font-weight` on any of its three mono rules — `.eyebrow`, `.chip` or `.ref`
+   — so all three are 400. The 500 on `.entry .u` and the 600 on `.tag` arrived
+   in the first commit, when the mockup was turned into code, and matched
+   nothing in it. The 600 was worse than cosmetic: no 600 file was ever shipped,
+   so it was synthesised, and measured at 12px the fake was +10.7% ink over 400
+   where the real 500 was +23.5% — a browser smearing a stroke rather than
+   drawing a heavier one.
+
+   Nothing in these three slots is meant to be bold. They are quiet labels, and
+   the border, the tracking and the uppercase already separate them from body
+   text. So the face ships at 400 alone and the 500 file is gone. */
 .dots .where {
-  font-family: 'IBM Plex Mono', var(--urdu-family, ui-monospace), ui-monospace,
+  font-family: 'IBM Plex Mono', 'Noto Sans Arabic', ui-monospace,
     SFMono-Regular, Menlo, monospace;
   font-size: 0.6875rem;
   font-weight: 400;
@@ -364,10 +375,10 @@ body {
 }
 
 .entry .u {
-  font-family: 'IBM Plex Mono', var(--urdu-family, ui-monospace), ui-monospace,
+  font-family: 'IBM Plex Mono', 'Noto Sans Arabic', ui-monospace,
     SFMono-Regular, Menlo, monospace;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--ink-3);
   letter-spacing: var(--track-unit, 0.14em);
 }
@@ -1605,7 +1616,7 @@ p.keep {
 }
 
 .tag {
-  font-family: 'IBM Plex Mono', var(--urdu-family, ui-monospace), ui-monospace,
+  font-family: 'IBM Plex Mono', 'Noto Sans Arabic', ui-monospace,
     SFMono-Regular, Menlo, monospace;
   margin-inline-start: 0.5rem;
   padding: 0.0625rem 0.375rem;
@@ -1613,7 +1624,7 @@ p.keep {
   border-radius: 0.25rem;
   color: var(--ink-2);
   font-size: 0.625rem;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: var(--track-tag, 0.06em);
   vertical-align: 0.1em;
   white-space: nowrap;

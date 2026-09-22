@@ -569,18 +569,30 @@ await session('/tmp/mealunits-smoke-language', 9310, 412, async ({ ev, send, ope
   check('language: confirming flips lang, dir and the face together', await ev(
     `[document.documentElement.lang, document.documentElement.dir,
       document.documentElement.dataset.urduFace].join(',')`), 'ur,rtl,nastaliq');
-  // The CHOSEN face and nothing else — both its weights, and none of the other
-  // three. It read "exactly one" until the real 700 shipped, which is a second
+  // The chosen face's TWO weights, plus Noto Sans Arabic 400 and nothing else.
+  //
+  // It read "exactly one file" until the real 700 shipped, which is a second
   // FILE for the same face: `font-synthesis: none` means a missing 700 renders
   // as 400, so every `<b>` in the app silently lost its emphasis.
   //
+  // The third file is deliberate and is the point of this check. The slots that
+  // use IBM Plex Mono in English — the step counter, the unit under the number,
+  // the tags — name `Noto Sans Arabic` outright rather than the reader's chosen
+  // face. Nastaliq is calligraphic and descends steeply; at 10px inside a
+  // bordered chip it is the wrong tool, and a label wants the flat upright one
+  // whatever the body is set in. So a Nastaliq reader fetches Sans Arabic too.
+  //
+  // What this check is really guarding is the word ONLY: four faces are
+  // declared, and a stack that named `var(--urdu-family)` in one place and a
+  // fixed family in another would quietly fetch two body faces at once.
+  //
   // Sorted, because the order the browser asks in is the order it met the
   // weights on screen and not a guarantee.
-  check('language: and NOW the chosen face is fetched, and only it', await ev(
+  check('language: the chosen face, plus the label face, and nothing else', await ev(
     `performance.getEntriesByType('resource')
        .filter((e) => e.name.includes('fonts-urdu'))
        .map((e) => e.name.split('/').pop()).sort().join()`),
-    'NotoNastaliqUrdu-700.woff2,NotoNastaliqUrdu.woff2');
+    'NotoNastaliqUrdu-700.woff2,NotoNastaliqUrdu.woff2,NotoSansArabic.woff2');
   check('language: the interface is actually in Urdu', await ev(
     `document.querySelector('h1')?.textContent`), '\u0633\u06CC\u0679\u0646\u06AF\u0632');
 
