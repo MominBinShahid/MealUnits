@@ -24,7 +24,7 @@ function FoodRow({ food }: { readonly food: Food }): JSX.Element {
   return (
     <li class="li">
       <div>
-        <div class="k">{`${food.name} (${food.urdu})`}</div>
+        <div class="k">{`${food.name} (${food.roman})`}</div>
         <div class="hint">{food.portion}</div>
         {/* §11.8's second condition, on screen. A value whose confidence is
             hidden is presented with the authority of a lab measurement, and the
