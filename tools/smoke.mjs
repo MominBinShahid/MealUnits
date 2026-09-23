@@ -492,8 +492,8 @@ await session('/tmp/mealunits-smoke-faces', 9309, 412, async ({ ev, open }) => {
   await open(URL_UNDER_TEST);
   await wait(4000);
   const asked = `performance.getEntriesByType('resource').filter((e) => e.name.includes('fonts-urdu'))`;
-  // The whole reason the faces are excluded from the precache. 708 KB across
-  // seven files, against an app whose entire Latin typography is 32 KB.
+  // The whole reason the faces are excluded from the precache. 604 KB across
+  // four files, against an app whose entire Latin typography is 32 KB.
   // "not one FONT byte", and the precision matters: the WORDS are in the main
   // bundle, which every phone precaches. That is a recorded trade-off, not an
   // oversight — see BACKLOG 10a — and a check named "not one Urdu byte" would
@@ -604,7 +604,9 @@ await session('/tmp/mealunits-smoke-language', 9310, 412, async ({ ev, send, ope
   check('language: confirming flips lang, dir and the face together', await ev(
     `[document.documentElement.lang, document.documentElement.dir,
       document.documentElement.dataset.urduFace].join(',')`), 'ur,rtl,nastaliq');
-  // The chosen face's TWO weights, plus Noto Sans Arabic 400 and nothing else.
+  // The chosen face — ONE file now, not two — plus Noto Sans Arabic and nothing
+  // else. It was two per face until the three variable fonts landed: one file
+  // covering 400-700 replaced a static 400 and a static 700.
   //
   // It read "exactly one file" until the real 700 shipped, which is a second
   // FILE for the same face: `font-synthesis: none` means a missing 700 renders
@@ -627,7 +629,7 @@ await session('/tmp/mealunits-smoke-language', 9310, 412, async ({ ev, send, ope
     `performance.getEntriesByType('resource')
        .filter((e) => e.name.includes('fonts-urdu'))
        .map((e) => e.name.split('/').pop()).sort().join()`),
-    'NotoNastaliqUrdu-700.woff2,NotoNastaliqUrdu.woff2,NotoSansArabic.woff2');
+    'NotoNastaliqUrdu.woff2,NotoSansArabic.woff2');
   check('language: the interface is actually in Urdu', await ev(
     `document.querySelector('h1')?.textContent`), '\u0633\u06CC\u0679\u0646\u06AF\u0632');
 
