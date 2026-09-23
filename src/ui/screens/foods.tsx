@@ -3,6 +3,8 @@ import { matchFoods } from '../../core/foods.js';
 import { formatDayAndMonth } from '../../core/calendar.js';
 import type { Category, Food } from '../../data/carbs.js';
 import { FOODS } from '../../data/carbs.js';
+import { IN_A_MATRIX, MATRICES } from '../matrices.js';
+import type { FoodMatrix } from '../matrices.js';
 import { useCopy } from '../copy.js';
 import { Button, TextInput } from '../components.js';
 
@@ -22,6 +24,75 @@ export interface FoodListProps {
   readonly onClearTally: () => void;
   readonly onEditMine: (id: string | null) => void;
   readonly onSaveMine: (id: string, grams: number | null) => void;
+}
+
+/**
+ * A family whose two axes are both real variables, as a table.
+ *
+ * Tapping a cell adds one to the tally, which is the whole reason this is not
+ * a picture: phase 3 has to keep working inside it. A cell carrying a count
+ * shows it, so the table doubles as the record of what has been picked.
+ *
+ * The gram figure in each cell is the READER's where they have set one, for
+ * the same reason the tally sums theirs — a calibration that changed the row
+ * but not the table would be worse than no calibration.
+ */
+function Matrix({ matrix, tally, calibration, onAdd }: {
+  readonly matrix: FoodMatrix;
+  readonly tally: Record<string, number>;
+  readonly calibration: Readonly<Record<string, { readonly grams: number }>>;
+  readonly onAdd: (id: string) => void;
+}): JSX.Element {
+  const COPY = useCopy();
+  const axis = COPY.foods.matrixAxis as Record<string, string>;
+  return (
+    <div class="matrix-wrap">
+      <b class="matrix-title">{COPY.foods.matrixTitle[matrix.key]}</b>
+      {/* `overflow-x` on the wrapper, not the page: a four-column table at
+          320px is the one thing here that can outgrow the column, and the body
+          must never scroll sideways. */}
+      <table class="matrix">
+        <thead>
+          <tr>
+            <td />
+            {matrix.columns.map((column) => <th key={column} scope="col">{axis[column]}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {matrix.rows.map((row, rowIndex) => (
+            <tr key={row}>
+              <th scope="row">{axis[row]}</th>
+              {matrix.cells[rowIndex]?.map((id, columnIndex) => {
+                const column = matrix.columns[columnIndex] ?? '';
+                if (id === null) return <td key={column} />;
+                const food = FOODS.find((candidate) => candidate.id === id);
+                if (food === undefined) return <td key={column} />;
+                const grams = calibration[id]?.grams ?? food.grams;
+                const count = tally[id] ?? 0;
+                return (
+                  <td key={column}>
+                    <Button
+                      class={`cell${count === 0 ? '' : ' picked'}`}
+                      aria-label={`${axis[row] ?? ''} ${axis[column] ?? ''} — ${food.name}`}
+                      onPress={() => { onAdd(id); }}
+                    >
+                      {COPY.foods.gramsOne(String(grams))}
+                      {count === 0 ? null : (
+                        <span class="cell-n">{COPY.foods.matrixPicked(count)}</span>
+                      )}
+                    </Button>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {/* The pattern the arrangement makes visible, in words — for the reader
+          who arrived by search and never saw the table. */}
+      <p class="hint">{COPY.foods.matrixRule[matrix.key]}</p>
+    </div>
+  );
 }
 
 /**
@@ -316,14 +387,24 @@ export function FoodListScreen({
                     <span class="tag">{COPY.foods.categoryCount(rows.length)}</span>
                   </Button>
                   {open ? (
-                    <ul class="list">
-                      {rows.map((food) => (
+                    <>
+                      {/* The two-dimensional families first, as tables. Their
+                          rows are then skipped below — the same food cannot be
+                          in the table AND under it, or the tally would offer
+                          two ways to add one cup of chai. */}
+                      {MATRICES.filter((matrix) => matrix.category === group).map((matrix) => (
+                        <Matrix key={matrix.key} matrix={matrix}
+                          tally={tally} calibration={calibration} onAdd={onAdd} />
+                      ))}
+                      <ul class="list">
+                      {rows.filter((food) => !IN_A_MATRIX.has(food.id)).map((food) => (
                         <FoodRow key={food.id} food={food}
                           count={tally[food.id] ?? 0} onAdd={onAdd} onRemove={onRemove}
                           mine={calibration[food.id] ?? null} editing={editingMine === food.id}
                           onEditMine={onEditMine} onSaveMine={onSaveMine} timeZone={timeZone} />
                       ))}
-                    </ul>
+                      </ul>
+                    </>
                   ) : null}
                 </li>
               );
