@@ -2464,8 +2464,8 @@ export const FOODS: readonly Food[] = [
     portion: '4 pieces, 76\u00A0g',
     grams: 57,
     gramsMax: null,
-    varies: 'Piece count and size. It is three-quarters carbohydrate by weight, which is gur plus flour.',
-    confidence: 'medium',
+    varies: 'DOUBTED, and that is why this row is marked. The source prints it as three-quarters carbohydrate by weight — but gur papri is made with ghee, and no sweet carrying that much fat can be 75 per cent carbohydrate. Every comparable sweet in the same book sits at 40 to 43. Treat this as an upper bound and weigh your own if you eat it often.',
+    confidence: 'low',
     source: 'LFAC, coherent with the gur figure',
   },
   {
