@@ -55,6 +55,57 @@ export const COPY = {
    * after a numeral, so the Urdu is one form. That collapse is why this is a
    * function per language rather than a shared function taking a word.
    */
+  /**
+   * TAP A WORD, READ WHAT IT MEANS.
+   *
+   * Momin's request, and his argument for the shape: writing every definition
+   * into the sentence that uses it makes the screens verbose — "if we started
+   * doing inline for everything, then it will be so verbose" — so the sentence
+   * stays short and the explanation sits behind the word.
+   *
+   * The list is also the answer to a question nobody had asked before: WHICH
+   * WORDS ARE HARD. An audit found `ketones` used at three points in the dose
+   * flow with no definition anywhere in either language, and `docs/URDU.md`
+   * conceding the reader may not know it. That is not a copy problem, it is an
+   * unmeasured one — and a keyed list makes it countable and checkable.
+   *
+   * WRITTEN FOR SOMEBODY WHO KNOWS NOTHING. Momin, about himself: "I don't know
+   * what the ketones are." His mother is reviewing the Urdu and is not
+   * medically trained. So: no term defined using another term, no "simply", and
+   * the first sentence has to carry it on its own.
+   */
+  glossaryClose: 'Close',
+  glossary: {
+    ketones: {
+      word: 'ketones',
+      body: 'When there is not enough insulin, the body burns fat for energy instead of sugar, and that leaves ketones behind. A lot of them makes the blood acidic, which is dangerous and gets worse over hours. A chemist sells strips — for urine or for blood — that tell you if they are there.',
+    },
+    ketoacidosis: {
+      word: 'diabetic ketoacidosis',
+      body: 'What happens when ketones build up and nobody treats it: vomiting, deep fast breathing, stomach pain, and then losing consciousness. It needs a hospital, not a bigger dose at home. Insulin alone does not fix it, because the body has also lost a great deal of water and salt.',
+    },
+    stacking: {
+      word: 'stacking',
+      body: 'Insulin keeps working for hours after you inject it. If you take more while the last dose is still working, the two add up and push the blood sugar further down than either would alone. That is why this app asks when you last injected.',
+    },
+    correction: {
+      word: 'correction',
+      body: 'The part of a dose that brings a high blood sugar back down, separate from the part that covers the food. If you are already at your target, there is no correction — only the food part.',
+    },
+    carbohydrate: {
+      word: 'carbohydrate',
+      body: 'The part of food that turns into blood sugar: the flour in a roti, the rice, the sugar in chai. Meat, eggs and oil are not carbohydrate and barely move the blood sugar. It is not the weight of the plate — a 250\u00A0g plate of biryani is about 50\u00A0g of carbohydrate.',
+    },
+    diabetes: {
+      word: 'diabetes',
+      body: 'The sugar illness. In type 1, the body has stopped making insulin altogether, so it has to be injected. It is not caused by eating sweets and it does not go away.',
+    },
+    backgroundInsulin: {
+      word: 'background insulin',
+      body: 'The slow insulin taken once a day, that keeps working quietly in the background for about twenty-four hours. It is not for meals. This app never calculates it and never changes it — your doctor sets it.',
+    },
+  },
+
   units: (hundredths: number): string => {
     const value = formatHundredths(hundredths);
     return `${value}\u00A0${value === '1' ? 'unit' : 'units'}`;
@@ -359,7 +410,7 @@ export const COPY = {
    */
   bandE: {
     title: `Above ${String(KETONE_ADVISORY)} — check ketones`,
-    body: 'Feeling unwell is its own reason to test, whatever your reading says. If ketones are present, contact your doctor.',
+    body: 'Feeling unwell is its own reason to test, whatever your reading says. If [[ketones]] are present, contact your doctor.',
   },
 
   // ── §8.1's timing ─────────────────────────────────────────────────────────
@@ -448,7 +499,7 @@ export const COPY = {
    */
   meterHi: {
     title: 'Meter showing HI?',
-    body: `Enter ${String(MAX_BLOOD_SUGAR)}. This dose treats ${String(MAX_BLOOD_SUGAR)} and is probably too little — treat it as a minimum, not the answer. Check ketones now. If ketones are present, or you are vomiting, this is an emergency: injected insulin alone will not treat diabetic ketoacidosis.`,
+    body: `Enter ${String(MAX_BLOOD_SUGAR)}. This dose treats ${String(MAX_BLOOD_SUGAR)} and is probably too little — treat it as a minimum, not the answer. Check [[ketones]] now. If ketones are present, or you are vomiting, this is an emergency: injected insulin alone will not treat [[ketoacidosis]].`,
   },
   /**
    * §4.5 and BUILD-NOTES note 2 — an out-of-range READING gets "check the

@@ -113,6 +113,52 @@ export const COPY_UR: Copy = {
    * rejoin in a reader's head as one token. That misreading does not care which
    * script it happens in.
    */
+  /*
+   * The glossary, and the two words it lets the PROSE lose.
+   *
+   * `copy-ur.ts` already glossed two terms inline — «ذیابیطس (شوگر کی بیماری)»
+   * and «بیک گراؤنڈ انسولین — پیچھے سے، دن بھر کام کرنے والی —». Both were the
+   * right instinct and both are now entries here, so the sentences carrying
+   * them can shorten instead of every sentence growing.
+   *
+   * The transliterated terms are the ones that need this most. «اسٹیکنگ» and
+   * «کریکشن» are English words in Urdu letters: pronounceable and completely
+   * empty to a reader who does not already know the English. A person who does
+   * know the English never needed the entry; a person who does not had no way
+   * in at all.
+   */
+  glossaryClose: 'بند کریں',
+  glossary: {
+    ketones: {
+      word: 'کیٹون',
+      body: 'جب جسم میں انسولین کم پڑ جائے تو وہ شوگر کی جگہ چربی جلانے لگتا ہے، اور اس سے کیٹون بنتے ہیں۔ زیادہ ہو جائیں تو خون تیزابی ہو جاتا ہے — یہ خطرناک ہے اور گھنٹوں میں بگڑتا ہے۔ میڈیکل سٹور سے پٹیاں ملتی ہیں، پیشاب کی یا خون کی، جو بتا دیتی ہیں کہ کیٹون ہیں یا نہیں۔',
+    },
+    ketoacidosis: {
+      word: 'کیٹو ایسڈوسس',
+      body: 'یہ وہ حالت ہے جب کیٹون بڑھتے چلے جائیں اور کوئی علاج نہ کرے: قے، گہرا تیز سانس، پیٹ میں درد، اور پھر ہوش جانا۔ اس کے لیے ہسپتال چاہیے، گھر پر بڑی ڈوز نہیں۔ صرف انسولین سے ٹھیک نہیں ہوتا، کیونکہ جسم سے بہت سا پانی اور نمک بھی نکل چکا ہوتا ہے۔',
+    },
+    stacking: {
+      word: 'اسٹیکنگ',
+      body: 'انسولین لگانے کے بعد کئی گھنٹے کام کرتی رہتی ہے۔ اگر پچھلی ڈوز ابھی چل رہی ہو اور آپ اور لگا لیں تو دونوں مل کر بلڈ شوگر کو اس سے زیادہ نیچے لے جاتی ہیں جتنا کوئی ایک لے جاتی۔ اسی لیے یہ ایپ پوچھتی ہے کہ آخری انجیکشن کب لگایا تھا۔',
+    },
+    correction: {
+      word: 'کریکشن',
+      body: 'ڈوز کا وہ حصہ جو بڑھی ہوئی بلڈ شوگر کو واپس نیچے لاتا ہے — کھانے والے حصے سے الگ۔ اگر آپ پہلے ہی ٹارگٹ پر ہیں تو کریکشن ہوتا ہی نہیں، صرف کھانے والا حصہ ہوتا ہے۔',
+    },
+    carbohydrate: {
+      word: 'کاربوہائیڈریٹ',
+      body: 'کھانے کا وہ حصہ جو بلڈ شوگر بن جاتا ہے: روٹی کا آٹا، چاول، چائے کی چینی۔ گوشت، انڈا اور تیل کاربوہائیڈریٹ نہیں ہیں اور بلڈ شوگر کو بہت کم ہلاتے ہیں۔ یہ پلیٹ کا وزن نہیں ہے — 250\u00A0گرام بریانی میں تقریباً 50\u00A0گرام کاربوہائیڈریٹ ہوتا ہے۔',
+    },
+    diabetes: {
+      word: 'ذیابیطس',
+      body: 'شوگر کی بیماری۔ ٹائپ 1 میں جسم انسولین بنانا بالکل بند کر دیتا ہے، اس لیے اسے لگانا پڑتا ہے۔ یہ میٹھا کھانے سے نہیں ہوتی اور یہ ختم نہیں ہوتی۔',
+    },
+    backgroundInsulin: {
+      word: 'بیک گراؤنڈ انسولین',
+      body: 'دن میں ایک بار لی جانے والی آہستہ انسولین، جو پیچھے سے تقریباً چوبیس گھنٹے خاموشی سے کام کرتی رہتی ہے۔ یہ کھانے کے لیے نہیں ہوتی۔ یہ ایپ نہ اس کا حساب لگاتی ہے نہ اسے بدلتی ہے — اسے آپ کا ڈاکٹر طے کرتا ہے۔',
+    },
+  },
+
   units: (hundredths: number): string => `${formatHundredths(hundredths)}\u00A0یونٹ`,
 
   /**
@@ -395,7 +441,7 @@ export const COPY_UR: Copy = {
    */
   bandE: {
     title: `${String(KETONE_ADVISORY)} سے اوپر — کیٹون چیک کریں`,
-    body: 'طبیعت خراب ہونا خود ہی ٹیسٹ کرنے کی وجہ ہے، ریڈنگ چاہے کچھ بھی ہو۔ اگر کیٹون موجود ہوں تو اپنے ڈاکٹر سے رابطہ کریں۔',
+    body: 'طبیعت خراب ہونا خود ہی ٹیسٹ کرنے کی وجہ ہے، ریڈنگ چاہے کچھ بھی ہو۔ اگر [[ketones]] موجود ہوں تو اپنے ڈاکٹر سے رابطہ کریں۔',
   },
 
   // ── §8.1's timing ─────────────────────────────────────────────────────────
@@ -500,7 +546,7 @@ export const COPY_UR: Copy = {
    */
   meterHi: {
     title: 'میٹر پر HI آ رہا ہے؟',
-    body: `${String(MAX_BLOOD_SUGAR)} درج کریں۔ یہ ڈوز ${String(MAX_BLOOD_SUGAR)} کے حساب سے ہے اور غالباً کم پڑے گی — اسے کم از کم سمجھیں، مکمل جواب نہیں۔ ابھی کیٹون چیک کریں۔ اگر کیٹون موجود ہوں، یا الٹیاں آ رہی ہوں، تو یہ ایمرجنسی ہے: صرف انسولین لگانے سے کیٹو ایسڈوسس کا علاج نہیں ہو گا۔`,
+    body: `${String(MAX_BLOOD_SUGAR)} درج کریں۔ یہ ڈوز ${String(MAX_BLOOD_SUGAR)} کے حساب سے ہے اور غالباً کم پڑے گی — اسے کم از کم سمجھیں، مکمل جواب نہیں۔ ابھی [[ketones]] چیک کریں۔ اگر کیٹون موجود ہوں، یا الٹیاں آ رہی ہوں، تو یہ ایمرجنسی ہے: صرف انسولین لگانے سے [[ketoacidosis]] کا علاج نہیں ہو گا۔`,
   },
   /**
    * §4.5 and BUILD-NOTES note 2 — an out-of-range READING gets "check the

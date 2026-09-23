@@ -309,3 +309,78 @@ export function Readout({
     </div>
   );
 }
+
+/**
+ * Prose whose hard words can be tapped.
+ *
+ * `[[key]]` inside a copy string becomes the glossary word, underlined and
+ * tappable; everything else renders unchanged. The marker is in the COPY rather
+ * than in the markup for the reason `mgdl` and `timestamp` are: a component
+ * cannot reach the translation, and Urdu marks different words in different
+ * places — «اسٹیکنگ» sits where English puts "stacking" only by accident.
+ *
+ * It also makes the pairing checkable. Both languages have to mark the same
+ * keys for the same sentence, and a test can say so; a component that guessed
+ * which words to underline could not be checked at all.
+ *
+ * Unknown keys render as the plain key rather than throwing. A missing entry
+ * should look wrong on screen, not take the screen down — this text sits on the
+ * band C advisory among others, and there is no version of "blank screen" that
+ * beats "odd-looking word".
+ */
+export function Prose({ text, onTerm }: {
+  readonly text: string;
+  readonly onTerm: (key: string) => void;
+}): JSX.Element {
+  const COPY = useCopy();
+  const glossary = COPY.glossary as Record<string, { word: string } | undefined>;
+  // Walked rather than `split`-and-alternate. The split version reads the
+  // capture groups off the ODD indices, which needs a literal 2 that §11.8 does
+  // not admit — and it is the less obvious code anyway.
+  const parts: JSX.Element[] = [];
+  let from = 0;
+  for (const match of text.matchAll(/\[\[([a-zA-Z]+)\]\]/g)) {
+    const at = match.index;
+    const key = match[1] ?? '';
+    parts.push(<>{text.slice(from, at)}</>);
+    const entry = glossary[key];
+    parts.push(entry === undefined
+      // An unknown key renders as the bare key. A missing entry should look
+      // wrong on screen, not take the screen down — this text sits on advisory
+      // cards, and no version of "blank screen" beats "odd-looking word".
+      ? <>{key}</>
+      : (
+        <Button class="term" aria-describedby="glossary-panel" onPress={() => { onTerm(key); }}>
+          {entry.word}
+        </Button>
+      ));
+    from = at + match[0].length;
+  }
+  parts.push(<>{text.slice(from)}</>);
+  return <>{parts}</>;
+}
+
+/**
+ * The explanation, over the screen you are on rather than as a page.
+ *
+ * Over rather than away because the reader is in the middle of something — the
+ * result they are reading expires, and a screen change would lose their place
+ * for a definition. It renders NOTHING when nothing is open, so it costs an
+ * unopened screen one null check.
+ */
+export function GlossaryPanel({ term, onClose }: {
+  readonly term: string | null;
+  readonly onClose: () => void;
+}): JSX.Element | null {
+  const COPY = useCopy();
+  if (term === null) return null;
+  const entry = (COPY.glossary as Record<string, { word: string; body: string } | undefined>)[term];
+  if (entry === undefined) return null;
+  return (
+    <div class="glossary" id="glossary-panel" role="dialog" aria-modal="false" aria-live="polite">
+      <b>{entry.word}</b>
+      <p>{entry.body}</p>
+      <Button class="go quiet" onPress={onClose}>{COPY.glossaryClose}</Button>
+    </div>
+  );
+}

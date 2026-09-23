@@ -1530,6 +1530,50 @@ p.keep {
  * `margin-inline-end` rather than `margin-right`: it leads the name, and in
  * Urdu the name leads from the other side.
  */
+/* ── a word you can tap to find out what it means ────────────────────────── */
+
+/*
+ * The dotted underline is the web's 25-year-old convention for "this has a
+ * definition", which is why it is not something louder. Measured before
+ * choosing it: Nastaliq has ZERO ink below the baseline — it climbs rather than
+ * descends, which is why it needs 2.3 line-height — so an underline collides
+ * with nothing in any of the four Urdu faces.
+ *
+ * `--ink-2` rather than the accent. Teal already means "this is the number you
+ * came for" and spending it here would dilute the one thing it says.
+ */
+.term {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline dotted var(--ink-2);
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.term:hover { text-decoration-color: var(--ink); }
+
+/* The explanation, over the screen rather than as a page — the reader is in the
+   middle of something and the result they are reading expires. Sticky to the
+   bottom so it never covers the line that was tapped. */
+.glossary {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  gap: 0.5rem;
+  margin-block-start: 1rem;
+  padding: 1rem;
+  background: var(--surface, #151d2e);
+  border: 1px solid var(--mark);
+  border-radius: 0.75rem;
+}
+
+.glossary p { margin: 0; color: var(--ink-2); }
+
 /* ── phase 2: the reader's own figure ────────────────────────────────────── */
 
 /* The reference this replaced, and when. Quieter than the row's other hints

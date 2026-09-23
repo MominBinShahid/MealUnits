@@ -28,7 +28,7 @@ import { FOODS } from '../../data/carbs.js';
 import type { JSX } from 'preact';
 import { useCopy } from '../copy.js';
 import type { Copy } from '../copy.js';
-import { Advisories, Button, Keypad, Readout, StepDots } from '../components.js';
+import { Advisories, Button, Keypad, Prose, Readout, StepDots } from '../components.js';
 import type { AdvisoryView } from '../components.js';
 import type { AppState } from '../../state/machine.js';
 import type { Advisory, Band, Breakdown, Outcome } from '../../core/types.js';
@@ -36,6 +36,8 @@ import type { Advisory, Band, Breakdown, Outcome } from '../../core/types.js';
 export interface CalculatorHandlers {
   /** Phase 3 — what the carbohydrate figure was assembled from, or empty. */
   readonly foodTally: Record<string, number>;
+  /** Open the explanation for a marked word. */
+  readonly onTerm: (key: string) => void;
   readonly onDigit: (field: 'bloodSugar' | 'carbs', digit: string) => void;
   readonly onBackspace: (field: 'bloodSugar' | 'carbs') => void;
   /**
@@ -338,7 +340,7 @@ function MeterGuidance({ handlers }: { readonly handlers: CalculatorHandlers }):
     <div aria-live="polite">
       <div class="flag">
         <b>{COPY.meterHi.title}</b>
-        {COPY.meterHi.body}
+        <Prose text={COPY.meterHi.body} onTerm={handlers.onTerm} />
       </div>
       <div class="flag">
         <b>{COPY.meterLo.title}</b>
