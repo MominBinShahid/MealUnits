@@ -133,6 +133,25 @@ describe('the shipped table — §11.8\'s exemption conditions, as tests', () =>
         ['pulao', 'pulav'],
         ['pulao', 'pulao-kabuli', 'pulao-matar', 'pulao-chana'],
       ],
+      // The English word and the Urdu word for the same category. Neither
+      // reached a single row: every gravy dish was named only by its own name,
+      // so someone who did not already know the dish had no way in. Momin
+      // asked for this by name — "it should be findable if I search for
+      // C U R R Y".
+      [
+        'gravy dishes',
+        ['curry', 'salan'],
+        ['karahi', 'korma', 'daal-thin', 'daal-thick'],
+      ],
+      // `kadai` and `karai` are ordinary spellings of karahi and reached
+      // nothing. They matter more than they look: once kadhi ships, a query
+      // that finds neither dish is better than one that silently finds the
+      // wrong one, and these two are the near-misses between them.
+      [
+        'karahi spellings',
+        ['karahi', 'kadhai', 'karhai', 'kadai', 'karai'],
+        ['karahi'],
+      ],
     ];
     // A superset, not an equality: `chawal` also reaches `pulao-chana`, because
     // chana pulao genuinely is «chanay walay chawal». Reaching a related dish is
