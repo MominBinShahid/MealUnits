@@ -24,7 +24,20 @@ function FoodRow({ food }: { readonly food: Food }): JSX.Element {
   return (
     <li class="li">
       <div>
-        <div class="k">{`${food.name} (${food.roman})`}</div>
+        <div class="k">
+          {/* The marker sits on the ROW, where the food is chosen, and not on
+              the result screen — which is what keeps it out of §10.5's budget
+              of two advisory elements. A result-screen warning would compete
+              with the band B caution, and band B is the one that must land.
+
+              Momin's shape, in his words: "maybe a warning logo or small thing
+              right that's it." One glyph here; the sentence that explains it
+              sits once under the list rather than repeating on every row. */}
+          {food.confidence === 'low' ? (
+            <span class="est" aria-label={COPY.foods.estimateLabel}>{'\u26A0'}</span>
+          ) : null}
+          {`${food.name} (${food.roman})`}
+        </div>
         <div class="hint">{food.portion}</div>
         {/* §11.8's second condition, on screen. A value whose confidence is
             hidden is presented with the authority of a lab measurement, and the
@@ -120,6 +133,13 @@ export function FoodListScreen({ query, onQuery }: FoodListProps): JSX.Element {
       </div>
 
       <p class="hint count">{COPY.foods.countNote(shown.length, FOODS.length)}</p>
+      {/* Once, under the count — not per row. A warning repeated on every row
+          is furniture, and furniture is what §10.5 says trains people to skip
+          the warning that matters. Shown only when the list actually contains
+          one, so it is never explaining a symbol nobody can see. */}
+      {shown.some((food) => food.confidence === 'low') ? (
+        <p class="hint est-note">{COPY.foods.estimateNote}</p>
+      ) : null}
 
       {shown.length === 0 ? (
         <p class="flag">{COPY.foods.empty(query)}</p>

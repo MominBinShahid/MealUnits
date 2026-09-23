@@ -1522,6 +1522,28 @@ p.keep {
  *
  * 2rem to match `.basal`, which is the other whole-section block on this screen.
  */
+/*
+ * The estimate marker. Amber because that is already what "be careful" means
+ * here — the in-testing language tag uses the same token — and NOT teal, which
+ * means "this is the number you came for" and must keep meaning only that.
+ *
+ * `margin-inline-end` rather than `margin-right`: it leads the name, and in
+ * Urdu the name leads from the other side.
+ */
+.est {
+  color: var(--warn);
+  margin-inline-end: 0.375rem;
+  /* Emoji presentation off. The glyph renders as a colour emoji on iOS
+     otherwise, which is louder than the row it is qualifying and stops taking
+     the colour above. */
+  font-variant-emoji: text;
+}
+
+.est-note {
+  color: var(--warn);
+  opacity: 0.85;
+}
+
 .card {
   margin-block-start: 2rem;
 }
