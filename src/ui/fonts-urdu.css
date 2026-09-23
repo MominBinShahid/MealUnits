@@ -26,6 +26,21 @@
  * A REAL 700 FOR THE THREE FACES THAT HAVE ONE, added 2026-09-22 after Momin
  * asked where the bold had gone. It had gone nowhere — it had never arrived.
  *
+ * ONE VARIABLE FILE EACH, 2026-09-23. It shipped as two static files per face,
+ * 400 and 700, which is every weight those two can serve and nothing between.
+ * Momin asked whether a 600 could be downloaded; all three are published as
+ * VARIABLE fonts upstream, so the answer was better than the question — one
+ * file per face covering the whole 400–700 axis continuously, with identical
+ * glyph coverage, and SMALLER than the two it replaces:
+ *
+ *     Nastaliq     308 KB -> 233 KB      Naskh        103 KB -> 91 KB
+ *     Sans Arabic   95 KB ->  87 KB      (axis clamped to 400-700; it
+ *                                         publishes 100-900)
+ *
+ * No new browser requirement: Space Grotesk has been a variable font in this
+ * app since the first commit, so anything that can render the English can
+ * render these.
+ *
  * `font-synthesis: none` stays, and it is why the weight had to be shipped
  * rather than faked: faux bold on Nastaliq thickens the nuqte, the dots that are
  * the only difference between ب پ ت ث, so a synthesised heading is not a heavier
@@ -47,18 +62,9 @@
 @font-face {
   font-family: 'Noto Nastaliq Urdu';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 400 700;
   font-display: swap;
   src: url('/MealUnits/fonts-urdu/NotoNastaliqUrdu.woff2') format('woff2');
-  unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
-}
-
-@font-face {
-  font-family: 'Noto Nastaliq Urdu';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/MealUnits/fonts-urdu/NotoNastaliqUrdu-700.woff2') format('woff2');
   unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
 }
 
@@ -74,34 +80,16 @@
 @font-face {
   font-family: 'Noto Naskh Arabic';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 400 700;
   font-display: swap;
   src: url('/MealUnits/fonts-urdu/NotoNaskhArabic.woff2') format('woff2');
   unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
 }
 
 @font-face {
-  font-family: 'Noto Naskh Arabic';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/MealUnits/fonts-urdu/NotoNaskhArabic-700.woff2') format('woff2');
-  unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
-}
-
-@font-face {
   font-family: 'Noto Sans Arabic';
   font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/MealUnits/fonts-urdu/NotoSansArabic-700.woff2') format('woff2');
-  unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
-}
-
-@font-face {
-  font-family: 'Noto Sans Arabic';
-  font-style: normal;
-  font-weight: 400;
+  font-weight: 400 700;
   font-display: swap;
   src: url('/MealUnits/fonts-urdu/NotoSansArabic.woff2') format('woff2');
   unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;

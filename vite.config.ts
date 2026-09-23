@@ -274,7 +274,7 @@ function serviceWorker(outDir: string): Plugin {
           if (entry.isDirectory()) {
             if (at === 'social') return [];
             // 10a's Urdu faces, on the SAME argument and a ruling that says so.
-            // The seven of them are 708 KB, twenty times this app's Latin
+            // The four of them are 604 KB, nineteen times this app's Latin
             // typography, and an English reader — the majority — renders not one
             // Arabic character. Momin ruled it directly: precaching for everyone
             // was rejected because "every English user, the majority, will take
