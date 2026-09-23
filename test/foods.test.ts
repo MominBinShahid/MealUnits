@@ -166,6 +166,64 @@ describe('the shipped table — §11.8\'s exemption conditions, as tests', () =>
     }
   });
 
+  // Four rows in DELIBERATELY ADVERSE order — worst match first — so that any
+  // mutant which flattens the tiers leaves them where they started and fails.
+  // Real FOODS rows are too kind for this: their tiers rarely disagree enough
+  // to change the final order, which is how the first version of these tests
+  // passed while the mutation gate found twenty-five survivors.
+  //
+  // Every row's three fields DIFFER, and only one of them carries the match.
+  // That is deliberate: with `name` and `roman` identical, `some` and `every`
+  // behave the same over the field list and three mutants survive — which is
+  // exactly what the gate reported on the first attempt.
+  const SUBSTRING: Searchable = { name: 'Zrotix', roman: 'Qorma', aliases: ['bread'] };
+  const WORD_START: Searchable = { name: 'Moti roti', roman: 'Ghar ki', aliases: ['bread'] };
+  const PREFIX: Searchable = { name: 'Roti, thin', roman: 'Patli', aliases: ['bread'] };
+  const EXACT: Searchable = { name: 'Roti', roman: 'Phulka', aliases: ['bread'] };
+  const ADVERSE = [SUBSTRING, WORD_START, PREFIX, EXACT];
+
+  it('orders exact, then prefix, then word-start, then substring', () => {
+    // The whole point, at 270 rows: `roti` reaches 17 of them, and in data-file
+    // order the row actually CALLED "Roti" can render below one that matched on
+    // its ninth alias. The reader scrolls, does not see the obvious answer, and
+    // takes something adjacent — the wrong-dish failure this module exists to
+    // prevent, arriving through ordering rather than through matching.
+    expect(matchFoods(ADVERSE, 'roti')).toEqual([EXACT, PREFIX, WORD_START, SUBSTRING]);
+  });
+
+  it('a word-start is not a word-END', () => {
+    // Separate query because `roti` cannot tell them apart: the word "roti"
+    // both starts AND ends with it. `rot` starts "roti" and ends nothing, so
+    // this is the case that pins `startsWith` against `endsWith` — and the
+    // same query pins splitting on a SPACE, since splitting on '' gives single
+    // characters and no character starts with "rot".
+    expect(matchFoods(ADVERSE, 'rot')).toEqual([PREFIX, EXACT, WORD_START, SUBSTRING]);
+  });
+
+  it('ordering is the ONLY thing ranking changes', () => {
+    // The guard that matters. Ranking runs after the filter has already decided
+    // what matches, and a comparator cannot add or drop a row — but that is an
+    // argument, and this is the assertion.
+    const queries = ['roti', 'naan', 'chai', 'chawal', 'curry', 'salan', 'moti', 'oti', '', 'zzz'];
+    for (const q of queries) {
+      const got = [...matchFoods(FOODS, q)].map((f) => f.id).sort();
+      const expected = FOODS.filter((f) =>
+        [f.name, f.roman, ...f.aliases].some((v) =>
+          v.replace(/\u00A0/g, ' ').trim().toLowerCase().includes(q.trim().toLowerCase())))
+        .map((f) => f.id).sort();
+      expect(got, `"${q}" changed which rows match`).toEqual(expected);
+    }
+  });
+
+  it('ties keep the table\'s own order, which is smallest first', () => {
+    // Within a family the data file ascends by size, and that is information:
+    // the three plain-rice rows are 42, 50 and 84 g. A sort that scrambled
+    // equal-ranked rows would lose it. `Array.prototype.sort` is required to be
+    // stable since ES2019; this pins that we rely on it.
+    expect(matchFoods(FOODS, 'chaawal').map((f) => f.id))
+      .toEqual(['rice-katori', 'rice-cup', 'rice-plate']);
+  });
+
   it('"chaa" reaches rice as well as tea, and that is known', () => {
     // NOT an assertion that this is right. `chaa` is a real spelling of chai and
     // it is also the first four letters of `chaawal`, so substring matching
