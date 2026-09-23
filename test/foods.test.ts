@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchFoods } from '../src/core/foods.js';
+import { asksAboutSugarFree, matchFoods } from '../src/core/foods.js';
 import type { Searchable } from '../src/core/foods.js';
 import { FOODS } from '../src/data/carbs.js';
 import { IN_A_MATRIX, MATRICES } from '../src/ui/matrices.js';
@@ -399,6 +399,62 @@ describe('the Urdu names — display only, and every one distinct', () => {
       for (const word of food.script.match(/[A-Za-z][A-Za-z0-9%-]*/g) ?? []) {
         expect(BRANDS.test(word), `${food.id} has untranslated Latin: ${word}`).toBe(true);
       }
+    }
+  });
+});
+
+describe('a search for sugar-free gets an answer, not an absence', () => {
+  // CARBS.md section 20 refuses to publish a figure for sugar-free
+  // confectionery, and that refusal is right: the label counts sugar alcohols
+  // as carbohydrate, the body absorbs little of them, and dosing the printed
+  // number gives insulin for food that is not there.
+  //
+  // What this pins is the second half — refusing SILENTLY sends the reader to
+  // the packet, which is the thing the refusal exists to prevent.
+
+  it('recognises the words a reader would actually type', () => {
+    for (const query of [
+      'sugar free', 'sugarfree', 'sugar-free', 'Sugar Free', 'SUGAR FREE',
+      'gum', 'chewing gum', 'sugar free gum', 'stevia', 'maltitol', 'sorbitol',
+      'xylitol', 'erythritol', 'isomalt', 'polyol', 'sugar alcohol',
+      'diabetic sweet', 'diabetic mithai', 'diabetic chocolate',
+      'no sugar added',
+    ]) {
+      expect(asksAboutSugarFree(query), query).toBe(true);
+    }
+  });
+
+  it('leaves ordinary searches alone', () => {
+    // Every one of these is a real thing to look up, and none of them should
+    // be answered with a lecture about polyols.
+    for (const query of [
+      '', '   ', 'roti', 'chawal', 'biryani', 'sugar', 'cheeni', 'gulab jamun',
+      'chai', 'mithai', 'chocolate', 'sweet', 'barfi',
+    ]) {
+      expect(asksAboutSugarFree(query), query).toBe(false);
+    }
+  });
+
+  it('sends a diet DRINK to its real row rather than to the explanation', () => {
+    // The split this whole feature rests on. A diet cola is aspartame, not a
+    // polyol, and it genuinely is zero — it has a row with a real figure and a
+    // HIGH confidence. Routing it to "there is no honest number" would be a
+    // downgrade, so the drink words are deliberately absent from the predicate.
+    for (const query of ['coke zero', 'pepsi max', 'sprite zero', '7up free', 'diet coke']) {
+      expect(asksAboutSugarFree(query), query).toBe(false);
+      const hits = matchFoods(FOODS, query);
+      expect(hits.length, query).toBeGreaterThan(0);
+      expect(hits[0]?.id, query).toBe('zero-drinks');
+    }
+    const zero = FOODS.find((food) => food.id === 'zero-drinks');
+    expect(zero?.grams).toBe(0);
+  });
+
+  it('and the confectionery it refuses to price is still absent from the table', () => {
+    // If a sugar-free sweet ever gains a row, this fails — and it should, so
+    // that the figure and the explanation are reconsidered together.
+    for (const food of FOODS) {
+      expect(/sugar[- ]?free/i.test(food.name), food.id).toBe(false);
     }
   });
 });

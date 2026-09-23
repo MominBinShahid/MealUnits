@@ -256,6 +256,26 @@ export const COPY = {
     empty: (query: string): string =>
       `Nothing matches "${query}". Try the Urdu name, or a simpler word — "naan" rather than "tandoori naan".`,
     /**
+     * THE ANSWER TO A QUESTION THIS TABLE CANNOT ANSWER WITH A NUMBER.
+     *
+     * Shown when someone searches "sugar free", "gum", "maltitol" and the like.
+     * `docs/CARBS.md` section 20 refuses to publish a figure for sugar-free
+     * confectionery, and an unexplained absence sends the reader to the packet
+     * — which is what the refusal exists to prevent.
+     *
+     * The two halves are genuinely different foods and the split is the point.
+     * A diet cola is aspartame and really is zero, and it has its own row. A
+     * sugar-free mithai is maltitol plus real flour, and no rule converts its
+     * label into a dose: the printed figure over-doses toward a hypo, zero
+     * under-doses the flour, and the halved-polyol rule is an energy average
+     * that still over-doses erythritol.
+     */
+    sugarFreeTitle: 'Sugar-free is two different things',
+    sugarFreeDrinks:
+      'DRINKS — a diet or zero cola, sugar-free squash, black tea or coffee with no sugar: these are sweetened with aspartame or sucralose, not with sugar alcohols. They carry nothing worth counting. Search "diet drink" for the row.',
+    sugarFreeSweets:
+      'SWEETS AND GUM — these use sugar alcohols instead: maltitol, sorbitol, xylitol. The label counts them as carbohydrate, but the body absorbs little of it, so dosing the printed number gives insulin for food that is not there. There is no honest conversion, so this table carries no figure for them. Eat them if you want to; watch your sugar rather than dosing for them, and ask your doctor before treating any of it as a meal.',
+    /**
      * §11.8's second condition made visible. A value whose confidence is hidden
      * is presented with the same authority as a lab measurement, and the
      * difference between those is the difference this table is built on.
@@ -309,6 +329,13 @@ export const COPY = {
       dawatPlate: 'dawat plate',
     } as const,
     /** Under a matrix: the pattern the arrangement makes visible, in words. */
+    /**
+     * What a matrix cell holds. Added because Momin read "41\u00A0g" in a column
+     * headed "plate" as the weight of the plate — which is what that layout
+     * says if nothing corrects it. Every other number on this screen is
+     * carbohydrate; the table was the one place that never said so.
+     */
+    matrixWhat: 'Each box is the carbohydrate in one serving.',
     matrixRule: {
       chai: 'Every spoon of sugar adds about 4\u00A0g, whatever the cup.',
       doodhPatti: 'Every spoon of sugar adds about 4\u00A0g, whatever the cup.',

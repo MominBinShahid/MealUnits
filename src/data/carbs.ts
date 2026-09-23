@@ -3486,7 +3486,7 @@ export const FOODS: readonly Food[] = [
     name: 'Water, diet drinks and unsweetened tea or coffee',
     roman: 'Diet drink',
     script: 'پانی، ڈائٹ ڈرنک، بغیر چینی چائے یا کافی',
-    aliases: ['diet drink', 'diet coke', 'diet pepsi', 'water', 'pani', 'black tea', 'black coffee', 'coffee'],
+    aliases: ['diet drink', 'diet coke', 'diet pepsi', 'water', 'pani', 'black tea', 'black coffee', 'coffee', 'coke zero', 'pepsi max', 'pepsi black', 'sprite zero', '7up free', 'seven up free', 'zero cola', 'zero drink', 'sugar free drink', 'sugar free cola'],
     portion: '1 glass or cup',
     grams: 0,
     gramsMax: null,
