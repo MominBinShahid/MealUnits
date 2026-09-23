@@ -36,6 +36,8 @@ import type { Advisory, Band, Breakdown, Outcome } from '../../core/types.js';
 export interface CalculatorHandlers {
   /** Phase 3 — what the carbohydrate figure was assembled from, or empty. */
   readonly foodTally: Record<string, number>;
+  /** Phase 2 — the reader's own figures, so the breakdown matches the total. */
+  readonly calibration: Readonly<Record<string, { readonly grams: number }>>;
   /** Open the explanation for a marked word. */
   readonly onTerm: (key: string) => void;
   readonly onDigit: (field: 'bloodSugar' | 'carbs', digit: string) => void;
@@ -170,11 +172,13 @@ function Working({
   breakdown,
   doseHundredths,
   tally,
+  calibration,
 }: {
   readonly state: AppState;
   readonly breakdown: Breakdown;
   readonly doseHundredths: number;
   readonly tally: Record<string, number>;
+  readonly calibration: Readonly<Record<string, { readonly grams: number }>>;
 }): JSX.Element {
   const COPY = useCopy();
   const settings = state.settings;
@@ -229,7 +233,15 @@ function Working({
           {FOODS.filter((food) => tally[food.id] !== undefined).map((food) => (
             <div key={food.id} class="row sub">
               <span>{COPY.calculator.tallyLine(String(tally[food.id]), food.name)}</span>
-              <b>{COPY.foods.gramsOne(String(food.grams * (tally[food.id] ?? 0)))}</b>
+              {/* THE READER'S figure where they have set one, not the
+                  reference. This printed `food.grams` and so contradicted the
+                  row above it the moment phase 2 shipped: the meal row said
+                  52 g while this line said "2 × Home flatbread, medium — 36 g".
+                  The comment above claims the two cannot disagree; phase 2 is
+                  what made them, and the claim was written before it existed. */}
+              <b>{COPY.foods.gramsOne(String(
+                (calibration[food.id]?.grams ?? food.grams) * (tally[food.id] ?? 0),
+              ))}</b>
             </div>
           ))}
         </div>
@@ -685,8 +697,10 @@ function ResultScreen({
           </div>
         ) : null}
         <Working state={state} breakdown={outcome.breakdown}
-          doseHundredths={outcome.hundredths} tally={handlers.foodTally} />
-        <Advisories views={views} onMore={handlers.onToggleMore} expanded={handlers.moreExpanded} />
+          doseHundredths={outcome.hundredths} tally={handlers.foodTally}
+          calibration={handlers.calibration} />
+        <Advisories views={views} onMore={handlers.onToggleMore}
+          expanded={handlers.moreExpanded} onTerm={handlers.onTerm} />
         <TimingLine state={state} outcome={outcome} timeZone={handlers.timeZone} />
       </div>
       <div class="sheet">

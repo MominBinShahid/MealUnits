@@ -1498,7 +1498,7 @@ five independent maintainers with no corporate guarantor; React is Meta and Verc
 exist in ten years. The counterweight is that Preact's entire source is ~12 KB of readable code this
 project could vendor and patch indefinitely — an option `react-dom`'s ~600 KB source does not offer.
 
-**The count that a check still reads from this entry, and therefore stays.** There are **17 structural
+**The count that a check still reads from this entry, and therefore stays.** There are **18 structural
 queries** in `test/integration.test.ts` — selectors depending on a class, id, attribute or descendant
 combinator, plus `parentElement` traversals. They are the assertions that constrain what a port may
 change: class names, element ids and the `.entry .n` nesting have to survive one.

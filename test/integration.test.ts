@@ -840,6 +840,45 @@ describe('§11.8 the food list — read-only by design', () => {
     expect(text()).toContain('52');
   });
 
+  it('phase 3: the tally does not outlive the meal it described', async () => {
+    // The defect this exists for, found by audit and by no test: breakfast's
+    // two rotis survived `new_calculation` and were still counted at lunch, so
+    // one mug of chai was dosed as 49 g. FIVE units where one was right — four
+    // units of excess rapid insulin, on the most ordinary sequence the app has.
+    await setUpAsHisBrother();
+    await keys('180');
+    await tap('Next');
+    await tap('Food list');
+    await tapStartingWith('Roti, naan and bread');
+    const bread = FOODS.filter((f) => f.category === 'bread');
+    const at = bread.findIndex((f) => f.id === 'roti-medium');
+    const adders = () => [...root.querySelectorAll('button')].filter(
+      (b) => b.getAttribute('aria-label') === COPY.foods.addOne,
+    );
+    adders()[at]?.click();
+    await settle();
+    await tap('Use this total');
+    expect(root.querySelector('.entry')?.textContent).toContain('18');
+
+    // Work it out, then start the next calculation — the meal is over.
+    await tap('Work out the dose');
+    await tap('I injected this');
+    await tap('Log this injection');
+    await tap('Done');
+
+    // The next meal, from the top: a reading, then the carbohydrate step, which
+    // is the only place the food list is offered.
+    await keys('120');
+    await tap('Next');
+
+    // The tally described the meal just logged. It must not describe this one.
+    await tap('Food list');
+    expect(
+      [...root.querySelectorAll('button')].some((b) => buttonLabel(b) === COPY.foods.tallyUse),
+      'the tally outlived the meal it was built for',
+    ).toBe(false);
+  });
+
   it('phase 3: editing the number by hand clears the tally it came from', async () => {
     await setUpAsHisBrother();
     await keys('180');

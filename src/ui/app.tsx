@@ -150,9 +150,16 @@ interface ViewState {
    * the reader confirms, never as a committed value.
    *
    * It lives here rather than in the snapshot, and the drift the snapshot was
-   * meant to prevent is prevented a cheaper way: TOUCHING THE CARBOHYDRATE
-   * FIELD CLEARS IT. So the breakdown on screen either describes the number on
-   * screen or does not exist, and there is no third state where they disagree.
+   * meant to prevent is prevented a cheaper way: EVERY PATH THAT REPLACES THE
+   * CARBOHYDRATE FIGURE ALSO CLEARS THIS. There are four — a keypad digit, a
+   * backspace, starting the next calculation, and starting over entirely.
+   *
+   * The first version named only the keypad and asserted "there is no third
+   * state where they disagree". There was: `new_calculation` blanked the input
+   * and left the tally, so breakfast's rotis were still counted at lunch and
+   * the app dosed five units where one was right. An audit found it; no test
+   * had. The lesson is that "every path" is a claim about a SET, and a comment
+   * that names one member of the set has not checked it.
    */
   foodTally: Record<string, number>;
   /** Phase 2 — which row has its "what does mine weigh" field open, or null. */
@@ -898,6 +905,10 @@ export async function start(host: Host): Promise<void> {
     view.thresholdIsDerived = true;
     view.disclaimerChecked = false;
     view.clearConfirming = null;
+    // The tally too. `startOver` deletes the database, so a surviving tally
+    // would outlive the entire record AND a prescription that no longer
+    // exists — the longest-lived thing in the app, describing nothing.
+    view.foodTally = {};
     view.confirmingUrdu = null;
     view.failClosedConfirming = false;
     await boot();
@@ -1441,6 +1452,7 @@ export async function start(host: Host): Promise<void> {
           amountProblem: view.amountProblem,
           amountDiverging: view.amountDiverging,
           foodTally: view.foodTally,
+          calibration: stored?.calibration?.foods ?? {},
           onTerm: (key: string): void => { view.glossaryTerm = key; render(); },
           onDigit: (field, digit) => {
             const current = state.inputs[field];
@@ -1462,6 +1474,21 @@ export async function start(host: Host): Promise<void> {
           onBack: () => { dispatch({ type: 'wizard_back' }); },
           onNewCalculation: () => {
             view.meterGuidanceShown = false;
+            /*
+             * AND THE TALLY. It described the meal just logged, and the next
+             * meal is not that one.
+             *
+             * Without this, breakfast outlives itself: two rotis (36 g), log
+             * it, tap Done, then one mug of chai (13 g) — and the tally still
+             * carries the rotis, so "use this total" hands over 49 g and the
+             * app doses FIVE units where one was right. Four units of excess
+             * rapid insulin, on the most ordinary sequence this app has.
+             *
+             * The comment on `foodTally` claimed there was "no third state
+             * where they disagree", and named only the keypad. The keypad was
+             * the path I had thought of, not the only one there is.
+             */
+            view.foodTally = {};
             dispatch({ type: 'new_calculation' });
           },
           onCalculate: () => { calculateNow(); },
