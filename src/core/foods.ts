@@ -105,10 +105,23 @@ export function matchFoods<T extends Searchable>(foods: readonly T[], query: str
  * by size within a family. `Array.prototype.sort` has been required to be
  * stable since ES2019, so that ordering survives rather than being scrambled.
  */
+const TIERS: ReadonlyArray<(field: string, needle: string) => boolean> = [
+  (field, needle) => field === needle,
+  (field, needle) => field.startsWith(needle),
+  (field, needle) => field.split(' ').some((word) => word.startsWith(needle)),
+];
+
 function tier(food: Searchable, needle: string): number {
   const fields = [food.name, food.roman, ...food.aliases].map(fold);
-  if (fields.some((field) => field === needle)) return 0;
-  if (fields.some((field) => field.startsWith(needle))) return 1;
-  if (fields.some((field) => field.split(' ').some((word) => word.startsWith(needle)))) return 2;
-  return 3;
+  // An ordered LIST rather than a chain of `if`s returning 0, 1, 2, 3 — and
+  // §11.8 is why. Those ordinals are literals, and the rule admits only 0, 1,
+  // -1 and 100, so the chain failed lint. Writing the tiers as rules in
+  // priority order lets `findIndex` supply the number: no literal to launder,
+  // and the order on screen is the order on the page.
+  //
+  // `-1` is the documented "none matched", and a row that matched nothing
+  // above still matched the filter — it contains the needle somewhere inside —
+  // so it sorts last rather than being dropped.
+  const matched = TIERS.findIndex((rule) => fields.some((field) => rule(field, needle)));
+  return matched === -1 ? TIERS.length : matched;
 }
