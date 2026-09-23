@@ -1530,6 +1530,33 @@ p.keep {
  * `margin-inline-end` rather than `margin-right`: it leads the name, and in
  * Urdu the name leads from the other side.
  */
+/*
+ * The collapsed food groups. The heading is a `.go.quiet` button so it already
+ * has the row's surface, radius and touch target — only the inside layout is
+ * new: the name takes the space and the count sits at the trailing edge, which
+ * is the same shape the language rows use.
+ */
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.group-name {
+  flex: 1;
+  min-width: 0;
+  text-align: start;
+}
+
+/* The rows inside an open group. Indented from the heading so the boundary is
+   visible while scrolling past it, `margin-inline-start` because in Urdu the
+   heading leads from the other side. */
+.group > .list {
+  margin-inline-start: 0.75rem;
+  margin-block-start: 0.5rem;
+}
+
 .est {
   color: var(--warn);
   margin-inline-end: 0.375rem;

@@ -1,14 +1,26 @@
 import type { JSX } from 'preact';
 import { matchFoods } from '../../core/foods.js';
-import type { Food } from '../../data/carbs.js';
+import type { Category, Food } from '../../data/carbs.js';
 import { FOODS } from '../../data/carbs.js';
 import { useCopy } from '../copy.js';
 import { Button, TextInput } from '../components.js';
 
 export interface FoodListProps {
   readonly query: string;
+  readonly openGroup: string | null;
   readonly onQuery: (value: string) => void;
+  readonly onToggleGroup: (group: string) => void;
 }
+
+/**
+ * The order the groups appear in, which is the order a meal is built rather
+ * than the order the reference document files them: the bread and the rice
+ * first, because those are the rows somebody opens this screen for three times
+ * a day, and the packets last.
+ */
+const GROUPS: readonly Category[] = [
+  'bread', 'rice', 'daal', 'salan', 'snack', 'sweet', 'drink', 'fruit', 'dairy', 'packaged',
+];
 
 /**
  * One row. Grams lead, because grams are what the app asks for and what the
@@ -65,9 +77,20 @@ function FoodRow({ food }: { readonly food: Food }): JSX.Element {
  * Reachable only from the carbohydrate step. It is an answer to the question
  * being asked at that exact moment, and it is noise anywhere else.
  */
-export function FoodListScreen({ query, onQuery }: FoodListProps): JSX.Element {
+export function FoodListScreen({
+  query, openGroup, onQuery, onToggleGroup,
+}: FoodListProps): JSX.Element {
   const COPY = useCopy();
   const shown = matchFoods(FOODS, query);
+  // Searching flattens the groups. A query is already a filter, and filtering
+  // twice — once by word, once by which section happens to be open — would hide
+  // matches behind a heading and look like the search had missed them.
+  const browsing = query.trim() === '';
+  // What is actually painted: the open group's rows while browsing, the
+  // matches while searching. Nothing while every group is shut.
+  const visible = browsing
+    ? FOODS.filter((food) => food.category === openGroup)
+    : shown;
 
   return (
     <div class="screen">
@@ -135,18 +158,59 @@ export function FoodListScreen({ query, onQuery }: FoodListProps): JSX.Element {
       <p class="hint count">{COPY.foods.countNote(shown.length, FOODS.length)}</p>
       {/* Once, under the count — not per row. A warning repeated on every row
           is furniture, and furniture is what §10.5 says trains people to skip
-          the warning that matters. Shown only when the list actually contains
-          one, so it is never explaining a symbol nobody can see. */}
-      {shown.some((food) => food.confidence === 'low') ? (
+          the warning that matters.
+
+          Shown only when a marked row is actually ON SCREEN, which is not the
+          same as being in the table. Browsing with every group shut, all 319
+          rows "contain" one and none is visible — the first version tested the
+          table and explained a symbol nobody could see. */}
+      {visible.some((food) => food.confidence === 'low') ? (
         <p class="hint est-note">{COPY.foods.estimateNote}</p>
       ) : null}
 
-      {shown.length === 0 ? (
+      {browsing ? (
+        /*
+         * 319 rows is 63 phone screens, measured. Collapsed groups make that
+         * one screen, and opening the largest of them costs ten — which is a
+         * list, not a scroll.
+         *
+         * ONE open at a time. Two would already be worse than anything else in
+         * the app, and the control that opens a group is the control that
+         * closes it, so there is no way to end up with a screen you cannot
+         * undo.
+         */
+        <>
+          <p class="hint">{COPY.foods.browseHint}</p>
+          <ul class="list groups">
+            {GROUPS.map((group) => {
+              const rows = FOODS.filter((food) => food.category === group);
+              const open = openGroup === group;
+              return (
+                <li key={group} class="group">
+                  <Button
+                    class="go quiet group-head"
+                    aria-expanded={open}
+                    onPress={() => { onToggleGroup(group); }}
+                  >
+                    <span class="group-name">{COPY.foods.categoryLabel[group]}</span>
+                    <span class="tag">{COPY.foods.categoryCount(rows.length)}</span>
+                  </Button>
+                  {open ? (
+                    <ul class="list">
+                      {rows.map((food) => <FoodRow key={food.id} food={food} />)}
+                    </ul>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      ) : shown.length === 0 ? (
         <p class="flag">{COPY.foods.empty(query)}</p>
       ) : (
         <ul class="list">
           {shown.map((food) => (
-            <FoodRow key={food.name} food={food} />
+            <FoodRow key={food.id} food={food} />
           ))}
         </ul>
       )}
