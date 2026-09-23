@@ -333,6 +333,21 @@ export const COPY = {
     mineChange: 'Change my figure',
     mineClear: 'Back to the reference',
     mineLabel: 'Grams of carbohydrate in mine',
+    /**
+     * The reference, beside the empty box. Momin's idea, and the reason is
+     * bigger than an anchor: this field asks for grams of CARBOHYDRATE, but
+     * the thing a person weighs is the ROTI. The likely mistake is not
+     * misjudging by a few grams, it is typing 50 because that is what the roti
+     * weighed when the answer is 23 — a twofold error on a figure that becomes
+     * insulin. A number already in the right ballpark makes that visible the
+     * moment it is typed.
+     *
+     * Anchoring cuts the other way, and it is the weaker effect: a reader
+     * nudged toward 18 when theirs is 22 is out by a fifth, where a reader who
+     * types the weight is out by a factor of two.
+     */
+    mineHint: (reference: string): string =>
+      `The reference is ${reference} — carbohydrate, not what it weighs.`,
     mineSave: 'Save mine',
     mineWas: (reference: string, date: string): string =>
       `Yours. The reference is ${reference}\u00A0g — you set this on ${date}.`,

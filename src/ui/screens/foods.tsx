@@ -204,6 +204,14 @@ function FoodRow({
         {editing ? (
           <div class="mine-edit">
             <label for={`mine-${food.id}`}>{COPY.foods.mineLabel}</label>
+            {/* The reference, beside the empty box. The RANGE where the row has
+                one, because a row that admits 18 to 23 should not imply 18 is
+                the answer — and the spread is itself the reason to weigh. */}
+            <p class="hint">{COPY.foods.mineHint(
+              food.gramsMax === null
+                ? COPY.foods.gramsOne(String(food.grams))
+                : COPY.foods.gramsRange(String(food.grams), String(food.gramsMax)),
+            )}</p>
             <TextInput
               id={`mine-${food.id}`}
               type="text"

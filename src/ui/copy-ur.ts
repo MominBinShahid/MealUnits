@@ -360,6 +360,8 @@ export const COPY_UR: Copy = {
     mineChange: 'اپنا عدد بدلیں',
     mineClear: 'واپس حوالہ والے عدد پر',
     mineLabel: 'آپ والے میں کتنے گرام کاربوہائیڈریٹ ہیں',
+    mineHint: (reference: string): string =>
+      isolate(`حوالہ ${reference} ہے — یہ کاربوہائیڈریٹ ہے، وزن نہیں۔`),
     mineSave: 'اپنا عدد محفوظ کریں',
     mineWas: (reference: string, date: string): string =>
       isolate(`آپ کا اپنا۔ حوالہ ${reference}\u00A0گرام ہے — آپ نے یہ ${date} کو رکھا۔`),
