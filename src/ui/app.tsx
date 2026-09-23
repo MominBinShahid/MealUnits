@@ -45,6 +45,7 @@ import {
   readAll,
   recordJsonExport,
   writeDosingHistory,
+  writeCalibration,
   writeLanguage,
 } from '../storage/repo.js';
 import type { StoredState } from '../storage/repo.js';
@@ -154,6 +155,8 @@ interface ViewState {
    * screen or does not exist, and there is no third state where they disagree.
    */
   foodTally: Record<string, number>;
+  /** Phase 2 — which row has its "what does mine weigh" field open, or null. */
+  editingMine: string | null;
   /**
    * §7.9 v23 — another tab deleted the record, so this one is re-booting into
    * the first-run gate. Outside the reducer with the rest of ViewState: it
@@ -437,6 +440,7 @@ export async function start(host: Host): Promise<void> {
     foodQuery: '',
     openFoodGroup: null,
     foodTally: {},
+    editingMine: null,
     recordDeletedElsewhere: false,
     writeFailed: false,
     staleConnection: false,
@@ -1341,6 +1345,23 @@ export async function start(host: Host): Promise<void> {
               render();
             }}
             tally={view.foodTally}
+            calibration={stored?.calibration?.foods ?? {}}
+            editingMine={view.editingMine}
+            timeZone={host.timeZone}
+            onEditMine={(id: string | null): void => { view.editingMine = id; render(); }}
+            onSaveMine={(id: string, grams: number | null): void => {
+              // PHASE 2's first constraint: this is USER data, not reference
+              // data. `src/data/carbs.ts` stays a module that holds numbers and
+              // nothing else — §11.8's exemption depends on it — so the
+              // reader's own figure lives with the rest of their record.
+              //
+              // `guardConnectedWrite` for the reason #72 ruled: a lost
+              // connection is a FAILED write that says so, never a quiet no-op.
+              guardConnectedWrite(async (connection) => {
+                await writeCalibration(connection, id, grams, host.now());
+                return refresh();
+              });
+            }}
             onAdd={(id: string): void => {
               view.foodTally = { ...view.foodTally, [id]: (view.foodTally[id] ?? 0) + 1 };
               render();

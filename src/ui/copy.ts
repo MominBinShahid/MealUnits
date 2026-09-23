@@ -242,6 +242,21 @@ export const COPY = {
      * something you USE, not something that happens — "Use this total" is a
      * decision, "Total" alone would be an announcement.
      */
+    /**
+     * PHASE 2 (BACKLOG 18) — his grams, not an average plate's.
+     *
+     * The reference figure and the date stay on screen beside the reader's own,
+     * which is the constraint that entry states outright: "a calibrated row
+     * must still show the reference figure it replaced and the date it was set.
+     * A number whose provenance is gone is the class §7.7 exists to prevent."
+     */
+    mineSet: 'Use my own figure',
+    mineChange: 'Change my figure',
+    mineClear: 'Back to the reference',
+    mineLabel: 'Grams of carbohydrate in mine',
+    mineSave: 'Save mine',
+    mineWas: (reference: string, date: string): string =>
+      `Yours. The reference is ${reference}\u00A0g — you set this on ${date}.`,
     addOne: 'Add one',
     removeOne: 'Remove one',
     tallyCount: (n: number): string => `${String(n)}×`,
