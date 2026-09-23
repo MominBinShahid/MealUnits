@@ -72,6 +72,12 @@ export const LANGUAGE_IN_TESTING: Language = 'ur';
 export const URDU_FACES: readonly { readonly id: UrduFace; readonly name: string }[] = [
   { id: 'nastaliq', name: 'Noto Nastaliq Urdu' },
   { id: 'gulzar', name: 'Gulzar' },
+  // Below Gulzar, Momin's placement, and they share its one limitation: a
+  // single published weight, so bold renders at normal. Added anyway because
+  // two Nastaliqs to choose between is not much of a choice, and this is the
+  // only other one on the open web that can be shipped — see the note in
+  // `fonts-urdu.css` for what ruled the rest out.
+  { id: 'beaconhouse', name: 'Beaconhouse Nastaliq' },
   { id: 'naskh', name: 'Noto Naskh Arabic' },
   { id: 'sans', name: 'Noto Sans Arabic' },
 ];
