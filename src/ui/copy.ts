@@ -78,7 +78,7 @@ export const COPY = {
   glossary: {
     ketones: {
       word: 'ketones',
-      body: 'When there is not enough insulin, the body burns fat for energy instead of sugar, and that leaves ketones behind. A lot of them makes the blood acidic, which is dangerous and gets worse over hours. A chemist sells strips — for urine or for blood — that tell you if they are there.',
+      body: 'When there is not enough insulin, the body burns fat for energy instead of sugar, and that leaves ketones behind. A lot of them makes the blood acidic, which is dangerous and gets worse over hours. On a lab report the line is printed in English, as "Ketones". A 24-hour lab will test a urine sample for a few hundred rupees; ordinary pharmacies in Karachi do not stock the strips.',
     },
     ketoacidosis: {
       word: 'diabetic ketoacidosis',
