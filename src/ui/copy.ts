@@ -2061,6 +2061,19 @@ export const COPY = {
   tabTitleFallback: '',
 
   /** §10.8 — show the running build version. */
+  /**
+   * The version, and BACKLOG T27 closed.
+   *
+   * `0.1.0 (e9abe42)` painted as `(e9abe42) 0.1.0` under `dir="rtl"`, brackets
+   * mirrored with it — the same bidi defect as the food ranges and the dose
+   * timestamp, and the same fix. It sat unfixed for a day because `.foot`
+   * renders on EVERY screen rather than one, which made it a different blast
+   * radius rather than a different bug.
+   *
+   * Cosmetic, unlike the others: nobody doses off a build hash. It is fixed
+   * because §10.8 says this line exists to diagnose a report, and a version
+   * somebody reads back wrong is one they cannot report.
+   */
   build: (version: string, build: string): string => `${version} (${build})`,
 
   more: 'More',

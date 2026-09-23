@@ -2601,7 +2601,7 @@ row" as a result. Moved back to `T5`, and the citation with it.
 That is the argument for doing this prune rather than skipping it: a duplicate number is cosmetic,
 and the thing it was hiding was not.
 
-### T27. The footer version string has the bidi defect the rest of the app was fixed for
+### T27. The footer version string has the bidi defect the rest of the app was fixed for — DONE 2026-09-23
 **Found 2026-09-23 while fixing the same class of defect on `settings_text` (#88).**
 
 `.foot` renders `0.1.0 (local)` and paints `(local) 0.1.0` under `dir="rtl"`, parentheses mirrored
@@ -2614,8 +2614,17 @@ route it through a copy entry that is identity in English and `isolate()` in Urd
 
 **Left out of #88 deliberately.** That change was scoped to the one screen built to be photographed
 for a doctor. `.foot` renders on EVERY screen, which is a different blast radius and wants its own
-change and its own look at whether `check_rtl_ranges_isolated` should have caught it — that check
-reads only `copy-ur.ts`, and this string is built in a component.
+change.
+
+**Fixed 2026-09-23** by routing it through `isolate()` in `copy-ur.ts`, the same seam the food
+ranges and the dose timestamp use. Cosmetic, unlike those two — nobody doses off a build hash — and
+fixed anyway because §10.8 says this line exists to diagnose a report, and a version somebody reads
+back wrong is one they cannot report.
+
+**The check that should have caught it still does not.** `check_rtl_ranges_isolated` reads only
+`copy-ur.ts` and looks for digit-dash-digit; this was digits either side of a bracket, in a string
+that IS in `copy-ur.ts`. Widening it is its own change, and worth doing before the next such string
+lands.
 
 ### T26. `npm run smoke` said `(no #app)` when the thing it needed was not running — FIXED 2026-09-23
 **This entry previously claimed Chrome 153 had broken the harness. That was wrong**, and it is kept
