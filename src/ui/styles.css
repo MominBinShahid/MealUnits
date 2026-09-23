@@ -964,17 +964,42 @@ body {
   border-radius: 0.875rem;
   padding: 0.75rem 0.875rem;
   display: flex;
-  /* WRAPS, so a food row's actions can take a line of their own. Without it
-     they sit inside the text column, whose width is whatever the gram figure
-     beside it leaves over — and "12–15 g" leaves less than "23 g", so the add
-     button landed at a different position on almost every row. Reported by
-     Momin off a screenshot of the bread group, where five rows put it in four
-     places. */
-  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
 }
+
+/*
+ * A FOOD ROW IS A GRID, and the other twenty-one `.li` rows in the app are not.
+ *
+ * It has three parts rather than two: the text, the gram figure, and a line of
+ * actions. Flex could not hold that. With `flex: 1` on the text the gram figure
+ * was pushed around by however long the variance note happened to be, so the
+ * add button landed in a different place on almost every row; adding
+ * `flex-wrap` fixed the button and broke the figure, which dropped onto a line
+ * of its own on any row with a long note. Both reported by Momin, off
+ * screenshots, one after the other.
+ *
+ * A grid states the thing flex was being asked to infer: the number belongs
+ * beside the text at the trailing edge whatever the text does, and the actions
+ * belong on their own line under both.
+ */
+.li.food {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'text value'
+    'mine mine'
+    'actions actions';
+  align-items: start;
+  column-gap: 0.75rem;
+  row-gap: 0.5rem;
+}
+
+.li.food > :first-child { grid-area: text; }
+.li.food > .v { grid-area: value; align-self: center; }
+.li.food > .mine-edit { grid-area: mine; }
+.li.food > .row-actions { grid-area: actions; }
 
 /*
  * A row whose right-hand element is an ACTION rather than a value. Only the two
@@ -1704,17 +1729,11 @@ button:disabled { cursor: default; }
 /* The two things you can do to a row, on one line: the quiet one at the
    leading edge, the constant one at the trailing edge. */
 .row-actions {
-  /* A full line of its own, so the stepper is at the row's trailing edge on
-     EVERY row rather than at the end of a text column of varying width. */
-  flex-basis: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
 }
-
-/* The calibration box takes the full line too, above the actions. */
-.mine-edit { flex-basis: 100%; }
 
 .tally {
   display: flex;

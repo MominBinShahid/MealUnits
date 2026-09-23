@@ -169,7 +169,7 @@ function FoodRow({
       : COPY.foods.gramsRange(String(food.grams), String(food.gramsMax));
 
   return (
-    <li class="li">
+    <li class="li food">
       <div>
         <div class="k">
           {/* The marker sits on the ROW, where the food is chosen, and not on
@@ -476,11 +476,12 @@ export function FoodListScreen({
        * things, and §7.6's rule is that a destructive control names what it
        * will destroy before it does it.
        */}
-      {/* More than ONE, expressed without a literal 2 — §11.8 admits only 0, 1,
-          -1 and 100, and `> 1` says the same thing in the values it does
-          admit. A reader with a single calibration has the per-row control
-          right there and needs no second way to undo it. */}
-      {Object.keys(calibration).length > 1 ? (
+      {/* Whenever there is ANY. It was "more than one", on the reasoning that a
+          reader with a single calibration has the per-row control right there —
+          and Momin had exactly one, went looking for this, and could not find
+          it. A control that exists only above a threshold is a control people
+          learn does not exist. */}
+      {Object.keys(calibration).length > 0 ? (
         <div class="card-actions">
           {resetting ? (
             <div class="flag">
