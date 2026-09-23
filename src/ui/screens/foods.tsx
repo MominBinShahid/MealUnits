@@ -24,6 +24,9 @@ export interface FoodListProps {
   readonly onClearTally: () => void;
   readonly onEditMine: (id: string | null) => void;
   readonly onSaveMine: (id: string, grams: number | null) => void;
+  readonly resetting: boolean;
+  readonly onResetting: (value: boolean) => void;
+  readonly onResetMine: () => void;
 }
 
 /**
@@ -206,7 +209,10 @@ function FoodRow({
             stepper off the row entirely while the box was open — so a reader
             who opened "use my own figure" could no longer add the food until
             they closed it again. */}
-        {editing ? (
+      </div>
+      <div class="v">{amount}</div>
+
+      {editing ? (
           <div class="mine-edit">
             <label for={`mine-${food.id}`}>{COPY.foods.mineLabel}</label>
             <p class="hint">{COPY.foods.mineHint(
@@ -268,8 +274,6 @@ function FoodRow({
               onPress={() => { onAdd(food.id); }}>{'+'}</Button>
           </div>
         </div>
-      </div>
-      <div class="v">{amount}</div>
     </li>
   );
 }
@@ -286,8 +290,9 @@ function FoodRow({
  * being asked at that exact moment, and it is noise anywhere else.
  */
 export function FoodListScreen({
-  query, openGroup, tally, calibration, editingMine, timeZone,
+  query, openGroup, tally, calibration, editingMine, timeZone, resetting,
   onQuery, onToggleGroup, onAdd, onRemove, onUseTotal, onClearTally, onEditMine, onSaveMine,
+  onResetting, onResetMine,
 }: FoodListProps): JSX.Element {
   const COPY = useCopy();
   const shown = matchFoods(FOODS, query);
@@ -461,6 +466,41 @@ export function FoodListScreen({
           <p class="hint">{COPY.foods.tallyCheck}</p>
         </div>
       )}
+
+      {/*
+       * Clearing every calibration at once, and ONLY once there is more than
+       * one to clear — a reader who has set a single figure has the per-row
+       * control right there and does not need a second way to undo it.
+       *
+       * Behind a confirm, because it destroys work a person did by weighing
+       * things, and §7.6's rule is that a destructive control names what it
+       * will destroy before it does it.
+       */}
+      {/* More than ONE, expressed without a literal 2 — §11.8 admits only 0, 1,
+          -1 and 100, and `> 1` says the same thing in the values it does
+          admit. A reader with a single calibration has the per-row control
+          right there and needs no second way to undo it. */}
+      {Object.keys(calibration).length > 1 ? (
+        <div class="card-actions">
+          {resetting ? (
+            <div class="flag">
+              <b>{COPY.foods.mineResetAll(Object.keys(calibration).length)}</b>
+              <div class="card-actions-row">
+                <Button class="go danger" onPress={onResetMine}>
+                  {COPY.foods.mineResetConfirm}
+                </Button>
+                <Button class="link" onPress={() => { onResetting(false); }}>
+                  {COPY.foods.mineResetCancel}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button class="link" onPress={() => { onResetting(true); }}>
+              {COPY.foods.mineResetAll(Object.keys(calibration).length)}
+            </Button>
+          )}
+        </div>
+      ) : null}
 
       {/* Last, not first. It is the most useful thing here, and it is also the
           thing nobody reads before they have looked up one number and seen how

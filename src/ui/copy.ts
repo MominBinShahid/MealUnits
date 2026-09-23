@@ -349,6 +349,19 @@ export const COPY = {
     mineHint: (reference: string): string =>
       `The reference is ${reference} — carbohydrate, not what it weighs.`,
     mineSave: 'Save mine',
+    /**
+     * Clearing ALL of them, once. Per-row clearing already exists inside each
+     * row's box, and that is the right place for undoing one — but a reader who
+     * has calibrated twenty foods and wants the reference table back should not
+     * have to open twenty boxes.
+     *
+     * It shows the count, because a control that says how much it will destroy
+     * is one a person can judge before pressing.
+     */
+    mineResetAll: (n: number): string =>
+      `Put all ${String(n)} back to the reference figures`,
+    mineResetConfirm: 'Yes, use the reference figures again',
+    mineResetCancel: 'Keep mine',
     mineWas: (reference: string, date: string): string =>
       `Yours. The reference is ${reference}\u00A0g — you set this on ${date}.`,
     addOne: 'Add one',

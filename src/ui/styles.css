@@ -964,6 +964,13 @@ body {
   border-radius: 0.875rem;
   padding: 0.75rem 0.875rem;
   display: flex;
+  /* WRAPS, so a food row's actions can take a line of their own. Without it
+     they sit inside the text column, whose width is whatever the gram figure
+     beside it leaves over — and "12–15 g" leaves less than "23 g", so the add
+     button landed at a different position on almost every row. Reported by
+     Momin off a screenshot of the bread group, where five rows put it in four
+     places. */
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
@@ -1530,6 +1537,14 @@ p.keep {
  * `margin-inline-end` rather than `margin-right`: it leads the name, and in
  * Urdu the name leads from the other side.
  */
+/* EVERY button says it is one. Several did not — the food stepper, the group
+   headings and the glossary term all rendered as plain text to the cursor,
+   because `cursor: pointer` was set per-component and each new control had to
+   remember. A rule nobody has to remember is the only kind that holds.
+   Reported by Momin, on the add button. */
+button { cursor: pointer; }
+button:disabled { cursor: default; }
+
 /* ── a word you can tap to find out what it means ────────────────────────── */
 
 /*
@@ -1665,7 +1680,6 @@ p.keep {
 .mine-edit {
   display: grid;
   gap: 0.375rem;
-  margin-block-start: 0.5rem;
   padding: 0.625rem;
   border: 1px solid var(--line);
   border-radius: 0.5rem;
@@ -1690,12 +1704,17 @@ p.keep {
 /* The two things you can do to a row, on one line: the quiet one at the
    leading edge, the constant one at the trailing edge. */
 .row-actions {
+  /* A full line of its own, so the stepper is at the row's trailing edge on
+     EVERY row rather than at the end of a text column of varying width. */
+  flex-basis: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-block-start: 0.5rem;
 }
+
+/* The calibration box takes the full line too, above the actions. */
+.mine-edit { flex-basis: 100%; }
 
 .tally {
   display: flex;

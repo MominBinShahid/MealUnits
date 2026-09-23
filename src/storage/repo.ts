@@ -626,6 +626,19 @@ export function writeCalibration(
   });
 }
 
+/**
+ * Phase 2 — every calibration gone, in one write.
+ *
+ * The whole map replaced rather than a delete per food: a per-food loop could
+ * half-succeed and leave the reader with a table that is partly theirs and
+ * partly the reference, with nothing on screen saying which rows are which.
+ */
+export function clearCalibration(db: IDBDatabase): Promise<IDBValidKey> {
+  return runTransaction(db, [STORE.meta], 'readwrite', (tx) =>
+    put(tx, STORE.meta, { key: META_KEY.calibration, foods: {} } satisfies CalibrationRow),
+  );
+}
+
 export function writeLanguage(
   db: IDBDatabase,
   row: Omit<LanguageRow, 'key'>,

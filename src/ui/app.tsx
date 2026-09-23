@@ -45,6 +45,7 @@ import {
   readAll,
   recordJsonExport,
   writeDosingHistory,
+  clearCalibration,
   writeCalibration,
   writeLanguage,
 } from '../storage/repo.js';
@@ -164,6 +165,8 @@ interface ViewState {
   foodTally: Record<string, number>;
   /** Phase 2 — which row has its "what does mine weigh" field open, or null. */
   editingMine: string | null;
+  /** Whether the "put them all back" confirm is showing. */
+  resettingMine: boolean;
   /**
    * Which hard word is open, or null. ONE at a time — the panel explains the
    * word you tapped, and two open would be two answers to one question.
@@ -456,6 +459,7 @@ export async function start(host: Host): Promise<void> {
     openFoodGroup: null,
     foodTally: {},
     editingMine: null,
+    resettingMine: false,
     glossaryTerm: null,
     recordDeletedElsewhere: false,
     writeFailed: false,
@@ -1369,6 +1373,19 @@ export async function start(host: Host): Promise<void> {
             editingMine={view.editingMine}
             timeZone={host.timeZone}
             onEditMine={(id: string | null): void => { view.editingMine = id; render(); }}
+            resetting={view.resettingMine}
+            onResetting={(value: boolean): void => { view.resettingMine = value; render(); }}
+            onResetMine={(): void => {
+              view.resettingMine = false;
+              // One transaction, the whole map replaced with an empty one —
+              // rather than a write per food, which could half-succeed and
+              // leave the reader with a table that is partly theirs and partly
+              // the reference, with no way to tell which rows are which.
+              guardConnectedWrite(async (connection) => {
+                await clearCalibration(connection);
+                return refresh();
+              });
+            }}
             onSaveMine={(id: string, grams: number | null): void => {
               // PHASE 2's first constraint: this is USER data, not reference
               // data. `src/data/carbs.ts` stays a module that holds numbers and
