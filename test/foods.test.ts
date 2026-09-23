@@ -224,6 +224,22 @@ describe('the shipped table — §11.8\'s exemption conditions, as tests', () =>
       .toEqual(['rice-katori', 'rice-cup', 'rice-plate']);
   });
 
+  it('"karhi" shows BOTH karahi and kadhi rather than silently picking one', () => {
+    // Two different dishes whose Roman spellings are four characters apart, at
+    // roughly four times the carbohydrate: karahi 4 g against kadhi 15 g. In
+    // Urdu they are کڑاہی and کڑھی and nobody confuses them; in Roman "karhi"
+    // is a defensible spelling of either.
+    //
+    // Returning ONE of them is the hazard — the reader gets an answer, it looks
+    // like the answer, and there is nothing on screen to say a different dish
+    // was also a candidate. Returning both is safe, because the names and the
+    // gram figures are right there and the choice is a person's again. Same
+    // disposition as the `chaa` overlap below, for the same reason.
+    const ids = matchFoods(FOODS, 'karhi').map((f) => f.id);
+    expect(ids).toContain('karahi');
+    expect(ids).toContain('kadhi');
+  });
+
   it('"chaa" reaches rice as well as tea, and that is known', () => {
     // NOT an assertion that this is right. `chaa` is a real spelling of chai and
     // it is also the first four letters of `chaawal`, so substring matching
