@@ -82,8 +82,14 @@ const SUGAR_FREE_WORDS = [
  * "Sugar Free" and "sugar-free gum" both land.
  */
 export function asksAboutSugarFree(query: string): boolean {
+  // NO EMPTY-QUERY GUARD, deliberately. One was written here and the mutation
+  // gate killed it — twice, as a surviving ConditionalExpression and a
+  // surviving StringLiteral, both pointing at the same dead branch. It was
+  // unreachable behaviour: every word in the list is non-empty, and `''`
+  // contains none of them, so an empty query already answers false by the only
+  // route that matters. A guard no input can distinguish is not caution, it is
+  // a line that looks like it is doing something.
   const needle = fold(query);
-  if (needle === '') return false;
   return SUGAR_FREE_WORDS.some((word) => needle.includes(word));
 }
 
