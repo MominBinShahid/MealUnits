@@ -78,6 +78,22 @@ Rows can carry more than one tag — biryani is (a) *your plate size* **and** (b
   panel byte-identical to the same maker's Haleem. And a widely republished lassi figure belongs to
   a *rose* lassi, not a plain one. **Read the panel on the pack in your hand**, and check that its
   sugar row is inside its carbohydrate row rather than beside it.
+- **A row can fail on physics alone, and two now have — ADDED 2026-09-23.** Carbohydrate cannot
+  exceed what is left after the water, the fat and the protein, so a figure can be rejected without
+  a second source disagreeing with it. LFAC's **papar** row was already rejected this way. **Gur
+  papri** joins it: 4 pieces, 76 g, 57 g printed — **75 g per 100**, for a sweet made with ghee,
+  when every comparable sweet in the same book sits at 40 to 43. It ships at `low` confidence with
+  the doubt on the row rather than being dropped, because a reader who eats it is better served by
+  an upper bound that says it is an upper bound than by the food being absent.
+  **Six of that book's 56 weighed rows exceed 60 g per 100**, which is worth knowing before trusting
+  any of its Punjabi-cuisine figures.
+- **Carbohydrate is conserved through cooking — ADDED 2026-09-23.** Frying, boiling and baking move
+  WATER and add FAT; they do not create or destroy carbohydrate. So grams per PIECE are stable even
+  when grams per 100 g swing twofold between raw and finished. Three separate arguments in this file
+  turn on it, and it was never written down: it is what makes a raw-weight reading of taryal patata
+  impossible, what makes the papar fried-versus-dry debate mostly moot, and what lowers the evidence
+  bar for an unmeasured bakery item from "ingredients plus a measured yield" to "ingredients plus a
+  piece count".
 - **[CoFID] is monosaccharide equivalents, not label grams — ADDED 2026-09-23.** Its own user guide
   says to divide total carbohydrate by **1.05**, and starch by **1.10**, to get actual weights. So
   every CoFID figure in this file runs roughly **5% above** what a packet would declare for the same
