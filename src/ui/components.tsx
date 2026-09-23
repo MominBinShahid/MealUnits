@@ -252,10 +252,12 @@ export function Advisories({
   views,
   onMore,
   expanded,
+  onTerm,
 }: {
   readonly views: readonly AdvisoryView[];
   readonly onMore: () => void;
   readonly expanded: boolean;
+  readonly onTerm: (key: string) => void;
 }): JSX.Element | null {
   const COPY = useCopy();
   if (views.length === 0) return null;
@@ -282,7 +284,12 @@ export function Advisories({
               copy change — §10.5 requires the two forms to carry IDENTICAL
               words, and a separator is not a word. */}
           {view.compact === true && view.title !== null ? ' ' : null}
-          {view.body}
+          {/* THROUGH `Prose`, because an advisory body can carry a glossary
+              marker and `bandE.body` does. Rendered raw it shipped the literal
+              text `[[ketones]]` onto the card §10.5 calls "safety information,
+              never collapsed" — in both languages, on the one screen that tells
+              a reader to go and test for the thing the marker names. */}
+          <Prose text={view.body} onTerm={onTerm} />
         </div>
       ))}
       {hidden > 0 ? (
