@@ -800,6 +800,46 @@ describe('§11.8 the food list — read-only by design', () => {
     expect(text()).toContain('2 × Home flatbread, medium');
   });
 
+  it('phase 2: his own figure replaces the reference, keeps it on screen, and feeds the tally', async () => {
+    await setUpAsHisBrother();
+    await keys('180');
+    await tap('Next');
+    await tap('Food list');
+    await tapStartingWith('Roti, naan and bread');
+
+    const bread = FOODS.filter((f) => f.category === 'bread');
+    const at = bread.findIndex((f) => f.id === 'roti-medium');
+    const openers = [...root.querySelectorAll('button')].filter(
+      (b) => buttonLabel(b) === COPY.foods.mineSet,
+    );
+    openers[at]?.click();
+    await settle();
+
+    const field = root.querySelector('#mine-roti-medium');
+    if (!(field instanceof HTMLInputElement)) throw new Error('no calibration field');
+    field.value = '26';
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    await settle();
+    await settle();
+
+    // BACKLOG 18's second constraint, which is the whole reason the date is
+    // stored: the reference figure it replaced stays on screen beside it. A
+    // number whose provenance is gone is the class §7.7 exists to prevent.
+    expect(text()).toContain('The reference is 18');
+
+    // And phase 2 has to reach phase 3, or calibrating a food would change what
+    // the row says and not what the dose says.
+    const adders = [...root.querySelectorAll('button')].filter(
+      (b) => b.getAttribute('aria-label') === COPY.foods.addOne,
+    );
+    adders[at]?.click();
+    await settle();
+    adders[at]?.click();
+    await settle();
+    // 2 × 26, not 2 × 18.
+    expect(text()).toContain('52');
+  });
+
   it('phase 3: editing the number by hand clears the tally it came from', async () => {
     await setUpAsHisBrother();
     await keys('180');

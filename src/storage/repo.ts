@@ -33,6 +33,7 @@ import type {
   DosingHistoryRow,
   EnvelopeRow,
   InstallRow,
+  CalibrationRow,
   LanguageRow,
   LogRevisionRow,
   RecoveryBlock,
@@ -102,6 +103,8 @@ export interface StoredState {
    * there.
    */
   readonly languageChoice: LanguageRow | null;
+  /** Phase 2 — the reader's own grams per food, or null if they have set none. */
+  readonly calibration: CalibrationRow | null;
 }
 
 /** One read of everything the reducer needs, in one transaction. */
@@ -111,7 +114,10 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
     [STORE.meta, STORE.settings, STORE.acks, STORE.log, STORE.readings, STORE.settingsHistory],
     'readonly',
     async (tx) => {
-      const [settingsRow, history, log, readings, acks, revision, install, dosing, backup, language] =
+      const [
+        settingsRow, history, log, readings, acks, revision, install, dosing, backup,
+        language, calibration,
+      ] =
         await Promise.all([
           get<SettingsRow>(tx, STORE.settings, SETTINGS_KEY),
           getAll<SettingsHistoryRow>(tx, STORE.settingsHistory),
@@ -123,6 +129,7 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
           get<DosingHistoryRow>(tx, STORE.meta, META_KEY.dosingHistory),
           get<BackupRow>(tx, STORE.meta, META_KEY.backup),
           get<LanguageRow>(tx, STORE.meta, META_KEY.language),
+          get<CalibrationRow>(tx, STORE.meta, META_KEY.calibration),
         ]);
 
       const settings: Settings | null =
@@ -201,6 +208,7 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
         // rather than this function's. Unlike the dosing note above, which has
         // three states of its own and defaults to the one that keeps asking.
         languageChoice: language ?? null,
+        calibration: calibration ?? null,
       } satisfies StoredState;
     },
   );
@@ -591,6 +599,33 @@ export function writeDosingHistory(
  * The face rides along even when the language is English, so switching back and
  * forth does not lose the one she was in the middle of comparing.
  */
+/**
+ * Phase 2 — the reader's own figure for one food.
+ *
+ * READ-MODIFY-WRITE INSIDE ONE TRANSACTION, not a blind put. The whole map
+ * lives in a single `meta` row, so writing it from a value read earlier would
+ * lose any calibration another tab set in between — the same class of race
+ * §11.3 handles for settings, arriving through a different door.
+ *
+ * `grams: null` REMOVES the entry rather than storing a zero. Zero is a real
+ * carbohydrate figure in this table now, so it cannot double as "no longer
+ * calibrated".
+ */
+export function writeCalibration(
+  db: IDBDatabase,
+  foodId: string,
+  grams: number | null,
+  setAt: number,
+): Promise<IDBValidKey> {
+  return runTransaction(db, [STORE.meta], 'readwrite', async (tx) => {
+    const existing = await get<CalibrationRow>(tx, STORE.meta, META_KEY.calibration);
+    const foods = { ...existing?.foods };
+    if (grams === null) delete foods[foodId];
+    else foods[foodId] = { grams, setAt };
+    return put(tx, STORE.meta, { key: META_KEY.calibration, foods } satisfies CalibrationRow);
+  });
+}
+
 export function writeLanguage(
   db: IDBDatabase,
   row: Omit<LanguageRow, 'key'>,

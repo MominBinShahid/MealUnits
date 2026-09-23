@@ -4710,7 +4710,7 @@ SELF_TESTS = [
     # check keeps current will rot every time that figure moves, and only the
     # self-test notices.
     ("T3's structural-query count reverted to the wrong 0", "BACKLOG.md",
-     lambda t: t.replace("There are **16 structural", "There are **0 structural")),
+     lambda t: t.replace("There are **17 structural", "There are **0 structural")),
     # §20.3 — the check added in the same commit arrives with its own mutation.
     # A constant exported from src/config.ts and never written into §11.8 used to
     # be invisible: absent from PLAN.md so nothing reported it, absent from

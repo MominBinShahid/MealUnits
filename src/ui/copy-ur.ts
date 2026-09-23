@@ -289,6 +289,13 @@ export const COPY_UR: Copy = {
     } as const,
     categoryCount: (n: number): string => `${String(n)} کھانے`,
     browseHint: 'کسی گروپ پر ٹیپ کریں، یا اوپر تلاش کریں۔',
+    mineSet: 'اپنا عدد استعمال کریں',
+    mineChange: 'اپنا عدد بدلیں',
+    mineClear: 'واپس حوالہ والے عدد پر',
+    mineLabel: 'آپ والے میں کتنے گرام کاربوہائیڈریٹ ہیں',
+    mineSave: 'اپنا عدد محفوظ کریں',
+    mineWas: (reference: string, date: string): string =>
+      isolate(`آپ کا اپنا۔ حوالہ ${reference}\u00A0گرام ہے — آپ نے یہ ${date} کو رکھا۔`),
     addOne: 'ایک اور',
     removeOne: 'ایک کم',
     tallyCount: (n: number): string => `${String(n)}×`,

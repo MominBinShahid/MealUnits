@@ -1530,6 +1530,30 @@ p.keep {
  * `margin-inline-end` rather than `margin-right`: it leads the name, and in
  * Urdu the name leads from the other side.
  */
+/* ── phase 2: the reader's own figure ────────────────────────────────────── */
+
+/* The reference this replaced, and when. Quieter than the row's other hints
+   because it is provenance rather than instruction — but present, because
+   BACKLOG 18 makes showing it a condition of the feature existing. */
+.mine-was {
+  color: var(--mark);
+  opacity: 0.85;
+}
+
+.mine-open {
+  align-self: start;
+  margin-block-start: 0.375rem;
+}
+
+.mine-edit {
+  display: grid;
+  gap: 0.375rem;
+  margin-block-start: 0.5rem;
+  padding: 0.625rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+}
+
 /* A tally line inside §10.3's working. Quieter than the rows it sits under,
    because it explains one of them rather than adding to the sum — indented and
    dimmed so the eye reads it as a footnote to the meal row above. */

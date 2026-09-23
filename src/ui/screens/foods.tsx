@@ -1,5 +1,6 @@
 import type { JSX } from 'preact';
 import { matchFoods } from '../../core/foods.js';
+import { formatDayAndMonth } from '../../core/calendar.js';
 import type { Category, Food } from '../../data/carbs.js';
 import { FOODS } from '../../data/carbs.js';
 import { useCopy } from '../copy.js';
@@ -9,12 +10,18 @@ export interface FoodListProps {
   readonly query: string;
   readonly openGroup: string | null;
   readonly tally: Record<string, number>;
+  /** Phase 2 — the reader's own figures, keyed by `Food.id`. */
+  readonly calibration: Readonly<Record<string, { readonly grams: number; readonly setAt: number }>>;
+  readonly editingMine: string | null;
+  readonly timeZone: string;
   readonly onQuery: (value: string) => void;
   readonly onToggleGroup: (group: string) => void;
   readonly onAdd: (id: string) => void;
   readonly onRemove: (id: string) => void;
   readonly onUseTotal: (grams: number) => void;
   readonly onClearTally: () => void;
+  readonly onEditMine: (id: string | null) => void;
+  readonly onSaveMine: (id: string, grams: number | null) => void;
 }
 
 /**
@@ -31,11 +38,18 @@ export interface FoodListProps {
  * up to half a gram per food, which on a six-item plate is a whole unit at some
  * ratios.
  */
-function tallyGrams(tally: Record<string, number>): number {
+function tallyGrams(
+  tally: Record<string, number>,
+  calibration: Readonly<Record<string, { readonly grams: number }>>,
+): number {
   let total = 0;
   for (const food of FOODS) {
     const count = tally[food.id];
-    if (count !== undefined) total += food.grams * count;
+    // PHASE 2 MEETS PHASE 3. If the reader has said what theirs weighs, the
+    // total is built from THEIR figure — otherwise calibrating a food would
+    // change what the row says and not what the dose says, which is the worse
+    // half of both features.
+    if (count !== undefined) total += (calibration[food.id]?.grams ?? food.grams) * count;
   }
   return Math.round(total);
 }
@@ -55,16 +69,30 @@ const GROUPS: readonly Category[] = [
  * reader came here to get — the name is how you find the row, the number is
  * why you wanted it.
  */
-function FoodRow({ food, count, onAdd, onRemove }: {
+function FoodRow({
+  food, count, mine, editing, onAdd, onRemove, onEditMine, onSaveMine, timeZone,
+}: {
   readonly food: Food;
   readonly count: number;
+  /** Phase 2 — the reader's own figure for this food, or null. */
+  readonly mine: { readonly grams: number; readonly setAt: number } | null;
+  readonly editing: boolean;
   readonly onAdd: (id: string) => void;
   readonly onRemove: (id: string) => void;
+  readonly onEditMine: (id: string | null) => void;
+  readonly onSaveMine: (id: string, grams: number | null) => void;
+  readonly timeZone: string;
 }): JSX.Element {
   const COPY = useCopy();
-  const amount = food.gramsMax === null
-    ? COPY.foods.gramsOne(String(food.grams))
-    : COPY.foods.gramsRange(String(food.grams), String(food.gramsMax));
+  // PHASE 2: the reader's figure REPLACES the reference in the headline, and
+  // the reference moves to the line beneath with the date it was set. It is
+  // not shown alongside as an alternative — a row offering two numbers is a
+  // question, and this screen exists to answer one.
+  const amount = mine !== null
+    ? COPY.foods.gramsOne(String(mine.grams))
+    : food.gramsMax === null
+      ? COPY.foods.gramsOne(String(food.grams))
+      : COPY.foods.gramsRange(String(food.grams), String(food.gramsMax));
 
   return (
     <li class="li">
@@ -90,9 +118,51 @@ function FoodRow({ food, count, onAdd, onRemove }: {
         {food.varies === null ? null : (
           <div class="hint">{COPY.foods.variesPrefix + food.varies}</div>
         )}
+        {/* PHASE 2's second constraint, on screen: the reference figure this
+            replaced, and when the reader chose to replace it. A calibration
+            set two years ago is a different claim from one set last week, and
+            without the date there is no way to tell them apart. */}
+        {mine === null ? null : (
+          <div class="hint mine-was">
+            {COPY.foods.mineWas(String(food.grams), formatDayAndMonth(mine.setAt, timeZone))}
+          </div>
+        )}
         <div class="clinical">
           {`${COPY.foods.confidenceLabel[food.confidence]} · ${COPY.foods.sourcePrefix}${food.source}`}
         </div>
+        {editing ? (
+          <div class="mine-edit">
+            <label for={`mine-${food.id}`}>{COPY.foods.mineLabel}</label>
+            <TextInput
+              id={`mine-${food.id}`}
+              type="text"
+              inputMode="numeric"
+              data-field={`mine-${food.id}`}
+              value={mine === null ? '' : String(mine.grams)}
+              autocomplete="off"
+              onValue={(value: string) => {
+                // Only a figure this table could plausibly carry. An empty
+                // field clears the calibration rather than storing a zero —
+                // zero is a real carbohydrate value here now.
+                const trimmed = value.trim();
+                if (trimmed === '') { onSaveMine(food.id, null); return; }
+                const grams = Number(trimmed);
+                if (!Number.isFinite(grams) || grams < 0) return;
+                onSaveMine(food.id, grams);
+              }}
+            />
+            <Button class="link" onPress={() => { onEditMine(null); }}>{COPY.foods.mineSave}</Button>
+            {mine === null ? null : (
+              <Button class="link" onPress={() => { onSaveMine(food.id, null); onEditMine(null); }}>
+                {COPY.foods.mineClear}
+              </Button>
+            )}
+          </div>
+        ) : (
+          <Button class="link mine-open" onPress={() => { onEditMine(food.id); }}>
+            {mine === null ? COPY.foods.mineSet : COPY.foods.mineChange}
+          </Button>
+        )}
       </div>
       <div class="v">
         {amount}
@@ -125,7 +195,8 @@ function FoodRow({ food, count, onAdd, onRemove }: {
  * being asked at that exact moment, and it is noise anywhere else.
  */
 export function FoodListScreen({
-  query, openGroup, tally, onQuery, onToggleGroup, onAdd, onRemove, onUseTotal, onClearTally,
+  query, openGroup, tally, calibration, editingMine, timeZone,
+  onQuery, onToggleGroup, onAdd, onRemove, onUseTotal, onClearTally, onEditMine, onSaveMine,
 }: FoodListProps): JSX.Element {
   const COPY = useCopy();
   const shown = matchFoods(FOODS, query);
@@ -139,7 +210,7 @@ export function FoodListScreen({
     ? FOODS.filter((food) => food.category === openGroup)
     : shown;
   const picked = Object.values(tally).reduce((sum, n) => sum + n, 0);
-  const total = tallyGrams(tally);
+  const total = tallyGrams(tally, calibration);
 
   return (
     <div class="screen">
@@ -248,7 +319,9 @@ export function FoodListScreen({
                     <ul class="list">
                       {rows.map((food) => (
                         <FoodRow key={food.id} food={food}
-                          count={tally[food.id] ?? 0} onAdd={onAdd} onRemove={onRemove} />
+                          count={tally[food.id] ?? 0} onAdd={onAdd} onRemove={onRemove}
+                          mine={calibration[food.id] ?? null} editing={editingMine === food.id}
+                          onEditMine={onEditMine} onSaveMine={onSaveMine} timeZone={timeZone} />
                       ))}
                     </ul>
                   ) : null}
@@ -263,7 +336,9 @@ export function FoodListScreen({
         <ul class="list">
           {shown.map((food) => (
             <FoodRow key={food.id} food={food}
-              count={tally[food.id] ?? 0} onAdd={onAdd} onRemove={onRemove} />
+              count={tally[food.id] ?? 0} onAdd={onAdd} onRemove={onRemove}
+              mine={calibration[food.id] ?? null} editing={editingMine === food.id}
+              onEditMine={onEditMine} onSaveMine={onSaveMine} timeZone={timeZone} />
           ))}
         </ul>
       )}

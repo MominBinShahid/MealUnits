@@ -78,6 +78,7 @@ export const META_KEY = {
   logRevision: 'logRevision',
   install: 'install',
   language: 'language',
+  calibration: 'calibration',
 } as const;
 
 /**
@@ -217,13 +218,38 @@ export interface LanguageRow {
   readonly urduFace: UrduFace;
 }
 
+/**
+ * PHASE 2 (BACKLOG 18) — what HIS roti weighs, rather than what a reference
+ * table says an average one weighs.
+ *
+ * In `meta` and not in a store of its own, which is what keeps this change from
+ * needing a schema migration: `meta` is already a keyed table and a new key
+ * costs nothing. `language` arrived the same way.
+ *
+ * `setAt` is not decoration. BACKLOG 18's second constraint: "a calibrated row
+ * must still show the reference figure it replaced and the date it was set. A
+ * number whose provenance is gone is the class §7.7 exists to prevent." So the
+ * row shows both figures and when the reader chose one — a calibration from
+ * two years ago is a different claim from one set last week.
+ *
+ * Keyed by `Food.id` rather than by name, because the id is the stable one —
+ * BACKLOG 18's own note says it is "used for the 'always use this one' choice
+ * later", and this is that later.
+ */
+export interface CalibrationRow {
+  readonly key: typeof META_KEY.calibration;
+  /** `Food.id` to the reader's own grams of carbohydrate, and when they set it. */
+  readonly foods: Readonly<Record<string, { readonly grams: number; readonly setAt: number }>>;
+}
+
 export type MetaRow =
   | EnvelopeRow
   | DosingHistoryRow
   | BackupRow
   | LogRevisionRow
   | InstallRow
-  | LanguageRow;
+  | LanguageRow
+  | CalibrationRow;
 
 // ─── settings ───────────────────────────────────────────────────────────────
 
