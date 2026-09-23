@@ -142,6 +142,19 @@ interface ViewState {
    */
   openFoodGroup: string | null;
   /**
+   * Phase 3's tally: how many of each food, keyed by `Food.id`.
+   *
+   * BACKLOG 19 required a ruling before this existed, and the ruling's first
+   * answer is the one this shape has to honour — the total arrives as a number
+   * the reader confirms, never as a committed value.
+   *
+   * It lives here rather than in the snapshot, and the drift the snapshot was
+   * meant to prevent is prevented a cheaper way: TOUCHING THE CARBOHYDRATE
+   * FIELD CLEARS IT. So the breakdown on screen either describes the number on
+   * screen or does not exist, and there is no third state where they disagree.
+   */
+  foodTally: Record<string, number>;
+  /**
    * §7.9 v23 — another tab deleted the record, so this one is re-booting into
    * the first-run gate. Outside the reducer with the rest of ViewState: it
    * changes no dose, band or gate, only what the loading screen says while the
@@ -423,6 +436,7 @@ export async function start(host: Host): Promise<void> {
     screenBefore: 'calculator',
     foodQuery: '',
     openFoodGroup: null,
+    foodTally: {},
     recordDeletedElsewhere: false,
     writeFailed: false,
     staleConnection: false,
@@ -1326,6 +1340,41 @@ export async function start(host: Host): Promise<void> {
               view.openFoodGroup = view.openFoodGroup === group ? null : group;
               render();
             }}
+            tally={view.foodTally}
+            onAdd={(id: string): void => {
+              view.foodTally = { ...view.foodTally, [id]: (view.foodTally[id] ?? 0) + 1 };
+              render();
+            }}
+            onRemove={(id: string): void => {
+              const next = { ...view.foodTally };
+              const left = (next[id] ?? 0) - 1;
+              // Deleted rather than left at zero, so `Object.values` counts what
+              // is picked without having to filter, and the bar disappears when
+              // the last one goes.
+              if (left > 0) next[id] = left; else delete next[id];
+              view.foodTally = next;
+              render();
+            }}
+            onClearTally={(): void => { view.foodTally = {}; render(); }}
+            onUseTotal={(grams: number): void => {
+              /*
+               * The moment phase 3 exists. Everything before this is a list;
+               * this is the number reaching the box.
+               *
+               * It does NOT commit a dose — it fills the field the reader was
+               * going to type into, and they still press Next. The ruling's
+               * first answer, in one line of code: "the total arrives as a
+               * value the reader can see and change, and nothing is calculated
+               * until they act on it."
+               *
+               * The tally SURVIVES this, deliberately. It is what the number on
+               * screen is made of, and the result screen prints it as the
+               * working. The keypad clears it the moment anyone edits the
+               * figure by hand, which is what stops the two disagreeing.
+               */
+              dispatch({ type: 'input_changed', field: 'carbs', value: String(grams) });
+              dispatch({ type: 'go', screen: 'calculator' });
+            }}
           />
         );
 
@@ -1367,9 +1416,14 @@ export async function start(host: Host): Promise<void> {
             // and the leading-zero rule, so `0` then `8` is `8` and not `08`.
             const next = applyKeystroke(current, digit, field, field === 'carbs');
             if (next === null) return;
+            // The tally described the old number. It does not describe this
+            // one, so it stops existing rather than becoming a caption for a
+            // figure nobody assembled.
+            if (field === 'carbs') view.foodTally = {};
             dispatch({ type: 'input_changed', field, value: next });
           },
           onBackspace: (field) => {
+            if (field === 'carbs') view.foodTally = {};
             dispatch({ type: 'input_changed', field, value: state.inputs[field].slice(0, -1) });
           },
           onNext: () => { dispatch({ type: 'wizard_next' }); },

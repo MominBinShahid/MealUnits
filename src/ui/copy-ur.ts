@@ -289,6 +289,14 @@ export const COPY_UR: Copy = {
     } as const,
     categoryCount: (n: number): string => `${String(n)} کھانے`,
     browseHint: 'کسی گروپ پر ٹیپ کریں، یا اوپر تلاش کریں۔',
+    addOne: 'ایک اور',
+    removeOne: 'ایک کم',
+    tallyCount: (n: number): string => `${String(n)}×`,
+    tallyTotal: (foods: number, grams: string): string =>
+      isolate(`${String(foods)} کھانے · ${grams}\u00A0گرام`),
+    tallyUse: 'یہ ٹوٹل استعمال کریں',
+    tallyClear: 'فہرست دوبارہ شروع کریں',
+    tallyCheck: 'باکس میں آنے کے بعد بھی آپ یہ عدد بدل سکتے ہیں۔',
     estimateLabel: 'اسے کسی نے ٹھیک سے ناپا نہیں',
     estimateNote: '⚠ کا مطلب ہے کہ اس کھانے کو کسی نے ٹھیک سے ناپا نہیں۔ جو عدد لکھا ہے وہ سب سے بہتر اندازہ ہے، اور ساتھ دی گئی رینج ایمانداری سے بتاتی ہے کہ یہ کتنا اوپر نیچے ہو سکتا ہے۔',
     /** The range is isolated; see `isolate`. 14 of 31 rows read backwards without it. */

@@ -8,8 +8,36 @@ import { Button, TextInput } from '../components.js';
 export interface FoodListProps {
   readonly query: string;
   readonly openGroup: string | null;
+  readonly tally: Record<string, number>;
   readonly onQuery: (value: string) => void;
   readonly onToggleGroup: (group: string) => void;
+  readonly onAdd: (id: string) => void;
+  readonly onRemove: (id: string) => void;
+  readonly onUseTotal: (grams: number) => void;
+  readonly onClearTally: () => void;
+}
+
+/**
+ * What the tally comes to.
+ *
+ * `grams` — the typical — rather than either end of a row's band, and the
+ * phase 3 ruling is why: the total arrives as a number the reader confirms, so
+ * the range beside each row is information that informs their edit rather than
+ * a decision the app has to make for them. Taking the low end of every row
+ * would under-dose every meal; taking the high end would over-dose it, and
+ * over-dosing is the hypo.
+ *
+ * Rounded once, at the end. Rounding each row first and summing would drift by
+ * up to half a gram per food, which on a six-item plate is a whole unit at some
+ * ratios.
+ */
+function tallyGrams(tally: Record<string, number>): number {
+  let total = 0;
+  for (const food of FOODS) {
+    const count = tally[food.id];
+    if (count !== undefined) total += food.grams * count;
+  }
+  return Math.round(total);
 }
 
 /**
@@ -27,7 +55,12 @@ const GROUPS: readonly Category[] = [
  * reader came here to get — the name is how you find the row, the number is
  * why you wanted it.
  */
-function FoodRow({ food }: { readonly food: Food }): JSX.Element {
+function FoodRow({ food, count, onAdd, onRemove }: {
+  readonly food: Food;
+  readonly count: number;
+  readonly onAdd: (id: string) => void;
+  readonly onRemove: (id: string) => void;
+}): JSX.Element {
   const COPY = useCopy();
   const amount = food.gramsMax === null
     ? COPY.foods.gramsOne(String(food.grams))
@@ -61,7 +94,21 @@ function FoodRow({ food }: { readonly food: Food }): JSX.Element {
           {`${COPY.foods.confidenceLabel[food.confidence]} · ${COPY.foods.sourcePrefix}${food.source}`}
         </div>
       </div>
-      <div class="v">{amount}</div>
+      <div class="v">
+        {amount}
+        {/* Phase 3. Minus appears only once there is something to remove — a
+            control that does nothing most of the time is noise on a 412px
+            screen, which is the same argument the search-clear button makes. */}
+        <div class="tally">
+          {count === 0 ? null : (
+            <Button class="tally-step" aria-label={COPY.foods.removeOne}
+              onPress={() => { onRemove(food.id); }}>{'\u2212'}</Button>
+          )}
+          {count === 0 ? null : <span class="tally-n">{COPY.foods.tallyCount(count)}</span>}
+          <Button class="tally-step" aria-label={COPY.foods.addOne}
+            onPress={() => { onAdd(food.id); }}>{'+'}</Button>
+        </div>
+      </div>
     </li>
   );
 }
@@ -78,7 +125,7 @@ function FoodRow({ food }: { readonly food: Food }): JSX.Element {
  * being asked at that exact moment, and it is noise anywhere else.
  */
 export function FoodListScreen({
-  query, openGroup, onQuery, onToggleGroup,
+  query, openGroup, tally, onQuery, onToggleGroup, onAdd, onRemove, onUseTotal, onClearTally,
 }: FoodListProps): JSX.Element {
   const COPY = useCopy();
   const shown = matchFoods(FOODS, query);
@@ -91,6 +138,8 @@ export function FoodListScreen({
   const visible = browsing
     ? FOODS.filter((food) => food.category === openGroup)
     : shown;
+  const picked = Object.values(tally).reduce((sum, n) => sum + n, 0);
+  const total = tallyGrams(tally);
 
   return (
     <div class="screen">
@@ -197,7 +246,10 @@ export function FoodListScreen({
                   </Button>
                   {open ? (
                     <ul class="list">
-                      {rows.map((food) => <FoodRow key={food.id} food={food} />)}
+                      {rows.map((food) => (
+                        <FoodRow key={food.id} food={food}
+                          count={tally[food.id] ?? 0} onAdd={onAdd} onRemove={onRemove} />
+                      ))}
                     </ul>
                   ) : null}
                 </li>
@@ -210,9 +262,28 @@ export function FoodListScreen({
       ) : (
         <ul class="list">
           {shown.map((food) => (
-            <FoodRow key={food.id} food={food} />
+            <FoodRow key={food.id} food={food}
+              count={tally[food.id] ?? 0} onAdd={onAdd} onRemove={onRemove} />
           ))}
         </ul>
+      )}
+
+      {/*
+       * PHASE 3, and the ruling's first answer made visible: this is a total
+       * you USE, not one that happens. Nothing has reached the carbohydrate
+       * box until the button below is pressed, and the line under it says the
+       * number is still yours to change afterwards.
+       *
+       * `.sheet` is the screen's bottom bar, the same shape the settings save
+       * uses — so it sits where the reader's thumb already expects a commit.
+       */}
+      {picked === 0 ? null : (
+        <div class="sheet tally-bar" aria-live="polite">
+          <div class="tally-sum">{COPY.foods.tallyTotal(picked, String(total))}</div>
+          <Button class="go" onPress={() => { onUseTotal(total); }}>{COPY.foods.tallyUse}</Button>
+          <Button class="link" onPress={onClearTally}>{COPY.foods.tallyClear}</Button>
+          <p class="hint">{COPY.foods.tallyCheck}</p>
+        </div>
       )}
 
       {/* Last, not first. It is the most useful thing here, and it is also the

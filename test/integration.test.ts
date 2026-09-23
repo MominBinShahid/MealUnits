@@ -21,6 +21,7 @@ import { JSDOM } from 'jsdom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { start } from '../src/ui/app.js';
 import { DATABASE_NAME, DATABASE_VERSION } from '../src/storage/schema.js';
+import { FOODS } from '../src/data/carbs.js';
 import { DEFAULT_TITLE, ROUTES, pathForScreen, screenForPath } from '../src/routes.js';
 // Asserted by reference, not by literal: these cases prove the combined §4.3
 // step 3 response RENDERS, which is what was missing. The words themselves are
@@ -755,6 +756,70 @@ describe('§11.8 the food list — read-only by design', () => {
     // Clearing returns to BROWSING, not to a flat table — the groups are back,
     // which is the screen's resting state rather than a filtered view of it.
     expect(text()).toContain('Roti, naan and bread');
+  });
+
+  it('phase 3: the tally adds up and the total lands in the box, unconfirmed', async () => {
+    await setUpAsHisBrother();
+    await keys('180');
+    await tap('Next');
+    await tap('Food list');
+    await tapStartingWith('Roti, naan and bread');
+
+    // Two rotis. The stepper is labelled, not glyph-matched — `+` and `−` are
+    // the same shape in every row and a test that found them by symbol would be
+    // adding to whichever row happened to render first.
+    const adders = [...root.querySelectorAll('button')].filter(
+      (b) => b.getAttribute('aria-label') === COPY.foods.addOne,
+    );
+    const roti = FOODS.findIndex((f) => f.id === 'roti-medium');
+    const bread = FOODS.filter((f) => f.category === 'bread');
+    const at = bread.findIndex((f) => f.id === 'roti-medium');
+    expect(roti, 'roti-medium left the table').toBeGreaterThan(-1);
+    adders[at]?.click();
+    await settle();
+    adders[at]?.click();
+    await settle();
+
+    // 18 g each, and the sum is rounded ONCE at the end rather than per row.
+    expect(text()).toContain('36');
+    await tap('Use this total');
+
+    // It filled the field the reader was going to type into, and did NOT
+    // calculate anything — this is the ruling's first answer, as a test.
+    expect(text()).toContain('How much carbohydrate is in this meal?');
+    const carbs = root.querySelector('.entry');
+    expect(carbs?.textContent).toContain('36');
+    // Still on the carbohydrate step, with the keypad under it: the number was
+    // filled in, not acted on.
+    expect(text()).toContain('Work out the dose');
+  });
+
+  it('phase 3: editing the number by hand clears the tally it came from', async () => {
+    await setUpAsHisBrother();
+    await keys('180');
+    await tap('Next');
+    await tap('Food list');
+    await tapStartingWith('Roti, naan and bread');
+    const bread = FOODS.filter((f) => f.category === 'bread');
+    const at = bread.findIndex((f) => f.id === 'roti-medium');
+    const adders = [...root.querySelectorAll('button')].filter(
+      (b) => b.getAttribute('aria-label') === COPY.foods.addOne,
+    );
+    adders[at]?.click();
+    await settle();
+    await tap('Use this total');
+
+    // 18 becomes 185. The tally described 18 and describes nothing now, so it
+    // has to stop existing — otherwise the breakdown is a caption for a figure
+    // nobody assembled, which is the drift §11.2's snapshot exists to prevent.
+    await keys('5');
+    await tap('Food list');
+    expect(
+      [...root.querySelectorAll('button')].some(
+        (b) => buttonLabel(b) === COPY.foods.tallyUse,
+      ),
+      'the tally survived an edit to the number it produced',
+    ).toBe(false);
   });
 
   it('carries every value\'s confidence and source, which is what §11.8 exempted it on', async () => {

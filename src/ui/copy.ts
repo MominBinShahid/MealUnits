@@ -237,6 +237,20 @@ export const COPY = {
     /** On a closed section, so you know whether it is worth opening. */
     categoryCount: (n: number): string => `${String(n)} foods`,
     browseHint: 'Tap a group to open it, or search above.',
+    /**
+     * Phase 3, the tally. The wording carries the ruling: the total is
+     * something you USE, not something that happens — "Use this total" is a
+     * decision, "Total" alone would be an announcement.
+     */
+    addOne: 'Add one',
+    removeOne: 'Remove one',
+    tallyCount: (n: number): string => `${String(n)}×`,
+    tallyTotal: (foods: number, grams: string): string =>
+      `${String(foods)} ${foods === 1 ? 'food' : 'foods'} · ${grams}\u00A0grams`,
+    tallyUse: 'Use this total',
+    tallyClear: 'Start the list again',
+    /** Under the total, because a tally of estimates is still estimates. */
+    tallyCheck: 'You can change the number after it lands in the box.',
     estimateLabel: 'nobody has measured this one properly',
     estimateNote: 'A ⚠ means nobody has measured that food properly. The number is the best estimate there is, and the range beside it is honest about how wide it could be.',
     /**
