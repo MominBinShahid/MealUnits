@@ -1530,6 +1530,17 @@ p.keep {
  * `margin-inline-end` rather than `margin-right`: it leads the name, and in
  * Urdu the name leads from the other side.
  */
+/* A tally line inside §10.3's working. Quieter than the rows it sits under,
+   because it explains one of them rather than adding to the sum — indented and
+   dimmed so the eye reads it as a footnote to the meal row above. */
+.row.sub {
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+  padding-inline-start: 1rem;
+}
+
+.row.sub b { font-weight: 400; }
+
 /* ── phase 3: the tally ──────────────────────────────────────────────────── */
 
 /* The per-row stepper. Column-wise under the gram figure rather than beside it,

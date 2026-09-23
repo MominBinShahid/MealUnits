@@ -1597,6 +1597,7 @@ export const COPY_UR: Copy = {
     // NOTE (Urdu): Urdu script has no letter case, so the English ALL-CAPS
     // styling cannot carry — the words alone must do §10.1's job. mg/dL stays
     // Latin (it is what the meter prints), kept in the English label's casing.
+    tallyLine: (count: string, food: string): string => isolate(`${count} × ${food}`),
     unitReading: 'MG/DL',
     unitCarbs: 'گرام کاربوہائیڈریٹ',
     unitDose: 'یونٹ',

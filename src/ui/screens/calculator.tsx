@@ -24,6 +24,7 @@ import { eatWindow } from '../../core/timing.js';
 import { classOf, eatDelayFor } from '../../core/insulin.js';
 import type { EatDelay } from '../../core/insulin.js';
 import { INSULINS } from '../../data/insulins.js';
+import { FOODS } from '../../data/carbs.js';
 import type { JSX } from 'preact';
 import { useCopy } from '../copy.js';
 import type { Copy } from '../copy.js';
@@ -33,6 +34,8 @@ import type { AppState } from '../../state/machine.js';
 import type { Advisory, Band, Breakdown, Outcome } from '../../core/types.js';
 
 export interface CalculatorHandlers {
+  /** Phase 3 — what the carbohydrate figure was assembled from, or empty. */
+  readonly foodTally: Record<string, number>;
   readonly onDigit: (field: 'bloodSugar' | 'carbs', digit: string) => void;
   readonly onBackspace: (field: 'bloodSugar' | 'carbs') => void;
   /**
@@ -164,10 +167,12 @@ function Working({
   state,
   breakdown,
   doseHundredths,
+  tally,
 }: {
   readonly state: AppState;
   readonly breakdown: Breakdown;
   readonly doseHundredths: number;
+  readonly tally: Record<string, number>;
 }): JSX.Element {
   const COPY = useCopy();
   const settings = state.settings;
@@ -203,6 +208,28 @@ function Working({
         <div class="row">
           <span>{COPY.calculator.mealRow(state.inputs.carbs)}</span>
           <b>{formatHundredths(breakdown.mealHundredths)}</b>
+        </div>
+      )}
+
+      {/*
+       * PHASE 3's second ruling: the working shows the tally, so the dose's
+       * provenance survives onto the result screen. "49 g" tells a doctor
+       * reading the photograph nothing that "2 roti 36 + 1 katori daal 13"
+       * does not tell them better — §7.7's argument, applied to food.
+       *
+       * It can only disagree with the figure above it if the figure was edited
+       * after the tally produced it, and that case cannot arise: the keypad
+       * clears the tally on any carbohydrate keystroke. So this is either the
+       * breakdown of the number beside it or it is absent.
+       */}
+      {Object.keys(tally).length === 0 ? null : (
+        <div class="tally-working">
+          {FOODS.filter((food) => tally[food.id] !== undefined).map((food) => (
+            <div key={food.id} class="row sub">
+              <span>{COPY.calculator.tallyLine(String(tally[food.id]), food.name)}</span>
+              <b>{COPY.foods.gramsOne(String(food.grams * (tally[food.id] ?? 0)))}</b>
+            </div>
+          ))}
         </div>
       )}
 
@@ -655,7 +682,8 @@ function ResultScreen({
             {COPY.expired(formatClockTime(state.snapshot?.decisionTime ?? 0, handlers.timeZone))}
           </div>
         ) : null}
-        <Working state={state} breakdown={outcome.breakdown} doseHundredths={outcome.hundredths} />
+        <Working state={state} breakdown={outcome.breakdown}
+          doseHundredths={outcome.hundredths} tally={handlers.foodTally} />
         <Advisories views={views} onMore={handlers.onToggleMore} expanded={handlers.moreExpanded} />
         <TimingLine state={state} outcome={outcome} timeZone={handlers.timeZone} />
       </div>

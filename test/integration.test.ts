@@ -792,6 +792,12 @@ describe('§11.8 the food list — read-only by design', () => {
     // Still on the carbohydrate step, with the keypad under it: the number was
     // filled in, not acted on.
     expect(text()).toContain('Work out the dose');
+
+    // And the provenance reaches the result. §7.7's argument applied to food:
+    // "36 g" tells a doctor reading the photograph nothing that "2 × Home
+    // flatbread, medium" does not tell them better.
+    await tap('Work out the dose');
+    expect(text()).toContain('2 × Home flatbread, medium');
   });
 
   it('phase 3: editing the number by hand clears the tally it came from', async () => {
