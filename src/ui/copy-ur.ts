@@ -363,8 +363,11 @@ export const COPY_UR: Copy = {
     mineHint: (reference: string): string =>
       isolate(`حوالہ ${reference} ہے — یہ کاربوہائیڈریٹ ہے، وزن نہیں۔`),
     mineSave: 'اپنا عدد محفوظ کریں',
-    mineResetAll: (n: number): string =>
-      isolate(`سب ${String(n)} کو واپس حوالہ والے اعداد پر کر دیں`),
+    // Urdu takes no plural here — «اعداد» is already the plural — so the branch
+    // exists only so the sentence reads naturally for a single row.
+    mineResetAll: (n: number): string => (n === 1
+      ? 'اسے واپس حوالہ والے عدد پر کر دیں'
+      : isolate(`سب ${String(n)} کو واپس حوالہ والے اعداد پر کر دیں`)),
     mineResetConfirm: 'ہاں، دوبارہ حوالہ والے اعداد استعمال کریں',
     mineResetCancel: 'میرے اپنے رہنے دیں',
     mineWas: (reference: string, date: string): string =>

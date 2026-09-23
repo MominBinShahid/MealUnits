@@ -358,8 +358,9 @@ export const COPY = {
      * It shows the count, because a control that says how much it will destroy
      * is one a person can judge before pressing.
      */
-    mineResetAll: (n: number): string =>
-      `Put all ${String(n)} back to the reference figures`,
+    mineResetAll: (n: number): string => (n === 1
+      ? 'Put that one back to the reference figure'
+      : `Put all ${String(n)} back to the reference figures`),
     mineResetConfirm: 'Yes, use the reference figures again',
     mineResetCancel: 'Keep mine',
     mineWas: (reference: string, date: string): string =>
