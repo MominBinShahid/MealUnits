@@ -1,0 +1,28 @@
+The typefaces this app ships, and the terms they ship under.
+
+Every one is under the SIL Open Font License, Version 1.1, which requires this
+notice to travel with the font files. The full licence text is at
+https://openfontlicense.org — and this file exists because the OFL asks for it,
+not as a formality: it is the same discipline docs/CARBS.md applies to the
+carbohydrate figures, applied to the other thing this app redistributes.
+
+  Noto Nastaliq Urdu   Copyright The Noto Project Authors
+                       https://github.com/notofonts/nastaliq
+  Noto Naskh Arabic    Copyright The Noto Project Authors
+                       https://github.com/notofonts/arabic
+  Noto Sans Arabic     Copyright The Noto Project Authors
+                       https://github.com/notofonts/arabic
+  Gulzar               Copyright The Gulzar Project Authors
+                       https://github.com/SorkinType/Gulzar
+  Beaconhouse Nastaliq Copyright 2026 The Beaconhouse Nastaliq Project Authors
+                       https://github.com/BSS-codeoutsourced/Beaconhouse-Nastaliq
+
+  Space Grotesk        Copyright The Space Grotesk Project Authors
+                       https://github.com/floriankarsten/space-grotesk
+  IBM Plex Mono        Copyright IBM Corp.
+                       https://github.com/IBM/plex
+
+None is modified in any way that changes its design. The three variable Arabic
+faces are re-encoded to woff2, and Noto Sans Arabic additionally has its weight
+axis clamped from 100-900 to the 400-700 this app uses — both are format and
+subsetting operations the licence permits, and neither alters a glyph.

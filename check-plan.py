@@ -963,7 +963,8 @@ UI_TEXT_OK = {
     # Note they are NOT the row's label. Each row is written in the face it
     # names, in Urdu, and those words are in `copy.ts` where they belong; these
     # are the Latin identifier beside them.
-    "Noto Nastaliq Urdu", "Gulzar", "Noto Naskh Arabic", "Noto Sans Arabic",
+    "Noto Nastaliq Urdu", "Gulzar", "Beaconhouse Nastaliq",
+    "Noto Naskh Arabic", "Noto Sans Arabic",
     # `10a`'s keep-list, reached once `suffix` and `tag` became scanned
     # attributes. These three are ruled to appear EXACTLY AS PRINTED in every
     # language: `mg/dL` is what the meter shows, and `ISF` and `ICR` are the

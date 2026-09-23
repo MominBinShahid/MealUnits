@@ -77,6 +77,49 @@
   unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
 }
 
+/*
+ * BEACONHOUSE NASTALIQ, added 2026-09-23 — the second Nastaliq that can
+ * actually be shipped, and the search for it is worth recording so nobody
+ * repeats it.
+ *
+ * Google Fonts carries 1,946 families, 57 of them Arabic-subset, and exactly
+ * TWO Nastaliq: the Noto and Gulzar, both already here. Everything else was
+ * checked by downloading the binary and reading its own name table rather than
+ * trusting the download page:
+ *
+ *   Jameel Noori Nastaleeq  the one most Pakistanis actually read, and
+ *                           unshippable twice over. Its binary says
+ *                           "This Font Is Free Of Charge For Urdu Lovers"
+ *                           with the designer as "Urdu Lover" and no licence
+ *                           URL — there is no licensor to have granted
+ *                           anything. It is also 5.55 MB as woff2.
+ *   Alvi Nastaleeq          its embedded licence forbids distribution
+ *                           without written permission.
+ *   IranNastaliq            ships an OFL file on GitHub whose own binary
+ *                           says "You may not copy or distribute this
+ *                           software". The binary decides.
+ *   Awami Nastaliq          SIL, genuinely free — and has NO GSUB table at
+ *                           all. It is Graphite-only, so it renders unjoined
+ *                           in every browser except Firefox. SIL say so.
+ *
+ * Beaconhouse is SIL OFL 1.1, stated in the font's own name table and in an
+ * OFL.txt in its source repository, with no reserved font name. 76 KB, real
+ * GSUB and GPOS, and every Urdu-specific letter present — ٹ ڈ ڑ ں ے ہ ھ پ چ
+ * ژ گ ک — checked against all 51 codepoints `copy-ur.ts` actually uses.
+ *
+ * ONE WEIGHT, like Gulzar, and for the same reason: that is what is published.
+ * Choosing it means an interface with no emphasis anywhere, which is
+ * information for the person choosing rather than something to paper over.
+ */
+@font-face {
+  font-family: 'Beaconhouse Nastaliq';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/MealUnits/fonts-urdu/BeaconhouseNastaliq.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+200C-200D, U+FB50-FDFF, U+FE70-FEFC;
+}
+
 @font-face {
   font-family: 'Noto Naskh Arabic';
   font-style: normal;
@@ -151,6 +194,16 @@
 
 :root[data-urdu-face='gulzar'] {
   --urdu-family: 'Gulzar';
+  --lh-body: 2.3;
+  --lh-prose: 2.2;
+  --lh-ask: 1.9;
+  --lh-list: 2.1;
+}
+
+:root[data-urdu-face='beaconhouse'] {
+  --urdu-family: 'Beaconhouse Nastaliq';
+  /* Nastaliq leading, because it is Nastaliq: the script climbs steeply from
+     right to left and a tight setting puts one line inside the next. */
   --lh-body: 2.3;
   --lh-prose: 2.2;
   --lh-ask: 1.9;

@@ -573,11 +573,19 @@ await session('/tmp/mealunits-smoke-language', 9310, 412, async ({ ev, send, ope
       .find((c) => [...c.querySelectorAll('button')].some((b) => /^English/.test(b.textContent.trim())));
     return card ? [...card.querySelectorAll('button')].map((b) => b.textContent.trim()) : null;
   })()`;
-  check('language: English plus one row per face', await ev(`${rows}?.length ?? 'no card'`), 5);
+  // SIX now: English plus five faces. Beaconhouse Nastaliq joined on
+  // 2026-09-23 — the second Nastaliq that can actually be shipped, since
+  // Google Fonts carries exactly two and the one most Pakistanis read has no
+  // licensor to have granted anything.
+  //
+  // Counted rather than named, deliberately: this check is about the SHAPE of
+  // the card — one row per face and every Urdu row labelled — so it should
+  // move when a face is added and not when one is renamed.
+  check('language: English plus one row per face', await ev(`${rows}?.length ?? 'no card'`), 6);
   // The label the whole ruling is conditional on. Momin allowed Urdu in
   // production rather than behind a flag BECAUSE the option says what it is.
   check('language: every Urdu row says it is in testing', await ev(
-    `${rows}?.filter((t) => /In testing/.test(t)).length`), 4);
+    `${rows}?.filter((t) => /In testing/.test(t)).length`), 5);
 
   // Tapping an Urdu row must WARN before it does anything — and before it has
   // downloaded anything either.

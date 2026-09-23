@@ -23,7 +23,7 @@ export type RoundingMode = 'nearest' | 'half' | 'ceil' | 'floor' | 'off';
 export type Language = 'en' | 'ur';
 
 /** See `Language`. Three of these four go when the face is chosen. */
-export type UrduFace = 'nastaliq' | 'gulzar' | 'naskh' | 'sans';
+export type UrduFace = 'nastaliq' | 'gulzar' | 'beaconhouse' | 'naskh' | 'sans';
 
 /*
  * The DEFAULTS are deliberately not here, in `src/ui/language.ts` instead.
