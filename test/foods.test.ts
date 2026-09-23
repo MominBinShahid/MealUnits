@@ -240,6 +240,23 @@ describe('the shipped table — §11.8\'s exemption conditions, as tests', () =>
     expect(ids).toContain('kadhi');
   });
 
+  it('"tehari" and "nehari" never cross, and they are one character apart', () => {
+    // The sharpest near-miss in the table, and unlike karahi/kadhi the answer
+    // is NOT to show both. Aloo tahiri is a rice dish at 50–90 g; nihari is a
+    // gravy at 7–20 g. Seven to twelve times apart, one character apart in
+    // Roman, and BOTH spellings come straight from docs/CARBS.md — neither is
+    // a typo anyone should be protected from.
+    //
+    // So this is not a fix, it is a fence. Each spelling reaches exactly its
+    // own dish today, and a future alias edit that merged them would put a
+    // 50 g answer under a 7 g question. Pinned so that edit fails here.
+    const tehari = matchFoods(FOODS, 'tehari').map((f) => f.id);
+    const nehari = matchFoods(FOODS, 'nehari').map((f) => f.id);
+    expect(tehari).toContain('tahiri-cup');
+    expect(nehari).toContain('nihari');
+    expect(tehari.filter((id) => nehari.includes(id)), 'the two dishes now overlap').toEqual([]);
+  });
+
   it('"chaa" reaches rice as well as tea, and that is known', () => {
     // NOT an assertion that this is right. `chaa` is a real spelling of chai and
     // it is also the first four letters of `chaawal`, so substring matching
@@ -258,11 +275,23 @@ describe('the shipped table — §11.8\'s exemption conditions, as tests', () =>
     // `Large flatbread, 12\u00A0inch` — the name is rendered AND searched, and
     // nobody can type U+00A0. Without the fold in `matchFoods`, this row is
     // unreachable by the words printed on it.
-    const row = FOODS.find((f) => f.name.includes('\u00A0'));
-    expect(row, 'no row carries a no-break space — retarget this test').toBeDefined();
-    expect(matchFoods(FOODS, '12 inch')).toContain(row);
-    // And the character itself still works, so neither spelling is privileged.
-    expect(matchFoods(FOODS, '12\u00A0inch')).toContain(row);
+    // EVERY such row, not the first one found. The original version took
+    // `FOODS.find(...)` and searched `12 inch`, which worked only because the
+    // row it happened to land on was the one named `12\u00A0inch` — an accident
+    // of the 31 original rows sorting before the 288 promoted ones. Six rows
+    // carry the character now, and a reorder would have pointed the assertion
+    // at a different row while still passing for the wrong reason.
+    //
+    // Asserting the PROPERTY instead of an example is both stronger and
+    // order-independent: whatever is printed on the row must find the row.
+    const rows = FOODS.filter((f) => f.name.includes('\u00A0'));
+    expect(rows.length, 'no row carries a no-break space — retarget this test').toBeGreaterThan(0);
+    for (const row of rows) {
+      // Typed with an ordinary space, which is all anyone can type...
+      expect(matchFoods(FOODS, row.name.replace(/\u00A0/g, ' ')), row.id).toContain(row);
+      // ...and with the character itself, so neither spelling is privileged.
+      expect(matchFoods(FOODS, row.name), row.id).toContain(row);
+    }
   });
 
   it('every row is findable by the words printed in its own name', () => {

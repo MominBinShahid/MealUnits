@@ -1637,7 +1637,7 @@ export const FOODS: readonly Food[] = [
     category: 'salan',
     name: 'Seekh kabab, tikka, grilled fish or egg',
     roman: 'Seekh kabab',
-    aliases: ['seekh kabab', 'sikh kabab', 'seekh kebab', 'tikka', 'boti', 'grilled fish', 'anda', 'unda', 'egg', 'omelette', 'kabab', 'curry', 'salan'],
+    aliases: ['seekh kabab', 'sikh kabab', 'seekh kebab', 'tikka', 'grilled fish', 'anda', 'unda', 'egg', 'omelette', 'kabab', 'curry', 'salan'],
     portion: '1 ordinary helping',
     grams: 0,
     gramsMax: 4,
