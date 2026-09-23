@@ -64,9 +64,51 @@ export function matchFoods<T extends Searchable>(foods: readonly T[], query: str
   // changes nothing: every string contains the empty string, so the filter
   // below already returns every row. The guard restated the filter's behaviour
   // and read like a decision, which is worse than absent.
-  return foods.filter((food) => {
+  const hits = foods.filter((food) => {
     if (fold(food.name).includes(needle)) return true;
     if (fold(food.roman).includes(needle)) return true;
     return food.aliases.some((alias) => fold(alias).includes(needle));
   });
+  // Sorted in place: `filter` above already built a fresh array, so there is
+  // nothing of the caller's to protect. A defensive copy here would be an
+  // equivalent mutant — no test could tell it from its absence — and the gate
+  // says so rather than letting it sit as decoration.
+  return hits.sort((a, b) => tier(a, needle) - tier(b, needle));
+}
+
+/**
+ * How well a row answers the query, lower being better. The ONLY thing this
+ * changes is order — `matchFoods` has already decided which rows match, and
+ * every tier below is a row that matched.
+ *
+ * It exists because the table is about to grow from 31 rows to roughly 270, and
+ * at that size unordered results stop being merely untidy. `roti` reaches 17
+ * rows; returned in data-file order, the row actually CALLED "Roti" can render
+ * below one that matched on its ninth alias. The reader scrolls, does not find
+ * the obvious answer near the top, and picks something adjacent — which is the
+ * wrong-dish failure this module's header is about, arriving through ordering
+ * rather than through matching.
+ *
+ * Four tiers, and the reasoning is the same each time: the more of a field the
+ * query accounts for, the more likely that field is what the reader meant.
+ *
+ *   0  the query IS the whole field          "roti"   -> `Roti`
+ *   1  the field starts with the query       "roti"   -> `Roti, thin`
+ *   2  a WORD in the field starts with it    "roti"   -> `Moti roti`
+ *   3  it appears somewhere inside           "oti"    -> `Moti roti`
+ *
+ * Tier 2 earns its place: Urdu dish names are compounds, and the distinguishing
+ * word is as often last as first — `moti roti`, `qeema samosa`, `matar pulao`.
+ * Without it those rank level with an incidental substring match.
+ *
+ * Ties keep the table's own order, which is grouped by dish family and ascends
+ * by size within a family. `Array.prototype.sort` has been required to be
+ * stable since ES2019, so that ordering survives rather than being scrambled.
+ */
+function tier(food: Searchable, needle: string): number {
+  const fields = [food.name, food.roman, ...food.aliases].map(fold);
+  if (fields.some((field) => field === needle)) return 0;
+  if (fields.some((field) => field.startsWith(needle))) return 1;
+  if (fields.some((field) => field.split(' ').some((word) => word.startsWith(needle)))) return 2;
+  return 3;
 }
