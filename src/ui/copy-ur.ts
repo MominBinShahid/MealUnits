@@ -2078,7 +2078,7 @@ export const COPY_UR: Copy = {
 
   /** §10.8 — show the running build version. */
   // NOTE (Urdu): pure formatting, no words — kept identical to the English.
-  build: (version: string, build: string): string => `${version} (${build})`,
+  build: (version: string, build: string): string => isolate(`${version} (${build})`),
 
   more: 'مزید',
   /**
