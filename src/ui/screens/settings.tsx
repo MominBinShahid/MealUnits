@@ -652,6 +652,17 @@ export function SettingsScreen({
         value={draft.personName}
         describedBy="label-personName"
         hint={COPY.settings.nameHint}
+        /*
+         * `wide`, like the other two free-text fields on this screen and unlike
+         * every numeric one. `.field input` caps at 9rem so a four-digit typo
+         * in a blood sugar is visible — the right rule for a number, and the
+         * wrong one for a name. "Momin bin Shahid" was clipped, and in Urdu
+         * «مومن بن شاہد» was clipped sooner, because the script is wider at the
+         * same point size.
+         *
+         * Reported by Momin, on his own name.
+         */
+        wide
         onChange={handlers.onChange}
       />
 
