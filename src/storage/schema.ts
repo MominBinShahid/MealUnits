@@ -232,9 +232,10 @@ export interface LanguageRow {
  * row shows both figures and when the reader chose one — a calibration from
  * two years ago is a different claim from one set last week.
  *
- * Keyed by `Food.id` rather than by name, because the id is the stable one —
- * BACKLOG 18's own note says it is "used for the 'always use this one' choice
- * later", and this is that later.
+ * Keyed by `Food.id` rather than by name, because the id is the stable one.
+ * `Food.id`'s own docstring in `src/data/carbs.ts` calls it "used for the
+ * 'always use this one' choice later" — this is that later. (The citation said
+ * BACKLOG 18, which does not contain those words. Corrected 2026-09-23.)
  */
 export interface CalibrationRow {
   readonly key: typeof META_KEY.calibration;
