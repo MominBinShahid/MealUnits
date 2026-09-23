@@ -2651,6 +2651,30 @@ The real lesson is the one the header states: the failure message has to describ
 check that fails the same way for "your code is broken" and "you forgot to start the server" spends
 an afternoon and can end up lying in the documentation.
 
+### T28. A third language turns every name field into a map — SKIPPED ON PURPOSE
+**Momin's observation, 2026-09-23, while the Urdu food list was being designed.**
+
+The food table is heading for three name fields: `name` (English), `roman` (Urdu words in Latin
+letters, which search uses) and `script` (Urdu words in Urdu letters, which display uses).
+
+**That shape only works while there is exactly one non-Latin language.** Add Spanish and `script`
+stops describing anything — Spanish is Latin script, so it is neither `name` nor `script` nor
+`roman`. The honest model at that point is a map:
+
+    names: { en: 'Lentils, thin', ur: 'پتلی دال', es: 'Lentejas, caldosas' }
+    search: ['patli daal', 'dal', 'dhal', ...]
+
+with English as the default key rather than a privileged field, and `roman` demoted to what it
+actually is — a search alias.
+
+**Not built, deliberately, and this is the record of why.** A map costs a migration, a lookup at
+every render site and a fallback rule for a missing key, and buys nothing until a second non-Latin
+language exists. Converting one field into a map later is mechanical: the data is generated, the
+render sites are few, and no stored user data references the field. The thing that would be hard to
+recover is the REASONING, which is why it is here.
+
+**What would change this:** anyone asking for a third language, or a second one that is Latin-script.
+
 ### T10. A sanity suite, separate from smoke — decide whether two files are worth it
 
 **Trigger: when `smoke.mjs` next feels too big, or when a change needs deep verification of one

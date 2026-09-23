@@ -363,6 +363,10 @@ export const COPY_UR: Copy = {
     mineHint: (reference: string): string =>
       isolate(`حوالہ ${reference} ہے — یہ کاربوہائیڈریٹ ہے، وزن نہیں۔`),
     mineSave: 'اپنا عدد محفوظ کریں',
+    mineResetAll: (n: number): string =>
+      isolate(`سب ${String(n)} کو واپس حوالہ والے اعداد پر کر دیں`),
+    mineResetConfirm: 'ہاں، دوبارہ حوالہ والے اعداد استعمال کریں',
+    mineResetCancel: 'میرے اپنے رہنے دیں',
     mineWas: (reference: string, date: string): string =>
       isolate(`آپ کا اپنا۔ حوالہ ${reference}\u00A0گرام ہے — آپ نے یہ ${date} کو رکھا۔`),
     addOne: 'ایک اور',
