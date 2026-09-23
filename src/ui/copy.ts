@@ -289,6 +289,34 @@ export const COPY = {
     categoryCount: (n: number): string => `${String(n)} foods`,
     browseHint: 'Tap a group to open it, or search above.',
     /**
+     * The three families shown as a table rather than a list, because both
+     * their axes are real variables. Headings and axis labels only — the
+     * numbers come from the rows themselves.
+     */
+    matrixTitle: { chai: 'Chai', doodhPatti: 'Doodh patti', biryani: 'Biryani' } as const,
+    matrixAxis: {
+      smallCup: 'small cup',
+      mug: 'mug',
+      largeMug: 'large mug',
+      noSugar: 'no sugar',
+      oneSugar: '1 sugar',
+      twoSugars: '2 sugars',
+      threeSugars: '3 sugars',
+      meatHeavy: 'meat-heavy pot',
+      midPot: 'mid pot',
+      riceHeavy: 'rice-heavy or degh',
+      plate: 'plate',
+      dawatPlate: 'dawat plate',
+    } as const,
+    /** Under a matrix: the pattern the arrangement makes visible, in words. */
+    matrixRule: {
+      chai: 'Every spoon of sugar adds about 4\u00A0g, whatever the cup.',
+      doodhPatti: 'Every spoon of sugar adds about 4\u00A0g, whatever the cup.',
+      biryani: 'Which pot it came from moves the number as much as the plate size does.',
+    } as const,
+    /** On a cell already in the tally. */
+    matrixPicked: (n: number): string => `${String(n)} picked`,
+    /**
      * Phase 3, the tally. The wording carries the ruling: the total is
      * something you USE, not something that happens — "Use this total" is a
      * decision, "Total" alone would be an announcement.

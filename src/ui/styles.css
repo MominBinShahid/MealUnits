@@ -1574,6 +1574,64 @@ p.keep {
 
 .glossary p { margin: 0; color: var(--ink-2); }
 
+/* ── a family whose two axes are both real variables ─────────────────────── */
+
+.matrix-wrap {
+  margin-block: 0.75rem;
+  /* The one element here that can outgrow the column — four columns at 320px.
+     It scrolls inside itself so the PAGE never scrolls sideways. */
+  overflow-x: auto;
+}
+
+.matrix-title { display: block; margin-block-end: 0.5rem; }
+
+.matrix {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* Axis labels are quieter than the numbers: the reader is here for the cells,
+   and the labels are how they find the right one. */
+.matrix th {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--ink-3);
+  text-align: start;
+  padding: 0.25rem 0.375rem;
+  white-space: nowrap;
+}
+
+.matrix td { padding: 0.125rem; }
+
+/* §10.7's touch floor. A cell is a real target, not a table entry that happens
+   to be clickable. */
+.matrix .cell {
+  display: grid;
+  gap: 0.125rem;
+  justify-items: center;
+  min-width: 3.75rem;
+  min-height: 2.75rem;
+  width: 100%;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  background: none;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Picked cells take the mark colour — the same thing the in-use language row
+   says, for the same reason: this is the one you chose. */
+.matrix .cell.picked {
+  border-color: var(--mark);
+  color: var(--mark);
+}
+
+.matrix .cell-n {
+  font-size: 0.625rem;
+  color: var(--mark);
+}
+
 /* ── phase 2: the reader's own figure ────────────────────────────────────── */
 
 /* The reference this replaced, and when. Quieter than the row's other hints

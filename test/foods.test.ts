@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { matchFoods } from '../src/core/foods.js';
 import type { Searchable } from '../src/core/foods.js';
 import { FOODS } from '../src/data/carbs.js';
+import { IN_A_MATRIX, MATRICES } from '../src/ui/matrices.js';
 
 const ROTI: Searchable = { name: 'Home flatbread, medium', roman: 'Roti', aliases: ['roti', 'chapati', 'chappati'] };
 const NAAN: Searchable = { name: 'Tandoor naan, small tier', roman: 'Naan', aliases: ['naan', 'nan'] };
@@ -300,6 +301,51 @@ describe('the shipped table — §11.8\'s exemption conditions, as tests', () =>
     for (const food of FOODS) {
       const asDisplayed = food.name.replace(/\u00A0/g, ' ');
       expect(matchFoods(FOODS, asDisplayed), food.id).toContain(food);
+    }
+  });
+});
+
+describe('the matrices — a family whose two axes are both real variables', () => {
+  it('every cell names a row that exists, and no row is in two matrices', () => {
+    // Declared rather than derived, so something has to check the declaration.
+    // Deriving it would mean parsing "large mug, 3 sugars" out of prose, which
+    // drops a cell silently the day somebody rewords a row; declaring it drops
+    // a cell loudly, here.
+    const seen = new Set<string>();
+    for (const matrix of MATRICES) {
+      for (const id of matrix.cells.flat()) {
+        if (id === null) continue;
+        expect(FOODS.some((f) => f.id === id), `${matrix.key} names a missing row: ${id}`)
+          .toBe(true);
+        expect(seen.has(id), `${id} is in two matrices`).toBe(false);
+        seen.add(id);
+      }
+    }
+    expect(seen.size).toBe(IN_A_MATRIX.size);
+  });
+
+  it('every cell in a matrix sits in the group that matrix renders inside', () => {
+    // Otherwise the table appears under one heading while the rows it replaced
+    // are filtered out of another, and those rows vanish from the app.
+    for (const matrix of MATRICES) {
+      for (const id of matrix.cells.flat()) {
+        if (id === null) continue;
+        const food = FOODS.find((f) => f.id === id);
+        expect(food?.category, `${id} is not in ${matrix.category}`).toBe(matrix.category);
+      }
+    }
+  });
+
+  it('a row inside a matrix is still findable by typing its name', () => {
+    // The table replaces the rows while BROWSING only. Search stays flat, so
+    // every cell keeps the name, portion, confidence and source that a cell is
+    // too small to carry — which is the reason a grid was refused and a matrix
+    // was not.
+    for (const id of IN_A_MATRIX) {
+      const food = FOODS.find((f) => f.id === id);
+      if (food === undefined) continue;
+      expect(matchFoods(FOODS, food.name).map((f) => f.id), `${id} is unreachable by search`)
+        .toContain(id);
     }
   });
 });
