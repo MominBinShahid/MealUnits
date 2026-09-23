@@ -106,3 +106,59 @@ describe('a value the English prints', () => {
     expect(skipped.length).toBeLessThanOrEqual(entries.length / 2);
   });
 });
+
+describe('the glossary — a word marked in one language is marked in both', () => {
+  /** Every `[[key]]` inside every string of a copy tree, with where it was found. */
+  function markers(node: unknown, path: string, found: Map<string, string[]>): void {
+    if (typeof node === 'string') {
+      for (const match of node.matchAll(/\[\[([a-zA-Z]+)\]\]/g)) {
+        const key = match[1] ?? '';
+        const at = found.get(key) ?? [];
+        at.push(path);
+        found.set(key, at);
+      }
+      return;
+    }
+    if (typeof node !== 'object' || node === null) return;
+    for (const [name, child] of Object.entries(node)) {
+      markers(child, path === '' ? name : `${path}.${name}`, found);
+    }
+  }
+
+  const english = new Map<string, string[]>();
+  const urdu = new Map<string, string[]>();
+  markers(COPY, '', english);
+  markers(COPY_UR, '', urdu);
+
+  it('marks the same words in the same places in both languages', () => {
+    // The whole reason the marker lives in the COPY rather than in the markup.
+    // A component that guessed which words to underline could not be checked;
+    // this can. Urdu marks «اسٹیکنگ» where English marks "stacking" only
+    // because someone wrote both — so something has to say they still agree.
+    expect([...urdu.keys()].sort()).toEqual([...english.keys()].sort());
+    for (const [key, places] of english) {
+      expect(urdu.get(key)?.sort(), `"${key}" is marked in different places`)
+        .toEqual(places.sort());
+    }
+  });
+
+  it('every marked word has an entry to open, in both languages', () => {
+    // A marker with no entry renders as the bare key — deliberately survivable
+    // rather than a crash, since this text sits on advisory cards. Survivable
+    // is not the same as acceptable, so it fails here instead.
+    for (const key of english.keys()) {
+      expect(Object.keys(COPY.glossary), `English has no entry for "${key}"`).toContain(key);
+      expect(Object.keys(COPY_UR.glossary), `Urdu has no entry for "${key}"`).toContain(key);
+    }
+  });
+
+  it('no entry is a bare transliteration of its own English', () => {
+    // «اسٹیکنگ» and «کریکشن» are English words in Urdu letters: pronounceable
+    // and empty to a reader who does not know the English. That is exactly who
+    // the entry is for, so the BODY has to do the work the word does not — a
+    // one-word Urdu gloss would just be the same emptiness, restated.
+    for (const [key, entry] of Object.entries(COPY_UR.glossary)) {
+      expect(entry.body.length, `"${key}" explains nothing`).toBeGreaterThan(60);
+    }
+  });
+});

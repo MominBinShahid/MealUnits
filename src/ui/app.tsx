@@ -59,7 +59,7 @@ import { COPY, CopyContext } from './copy.js';
 import type { Copy } from './copy.js';
 import { COPY_UR } from './copy-ur.js';
 import { DEFAULT_FACE, DEFAULT_LANGUAGE, documentAttributes } from './language.js';
-import { Button } from './components.js';
+import { Button, GlossaryPanel } from './components.js';
 import { CalculatorScreen } from './screens/calculator.js';
 import { deriveThreshold } from '../core/threshold.js';
 import { draftFrom, SettingsScreen } from './screens/settings.js';
@@ -157,6 +157,14 @@ interface ViewState {
   foodTally: Record<string, number>;
   /** Phase 2 — which row has its "what does mine weigh" field open, or null. */
   editingMine: string | null;
+  /**
+   * Which hard word is open, or null. ONE at a time — the panel explains the
+   * word you tapped, and two open would be two answers to one question.
+   *
+   * Outside the reducer with the rest of the presentation flags: it decides
+   * what is rendered and can never reach a calculation.
+   */
+  glossaryTerm: string | null;
   /**
    * §7.9 v23 — another tab deleted the record, so this one is re-booting into
    * the first-run gate. Outside the reducer with the rest of ViewState: it
@@ -441,6 +449,7 @@ export async function start(host: Host): Promise<void> {
     openFoodGroup: null,
     foodTally: {},
     editingMine: null,
+    glossaryTerm: null,
     recordDeletedElsewhere: false,
     writeFailed: false,
     staleConnection: false,
@@ -1432,6 +1441,7 @@ export async function start(host: Host): Promise<void> {
           amountProblem: view.amountProblem,
           amountDiverging: view.amountDiverging,
           foodTally: view.foodTally,
+          onTerm: (key: string): void => { view.glossaryTerm = key; render(); },
           onDigit: (field, digit) => {
             const current = state.inputs[field];
             // §4.2's grammar, per field, derived from that field's own range —
@@ -1812,6 +1822,13 @@ export async function start(host: Host): Promise<void> {
           />
         ) : null}
         {screenFor()}
+        {/* Over the screen you are on, not a page of its own. The reader is in
+            the middle of something — the result they are reading expires — and
+            a screen change would cost them their place for a definition. */}
+        <GlossaryPanel
+          term={view.glossaryTerm}
+          onClose={() => { view.glossaryTerm = null; render(); }}
+        />
         {footNav()}
         {/* §10.8 — show the running build version. "It is the only way to
             diagnose a report." Deliberately small and quiet: it is for the one
