@@ -201,12 +201,14 @@ function FoodRow({
         <div class="clinical">
           {`${COPY.foods.confidenceLabel[food.confidence]} · ${COPY.foods.sourcePrefix}${food.source}`}
         </div>
+        {/* The calibration box, when open, ABOVE the actions rather than in
+            place of them. Putting it in the other arm of a ternary took the
+            stepper off the row entirely while the box was open — so a reader
+            who opened "use my own figure" could no longer add the food until
+            they closed it again. */}
         {editing ? (
           <div class="mine-edit">
             <label for={`mine-${food.id}`}>{COPY.foods.mineLabel}</label>
-            {/* The reference, beside the empty box. The RANGE where the row has
-                one, because a row that admits 18 to 23 should not imply 18 is
-                the answer — and the spread is itself the reason to weigh. */}
             <p class="hint">{COPY.foods.mineHint(
               food.gramsMax === null
                 ? COPY.foods.gramsOne(String(food.grams))
@@ -220,9 +222,6 @@ function FoodRow({
               value={mine === null ? '' : String(mine.grams)}
               autocomplete="off"
               onValue={(value: string) => {
-                // Only a figure this table could plausibly carry. An empty
-                // field clears the calibration rather than storing a zero —
-                // zero is a real carbohydrate value here now.
                 const trimmed = value.trim();
                 if (trimmed === '') { onSaveMine(food.id, null); return; }
                 const grams = Number(trimmed);
@@ -237,27 +236,40 @@ function FoodRow({
               </Button>
             )}
           </div>
-        ) : (
-          <Button class="link mine-open" onPress={() => { onEditMine(food.id); }}>
-            {mine === null ? COPY.foods.mineSet : COPY.foods.mineChange}
-          </Button>
-        )}
-      </div>
-      <div class="v">
-        {amount}
-        {/* Phase 3. Minus appears only once there is something to remove — a
-            control that does nothing most of the time is noise on a 412px
-            screen, which is the same argument the search-clear button makes. */}
-        <div class="tally">
-          {count === 0 ? null : (
-            <Button class="tally-step" aria-label={COPY.foods.removeOne}
-              onPress={() => { onRemove(food.id); }}>{'\u2212'}</Button>
+        ) : null}
+
+        {/*
+         * ONE LINE, two ends: the quiet control on the leading edge and the
+         * stepper on the trailing one.
+         *
+         * They were stacked — the stepper orphaned under the gram figure in a
+         * 76px column, and "use my own figure" alone on a line below the
+         * source, which reads as a full-width button for a niche action.
+         * Momin's fix, and he is right: the two belong on the same line because
+         * they are the two things you can DO to a row, and the one you do
+         * constantly should be the one that stands out.
+         */}
+        <div class="row-actions">
+          {editing ? <span /> : (
+            <Button class="link mine-open" onPress={() => { onEditMine(food.id); }}>
+              {mine === null ? COPY.foods.mineSet : COPY.foods.mineChange}
+            </Button>
           )}
-          {count === 0 ? null : <span class="tally-n">{COPY.foods.tallyCount(count)}</span>}
-          <Button class="tally-step" aria-label={COPY.foods.addOne}
-            onPress={() => { onAdd(food.id); }}>{'+'}</Button>
+          {/* Minus appears only once there is something to remove — the same
+              argument the search-clear button makes about a control that does
+              nothing most of the time. */}
+          <div class="tally">
+            {count === 0 ? null : (
+              <Button class="tally-step" aria-label={COPY.foods.removeOne}
+                onPress={() => { onRemove(food.id); }}>{'\u2212'}</Button>
+            )}
+            {count === 0 ? null : <span class="tally-n">{COPY.foods.tallyCount(count)}</span>}
+            <Button class="tally-step add" aria-label={COPY.foods.addOne}
+              onPress={() => { onAdd(food.id); }}>{'+'}</Button>
+          </div>
         </div>
       </div>
+      <div class="v">{amount}</div>
     </li>
   );
 }
