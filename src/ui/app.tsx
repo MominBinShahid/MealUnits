@@ -165,6 +165,20 @@ interface ViewState {
   foodTally: Record<string, number>;
   /** Phase 2 — which row has its "what does mine weigh" field open, or null. */
   editingMine: string | null;
+  /**
+   * WHAT THE READER HAS TYPED into that field, character for character.
+   *
+   * The field used to render `String(saved.grams)` straight back. Typing `22.5`
+   * was therefore impossible: at the keystroke after `22`, `Number('22.')` is
+   * `22`, the save round-tripped, and the re-render replaced `22.` with `22` —
+   * the decimal point was eaten every time, and the field looked broken rather
+   * than restrictive. A half-gram is a real carbohydrate figure, so the fix is
+   * to let the text and the number disagree while the reader is mid-number.
+   *
+   * The DRAFT is what the field shows; the parsed number is what gets saved,
+   * and only when it parses. Presentation state, so it lives out here.
+   */
+  mineDraft: string;
   /** Whether the "put them all back" confirm is showing. */
   resettingMine: boolean;
   /**
@@ -459,6 +473,7 @@ export async function start(host: Host): Promise<void> {
     openFoodGroup: null,
     foodTally: {},
     editingMine: null,
+    mineDraft: '',
     resettingMine: false,
     glossaryTerm: null,
     recordDeletedElsewhere: false,
@@ -1371,8 +1386,18 @@ export async function start(host: Host): Promise<void> {
             tally={view.foodTally}
             calibration={stored?.calibration?.foods ?? {}}
             editingMine={view.editingMine}
+            mineDraft={view.mineDraft}
             timeZone={host.timeZone}
-            onEditMine={(id: string | null): void => { view.editingMine = id; render(); }}
+            onEditMine={(id: string | null): void => {
+              view.editingMine = id;
+              // Seeded from what is already saved, so opening the box on a
+              // calibrated row shows that figure rather than an empty field
+              // the reader would read as "nothing recorded".
+              const saved = id === null ? undefined : stored?.calibration?.foods[id];
+              view.mineDraft = saved === undefined ? '' : String(saved.grams);
+              render();
+            }}
+            onMineDraft={(text: string): void => { view.mineDraft = text; render(); }}
             resetting={view.resettingMine}
             onResetting={(value: boolean): void => { view.resettingMine = value; render(); }}
             onResetMine={(): void => {

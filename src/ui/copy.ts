@@ -359,8 +359,8 @@ export const COPY = {
      * is one a person can judge before pressing.
      */
     mineResetAll: (n: number): string => (n === 1
-      ? 'Put that one back to the reference figure'
-      : `Put all ${String(n)} back to the reference figures`),
+      ? 'Reset that one to the reference figure'
+      : `Reset all ${String(n)} to the reference figures`),
     mineResetConfirm: 'Yes, use the reference figures again',
     mineResetCancel: 'Keep mine',
     mineWas: (reference: string, date: string): string =>
@@ -388,15 +388,45 @@ export const COPY = {
      */
     gramsOne: (grams: string): string => `${grams}\u00A0g`,
     gramsRange: (lo: string, hi: string): string => `${lo}–${hi}\u00A0g`,
+    /**
+     * WHICH NAME THIS LANGUAGE SHOWS — `Food.name` here, `Food.script` in Urdu.
+     * Not a word, but a per-language choice, which is what this module holds.
+     * `src/ui/food-name.ts` reads it and says why it is a field name rather
+     * than a third argument to the function below.
+     */
+    nameField: 'name',
+    /**
+     * HOW A FOOD IS NAMED ON SCREEN, which is not the same question in every
+     * language. English leads with the English name and carries the Roman one
+     * in brackets — «Home flatbread, medium (Roti)» — because the English is
+     * what the row is filed under and the Roman is what the kitchen calls it.
+     *
+     * Urdu swaps which name leads and keeps the bracket, for the same reason in
+     * the other direction. The Roman stays in BOTH, deliberately: it is the
+     * string the search actually matches, the one the household says out loud,
+     * and the anchor a reader checking an Urdu name can compare against without
+     * leaving the row.
+     *
+     * BOTH ARGUMENTS PRINT IN EVERY LANGUAGE. That is not a style note — it is
+     * what lets `test/interpolation.test.ts` keep checking this function
+     * instead of carrying an exemption for it.
+     */
+    foodName: (display: string, roman: string): string => `${display} (${roman})`,
     variesPrefix: 'Varies: ',
     sourcePrefix: 'Source: ',
     /**
-     * The single highest-value thing on the screen. One kitchen-scale reading
-     * settles every bread row for that household, which no amount of table
-     * detail can do.
+     * The single highest-value thing on the screen: a household's own roti,
+     * weighed once, beats any table.
+     *
+     * IT USED TO SAY "every bread row below becomes yours". It does not — the
+     * reader's figure is stored per food, and 0.46 is the coefficient for ATTA
+     * anyway. Maida is 0.50, so carrying a roti's figure onto a naan
+     * under-counts it by about 8%, and the bread rows run from koki at 28.6\u00A0g
+     * per 100 to sheermal at 65. The sentence promised a propagation the app
+     * does not do and the data would not support if it did.
      */
     weighOnce:
-      'Put one of your own rotis on a kitchen scale. Multiply WHAT IT WEIGHS by 0.46 — a 50\u00A0g roti holds about 23\u00A0g of carbohydrate. Do that once and every bread row below becomes yours rather than an average.',
+      'Put one of your own rotis on a kitchen scale. Multiply WHAT IT WEIGHS by 0.46 — a 50\u00A0g roti holds about 23\u00A0g of carbohydrate. Type that into your roti row below and it stays yours. Naan and paratha are different doughs; weigh those separately.',
     countNote: (shown: number, total: number): string =>
       shown === total ? `${String(total)} foods` : `${String(shown)} of ${String(total)} foods`,
   },

@@ -3,7 +3,7 @@
  */
 
 import type { ComponentChildren, JSX } from 'preact';
-import { useRef } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import { ADVISORY_BUDGET } from '../config.js';
 import { useCopy } from './copy.js';
 import type { Advisory } from '../core/types.js';
@@ -380,6 +380,24 @@ export function GlossaryPanel({ term, onClose }: {
   readonly onClose: () => void;
 }): JSX.Element | null {
   const COPY = useCopy();
+  /*
+   * ESCAPE SHUTS IT. The panel opened on a tap and could only be shut by
+   * finding the button inside it — fine with a thumb, a dead end with a
+   * keyboard. Non-modal by design (`aria-modal="false"`), so focus is left
+   * where the reader put it and only the key is added.
+   *
+   * Registered before the early returns: a hook that runs conditionally is a
+   * hook order that changes between renders, which Preact cannot survive.
+   * `term` in the dependency list, so a shut panel holds no listener.
+   */
+  useEffect(() => {
+    if (term === null) return undefined;
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('keydown', onKey); };
+  }, [term, onClose]);
   if (term === null) return null;
   const entry = (COPY.glossary as Record<string, { word: string; body: string } | undefined>)[term];
   if (entry === undefined) return null;

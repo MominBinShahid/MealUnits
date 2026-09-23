@@ -1648,16 +1648,25 @@ button:disabled { cursor: default; }
 .matrix thead th { text-align: center; }
 .matrix tbody th { text-align: start; }
 
-.matrix td { padding: 0.125rem; }
+/* TOP-ALIGNED, not the default middle. A picked cell is taller than its
+   neighbours — it carries a count and a minus button — and with the default
+   alignment that extra height pushed the whole row apart, so the picked cell
+   appeared to float out of the table rather than sit in it. */
+.matrix td { padding: 0.125rem; vertical-align: top; }
 
 /* §10.7's touch floor. A cell is a real target, not a table entry that happens
-   to be clickable. */
+   to be clickable.
+
+   IT SAID 2.75rem — 44px — while citing the rule that sets the floor at 48 and
+   says "never lowered". §10.7 gives the reason in a sentence worth keeping in
+   view: tremor is a low-blood-sugar symptom, so the person missing the target
+   is disproportionately the person who most needs to hit it. */
 .matrix .cell {
   display: grid;
   gap: 0.125rem;
   justify-items: center;
   min-width: 3.75rem;
-  min-height: 2.75rem;
+  min-height: var(--touch);
   width: 100%;
   padding: 0.25rem;
   border: 1px solid var(--line);
@@ -1679,6 +1688,25 @@ button:disabled { cursor: default; }
   color: var(--mark);
 }
 
+/*
+ * Taking one back off. It only exists while the cell holds something, so the
+ * table's resting height is unchanged and a reader who never picks anything
+ * never sees it. Full cell width, so at 320px it is still a target you can hit
+ * with a thumb rather than a fingernail.
+ */
+.matrix .cell-less {
+  width: 100%;
+  min-height: var(--touch);
+  margin-block-start: 0.125rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  background: none;
+  color: var(--ink-2);
+  font-size: 1rem;
+  line-height: 1;
+}
+
 /* ── phase 2: the reader's own figure ────────────────────────────────────── */
 
 /* The reference this replaced, and when. Quieter than the row's other hints
@@ -1692,13 +1720,22 @@ button:disabled { cursor: default; }
 /* Underlined text, not a button shape. It is a niche action — most readers
    never set their own figure — and it was wearing the weight of a primary
    control on every one of 319 rows. */
+/*
+ * Deliberately SMALL to read — Momin asked for that, and a calibration link
+ * competing with the row's own numbers is the wrong emphasis. Small to read is
+ * not the same as small to hit, though: the type stays at 0.8125rem and the
+ * TARGET goes back to §10.7's floor. It costs no height, because the stepper
+ * beside it already makes the row 48px tall.
+ */
 .mine-open {
   font-size: 0.8125rem;
   color: var(--ink-3);
   text-decoration: underline;
   text-underline-offset: 0.2em;
   padding: 0;
-  min-height: 0;
+  min-height: var(--touch);
+  display: flex;
+  align-items: center;
   text-align: start;
 }
 
@@ -1811,15 +1848,60 @@ button:disabled { cursor: default; }
   flex: 1;
   min-width: 0;
   text-align: start;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-/* The rows inside an open group. Indented from the heading so the boundary is
-   visible while scrolling past it, `margin-inline-start` because in Urdu the
-   heading leads from the other side. */
-.group > .list {
-  margin-inline-start: 0.75rem;
-  margin-block-start: 0.5rem;
+/*
+ * AN OPEN GROUP LOOKS OPEN, and its contents look like they belong to it.
+ *
+ * The heading was a card and everything under it was loose at full width, so
+ * an open group read as a heading that had been left behind rather than one
+ * holding anything. Reported by Momin off the Drinks group, where the chai
+ * tables sat outside the card that had produced them.
+ *
+ * The heading keeps its own shape and the body hangs off it: a rule down the
+ * leading edge in the mark colour, so the eye can follow "this is still inside
+ * Drinks" for the ten screens an open group can run to. `border-inline-start`
+ * and `padding-inline-start`, so it swaps sides with the language.
+ */
+.group.open > .group-head {
+  border-start-start-radius: 0.875rem;
+  border-start-end-radius: 0.875rem;
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
 }
+
+.group-body {
+  border-inline-start: 2px solid var(--mark);
+  padding-inline-start: 0.75rem;
+  margin-block-start: 0.5rem;
+  margin-inline-start: 0.5rem;
+}
+
+/*
+ * The chevron. It turns, so the control says which way it will go rather than
+ * only what it is.
+ *
+ * `\25b8` is a fixed triangle — the bidi algorithm does not mirror it the way
+ * it mirrors brackets, so Urdu needs the flip written out. Closed in Urdu it
+ * points at the text it would open, which is leftward.
+ */
+.group-name::before {
+  content: '\25b8';
+  display: inline-block;
+  color: var(--ink-3);
+  transition: transform 120ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .group-name::before { transition: none; }
+}
+
+:root[dir='rtl'] .group-name::before { transform: scaleX(-1); }
+.group.open .group-name::before { transform: rotate(90deg); color: var(--mark); }
+:root[dir='rtl'] .group.open .group-name::before { transform: scaleX(-1) rotate(90deg); }
 
 .est {
   color: var(--warn);

@@ -952,6 +952,10 @@ UI_TEXT_OK = {
     # value in EXPRESSION position where the attribute arm cannot see it — the
     # same shape, and the same reason, as "field wide" above.
     " picked", "go quiet lang-row",
+    # The food-group heading marks itself open with a class, and the ternary
+    # that picks between "group" and "group open" puts the value in EXPRESSION
+    # position — the same shape and the same reason as "field wide" above.
+    "group open",
     # `10a`'s four typeface names, in `src/ui/language.ts`. They ARE rendered —
     # each sits beside the row that selects it — and they are exempt for the
     # same reason the insulin brands are: **a typeface name is a proper noun
@@ -4710,8 +4714,16 @@ SELF_TESTS = [
     # is the anchor rather than the number — a seed naming a FIGURE that another
     # check keeps current will rot every time that figure moves, and only the
     # self-test notices.
+    #
+    # It rotted on 2026-09-23, exactly as predicted: the count moved 18 -> 19,
+    # the literal anchor stopped matching, and the mutation silently became a
+    # no-op that certified nothing. The self-test caught it. Anchored on the
+    # DIGITS now rather than one value of them, so the next move cannot repeat
+    # it -- a seeded mutation that quietly stops mutating is worse than no
+    # mutation, because the score still counts it as a pass.
     ("T3's structural-query count reverted to the wrong 0", "BACKLOG.md",
-     lambda t: t.replace("There are **18 structural", "There are **0 structural")),
+     lambda t: re.sub(r"There are \*\*\d+ structural",
+                      "There are **0 structural", t)),
     # §20.3 — the check added in the same commit arrives with its own mutation.
     # A constant exported from src/config.ts and never written into §11.8 used to
     # be invisible: absent from PLAN.md so nothing reported it, absent from
