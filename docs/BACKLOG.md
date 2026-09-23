@@ -2042,8 +2042,9 @@ the only question is when the migration gets paid.* **That is a deferral, not a 
 verdict in a heading over a conceded argument is advocacy rather than a record.
 
 **So: the cost, plainly, and nothing recommended.** The script
-is **2742 lines** carrying **27 checks** and **104 seeded mutations** that each prove a specific
-check still bites — figures as of 2026-09-13; `python3 check-plan.py --self-test` prints the
+is **5486 lines** carrying **48 checks** and **160 seeded mutations** that each prove a specific
+check still bites — figures as of 2026-09-23, and they had rotted to 2742/27/104 in an entry whose
+argument rests on the mutation count, in a file whose doctrine forbids hand-copied figures; `python3 check-plan.py --self-test` prints the
 current one. That self-test is the asset, more than the checks are. A rewrite is only finished
 when every one of them is reproduced and passing, and until that moment the repository has a checker nobody
 can trust, guarding a specification for an app that doses insulin. The best available outcome is
