@@ -1,5 +1,5 @@
 import type { JSX } from 'preact';
-import { matchFoods } from '../../core/foods.js';
+import { asksAboutSugarFree, matchFoods } from '../../core/foods.js';
 import { formatDayAndMonth } from '../../core/calendar.js';
 import type { Category, Food } from '../../data/carbs.js';
 import { FOODS } from '../../data/carbs.js';
@@ -52,9 +52,31 @@ function Matrix({ matrix, tally, calibration, onAdd, onRemove }: {
 }): JSX.Element {
   const COPY = useCopy();
   const axis = COPY.foods.matrixAxis as Record<string, string>;
+  // What is picked, in reading order, with the axis words that name it. Built
+  // once here rather than inside the table, because the strip below the table
+  // needs the row and column labels the cells themselves never carry.
+  const picked = matrix.rows.flatMap((row, rowIndex) => (
+    (matrix.cells[rowIndex] ?? []).flatMap((id, columnIndex) => {
+      if (id === null) return [];
+      const food = FOODS.find((candidate) => candidate.id === id);
+      const count = tally[id] ?? 0;
+      if (food === undefined || count === 0) return [];
+      return [{
+        id,
+        count,
+        grams: calibration[id]?.grams ?? food.grams,
+        label: `${axis[row] ?? ''} · ${axis[matrix.columns[columnIndex] ?? ''] ?? ''}`,
+      }];
+    })
+  ));
   return (
     <div class="matrix-wrap">
       <b class="matrix-title">{COPY.foods.matrixTitle[matrix.key]}</b>
+      {/* WHAT THE NUMBERS ARE. Momin read "41 g" under a column headed "plate"
+          as the weight of the plate, which is the only sensible reading of a
+          gram figure sitting under a serving name. The cells are carbohydrate,
+          like every other number on this screen, and now say so. */}
+      <p class="hint matrix-what">{COPY.foods.matrixWhat}</p>
       {/* `overflow-x` on the wrapper, not the page: a four-column table at
           320px is the one thing here that can outgrow the column, and the body
           must never scroll sideways. */}
@@ -88,16 +110,6 @@ function Matrix({ matrix, tally, calibration, onAdd, onRemove }: {
                         <span class="cell-n">{COPY.foods.matrixPicked(count)}</span>
                       )}
                     </Button>
-                    {/* A tap could be added but never taken back: the only way
-                        down from three cups of chai was to clear the whole
-                        list. A sibling rather than a child, because a button
-                        inside a button is not valid and does not receive the
-                        tap reliably. It appears only once there is something
-                        to remove, which is the rule the food rows follow. */}
-                    {count === 0 ? null : (
-                      <Button class="cell-less" aria-label={COPY.foods.removeOne}
-                        onPress={() => { onRemove(id); }}>{'\u2212'}</Button>
-                    )}
                   </td>
                 );
               })}
@@ -105,6 +117,38 @@ function Matrix({ matrix, tally, calibration, onAdd, onRemove }: {
           ))}
         </tbody>
       </table>
+      {/*
+        * TAKING ONE BACK, in a strip under the table rather than inside it.
+        *
+        * The first version put a minus in the cell. Every picked cell then grew
+        * a second cell beneath it, and a table with three picks grew six boxes
+        * — Momin's screenshot of the biryani grid is the argument. It also has
+        * no legal small form: §10.7's floor is 48px and will not bend for a
+        * control the tremor argument applies to exactly as much.
+        *
+        * So the table never changes shape, and what you picked gets a row with
+        * the same stepper the food rows use. Only picked combinations appear,
+        * so an untouched matrix shows nothing at all.
+        */}
+      {picked.length === 0 ? null : (
+        <ul class="list picked-list">
+          {picked.map(({ id, grams, count, label }) => (
+            <li key={id} class="li picked-row">
+              <div class="k">
+                {label}
+                <span class="picked-grams">{COPY.foods.gramsOne(String(grams))}</span>
+              </div>
+              <div class="tally">
+                <Button class="tally-step drop" aria-label={COPY.foods.removeOne}
+                  onPress={() => { onRemove(id); }}>{'\u2212'}</Button>
+                <span class="tally-n">{COPY.foods.tallyCount(count)}</span>
+                <Button class="tally-step add" aria-label={COPY.foods.addOne}
+                  onPress={() => { onAdd(id); }}>{'+'}</Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
       {/* The pattern the arrangement makes visible, in words — for the reader
           who arrived by search and never saw the table. */}
       <p class="hint">{COPY.foods.matrixRule[matrix.key]}</p>
@@ -469,7 +513,20 @@ export function FoodListScreen({
             })}
           </ul>
         </>
-      ) : shown.length === 0 ? (
+      ) : null}
+      {/* THE SUGAR-FREE ANSWER, above whatever the search did or did not find.
+          Not folded into the empty state, because "gum" may one day match a row
+          and the explanation would then disappear exactly when a reader is
+          looking at a number they should not dose from. See
+          `asksAboutSugarFree` for why an unexplained absence is the hazard. */}
+      {asksAboutSugarFree(query) ? (
+        <div class="flag sugar-free">
+          <b>{COPY.foods.sugarFreeTitle}</b>
+          <p>{COPY.foods.sugarFreeDrinks}</p>
+          <p>{COPY.foods.sugarFreeSweets}</p>
+        </div>
+      ) : null}
+      {browsing ? null : shown.length === 0 ? (
         <p class="flag">{COPY.foods.empty(query)}</p>
       ) : (
         <ul class="list">

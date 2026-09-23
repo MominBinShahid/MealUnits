@@ -47,6 +47,53 @@ function fold(value: string): string {
 }
 
 /**
+ * THE WORDS THAT MEAN "SUGAR-FREE", and why a search for them cannot just
+ * return nothing.
+ *
+ * `docs/CARBS.md` section 20 rules that this table carries no figure for
+ * sugar-free confectionery: the label counts sugar alcohols as carbohydrate,
+ * the body absorbs little of them, and dosing the printed number gives insulin
+ * for food that is not there. Refusing to publish a number is right. Refusing
+ * SILENTLY is not — a reader who searches "sugar free" and gets "nothing
+ * matches" has learnt nothing and will read the packet instead, which is the
+ * exact hazard the refusal exists to prevent.
+ *
+ * So the refusal is searchable. Momin's framing: "for things like that where we
+ * don't want to give a line but we know if somebody search, we have to show
+ * something."
+ *
+ * DRINK BRANDS ARE DELIBERATELY ABSENT from this list. A diet cola is sweetened
+ * with aspartame, not a polyol, and is genuinely zero — it has a real row with
+ * a real figure, and sending "coke zero" to an explanation instead of that row
+ * would be a downgrade. The split is the whole point: drinks have an answer,
+ * confectionery has a reason there is no answer.
+ */
+const SUGAR_FREE_WORDS = [
+  'sugar free', 'sugarfree', 'sugar-free', 'no sugar added', 'gum', 'chewing gum',
+  'stevia', 'maltitol', 'sorbitol', 'xylitol', 'erythritol', 'isomalt', 'polyol',
+  'sugar alcohol', 'diabetic sweet', 'diabetic mithai', 'diabetic chocolate',
+] as const;
+
+/**
+ * Whether a query is asking about sugar-free food, so the screen can answer the
+ * question instead of reporting an absence.
+ *
+ * Substring on the FOLDED query, matching how `matchFoods` compares, so
+ * "Sugar Free" and "sugar-free gum" both land.
+ */
+export function asksAboutSugarFree(query: string): boolean {
+  // NO EMPTY-QUERY GUARD, deliberately. One was written here and the mutation
+  // gate killed it — twice, as a surviving ConditionalExpression and a
+  // surviving StringLiteral, both pointing at the same dead branch. It was
+  // unreachable behaviour: every word in the list is non-empty, and `''`
+  // contains none of them, so an empty query already answers false by the only
+  // route that matters. A guard no input can distinguish is not caution, it is
+  // a line that looks like it is doing something.
+  const needle = fold(query);
+  return SUGAR_FREE_WORDS.some((word) => needle.includes(word));
+}
+
+/**
  * Rows whose name, Roman Urdu name, or any recorded spelling variant contains
  * the query.
  *
