@@ -215,6 +215,28 @@ export const COPY = {
      * explains it. Two strings rather than one because the marker repeats per
      * row and the sentence must not — a warning said twelve times is furniture.
      */
+    /**
+     * The ten section headings, and the reason the list has sections at all:
+     * 319 rows is 63 phone screens. Measured, not estimated.
+     *
+     * Named the way a person would ask for them rather than the way a
+     * composition table would file them — "with rice", not "accompaniments".
+     */
+    categoryLabel: {
+      bread: 'Roti, naan and bread',
+      rice: 'Rice dishes',
+      daal: 'Daal',
+      salan: 'Salan and curries',
+      snack: 'Snacks and street food',
+      sweet: 'Sweets and desserts',
+      drink: 'Drinks',
+      fruit: 'Fruit',
+      dairy: 'Milk, yoghurt and cheese',
+      packaged: 'Packets — biscuits, chocolate, crisps',
+    } as const,
+    /** On a closed section, so you know whether it is worth opening. */
+    categoryCount: (n: number): string => `${String(n)} foods`,
+    browseHint: 'Tap a group to open it, or search above.',
     estimateLabel: 'nobody has measured this one properly',
     estimateNote: 'A ⚠ means nobody has measured that food properly. The number is the best estimate there is, and the range beside it is honest about how wide it could be.',
     /**

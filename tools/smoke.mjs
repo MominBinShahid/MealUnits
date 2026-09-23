@@ -765,9 +765,27 @@ await session('/tmp/mealunits-smoke-foods', 9307, 412, async ({ ev, send, open }
 
   check('the food list is offered on the carbohydrate step', await ev(`/Food list/.test(${bodyText})`), true);
   await tap('/^Food list$/'); await wait(400);
-  check('and it opens with the table behind it', await ev(`/Tandoor naan/.test(${bodyText})`), true);
-  check('the caveat is above the numbers, not below them', await ev(
-    `${bodyText}.indexOf('Estimates, not measurements') < ${bodyText}.indexOf('Tandoor naan')`), true);
+  /*
+   * IT OPENS ON THE GROUPS NOW, not on the rows. Both checks below asserted
+   * that "Tandoor naan" was on screen the moment the list opened, and that is
+   * no longer true — nor should it be. 319 rows is 63 phone screens, measured;
+   * ten collapsed groups is one and a half.
+   *
+   * Rewritten rather than deleted, because what they were protecting is still
+   * worth protecting: the screen must open showing the TABLE rather than an
+   * empty box, and the caveat must be above whatever the numbers are. Both
+   * still hold, one level up.
+   */
+  check('it opens on the groups, not on 63 screens of rows', await ev(
+    `/Roti, naan and bread/.test(${bodyText}) && !/Tandoor naan/.test(${bodyText})`), true);
+  check('the caveat is above the groups, not below them', await ev(
+    `${bodyText}.indexOf('Estimates, not measurements') < ${bodyText}.indexOf('Roti, naan and bread')`), true);
+  // And a food is ONE tap away, which is the half a collapsed list could get
+  // wrong without any check noticing.
+  await tap('/^Roti, naan and bread/'); await wait(300);
+  check('opening a group reveals its rows', await ev(`/Tandoor naan/.test(${bodyText})`), true);
+  await tap('/^Roti, naan and bread/'); await wait(300);
+  check('and tapping it again closes it', await ev(`/Tandoor naan/.test(${bodyText})`), false);
 
   /**
    * TYPED AS FAST AS THE PROTOCOL WILL SEND, with no wait between keystrokes.

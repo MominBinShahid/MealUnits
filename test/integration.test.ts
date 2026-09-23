@@ -693,7 +693,15 @@ describe('§11.8 the food list — read-only by design', () => {
     // The caveat is BEFORE the numbers, so someone who reads one row and leaves
     // has still met it.
     expect(opened).toContain('Estimates, not measurements of your plate');
-    expect(opened).toContain('Tandoor naan, small tier');
+    // The GROUPS, not the rows. 319 foods is 63 phone screens measured, so the
+    // list opens collapsed and a row is one tap in. The caveat above still
+    // reaches anyone who reads one row and leaves, which is what it was for.
+    expect(opened).toContain('Roti, naan and bread');
+    expect(opened).not.toContain('Tandoor naan, small tier');
+    // `tapStartingWith`, because a group's label carries its count — the button
+    // reads "Roti, naan and bread45 foods".
+    await tapStartingWith('Roti, naan and bread');
+    expect(text()).toContain('Tandoor naan, small tier');
 
     const field = root.querySelector('#food-search');
     if (!(field instanceof HTMLInputElement)) throw new Error('no search field');
@@ -744,8 +752,9 @@ describe('§11.8 the food list — read-only by design', () => {
 
     expect(field.value).toBe('');
     expect(clearControl()).toBeUndefined();
-    // The whole table is back, not merely the field emptied.
-    expect(text()).toContain('Tandoor naan, small tier');
+    // Clearing returns to BROWSING, not to a flat table — the groups are back,
+    // which is the screen's resting state rather than a filtered view of it.
+    expect(text()).toContain('Roti, naan and bread');
   });
 
   it('carries every value\'s confidence and source, which is what §11.8 exempted it on', async () => {
@@ -753,6 +762,10 @@ describe('§11.8 the food list — read-only by design', () => {
     await keys('180');
     await tap('Next');
     await tap('Food list');
+    // Open a group first: the list is collapsed at rest, so confidence and
+    // source live one tap in. What the check is about is that a VISIBLE row
+    // carries them, and a row has to be visible for that to mean anything.
+    await tapStartingWith('Roti, naan and bread');
     const page = text();
 
     // A value whose confidence is hidden is presented with the authority of a

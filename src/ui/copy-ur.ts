@@ -275,6 +275,20 @@ export const COPY_UR: Copy = {
      * difference between those is the difference this table is built on.
      */
     confidenceLabel: { high: 'اچھی طرح معلوم', medium: 'کم زیادہ ہوتا ہے', low: 'ٹھیک سے ناپا نہیں گیا' } as const,
+    categoryLabel: {
+      bread: 'روٹی، نان اور بریڈ',
+      rice: 'چاول کے کھانے',
+      daal: 'دال',
+      salan: 'سالن اور کڑھی',
+      snack: 'اسنیکس اور بازار کا کھانا',
+      sweet: 'مٹھائی اور میٹھا',
+      drink: 'مشروبات',
+      fruit: 'پھل',
+      dairy: 'دودھ، دہی اور پنیر',
+      packaged: 'پیکٹ — بسکٹ، چاکلیٹ، چپس',
+    } as const,
+    categoryCount: (n: number): string => `${String(n)} کھانے`,
+    browseHint: 'کسی گروپ پر ٹیپ کریں، یا اوپر تلاش کریں۔',
     estimateLabel: 'اسے کسی نے ٹھیک سے ناپا نہیں',
     estimateNote: '⚠ کا مطلب ہے کہ اس کھانے کو کسی نے ٹھیک سے ناپا نہیں۔ جو عدد لکھا ہے وہ سب سے بہتر اندازہ ہے، اور ساتھ دی گئی رینج ایمانداری سے بتاتی ہے کہ یہ کتنا اوپر نیچے ہو سکتا ہے۔',
     /** The range is isolated; see `isolate`. 14 of 31 rows read backwards without it. */

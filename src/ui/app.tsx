@@ -132,6 +132,16 @@ interface ViewState {
    */
   foodQuery: string;
   /**
+   * Which food group is open, or null for all closed. ONE at a time, and that
+   * is the whole mechanism: 319 rows is 63 phone screens, and the biggest
+   * single group is 47 rows. Allowing two open would already be worse than any
+   * screen in the app.
+   *
+   * Outside the reducer for the reason the block above gives — it decides what
+   * is rendered and can never reach a calculation.
+   */
+  openFoodGroup: string | null;
+  /**
    * §7.9 v23 — another tab deleted the record, so this one is re-booting into
    * the first-run gate. Outside the reducer with the rest of ViewState: it
    * changes no dose, band or gate, only what the loading screen says while the
@@ -412,6 +422,7 @@ export async function start(host: Host): Promise<void> {
     decliningDosing: false,
     screenBefore: 'calculator',
     foodQuery: '',
+    openFoodGroup: null,
     recordDeletedElsewhere: false,
     writeFailed: false,
     staleConnection: false,
@@ -1304,8 +1315,15 @@ export async function start(host: Host): Promise<void> {
         return (
           <FoodListScreen
             query={view.foodQuery}
+            openGroup={view.openFoodGroup}
             onQuery={(value: string): void => {
               view.foodQuery = value;
+              render();
+            }}
+            onToggleGroup={(group: string): void => {
+              // Tapping the open one closes it, so the way out is where the way
+              // in was. Nothing else on this screen goes back.
+              view.openFoodGroup = view.openFoodGroup === group ? null : group;
               render();
             }}
           />
