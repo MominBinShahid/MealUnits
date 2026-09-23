@@ -27,6 +27,7 @@ import { INSULINS } from '../../data/insulins.js';
 import { FOODS } from '../../data/carbs.js';
 import type { JSX } from 'preact';
 import { useCopy } from '../copy.js';
+import { displayName } from '../food-name.js';
 import type { Copy } from '../copy.js';
 import { Advisories, Button, Keypad, Prose, Readout, StepDots } from '../components.js';
 import type { AdvisoryView } from '../components.js';
@@ -232,7 +233,7 @@ function Working({
         <div class="tally-working">
           {FOODS.filter((food) => tally[food.id] !== undefined).map((food) => (
             <div key={food.id} class="row sub">
-              <span>{COPY.calculator.tallyLine(String(tally[food.id]), food.name)}</span>
+              <span>{COPY.calculator.tallyLine(String(tally[food.id]), displayName(food, COPY))}</span>
               {/* THE READER'S figure where they have set one, not the
                   reference. This printed `food.grams` and so contradicted the
                   row above it the moment phase 2 shipped: the meal row said

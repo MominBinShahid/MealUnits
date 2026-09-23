@@ -6,6 +6,7 @@ import { FOODS } from '../../data/carbs.js';
 import { IN_A_MATRIX, MATRICES } from '../matrices.js';
 import type { FoodMatrix } from '../matrices.js';
 import { useCopy } from '../copy.js';
+import { displayName, fullName } from '../food-name.js';
 import { Button, TextInput } from '../components.js';
 
 export interface FoodListProps {
@@ -15,6 +16,7 @@ export interface FoodListProps {
   /** Phase 2 — the reader's own figures, keyed by `Food.id`. */
   readonly calibration: Readonly<Record<string, { readonly grams: number; readonly setAt: number }>>;
   readonly editingMine: string | null;
+  readonly mineDraft: string;
   readonly timeZone: string;
   readonly onQuery: (value: string) => void;
   readonly onToggleGroup: (group: string) => void;
@@ -23,6 +25,7 @@ export interface FoodListProps {
   readonly onUseTotal: (grams: number) => void;
   readonly onClearTally: () => void;
   readonly onEditMine: (id: string | null) => void;
+  readonly onMineDraft: (text: string) => void;
   readonly onSaveMine: (id: string, grams: number | null) => void;
   readonly resetting: boolean;
   readonly onResetting: (value: boolean) => void;
@@ -40,11 +43,12 @@ export interface FoodListProps {
  * the same reason the tally sums theirs — a calibration that changed the row
  * but not the table would be worse than no calibration.
  */
-function Matrix({ matrix, tally, calibration, onAdd }: {
+function Matrix({ matrix, tally, calibration, onAdd, onRemove }: {
   readonly matrix: FoodMatrix;
   readonly tally: Record<string, number>;
   readonly calibration: Readonly<Record<string, { readonly grams: number }>>;
   readonly onAdd: (id: string) => void;
+  readonly onRemove: (id: string) => void;
 }): JSX.Element {
   const COPY = useCopy();
   const axis = COPY.foods.matrixAxis as Record<string, string>;
@@ -76,7 +80,7 @@ function Matrix({ matrix, tally, calibration, onAdd }: {
                   <td key={column}>
                     <Button
                       class={`cell${count === 0 ? '' : ' picked'}`}
-                      aria-label={`${axis[row] ?? ''} ${axis[column] ?? ''} — ${food.name}`}
+                      aria-label={`${axis[row] ?? ''} ${axis[column] ?? ''} — ${displayName(food, COPY)}`}
                       onPress={() => { onAdd(id); }}
                     >
                       {COPY.foods.gramsOne(String(grams))}
@@ -84,6 +88,16 @@ function Matrix({ matrix, tally, calibration, onAdd }: {
                         <span class="cell-n">{COPY.foods.matrixPicked(count)}</span>
                       )}
                     </Button>
+                    {/* A tap could be added but never taken back: the only way
+                        down from three cups of chai was to clear the whole
+                        list. A sibling rather than a child, because a button
+                        inside a button is not valid and does not receive the
+                        tap reliably. It appears only once there is something
+                        to remove, which is the rule the food rows follow. */}
+                    {count === 0 ? null : (
+                      <Button class="cell-less" aria-label={COPY.foods.removeOne}
+                        onPress={() => { onRemove(id); }}>{'\u2212'}</Button>
+                    )}
                   </td>
                 );
               })}
@@ -144,16 +158,19 @@ const GROUPS: readonly Category[] = [
  * why you wanted it.
  */
 function FoodRow({
-  food, count, mine, editing, onAdd, onRemove, onEditMine, onSaveMine, timeZone,
+  food, count, mine, editing, draft, onAdd, onRemove, onEditMine, onMineDraft,
+  onSaveMine, timeZone,
 }: {
   readonly food: Food;
   readonly count: number;
   /** Phase 2 — the reader's own figure for this food, or null. */
   readonly mine: { readonly grams: number; readonly setAt: number } | null;
   readonly editing: boolean;
+  readonly draft: string;
   readonly onAdd: (id: string) => void;
   readonly onRemove: (id: string) => void;
   readonly onEditMine: (id: string | null) => void;
+  readonly onMineDraft: (text: string) => void;
   readonly onSaveMine: (id: string, grams: number | null) => void;
   readonly timeZone: string;
 }): JSX.Element {
@@ -183,7 +200,7 @@ function FoodRow({
           {food.confidence === 'low' ? (
             <span class="est" aria-label={COPY.foods.estimateLabel}>{'\u26A0'}</span>
           ) : null}
-          {`${food.name} (${food.roman})`}
+          {fullName(food, COPY)}
         </div>
         <div class="hint">{food.portion}</div>
         {/* §11.8's second condition, on screen. A value whose confidence is
@@ -220,18 +237,27 @@ function FoodRow({
                 ? COPY.foods.gramsOne(String(food.grams))
                 : COPY.foods.gramsRange(String(food.grams), String(food.gramsMax)),
             )}</p>
+            {/* `inputMode="decimal"` rather than `numeric`: a phone keypad
+                without a decimal point cannot type a figure this field now
+                accepts. The value comes from the draft, never from the saved
+                number — see `ViewState.mineDraft` for what that repairs. */}
             <TextInput
               id={`mine-${food.id}`}
               type="text"
-              inputMode="numeric"
+              inputMode="decimal"
               data-field={`mine-${food.id}`}
-              value={mine === null ? '' : String(mine.grams)}
+              value={draft}
               autocomplete="off"
               onValue={(value: string) => {
+                onMineDraft(value);
                 const trimmed = value.trim();
                 if (trimmed === '') { onSaveMine(food.id, null); return; }
+                // A trailing point, a lone point and a lone minus are all
+                // half-typed numbers rather than wrong ones: keep the text and
+                // save nothing until it means something.
+                if (!/^\d+(\.\d+)?$/.test(trimmed)) return;
                 const grams = Number(trimmed);
-                if (!Number.isFinite(grams) || grams < 0) return;
+                if (!Number.isFinite(grams)) return;
                 onSaveMine(food.id, grams);
               }}
             />
@@ -290,9 +316,9 @@ function FoodRow({
  * being asked at that exact moment, and it is noise anywhere else.
  */
 export function FoodListScreen({
-  query, openGroup, tally, calibration, editingMine, timeZone, resetting,
-  onQuery, onToggleGroup, onAdd, onRemove, onUseTotal, onClearTally, onEditMine, onSaveMine,
-  onResetting, onResetMine,
+  query, openGroup, tally, calibration, editingMine, mineDraft, timeZone, resetting,
+  onQuery, onToggleGroup, onAdd, onRemove, onUseTotal, onClearTally, onEditMine, onMineDraft,
+  onSaveMine, onResetting, onResetMine,
 }: FoodListProps): JSX.Element {
   const COPY = useCopy();
   const shown = matchFoods(FOODS, query);
@@ -402,34 +428,41 @@ export function FoodListScreen({
               const rows = FOODS.filter((food) => food.category === group);
               const open = openGroup === group;
               return (
-                <li key={group} class="group">
+                <li key={group} class={open ? 'group open' : 'group'}>
                   <Button
                     class="go quiet group-head"
                     aria-expanded={open}
                     onPress={() => { onToggleGroup(group); }}
                   >
+                    {/* The chevron is drawn by CSS rather than rendered here.
+                        `aria-hidden` would have kept it out of the accessible
+                        name but not out of `textContent`, where it arrived as
+                        "▸Roti, naan and bread" — the glyph is decoration and
+                        does not belong in the text at all. */}
                     <span class="group-name">{COPY.foods.categoryLabel[group]}</span>
                     <span class="tag">{COPY.foods.categoryCount(rows.length)}</span>
                   </Button>
                   {open ? (
-                    <>
+                    <div class="group-body">
                       {/* The two-dimensional families first, as tables. Their
                           rows are then skipped below — the same food cannot be
                           in the table AND under it, or the tally would offer
                           two ways to add one cup of chai. */}
                       {MATRICES.filter((matrix) => matrix.category === group).map((matrix) => (
                         <Matrix key={matrix.key} matrix={matrix}
-                          tally={tally} calibration={calibration} onAdd={onAdd} />
+                          tally={tally} calibration={calibration}
+                          onAdd={onAdd} onRemove={onRemove} />
                       ))}
                       <ul class="list">
                       {rows.filter((food) => !IN_A_MATRIX.has(food.id)).map((food) => (
                         <FoodRow key={food.id} food={food}
                           count={tally[food.id] ?? 0} onAdd={onAdd} onRemove={onRemove}
                           mine={calibration[food.id] ?? null} editing={editingMine === food.id}
+                          draft={mineDraft} onMineDraft={onMineDraft}
                           onEditMine={onEditMine} onSaveMine={onSaveMine} timeZone={timeZone} />
                       ))}
                       </ul>
-                    </>
+                    </div>
                   ) : null}
                 </li>
               );
@@ -444,6 +477,7 @@ export function FoodListScreen({
             <FoodRow key={food.id} food={food}
               count={tally[food.id] ?? 0} onAdd={onAdd} onRemove={onRemove}
               mine={calibration[food.id] ?? null} editing={editingMine === food.id}
+              draft={mineDraft} onMineDraft={onMineDraft}
               onEditMine={onEditMine} onSaveMine={onSaveMine} timeZone={timeZone} />
           ))}
         </ul>

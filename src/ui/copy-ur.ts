@@ -309,9 +309,11 @@ export const COPY_UR: Copy = {
      * is printed, so this says what the button DOES rather than "clear".
      */
     searchClear: 'تلاش صاف کریں',
-    // Urdu: search matches the Roman `urdu` field in carbs.ts (transliterations,
-    // not Urdu script — BACKLOG 10a), so this hint and `empty` below steer the
-    // reader to type in English letters, not Urdu script.
+    // Urdu: search matches `name`, `roman` and `aliases` in carbs.ts — never
+    // `script`, which is display only (BACKLOG 10a). The rows now SHOW their
+    // Urdu names, which makes this hint load-bearing rather than incidental: a
+    // reader looking at «روٹی» has every reason to try typing it, and would get
+    // nothing. So this hint and `empty` below both steer to English letters.
     searchHint: 'انگریزی حروف میں ٹائپ کریں — انگریزی نام یا رومن اردو: roti, chawal, qeema, biryani.',
     empty: (query: string): string =>
       `«${query}» سے کچھ نہیں ملا۔ رومن اردو میں نام لکھ کر دیکھیں، یا کوئی سادہ لفظ — "tandoori naan" کے بجائے صرف "naan"۔`,
@@ -366,8 +368,8 @@ export const COPY_UR: Copy = {
     // Urdu takes no plural here — «اعداد» is already the plural — so the branch
     // exists only so the sentence reads naturally for a single row.
     mineResetAll: (n: number): string => (n === 1
-      ? 'اسے واپس حوالہ والے عدد پر کر دیں'
-      : isolate(`سب ${String(n)} کو واپس حوالہ والے اعداد پر کر دیں`)),
+      ? 'اسے واپس حوالہ والے عدد پر لے آئیں'
+      : isolate(`سب ${String(n)} کو واپس حوالہ والے اعداد پر لے آئیں`)),
     mineResetConfirm: 'ہاں، دوبارہ حوالہ والے اعداد استعمال کریں',
     mineResetCancel: 'میرے اپنے رہنے دیں',
     mineWas: (reference: string, date: string): string =>
@@ -385,6 +387,14 @@ export const COPY_UR: Copy = {
     /** The range is isolated; see `isolate`. 14 of 31 rows read backwards without it. */
     gramsOne: (grams: string): string => `${grams}\u00A0گرام`,
     gramsRange: (lo: string, hi: string): string => `${isolate(`${lo}–${hi}`)}\u00A0گرام`,
+    // Urdu displays `Food.script`. The fallback for an empty one lives in
+    // `src/ui/food-name.ts`, not here — this object says WHICH field, not what
+    // to do when it is missing.
+    nameField: 'script',
+    // The Urdu name leads, the Roman follows in brackets. `isolate` on the
+    // Roman only: it is an LTR island in an RTL line, and without the isolate
+    // the bracket that closes it can be painted at the wrong end.
+    foodName: (display: string, roman: string): string => `${display} (${isolate(roman)})`,
     variesPrefix: 'کم زیادہ: ',
     sourcePrefix: 'حوالہ: ',
     /**
@@ -393,7 +403,7 @@ export const COPY_UR: Copy = {
      * detail can do.
      */
     weighOnce:
-      isolate('اپنی ایک روٹی ترازو پر رکھیں۔ اس کا وزن 0.46 سے ضرب دیں — 50\u00A0گرام کی روٹی میں تقریباً 23\u00A0گرام کاربوہائیڈریٹ ہوتا ہے۔ ایک بار یہ کر لیں اور نیچے روٹی والی ہر لائن اوسط کے بجائے آپ کی اپنی بن جائے گی۔'),
+      isolate('اپنی ایک روٹی ترازو پر رکھیں۔ اس کا وزن 0.46 سے ضرب دیں — 50\u00A0گرام کی روٹی میں تقریباً 23\u00A0گرام کاربوہائیڈریٹ ہوتا ہے۔ یہ عدد نیچے اپنی روٹی والی لائن میں لکھ دیں، وہ آپ کی اپنی رہے گی۔ نان اور پراٹھے کا آٹا الگ ہے — ان کو الگ تولیں۔'),
     // Urdu: "X of Y foods" reads «Y میں سے X کھانے» — the two placeholders swap
     // order, deliberately. The ternary's branches still differ, so it stays.
     countNote: (shown: number, total: number): string =>

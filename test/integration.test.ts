@@ -840,6 +840,49 @@ describe('§11.8 the food list — read-only by design', () => {
     expect(text()).toContain('52');
   });
 
+  it('phase 2: a half-gram can be typed — the field does not eat the decimal point', async () => {
+    // The defect: the field rendered `String(saved.grams)` straight back, so at
+    // the keystroke after "22" the value `Number('22.')` saved as 22 and the
+    // re-render replaced "22." with "22". The point vanished under the finger
+    // every time and 22.5 was unreachable. Driven one character at a time,
+    // because typing the whole string at once is exactly what never failed.
+    await setUpAsHisBrother();
+    await keys('180');
+    await tap('Next');
+    await tap('Food list');
+    await tapStartingWith('Roti, naan and bread');
+
+    const bread = FOODS.filter((f) => f.category === 'bread');
+    const at = bread.findIndex((f) => f.id === 'roti-medium');
+    const openers = [...root.querySelectorAll('button')].filter(
+      (b) => buttonLabel(b) === COPY.foods.mineSet,
+    );
+    openers[at]?.click();
+    await settle();
+
+    const field = (): HTMLInputElement => {
+      const found = root.querySelector('#mine-roti-medium');
+      if (!(found instanceof HTMLInputElement)) throw new Error('no calibration field');
+      return found;
+    };
+    for (const so_far of ['2', '22', '22.', '22.5']) {
+      field().value = so_far;
+      field().dispatchEvent(new Event('input', { bubbles: true }));
+      await settle();
+      await settle();
+      // The point survives the round trip it used to be destroyed by.
+      expect(field().value).toBe(so_far);
+    }
+
+    // And the figure that reaches the dose is the one typed, not its floor.
+    const adders = [...root.querySelectorAll('button')].filter(
+      (b) => b.getAttribute('aria-label') === COPY.foods.addOne,
+    );
+    adders[at]?.click();
+    await settle();
+    expect(text()).toContain('22.5');
+  });
+
   it('phase 3: the tally does not outlive the meal it described', async () => {
     // The defect this exists for, found by audit and by no test: breakfast's
     // two rotis survived `new_calculation` and were still counted at lunch, so
