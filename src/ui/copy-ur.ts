@@ -275,6 +275,8 @@ export const COPY_UR: Copy = {
      * difference between those is the difference this table is built on.
      */
     confidenceLabel: { high: 'اچھی طرح معلوم', medium: 'کم زیادہ ہوتا ہے', low: 'ٹھیک سے ناپا نہیں گیا' } as const,
+    estimateLabel: 'اسے کسی نے ٹھیک سے ناپا نہیں',
+    estimateNote: '⚠ کا مطلب ہے کہ اس کھانے کو کسی نے ٹھیک سے ناپا نہیں۔ جو عدد لکھا ہے وہ سب سے بہتر اندازہ ہے، اور ساتھ دی گئی رینج ایمانداری سے بتاتی ہے کہ یہ کتنا اوپر نیچے ہو سکتا ہے۔',
     /** The range is isolated; see `isolate`. 14 of 31 rows read backwards without it. */
     gramsOne: (grams: string): string => `${grams}\u00A0گرام`,
     gramsRange: (lo: string, hi: string): string => `${isolate(`${lo}–${hi}`)}\u00A0گرام`,

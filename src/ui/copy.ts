@@ -211,6 +211,13 @@ export const COPY = {
      */
     confidenceLabel: { high: 'well established', medium: 'varies', low: 'poorly measured' } as const,
     /**
+     * The marker on a row nobody has measured properly, and the one line that
+     * explains it. Two strings rather than one because the marker repeats per
+     * row and the sentence must not — a warning said twelve times is furniture.
+     */
+    estimateLabel: 'nobody has measured this one properly',
+    estimateNote: 'A ⚠ means nobody has measured that food properly. The number is the best estimate there is, and the range beside it is honest about how wide it could be.',
+    /**
      * The gram figure on a food row, and the one place a RANGE reaches a screen.
      *
      * Built in `foods.tsx` until 2026-09-22, which put it out of reach of both
