@@ -386,7 +386,7 @@ export const COPY_UR: Copy = {
      * detail can do.
      */
     weighOnce:
-      'اپنی روٹیوں میں سے ایک کو ایک بار تول لیں۔ کاربوہائیڈریٹ پکی ہوئی روٹی کے وزن کے آدھے سے ذرا کم ہوتا ہے — وزن کو 0.46 سے ضرب دیں — اور نیچے روٹی والی ہر لائن اوسط کے بجائے آپ کی اپنی بن جاتی ہے۔',
+      isolate('اپنی ایک روٹی ترازو پر رکھیں۔ اس کا وزن 0.46 سے ضرب دیں — 50\u00A0گرام کی روٹی میں تقریباً 23\u00A0گرام کاربوہائیڈریٹ ہوتا ہے۔ ایک بار یہ کر لیں اور نیچے روٹی والی ہر لائن اوسط کے بجائے آپ کی اپنی بن جائے گی۔'),
     // Urdu: "X of Y foods" reads «Y میں سے X کھانے» — the two placeholders swap
     // order, deliberately. The ternary's branches still differ, so it stays.
     countNote: (shown: number, total: number): string =>

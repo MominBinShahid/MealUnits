@@ -382,7 +382,7 @@ export const COPY = {
      * detail can do.
      */
     weighOnce:
-      'Weigh one of your own rotis once. Carbohydrate is just under half its cooked weight — times 0.46 — and every bread row below becomes yours rather than an average.',
+      'Put one of your own rotis on a kitchen scale. Multiply WHAT IT WEIGHS by 0.46 — a 50\u00A0g roti holds about 23\u00A0g of carbohydrate. Do that once and every bread row below becomes yours rather than an average.',
     countNote: (shown: number, total: number): string =>
       shown === total ? `${String(total)} foods` : `${String(shown)} of ${String(total)} foods`,
   },
