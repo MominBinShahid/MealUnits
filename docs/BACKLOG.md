@@ -124,6 +124,48 @@ following **before** any of it exists:
   budget decides where that sits, if anywhere.
 - §17's five legs all apply: §4.3 precedence, §11.2 snapshot, §13.2 schema, §13.3 cases, §10.5 rank.
 
+**RULED 2026-09-23, by Momin, in conversation.** Each question and its answer:
+
+1. **Editable, confirmed — not committed.** *"I think we should keep him in loop right the user him
+   or her."* The total arrives in the carbohydrate box as a value the reader can see and change, and
+   nothing is calculated until they act on it.
+
+   **This is what preserves the property phase 1 was built on**, rather than trading it away. The
+   rule reads *a wrong row can mislead someone and can never silently drive a dose* — and the load
+   is on **silently**. A person who read the number and accepted it was not misled silently; they
+   were shown the number and agreed with it. The retyping was never the safety mechanism, it was the
+   friction that made the mechanism inconvenient. §18.14 names friction as this app's real failure
+   mode, so removing the retyping while keeping the confirmation is the whole point.
+
+2. **The working shows the tally.** Momin: *"all the ones you selected… that you have selected
+   these, these, these, these plus this plus this."* §10.3 already prints the arithmetic; it now also
+   prints what the carbohydrate figure was made of. The reason is §7.7's: a number whose provenance
+   is gone is the thing this app exists to prevent, and *49 g* tells a doctor reading the photograph
+   nothing that *2 roti 36 + 1 katori daal 13* does not tell them better.
+
+3. **A low-confidence row warns; it never disqualifies.** Momin: *"if we can just warn them not on
+   every edit but something in the UI… maybe a warning logo or small thing right that's it."*
+
+   **It lives on the food row, not on the result screen**, and that is what keeps it out of §10.5's
+   budget. A full result-screen advisory would compete for the two slots and could push out the band
+   B caution, which is the one that must land. A marker where you PICK the food warns at the moment
+   the choice is made and costs the result screen nothing. One line under the tally explains the
+   markers once, rather than repeating per row.
+
+4. **The five legs, and what each requires here.**
+   - **§4.3 precedence** — the tally is a dosing input, so editing it invalidates a showing result
+     under rule 1, exactly as changing the reading does.
+   - **§11.2 snapshot** — the tally goes INSIDE the committed snapshot. Read live, the breakdown on
+     screen and the dose on screen could drift apart, which is the failure that section exists for.
+   - **§13.2 schema** — the golden-case JSON has no field for a tally and cannot express one until
+     it is extended.
+   - **§13.3 cases** — new required cases: empty tally, one food, a food carrying a range, counts
+     that round, and a tally edited after a result is showing.
+   - **§10.5 rank** — see 3. The marker is not an advisory element and does not enter the budget.
+
+**What is still NOT ruled**: whether a tally survives a reload, and whether picking foods writes
+anything to storage at all. Phase 1 writes nothing, and the cheapest version of phase 3 keeps that.
+
 **Recorded 2026-09-13 because it existed nowhere.** Both phases were agreed in conversation while
 phase 1 was being built and lived only in a session task list — which is exactly what §20.5's rule
 names: a decision not written down does not exist. Found while auditing the documents for the
