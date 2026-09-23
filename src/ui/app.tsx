@@ -1410,6 +1410,7 @@ export async function start(host: Host): Promise<void> {
           meterGuidanceShown: view.meterGuidanceShown,
           amountProblem: view.amountProblem,
           amountDiverging: view.amountDiverging,
+          foodTally: view.foodTally,
           onDigit: (field, digit) => {
             const current = state.inputs[field];
             // §4.2's grammar, per field, derived from that field's own range —

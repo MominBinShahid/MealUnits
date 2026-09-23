@@ -1505,6 +1505,14 @@ export const COPY = {
     carbsHint:
       'The carbohydrate in the food — not what the plate weighs. A 250\u00A0g plate of biryani is about 50\u00A0g of carbohydrate.',
     /** §10.1 — the field says GRAMS OF CARBOHYDRATE, never "grams" or "carbs". */
+    /**
+     * A tally line in §10.3's working — "2 × Home flatbread, medium".
+     *
+     * Here rather than built in the component for the reason `mgdl` is: it
+     * carries a number next to a word, and in Urdu that run has to be isolated
+     * or the count and the name change places.
+     */
+    tallyLine: (count: string, food: string): string => `${count} × ${food}`,
     unitReading: 'MG/DL',
     unitCarbs: 'GRAMS OF CARBOHYDRATE',
     unitDose: 'UNITS',
