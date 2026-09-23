@@ -84,8 +84,23 @@ dose than the one that was suppressed.
 only on the override, or nowhere; and if it blocks, whether it clears the field or only warns.
 Build note 60 records the half that is already shipped — the block screen honouring expiry.
 
-### 18. Carbohydrate reference phase 2 — his own grams, per food
-**Trigger: once the list has been used enough that the estimates are visibly wrong for his plate.**
+### 18. Carbohydrate reference phase 2 — his own grams, per food — BUILT 2026-09-23
+**Was: trigger once the list has been used enough that the estimates are visibly wrong for his
+plate.** Momin asked for it before that trigger fired, which is recorded here rather than quietly
+ignored: the feature exists now, and nobody has yet used the 319-row list long enough to know which
+rows are wrong for his plate. That is the information the DESIGN wanted, so one question stayed open
+below rather than being answered by guessing.
+
+**What shipped.** A `meta` row keyed by `Food.id`, holding the reader's own grams and the date they
+set it. No schema migration — `meta` is already a keyed table, the way `language` arrived. The row
+shows the reader's figure in the headline and the reference it replaced beneath, with the date.
+Phase 3's tally sums the reader's figure where one exists.
+
+**Still unruled, and it is the one this entry names.** Per food, per portion, or a single scale
+factor. It ships PER FOOD, because a scale factor assumes the deviation is uniform and it is not —
+a household's roti may be large while its chai cup is ordinary. Per food is also strictly more
+expressive, so a family-wide setting can be built on top of it later rather than instead of it.
+**Momin's confirmation is worth having.**
 
 **What phase 1 shipped:** 31 foods, each with an estimate, a confidence (6 high, 24 medium, 1 low)
 and a source; 14 carry a `gramsMax` and 25 carry a `varies` note, because the portion genuinely
@@ -103,8 +118,23 @@ of what a reference can do.
 
 **Unruled:** per food, per portion, or a single "my roti is this heavy" scale factor.
 
-### 19. Carbohydrate reference phase 3 — the tally that fills the carbohydrate field
-**UNRULED, AND IT DELIBERATELY BREAKS A SAFETY PROPERTY. Needs a ruling before any code.**
+### 19. Carbohydrate reference phase 3 — the tally that fills the carbohydrate field — BUILT 2026-09-23
+**Was: UNRULED, and it deliberately breaks a safety property. Needs a ruling before any code.** The
+ruling came first and is recorded below; the code followed it.
+
+**What shipped.** Steppers on every food row, a running total, and one button that puts it in the
+carbohydrate box — where the reader can still change it, and still has to press Next. The result
+screen's working prints what the figure was made of.
+
+**The property is not broken after all, and that is the ruling's finding rather than a
+rationalisation.** The rule reads *a wrong row can mislead someone and can never SILENTLY drive a
+dose*. The load is on "silently". A person who read the number and accepted it was not misled
+silently. The retyping was never the mechanism — it was the friction that made the mechanism
+inconvenient, and §18.14 names friction as this app's real failure mode.
+
+**§11.2's snapshot was not needed either.** Touching the carbohydrate field clears the tally, so the
+breakdown either describes the number beside it or does not exist. The disagreement is impossible
+rather than prevented by copying state.
 
 **What:** pick foods, give each a count, read the total, put the total in the carbohydrate box.
 
