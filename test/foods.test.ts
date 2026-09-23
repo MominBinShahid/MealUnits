@@ -349,3 +349,56 @@ describe('the matrices — a family whose two axes are both real variables', () 
     }
   });
 });
+
+describe('the Urdu names — display only, and every one distinct', () => {
+  it('every row has one, and it is Urdu script', () => {
+    for (const food of FOODS) {
+      expect(food.script.length, `${food.id} has no Urdu name`).toBeGreaterThan(0);
+      expect(/[؀-ۿ]/.test(food.script), `${food.id} carries no Urdu letters`).toBe(true);
+    }
+  });
+
+  it('no two foods read the same in Urdu, even after folding', () => {
+    // THE property this field has to hold. 54 groups share a `roman` and no two
+    // rows in any group share a gram figure — four say 'Naan' and span 60 to
+    // 90 g. Two rows reading alike in Urdu is a reader choosing blind on a
+    // number that becomes insulin, so the qualifier goes into the name.
+    //
+    // Folded before comparing, because two names differing only by a harakat or
+    // by Arabic-vs-Urdu yeh are the same name to a reader's eye at 14px.
+    const fold = (value: string): string => value
+      .normalize('NFC')
+      .replace(/[ً-ٰٕ]/g, '')
+      .replace(/[يى]/g, 'ی')
+      .replace(/ك/g, 'ک')
+      .replace(/ه/g, 'ہ')
+      .replace(/[\u200B-\u200F\uFEFF\u060C,.\s]/g, '');
+    const seen = new Map<string, string>();
+    for (const food of FOODS) {
+      const key = fold(food.script);
+      const first = seen.get(key);
+      expect(first, `${food.id} and ${String(first)} read the same in Urdu`).toBeUndefined();
+      seen.set(key, food.id);
+    }
+  });
+
+  it('digits stay ASCII, per docs/URDU.md ruling 1', () => {
+    // Urdu-Indic digits appear nowhere in this app, and a food name is exactly
+    // where they would creep in.
+    for (const food of FOODS) {
+      expect(/[۰-۹٠-٩]/.test(food.script), food.id).toBe(false);
+    }
+  });
+
+  it('the only Latin left in an Urdu name is a brand', () => {
+    // Ruling 2: a token whose job is to match something the reader is holding
+    // stays in that thing's script. Ten brands qualify; anything else in Latin
+    // is a name that did not get translated.
+    const BRANDS = /^(Cadbury|Dairy|Milk|Caramel|KitKat|Lindt|Excellence|Loacker|Nido|Dawn|Sooper|Rooh|Afza|Royal|Special|Yaadgaar)$/;
+    for (const food of FOODS) {
+      for (const word of food.script.match(/[A-Za-z][A-Za-z0-9%-]*/g) ?? []) {
+        expect(BRANDS.test(word), `${food.id} has untranslated Latin: ${word}`).toBe(true);
+      }
+    }
+  });
+});
