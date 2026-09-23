@@ -72,6 +72,15 @@ Rows can carry more than one tag — biryani is (a) *your plate size* **and** (b
 - **Source tags**: **[LFAC]** *Healthy eating and carbohydrate counting — Pakistani Foods*, Ed. 1, 2024 (Life for a Child / ISPAD; BIDE + Meethi Zindagi) — **new in v3, and the ranking Pakistani source**: Pakistani, Type 1-specific, patient-facing, dietitian-compiled. Note the book's own caveat: *"The carbohydrate values mentioned in this book are estimates only as many factors can affect the amounts, for example the method of preparation etc."* (p. 23) · **[KHAN]** Khan et al. 2019 Pakistani AOAC lab study · **[USDA-SR]/[FNDDS]** USDA FoodData Central · **[CoFID]** UK McCance & Widdowson 2021 · **[SJSU]** dietitian carb-counting handout · **[IDF-DAR]** Diabetes & Ramadan guidelines · **[PK-FCT]** Pakistan FCT 2001 (energy cross-check) · **[KHI-OFFICIAL]** Karachi Commissioner tandoor weight/rate list · **[NIN]** Indian food-composition lineage · **[LIT]** peer-reviewed literature (named per row) · **[LABEL]** manufacturer label · **[LABEL-EST]** manufacturer's published estimate · **[WEAK]** tracker/recipe sites only · **[CALC]** our arithmetic from cited components.
 - **Reconciliation policy (v3):** where [LFAC] and a prior source agree, the row says so and confidence rises. Where they disagree, both values are shown — never averaged — with the recommended one named and the reason given. **Any row without an [LFAC] tag is unconfirmed by the Pakistani source.**
 - **By-difference flag**: rows resting on [KHAN] or USDA by-difference values include fibre — treat as a slight overestimate.
+- **[CoFID] is monosaccharide equivalents, not label grams — ADDED 2026-09-23.** Its own user guide
+  says to divide total carbohydrate by **1.05**, and starch by **1.10**, to get actual weights. So
+  every CoFID figure in this file runs roughly **5% above** what a packet would declare for the same
+  food, always in the over-stating direction — which for insulin is the over-dosing direction.
+  The proof is internal to the dataset: CoFID lists mints at **102.7 g per 100 g**, impossible as a
+  weight; ÷1.05 gives 97.8, which is USDA hard candy at 98.0. Found independently by two reviews.
+  **No shipped row needs changing** — all seven rows in `src/data/carbs.ts` citing CoFID carry a
+  corroborating source, so none rests on the uncorrected figure alone — but new rows should convert,
+  and say when they have.
 
 ---
 
@@ -225,7 +234,7 @@ Carbs come from onion masala, potato chunks, and thickeners (atta in nihari, bes
 |---|---|---|---|
 | Karahi, chicken/mutton | **4–17 g**, typical 6–12 [CoFID 2.5/100 g; KHAN 5.8–11.1; **LFAC cup 240 g = 10 g → 4.2/100 g, the low-mid end**] | (a); (b) gravy amount | **MED-HIGH** — was MED |
 | Korma | **7–20 g** [CoFID 4.6 vs KHAN 13.2 — thickener decides] | (a); (b) thickener | **MED-LOW** — no LFAC row |
-| **Nihari** | **CHANGED (widened down):** bowl 250 g ≈ **7–18 g** — LFAC cup 240 g = 7 g (2.9/100 g) vs KHAN 7.1/100 g. Not averaged: they are different pots — KHAN's a thick atta-laden degh, LFAC's a thinner one. The atta thickener is the whole variable; when the gravy coats the spoon, count the top end | (a) bowl; **(b) thickness — now demonstrably a 2.5× swing** | **MED** |
+| **Nihari** | bowl 250 g ≈ **7–18 g**, working range **7–13** — LFAC cup 240 g = 7 g (2.9/100 g) vs KHAN 7.1/100 g. Not averaged: they are different pots — KHAN's a thick atta-laden degh, LFAC's a thinner one. The atta thickener is the whole variable; when the gravy coats the spoon, count the top end. **2026-09-23: a proposal to cut the top to 11 was REFUSED.** It reconstructed the pot from a masala pack's stated flour weight, but used a by-difference atta value where a measured one exists, and its assumed pot yield was a free parameter — corrected, the same reconstruction lands at 10.5–12.8, at or above the proposed top. 18 g is KHAN × 250 g exactly and stays as the flagged ceiling | (a) bowl; **(b) thickness — a demonstrable 2.5× swing** | **MED** |
 | Aloo gosht | **16–17 g** [KHAN 10.8/100 g; **LFAC cup 200 g = 23 g → 11.5/100 g — agreement within 6 %**]; +8–16 g per extra potato chunk | (a); (b) potato count | **MED-HIGH** — was MED |
 | Aloo qeema | **12–18 g** [CALC] | (a); (b) potato | **MED-LOW** — no LFAC row |
 | Qeema, plain | **10 g** [KHAN 6.9/100 g] | (a) | **MED** |
@@ -242,7 +251,7 @@ Carbs come from onion masala, potato chunks, and thickeners (atta in nihari, bes
 | **Kaddu gosht** | cup 235 g = **12 g** [LFAC] (5.1/100 g) | (a); (b) | **MED** — NEW |
 | **Loki ki sabzi** | ½ cup 120 g = **7 g** [LFAC] (5.8/100 g) | (a); (b) | **MED** — NEW |
 | Daal kadu (lauki + chana daal) | **21 g** [KHAN 13.8] | (a); (b) | **MED** |
-| Kadhi (karhi pakora) | **15–30 g** [KHAN 10.3; SJSU; **LFAC ½ bowl 110 g = 18 g → 16.4/100 g, inside the band**] | (a); (b) pakora count | **MED-HIGH** — was MED |
+| Kadhi (karhi pakora) | **CHANGED (top corrected) 2026-09-23: 15–25 g**, was 15–30. The 30 was a UNIT ERROR, not a source: SJSU's figure sits under a *per US cup* heading, and a cup is not a katori — converted it is 18.8/katori, BELOW the other sources rather than above. A later edition of the same handout revises it down again. The top now rests on **LFAC ½ bowl 110 g = 18 g → 16.4/100 g → 24.6/katori**. Floor held at 15 against a proposal to lower it: KHAN 15.4 and LFAC 24.6 are the only direct measurements of this dish and both sit at or above it, and lowering a floor is the under-dosing direction | (a); (b) pakora count — a kadhi served without pakoray is nearer the floor | **MED** — was MED-HIGH; the apparent three-source agreement was partly the error itself |
 | Koftay / kofta curry | **CHANGED (widened down):** **6–12 g** [KHAN 8.1/100 g vs **LFAC cup 200 g = 8 g → 4.0/100 g**] — binder share decides; not averaged | (a); (b) binder | **MED** |
 | Chapli kabab | 100 g kabab ≈ **14 g** [KHAN 13.6 — maize binder] | (b) binder | **MED-HIGH** — no LFAC row |
 | Shami kabab | **CHANGED:** LFAC 76 g kabab = **6 g** (7.9/100 g) vs the earlier CALC 7–10 g per 60 g (12–17/100 g). **LFAC recommended** — measured Pakistani piece beats our arithmetic; the CALC over-weighted the daal share. A 60 g kabab ≈ **5 g** | (b) daal share | **MED-HIGH** — was MED-LOW |
