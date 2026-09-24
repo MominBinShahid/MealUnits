@@ -1832,17 +1832,36 @@ button:disabled { cursor: default; }
  * the one place in the app where that trade is right: the tag is an
  * EXPLANATION, never a dose, and a missed tap costs a second attempt.
  */
-.source-tag {
+.link.source-tag {
+  /*
+   * A LINK, not a button, which is Momin's own suggestion and the right one.
+   * It shipped with padding for a larger hit area and that padding made the
+   * clinical line taller and put visible gaps around each tag — "CoFID , LFAC"
+   * instead of "CoFID, LFAC". The line is dense provenance text and its height
+   * is load-bearing on a list of 339 rows.
+   *
+   * The dotted underline carries the affordance instead. §10.7's 48px floor is
+   * about controls you TAP TO ACT; this one opens an explanation, it sits
+   * inside a sentence where a 48px box cannot go, and a missed tap costs a
+   * second attempt rather than a dose.
+   *
+   * `.link.source-tag` rather than `.source-tag`: there are two `.link` blocks
+   * in this file and the later one sets `padding: 0.5rem` and
+   * `min-height: var(--touch)`. Equal specificity, later wins — so a single
+   * class here silently lost and the tag kept a 48px box inside a sentence.
+   */
   display: inline;
-  padding: 0.25rem 0.125rem;
+  padding: 0;
   color: var(--ink-2);
   text-decoration: underline dotted;
   text-underline-offset: 0.2em;
   font-size: inherit;
+  line-height: inherit;
+  vertical-align: baseline;
   min-height: 0;
 }
 
-.source-tag:hover { color: var(--mark); }
+.link.source-tag:hover { color: var(--mark); }
 
 .mine-was {
   color: var(--mark);
@@ -2147,18 +2166,20 @@ button:disabled { cursor: default; }
  * own edge and the same one the primary action is filled with, so "this is the
  * live one" reads in the vocabulary the rest of the app already speaks.
  */
+/*
+ * NO EDGE MARKER. It carried `inset 2px 0 0 0 var(--mark)`, and on a pill the
+ * inset shadow follows the rounded corner: thick crescent at the leading edge,
+ * tapering to nothing at the trailing one. Momin saw it as a teal blob bleeding
+ * down one side, and he was reading it correctly — it was a straight line drawn
+ * on a shape that has no straight side.
+ *
+ * Nothing is lost by removing it. The border is already `--mark` and the row
+ * carries an "in use" tag; a third signal for the same fact was noise, and it
+ * took a `[dir='rtl']` override with it, because `box-shadow` has no
+ * inline-axis form and the offset had to be flipped by hand for Urdu.
+ */
 .lang-row.picked {
   border-color: var(--mark);
-  box-shadow: inset 2px 0 0 0 var(--mark);
-}
-
-/*
- * `inset 2px 0` is a LOGICAL problem the shorthand cannot express: `box-shadow`
- * has no inline-axis form, so the offset is physical and would sit on the right
- * in Urdu, away from where the line starts. Flipped explicitly.
- */
-:root[dir='rtl'] .lang-row.picked {
-  box-shadow: inset -2px 0 0 0 var(--mark);
 }
 
 /*
