@@ -10,6 +10,7 @@
 import {
   DEFAULT_MODE,
   RANGE,
+  TEXT_SCALES,
 } from '../../config.js';
 import { parseField, withinHardRange, withinSoftBand } from '../../core/parse.js';
 import { modeNeedsAcknowledgement } from '../../core/round.js';
@@ -249,6 +250,7 @@ export interface SettingsHandlers {
    * and forth does not lose the one she was in the middle of comparing.
    */
   readonly onChooseLanguage: (language: Language, face: UrduFace) => void;
+  readonly onChooseTextScale: (scale: number) => void;
   readonly onConfirmUrdu: () => void;
   readonly onCancelUrdu: () => void;
   readonly ceilAcknowledged: boolean;
@@ -530,6 +532,7 @@ export function SettingsScreen({
   rebuilt,
   language,
   urduFace,
+  textScale,
   confirmingUrdu,
 }: {
   readonly draft: SettingsDraft;
@@ -553,6 +556,7 @@ export function SettingsScreen({
   readonly rebuilt: { readonly period: SettingsPeriod; readonly changedAt: string } | null;
   /** `10a` — the language in force, and the face it is set in. */
   readonly language: Language;
+  readonly textScale: number;
   readonly urduFace: UrduFace;
   /**
    * The face awaiting confirmation, or `null`.
@@ -963,6 +967,45 @@ export function SettingsScreen({
           picks one, reads the app in it, comes back and picks another; that is
           also the better test than reading one word four times.
       */}
+      {/*
+        * TEXT SIZE, above the language card and below everything that decides a
+        * dose. It is a reading aid, not a clinical setting, and the person who
+        * needs it most is the one having the hardest time reading the screen —
+        * so it sits where it can be found without scrolling past the numbers.
+        */}
+      {handlers.firstRun ? null : (
+        <div class="card">
+          <b>{COPY.textSize.label}</b>
+          <p class="hint">{COPY.textSize.hint}</p>
+          <div class="list">
+            {TEXT_SCALES.map((scale, at) => (
+              <Button
+                key={String(scale)}
+                class={`go quiet lang-row${textScale === scale ? ' picked' : ''}`}
+                aria-current={textScale === scale}
+                onPress={() => { handlers.onChooseTextScale(scale); }}
+              >
+                {/* NO PREVIEW ON THE OPTION, and the first version had one —
+                    each label set at the size it sells, via an inline style.
+                    §11.5's `style-src 'self'` blocks inline style attributes,
+                    so it would have shipped unstyled: three identical labels
+                    claiming to be three sizes. The lint rule caught it.
+
+                    Baking the sizes into CSS instead would duplicate
+                    `TEXT_SCALES` in a second place that cannot be checked
+                    against the first. The live page is the better preview
+                    anyway — tapping resizes the whole app at once, including
+                    this list, which is a truer demonstration than three static
+                    words could be. */}
+                <span class="lang-name">{COPY.textSize.sizes[at]}</span>
+                {textScale === scale
+                  ? <span class="tag in-use">{COPY.textSize.inUse}</span>
+                  : null}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
       {handlers.firstRun ? null : (
         <div class="card">
           <b>{COPY.language.label}</b>

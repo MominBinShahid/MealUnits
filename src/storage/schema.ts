@@ -79,6 +79,7 @@ export const META_KEY = {
   install: 'install',
   language: 'language',
   calibration: 'calibration',
+  display: 'display',
 } as const;
 
 /**
@@ -212,6 +213,25 @@ export interface InstallRow {
  * `urduFace` is kept even while the language is English, so switching back and
  * forth does not lose the face she was in the middle of comparing.
  */
+/**
+ * HOW LARGE THE READER WANTS THE TYPE — a display preference, not a dosing one.
+ *
+ * Its OWN meta key rather than a field on `LanguageRow`, because it is not a
+ * language fact: English can be enlarged too, and filing it under language
+ * would make that read like an oversight. `meta` is a keyed table, so a new key
+ * costs no migration — the same route `language` and `calibration` took.
+ *
+ * A row that predates this feature simply has none, and the reader gets
+ * `TEXT_SCALE_DEFAULT`. There is no "has not chosen" to distinguish here the
+ * way there is for language: not choosing a size and choosing the normal size
+ * are the same thing to a reader and to the renderer.
+ */
+export interface DisplayRow {
+  readonly key: typeof META_KEY.display;
+  /** A multiplier from `TEXT_SCALES`. Multiplies with the per-script correction. */
+  readonly textScale: number;
+}
+
 export interface LanguageRow {
   readonly key: typeof META_KEY.language;
   readonly language: Language;

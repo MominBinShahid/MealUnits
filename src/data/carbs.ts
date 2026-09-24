@@ -43,7 +43,7 @@ export type Confidence = 'high' | 'medium' | 'low';
  * though it is rice, because that is where someone would look for it.
  */
 export type Category =
-  | 'bread' | 'rice' | 'daal' | 'salan' | 'snack'
+  | 'bread' | 'rice' | 'daal' | 'salan' | 'side' | 'snack'
   | 'sweet' | 'drink' | 'fruit' | 'dairy' | 'packaged';
 
 /**
@@ -378,18 +378,40 @@ export const FOODS: readonly Food[] = [
     source: 'LABEL',
   },
   {
+    id: 'kulcha-bakery',
+    category: 'bread',
+    text: {
+      en: {
+        name: 'Kulcha, bakery, the dry chai one',
+        portion: '1 piece, about 40\u00A0g — weigh yours',
+        varies: 'No lab has ever measured this kulcha; this is the rusk family\u2019s density on a 40\u00A0g piece. The 200\u00A0g tandoor kulcha is a different bread — do not use its row for this one. Your bakery\u2019s piece weight is half the answer: weigh one.',
+      },
+      ur: {
+        name: 'کلچہ، بیکری والا سوکھا',
+        portion: '1 عدد، تقریباً 40\u00A0گرام — اپنا تول لیں',
+        varies: 'اس کلچے کو آج تک کسی لیب نے نہیں ناپا؛ یہ رسک والے خاندان کی کثافت 40\u00A0گرام کے ٹکڑے پر لگائی گئی ہے۔ 200\u00A0گرام والا تندوری کلچہ الگ روٹی ہے — اس کی لائن یہاں استعمال نہ کریں۔ آپ کی بیکری کے ٹکڑے کا وزن آدھا جواب ہے: ایک تول لیں۔',
+      },
+    },
+    roman: 'Chai kulcha',
+    aliases: ['kulcha', 'chai kulcha', 'bakery kulcha', 'peshawari kulcha', 'dry kulcha'],
+    grams: 21,
+    gramsMax: 28,
+    confidence: 'low',
+    source: 'CALC from CoFID rusk proxy, ME-converted',
+  },
+  {
     id: 'kulcha-tandoor',
     category: 'bread',
     text: {
       en: {
         name: 'Kulcha, tandoor',
         portion: '1 piece, about 200\u00A0g',
-        varies: 'Smaller 80 to 120\u00A0g kulchas are 40 to 60\u00A0g.',
+        varies: 'Smaller 80 to 120\u00A0g kulchas are 40 to 60\u00A0g. The small dry kulcha a bakery sells with chai is a different bread and a much smaller number — that is its own row.',
       },
       ur: {
         name: 'کلچہ، تندور والا',
         portion: '1 عدد، تقریباً 200\u00A0گرام',
-        varies: 'چھوٹے 80 سے 120\u00A0گرام والے کلچے 40 سے 60\u00A0گرام ہوتے ہیں۔',
+        varies: 'چھوٹے 80 سے 120\u00A0گرام والے کلچے 40 سے 60\u00A0گرام ہوتے ہیں۔ بیکری والا چھوٹا سوکھا کلچہ، جو چائے کے ساتھ ملتا ہے، الگ روٹی ہے اور اس کا عدد بہت کم — اس کی اپنی لائن ہے۔',
       },
     },
     roman: 'Kulcha',
@@ -3865,12 +3887,12 @@ export const FOODS: readonly Food[] = [
     text: {
       en: {
         name: 'Sooji ka halwa, halwa-puri shop',
-        portion: 'a quarter cup, 88\u00A0g',
+        portion: '1 small serving, 88\u00A0g',
         varies: 'The sugar-to-sooji ratio, and it is a genuine twofold spread. Breakfast halwa served with puri is this row; dawat halwa is the other one, at nearly double.',
       },
       ur: {
         name: 'سوجی کا حلوہ، ناشتے والا',
-        portion: 'چوتھائی کپ، 88\u00A0گرام',
+        portion: '1 چھوٹا حصہ، 88\u00A0گرام',
         varies: 'چینی اور سوجی کا تناسب، اور فرق سچ مچ دگنا ہے۔ پوری کے ساتھ ملنے والا ناشتے کا حلوہ یہ والا ہے؛ دعوت والا دوسری لائن ہے، تقریباً دگنے پر۔',
       },
     },
@@ -3887,12 +3909,12 @@ export const FOODS: readonly Food[] = [
     text: {
       en: {
         name: 'Sooji ka halwa, dessert or dawat',
-        portion: 'a quarter cup, 88\u00A0g',
+        portion: '1 small serving, 88\u00A0g',
         varies: 'The sugar-to-sooji ratio. Glossy, dense and very sweet is this row; the paler breakfast halwa is half of it.',
       },
       ur: {
         name: 'سوجی کا حلوہ، دعوت والا',
-        portion: 'چوتھائی کپ، 88\u00A0گرام',
+        portion: '1 چھوٹا حصہ، 88\u00A0گرام',
         varies: 'چینی اور سوجی کا تناسب۔ چمکدار، ٹھوس اور بہت میٹھا یہ والا ہے؛ پھیکا ناشتے والا اس کا آدھا ہے۔',
       },
     },
@@ -7222,5 +7244,416 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'LABEL, manufacturer website — single declaration',
+  },
+
+  // ── Added 2026-09-25: dishes whose ABSENCE was the hazard ───────────────
+  //
+  // A search that returns nothing is not read as "this has no carbohydrate",
+  // it is read as "the app does not know" — and this table's search is
+  // substring-based, so a missing dish gets answered by an accidental match.
+  // `paya` returned "Papaya, cup of cubes" at 14 g; `butter` returned butter
+  // naan at 85; `ghee` returned roghni naan at 72; `yakhni` returned meat
+  // pulao at 29; `chutney` returned a 45 g thela meal. Every one of those is
+  // the OVER-dose direction. A real row retires each, because a true match
+  // outranks a substring accident.
+  //
+  // Several are deliberately near-zero. That is the point: "do not dose for
+  // this" is an answer, and the app could not give it.
+
+  {
+    id: 'sajji',
+    category: 'salan',
+    text: {
+      en: {
+        name: 'Sajji, salt-roasted chicken or lamb',
+        portion: '1 helping, leg or quarter',
+        varies: 'Plain salted roast meat, so nothing — do not dose for this. The rice a Balochi sajji is stuffed with, or served on, is the dose: count it as the pulao row.',
+      },
+      ur: {
+        name: 'سجی، نمک لگا بھنا گوشت',
+        portion: '1 حصہ، ران یا چوتھائی',
+        varies: 'سادہ نمکین بھنا گوشت، تو کچھ نہیں — اس کے لیے انسولین نہ لگائیں۔ بلوچی سجی میں جو چاول بھرے ہوتے ہیں یا ساتھ آتے ہیں، اصل عدد وہ ہے: انہیں پلاؤ والی لائن سے گنیں۔',
+      },
+    },
+    roman: 'Sajji',
+    aliases: ['sajji', 'saji', 'balochi sajji', 'chicken sajji', 'lamb sajji', 'mutton sajji', 'namkeen gosht', 'rosh', 'namkeen rosh'],
+    grams: 0,
+    gramsMax: 4,
+    confidence: 'high',
+    source: 'CoFID, USDA protein anchors',
+  },
+  {
+    id: 'chargha',
+    category: 'salan',
+    text: {
+      en: {
+        name: 'Chargha or steam roast, quarter',
+        portion: '1 quarter of a chicken',
+        varies: 'The marinade coat and nothing else. Yogurt and spice alone is near 2; a besan or flour coat pushes toward 8. The chicken is 0. A breaded broast is its own row.',
+      },
+      ur: {
+        name: 'چرغہ یا سٹیم روسٹ، چوتھائی',
+        portion: '1 چوتھائی مرغی',
+        varies: 'صرف اوپر لگا مصالحہ، اور کچھ نہیں۔ دہی اور مصالحہ ہو تو 2 کے قریب؛ بیسن یا آٹے کا کوٹ ہو تو 8 کی طرف۔ مرغی خود 0 ہے۔ بریڈ کوٹ والا بروسٹ الگ لائن ہے۔',
+      },
+    },
+    roman: 'Chargha',
+    aliases: ['chargha', 'charga', 'chicken chargha', 'lahori chargha', 'steam roast', 'steam roast chicken'],
+    grams: 2,
+    gramsMax: 8,
+    confidence: 'low',
+    source: 'CALC from the marinade',
+  },
+  {
+    id: 'broast-quarter',
+    category: 'snack',
+    text: {
+      en: {
+        name: 'Fried chicken, broast',
+        portion: '1 quarter, leg and thigh, with the coating',
+        varies: 'The crispy coating is the whole number — the chicken under it is 0, and coating left on the plate halves it. The bun and fries beside it are their own rows.',
+      },
+      ur: {
+        name: 'فرائیڈ چکن، بروسٹ',
+        portion: '1 چوتھائی، ران اور تھائی، کوٹنگ سمیت',
+        varies: 'اوپر کی کرسپی کوٹنگ ہی پورا عدد ہے — نیچے کی مرغی 0 ہے، اور کوٹنگ پلیٹ میں چھوڑ دیں تو عدد آدھا۔ ساتھ کا بن اور فرائز الگ لائنیں ہیں۔',
+      },
+    },
+    roman: 'Broast',
+    aliases: ['broast', 'chicken broast', 'fried chicken', 'crispy chicken'],
+    grams: 15,
+    gramsMax: 22,
+    confidence: 'medium',
+    source: 'FNDDS fried coated chicken, 12.1 per 100\u00A0g',
+  },
+  {
+    id: 'jhinga',
+    category: 'salan',
+    text: {
+      en: {
+        name: 'Jhinga, prawns, plain or karahi',
+        portion: '1 helping',
+        varies: 'Prawn meat is 0. A karahi masala adds a few grams. A besan or crumb coat on fried prawns is different — count that like the fried fish row.',
+      },
+      ur: {
+        name: 'جھینگا، سادہ یا کڑاہی',
+        portion: '1 حصہ',
+        varies: 'جھینگے کا گوشت 0 ہے۔ کڑاہی کا مصالحہ چند گرام بڑھا دیتا ہے۔ تلے ہوئے جھینگوں پر بیسن یا بریڈ کرمب ہو تو بات الگ ہے — اسے تلی مچھلی والی لائن کی طرح گنیں۔',
+      },
+    },
+    roman: 'Jhinga',
+    aliases: ['jhinga', 'jheenga', 'jhinga karahi', 'prawn', 'prawns', 'prawn karahi', 'shrimp'],
+    grams: 0,
+    gramsMax: 6,
+    confidence: 'medium',
+    source: 'USDA crustaceans; CALC masala',
+  },
+  {
+    id: 'paya',
+    category: 'salan',
+    text: {
+      en: {
+        name: 'Paya, trotters',
+        portion: '1 bowl, 250\u00A0g',
+        varies: 'The atta slurry that thickens the gravy — the trotters, marrow and gelatin are 0. Gravy that runs off the spoon is near 5; gravy that coats it is near 18, the same eightfold flour spread as nihari. The naan is most of the meal\u2019s dose.',
+      },
+      ur: {
+        name: 'پائے',
+        portion: '1 پیالہ، 250\u00A0گرام',
+        varies: 'شوربے کو گاڑھا کرنے والا آٹا ہی عدد ہے — پائے، گودا اور جیلاٹن 0 ہیں۔ شوربہ چمچ سے بہہ جائے تو 5 کے قریب؛ چمچ پر جم جائے تو 18 کے قریب، نہاری والا ہی آٹھ گنا فرق۔ ساتھ کا نان ہی کھانے کا زیادہ تر عدد ہے۔',
+      },
+    },
+    roman: 'Paya',
+    aliases: ['paya', 'paaya', 'paye', 'payay', 'siri paya', 'paya curry', 'trotters'],
+    grams: 5,
+    gramsMax: 18,
+    confidence: 'low',
+    source: 'CALC from the nihari flour range and the salan pattern',
+  },
+  {
+    id: 'organ-fry',
+    category: 'salan',
+    text: {
+      en: {
+        name: 'Kat-a-kat, maghaz or gurda-kapura, dish only',
+        portion: '1 katori, 150\u00A0g',
+        varies: 'The onion-tomato masala and the splash of malai — the brain, kidneys and meat are 0. KHAN\u2019s qeema at 10 and kaleji at 15 bracket this family. The roti or naan is the dose.',
+      },
+      ur: {
+        name: 'کٹاکٹ، مغز یا گردہ کپورہ، صرف ڈش',
+        portion: '1 کٹوری، 150\u00A0گرام',
+        varies: 'پیاز ٹماٹر کا مصالحہ اور تھوڑی سی بالائی — مغز، گردے اور گوشت 0 ہیں۔ ساتھ کی روٹی یا نان ہی اصل عدد ہے۔',
+      },
+    },
+    roman: 'Kat-a-kat',
+    aliases: ['kat a kat', 'kat-a-kat', 'katakat', 'kata kat', 'taka tak', 'maghaz', 'bheja', 'brain masala', 'gurda', 'kapura', 'gurda kapura', 'ojri'],
+    grams: 5,
+    gramsMax: 15,
+    confidence: 'low',
+    source: 'CALC; KHAN qeema and kaleji bracket',
+  },
+  {
+    id: 'yakhni-soup',
+    category: 'side',
+    text: {
+      en: {
+        name: 'Yakhni, clear chicken broth',
+        portion: '1 cup, 250\u00A0ml',
+        varies: 'Clear broth is free — do not dose for it. Cornflour thickening or noodles make it the corn soup row instead. Yakhni pulao is a rice dish, not this.',
+      },
+      ur: {
+        name: 'یخنی، صاف شوربہ',
+        portion: '1 کپ، 250\u00A0ملی لیٹر',
+        varies: 'صاف شوربہ مفت ہے — اس کے لیے انسولین نہ لگائیں۔ کارن فلور سے گاڑھا کیا ہو یا نوڈلز ہوں تو وہ کارن سوپ والی لائن ہے۔ یخنی پلاؤ چاول کی ڈش ہے، یہ نہیں۔',
+      },
+    },
+    roman: 'Yakhni',
+    aliases: ['yakhni', 'chicken yakhni', 'broth', 'chicken broth', 'stock', 'soup', 'clear soup'],
+    grams: 0,
+    gramsMax: 3,
+    confidence: 'high',
+    source: 'USDA broth',
+  },
+  {
+    id: 'soup-chicken-corn',
+    category: 'side',
+    text: {
+      en: {
+        name: 'Chicken corn soup',
+        portion: '1 bowl, 250\u00A0ml',
+        varies: 'The cornflour and the sweet corn — the chicken and egg are 0. Thicker soup means more cornflour, and restaurant bowls run bigger than 250\u00A0ml.',
+      },
+      ur: {
+        name: 'چکن کارن سوپ',
+        portion: '1 پیالہ، 250\u00A0ملی لیٹر',
+        varies: 'کارن فلور اور سویٹ کارن ہی عدد ہیں — مرغی اور انڈا 0۔ سوپ جتنا گاڑھا، کارن فلور اتنا زیادہ، اور ہوٹل کے پیالے 250\u00A0ملی لیٹر سے بڑے ہوتے ہیں۔',
+      },
+    },
+    roman: 'Chicken corn soup',
+    aliases: ['chicken corn soup', 'corn soup', 'soup', 'chinese soup', 'hot and sour soup'],
+    grams: 12,
+    gramsMax: 20,
+    confidence: 'low',
+    source: 'CALC from cornflour and sweet corn',
+  },
+  {
+    id: 'salad-kachumber',
+    category: 'side',
+    text: {
+      en: {
+        name: 'Green salad, kachumber',
+        portion: '1 side plate',
+        varies: 'Cucumber, onion, tomato and lemon are free at side-plate amounts — do not dose for this. A creamy or sweet dressing is the exception.',
+      },
+      ur: {
+        name: 'سبز سلاد، کچومر',
+        portion: '1 سائیڈ پلیٹ',
+        varies: 'کھیرا، پیاز، ٹماٹر اور لیموں سائیڈ پلیٹ جتنی مقدار میں مفت ہیں — ان کے لیے انسولین نہ لگائیں۔ کریم والی یا میٹھی ڈریسنگ اس سے الگ ہے۔',
+      },
+    },
+    roman: 'Salad',
+    aliases: ['salad', 'salaad', 'green salad', 'kachumber', 'kachumbar', 'kheera', 'cucumber', 'tamatar', 'onion salad'],
+    grams: 0,
+    gramsMax: 5,
+    confidence: 'high',
+    source: 'USDA vegetables',
+  },
+  {
+    id: 'achar',
+    category: 'side',
+    text: {
+      en: {
+        name: 'Achar, pickle',
+        portion: '1 spoonful beside the plate',
+        varies: 'Oil, salt and spice — free at pickle amounts. A sweet murabba or chhundo is sugar, and that is the murabba row.',
+      },
+      ur: {
+        name: 'اچار',
+        portion: 'پلیٹ کے ساتھ 1 چمچ',
+        varies: 'تیل، نمک اور مصالحہ — اچار جتنی مقدار میں مفت۔ میٹھا مربہ یا چھندو چینی ہے، وہ مربے والی لائن ہے۔',
+      },
+    },
+    roman: 'Achar',
+    aliases: ['achar', 'achaar', 'aachar', 'pickle', 'mango pickle', 'mixed pickle', 'lemon pickle'],
+    grams: 0,
+    gramsMax: 2,
+    confidence: 'high',
+    source: 'USDA, CoFID pickles',
+  },
+  {
+    id: 'chutney-hari',
+    category: 'side',
+    text: {
+      en: {
+        name: 'Hari chutney, green',
+        portion: '2 tablespoons',
+        varies: 'Podina, dhania, chili and dahi are all near-free. If it tastes sweet the shop added sugar or imli — that is the meethi chutney row.',
+      },
+      ur: {
+        name: 'ہری چٹنی',
+        portion: '2 کھانے کے چمچ',
+        varies: 'پودینہ، دھنیا، مرچ اور دہی سب تقریباً مفت ہیں۔ میٹھی لگے تو دکان نے چینی یا املی ڈالی ہے — وہ میٹھی چٹنی والی لائن ہے۔',
+      },
+    },
+    roman: 'Hari chutney',
+    aliases: ['chutney', 'hari chutney', 'green chutney', 'podina chutney', 'mint chutney', 'dhania chutney'],
+    grams: 1,
+    gramsMax: 3,
+    confidence: 'high',
+    source: 'USDA components',
+  },
+  {
+    id: 'chutney-meethi',
+    category: 'side',
+    text: {
+      en: {
+        name: 'Meethi chutney, imli',
+        portion: '1 tablespoon, 20\u00A0g',
+        varies: 'Sugar, gur and imli — the one chutney that counts. Thela chaat usually comes with two or three spoons of it, and the chaat rows already carry one.',
+      },
+      ur: {
+        name: 'میٹھی چٹنی، املی والی',
+        portion: '1 کھانے کا چمچ، 20\u00A0گرام',
+        varies: 'چینی، گڑ اور املی — یہی ایک چٹنی ہے جو گنی جاتی ہے۔ ٹھیلے کی چاٹ کے ساتھ عموماً دو تین چمچ آتے ہیں، اور چاٹ والی لائنوں میں ایک چمچ پہلے سے شامل ہے۔',
+      },
+    },
+    roman: 'Meethi chutney',
+    aliases: ['chutney', 'meethi chutney', 'imli chutney', 'tamarind chutney', 'khatti meethi chutney', 'sonth'],
+    grams: 5,
+    gramsMax: 10,
+    confidence: 'medium',
+    source: 'CALC; matches the +5 to +10 the chaat rows already use',
+  },
+  {
+    id: 'malai',
+    category: 'dairy',
+    text: {
+      en: {
+        name: 'Malai, cream',
+        portion: '2 tablespoons, 30\u00A0g',
+        varies: 'Free by itself — it is nearly all fat. Malai with sugar on it is the sugar\u2019s line, 4.2 a spoon. Ras malai is a sweet, not this.',
+      },
+      ur: {
+        name: 'بالائی',
+        portion: '2 کھانے کے چمچ، 30\u00A0گرام',
+        varies: 'اکیلی ہو تو مفت — یہ تقریباً ساری چکنائی ہے۔ اوپر چینی ڈالی ہو تو وہ چینی کا عدد ہے، فی چمچ 4.2۔ رس ملائی مٹھائی ہے، یہ نہیں۔',
+      },
+    },
+    roman: 'Malai',
+    aliases: ['malai', 'balai', 'cream', 'fresh cream'],
+    grams: 1,
+    gramsMax: 2,
+    confidence: 'high',
+    source: 'USDA cream',
+  },
+  {
+    id: 'butter-ghee-oil',
+    category: 'dairy',
+    text: {
+      en: {
+        name: 'Butter, ghee or oil',
+        portion: 'Any amount',
+        varies: 'Zero at any amount — fat changes how fast a meal lands, not its carbohydrate. Do not dose for these.',
+      },
+      ur: {
+        name: 'مکھن، گھی یا تیل',
+        portion: 'کوئی بھی مقدار',
+        varies: 'کتنی بھی مقدار ہو، 0 — چکنائی یہ بدلتی ہے کہ کھانا کتنی جلدی اثر کرے گا، اس کا کاربوہائیڈریٹ نہیں۔ ان کے لیے انسولین نہ لگائیں۔',
+      },
+    },
+    roman: 'Makhan',
+    aliases: ['makhan', 'butter', 'ghee', 'desi ghee', 'oil', 'cooking oil', 'banaspati', 'margarine', 'blue band'],
+    grams: 0,
+    gramsMax: null,
+    confidence: 'high',
+    source: 'USDA',
+  },
+  {
+    id: 'bread-brown',
+    category: 'bread',
+    text: {
+      en: {
+        name: 'Bread slice, brown or wholemeal',
+        portion: '1 slice, about 30\u00A0g',
+        varies: 'Nearly the same as white — a slice is 11 to 14 against white\u2019s 13 to 15. The fibre slows the rise; it does not remove the grams. A bakery\u2019s "diabetic" loaf is this row unless its packet says otherwise — read the packet.',
+      },
+      ur: {
+        name: 'براؤن یا چکی کے آٹے کا بریڈ سلائس',
+        portion: '1 سلائس، تقریباً 30\u00A0گرام',
+        varies: 'سفید بریڈ سے تقریباً برابر — ایک سلائس 11 سے 14، سفید کی 13 سے 15 کے مقابلے میں۔ ریشہ شوگر چڑھنے کی رفتار کم کرتا ہے، گرام کم نہیں کرتا۔ بیکری کا «ذیابیطس والا» بریڈ بھی یہی لائن ہے، جب تک ڈبے پر کچھ اور نہ لکھا ہو — ڈبہ پڑھ لیں۔',
+      },
+    },
+    roman: 'Brown bread',
+    aliases: ['brown bread', 'bran bread', 'wholemeal bread', 'whole wheat bread', 'wholewheat bread', 'diabetic bread', 'brown double roti'],
+    grams: 11,
+    gramsMax: 14,
+    confidence: 'medium',
+    source: 'USDA-SR 172688; CoFID wholemeal; the atta-bread anchor agrees',
+  },
+  {
+    id: 'dalia',
+    category: 'rice',
+    text: {
+      en: {
+        name: 'Dalia, broken wheat porridge',
+        portion: '1 bowl, 250\u00A0ml, milk and 2 sugars',
+        varies: 'The dry grain is the number: about 25\u00A0g dry is 16 to 19\u00A0g before anything else. Milk adds 5 per 100\u00A0ml, each spoon of sugar 4.2. Namkeen dalia in water is just the grain. Weigh the dry dalia once: grams \u00d7 0.65.',
+      },
+      ur: {
+        name: 'دلیہ',
+        portion: '1 پیالہ، 250\u00A0ملی لیٹر، دودھ اور 2 چمچ چینی',
+        varies: 'سوکھا دانہ ہی عدد ہے: تقریباً 25\u00A0گرام سوکھا دلیہ کسی چیز سے پہلے 16 سے 19\u00A0گرام ہے۔ دودھ فی 100\u00A0ملی لیٹر 5 بڑھاتا ہے، چینی کا ہر چمچ 4.2۔ پانی میں بنا نمکین دلیہ صرف دانہ ہے۔ سوکھا دلیہ ایک بار تول لیں: گرام کو 0.65 سے ضرب دیں۔',
+      },
+    },
+    roman: 'Dalia',
+    aliases: ['dalia', 'daliya', 'dalya', 'broken wheat', 'porridge', 'meetha dalia', 'namkeen dalia'],
+    grams: 30,
+    gramsMax: 40,
+    confidence: 'low',
+    source: 'CALC from USDA bulgur, milk and sugar',
+  },
+  {
+    id: 'oats-porridge',
+    category: 'packaged',
+    text: {
+      en: {
+        name: 'Oats, porridge',
+        portion: 'half a cup dry, 40\u00A0g, before milk',
+        varies: 'Weigh the dry oats, and the packet\u2019s own panel beats this row. Milk adds 5 per 100\u00A0ml and each spoon of sugar 4.2. The top of this row includes fibre — a slight overestimate.',
+      },
+      ur: {
+        name: 'اوٹس، دلیہ',
+        portion: 'آدھا کپ سوکھا، 40\u00A0گرام، دودھ سے پہلے',
+        varies: 'سوکھے اوٹس تول لیں، اور ڈبے پر لکھا عدد اس لائن سے بہتر ہے۔ دودھ فی 100\u00A0ملی لیٹر 5 بڑھاتا ہے اور چینی کا ہر چمچ 4.2۔ اس لائن کا اوپر والا عدد ریشہ بھی گن رہا ہے — تھوڑا زیادہ ہے۔',
+      },
+    },
+    roman: 'Oats',
+    aliases: ['oats', 'oatmeal', 'porridge', 'quaker'],
+    grams: 24,
+    gramsMax: 27,
+    confidence: 'medium',
+    source: 'USDA-SR Quaker quick oats 68.2 per 100\u00A0g; labels near 60',
+  },
+  {
+    id: 'cornflakes',
+    category: 'packaged',
+    text: {
+      en: {
+        name: 'Cornflakes',
+        portion: '1 bowl, 30\u00A0g flakes, without milk',
+        varies: 'Weigh the flakes once — bowls pour anywhere from 30 to 60\u00A0g. Milk on top adds 5 per 100\u00A0ml. Frosted or honey flakes run a third higher: read that packet.',
+      },
+      ur: {
+        name: 'کارن فلیکس',
+        portion: '1 پیالہ، 30\u00A0گرام فلیکس، دودھ کے بغیر',
+        varies: 'فلیکس ایک بار تول لیں — پیالے میں 30 سے 60\u00A0گرام تک آ جاتے ہیں۔ اوپر ڈالا دودھ فی 100\u00A0ملی لیٹر 5 بڑھاتا ہے۔ فراسٹڈ یا شہد والے فلیکس ایک تہائی زیادہ ہوتے ہیں: وہ ڈبہ پڑھ لیں۔',
+      },
+    },
+    roman: 'Cornflakes',
+    aliases: ['cornflakes', 'corn flakes', 'cereal', 'breakfast cereal', 'kelloggs'],
+    grams: 25,
+    gramsMax: 27,
+    confidence: 'high',
+    source: 'USDA-SR corn flakes 88 per 100\u00A0g; labels agree',
   },
 ];

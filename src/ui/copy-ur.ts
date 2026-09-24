@@ -301,7 +301,7 @@ export const COPY_UR: Copy = {
      * estimates of a plate nobody weighed.
      */
     intro:
-      'یہ اندازے ہیں، آپ کی پلیٹ کی پیمائش نہیں۔ نمبر پڑھیں، پھر خود ٹائپ کریں — یہاں کوئی چیز آپ کے لیے خانہ نہیں بھرتی۔',
+      'یہ اندازے ہیں، آپ کی پلیٹ کی پیمائش نہیں۔ یہاں ہر عدد ایک حصے کا کاربوہائیڈریٹ ہے — اور جہاں وزن دیا ہو، وہ ہمیشہ اُس چیز کے بعد آتا ہے جس میں کھانا ہے: «1 کٹوری، 150\u00A0گرام»۔',
     searchLabel: 'کھانا تلاش کریں',
     /**
      * Read aloud, never seen: the control it names is a `×`. §10.2's rule about
@@ -330,9 +330,10 @@ export const COPY_UR: Copy = {
     confidenceLabel: { high: 'اچھی طرح معلوم', medium: 'کم زیادہ ہوتا ہے', low: 'ٹھیک سے ناپا نہیں گیا' } as const,
     categoryLabel: {
       bread: 'روٹی، نان اور بریڈ',
-      rice: 'چاول کے کھانے',
+      rice: 'چاول اور اناج کے کھانے',
       daal: 'دال',
       salan: 'سالن اور کڑھی',
+      side: 'سوپ، سلاد اور ساتھ کی چیزیں',
       snack: 'اسنیکس اور بازار کا کھانا',
       sweet: 'مٹھائی اور میٹھا',
       drink: 'مشروبات',
@@ -402,6 +403,21 @@ export const COPY_UR: Copy = {
     foodName: (display: string, roman: string): string => `${display} (${isolate(roman)})`,
     variesPrefix: 'کم زیادہ: ',
     sourcePrefix: 'حوالہ: ',
+    sourceTitle: 'یہ عدد کہاں سے آیا',
+    // Institution names, the book's title and the tags themselves stay in
+    // Latin, per docs/URDU.md ruling 2: a name whose job is to match something
+    // the reader can go and find stays in that thing's script. A transliterated
+    // "FoodData Central" would name nothing anyone could look up.
+    sourceMeaning: {
+      LFAC: 'LFAC — ٹائپ\u00A01 ذیابیطس والے بچوں اور بڑوں کے لیے صحت مند کھانا اور کاربوہائیڈریٹ گننا: پاکستانی کھانے، ایڈیشن\u00A01، 2024۔ Life for a Child (Diabetes Australia) اور ISPAD، BIDE اور میٹھی زندگی کے ساتھ مل کر۔ یہاں کا سب سے معتبر پاکستانی ماخذ: پاکستانی کھانے، خاص ٹائپ\u00A01 کے لیے، ماہرینِ غذا نے مریضوں کے لیے لکھا۔ کتاب خود کہتی ہے کہ یہ اعداد اندازے ہیں، کیونکہ پکانے کا طریقہ انہیں بدل دیتا ہے۔',
+      CoFID: 'CoFID — McCance and Widdowson، برطانیہ کا غذائی اجزاء کا مجموعہ، 2021۔ لیبارٹری کے تجزیے۔ اس میں کاربوہائیڈریٹ monosaccharide equivalents میں لکھا ہوتا ہے، اس لیے یہاں آنے سے پہلے ہر عدد تبدیل کیا جاتا ہے۔',
+      CALC: 'CALC — ہمارا اپنا حساب، ایسے اجزاء سے جن کا اپنا ماخذ موجود ہے۔ یہ ڈش کی پیمائش نہیں۔ جن لائنوں پر یہ لکھا ہے، انہیں اپنے کچن میں پرکھنا سب سے زیادہ فائدہ مند ہے۔',
+      USDA: 'USDA — FoodData Central، امریکی محکمۂ زراعت۔ سادہ کھانوں کے لیبارٹری تجزیے۔',
+      'USDA-SR': 'USDA-SR — FoodData Central کے Standard Reference جدول۔ لیبارٹری تجزیے، USDA کے سب سے پرانے اور مستند سیٹ۔',
+      KHAN: 'KHAN — خان اور ساتھیوں کا 2019 کا پاکستانی لیبارٹری مطالعہ، AOAC طریقوں سے۔ بہت کم پاکستانی کھانوں کا کبھی لیبارٹری میں تجزیہ ہوا ہے؛ یہ اُن میں سے ہیں۔',
+      FNDDS: 'FNDDS — USDA FoodData Central کا وہ حصہ جو پکے ہوئے کھانوں کا ہے، کچے اجزاء کا نہیں۔',
+      NIN: 'NIN — انڈین غذائی جدول، National Institute of Nutrition۔ وہاں استعمال ہوتا ہے جہاں ڈش سرحد کے دونوں طرف ایک ہی ہے اور کوئی پاکستانی تجزیہ موجود نہیں۔',
+    } as const,
     /**
      * The single highest-value thing on the screen. One kitchen-scale reading
      * settles every bread row for that household, which no amount of table
@@ -2043,6 +2059,12 @@ export const COPY_UR: Copy = {
    * reading Urdu to do it. A second key named `backToEnglish` held the same
    * three letters for a day and was never rendered — one string, one place.
    */
+  textSize: {
+    label: 'لکھائی کا سائز',
+    hint: 'اس سے پوری ایپ کی لکھائی بڑی ہوتی ہے، صرف اس اسکرین کی نہیں۔',
+    sizes: ['عام', 'بڑی', 'سب سے بڑی'] as const,
+    inUse: 'استعمال میں',
+  },
   language: {
     label: 'زبان',
     english: 'English',

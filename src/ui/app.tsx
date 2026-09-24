@@ -17,6 +17,7 @@ import {
   JSON_INDENT,
   MS_PER_MINUTE,
   RANGE,
+  TEXT_SCALE_DEFAULT,
 } from '../config.js';
 import { deriveBandEFullCardShownRecently, deriveHistory } from '../core/history.js';
 import { evaluateCarbAdvisory } from '../core/baseline.js';
@@ -38,15 +39,16 @@ import {
   acknowledge,
   appendInjection,
   appendReading,
+  clearCalibration,
   clearTheRecord,
   commitSettings,
   deleteLogRow,
   deleteReading,
   readAll,
   recordJsonExport,
-  writeDosingHistory,
-  clearCalibration,
   writeCalibration,
+  writeDisplay,
+  writeDosingHistory,
   writeLanguage,
 } from '../storage/repo.js';
 import type { StoredState } from '../storage/repo.js';
@@ -135,7 +137,7 @@ interface ViewState {
   foodQuery: string;
   /**
    * Which food group is open, or null for all closed. ONE at a time, and that
-   * is the whole mechanism: 319 rows is 63 phone screens, and the biggest
+   * is the whole mechanism: 320 rows is 63 phone screens, and the biggest
    * single group is 47 rows. Allowing two open would already be worse than any
    * screen in the app.
    *
@@ -442,13 +444,28 @@ export async function start(host: Host): Promise<void> {
    * unchanged, and a diff here would be a cache to keep in step with the DOM
    * for no measurable gain.
    */
-  function applyDocumentAttributes(language: Language, face: UrduFace): void {
+  function applyDocumentAttributes(
+    language: Language,
+    face: UrduFace,
+    textScale: number,
+  ): void {
     const root = host.root.ownerDocument.documentElement;
     const attributes = documentAttributes(language, face);
     root.lang = attributes.lang;
     root.dir = attributes.dir;
     if (attributes.face === null) delete root.dataset['urduFace'];
     else root.dataset['urduFace'] = attributes.face;
+    /*
+     * The reader's size, as an inline custom property on the root. Everything
+     * in the stylesheet is in `rem`, so this one value moves the whole
+     * interface together and no screen is hand-tuned.
+     *
+     * It MULTIPLIES with `--script-scale`, which `fonts-urdu.css` sets per Urdu
+     * face because Nastaliq paints smaller than Latin at the same nominal size.
+     * Choosing Urdu and choosing larger type therefore compose rather than one
+     * overriding the other.
+     */
+    root.style.setProperty('--text-scale', String(textScale));
   }
   let recovery: RecoveryBlock | null = null;
 
@@ -1137,6 +1154,7 @@ export async function start(host: Host): Promise<void> {
           storageDurable={storageDurable}
           language={stored?.languageChoice?.language ?? DEFAULT_LANGUAGE}
           urduFace={stored?.languageChoice?.urduFace ?? DEFAULT_FACE}
+          textScale={stored?.display?.textScale ?? TEXT_SCALE_DEFAULT}
           confirmingUrdu={view.confirmingUrdu}
           storageWarningOff={stored?.acks.has(ackKeys.storageEviction) ?? false}
           onStopStorageWarning={() => {
@@ -1164,6 +1182,23 @@ export async function start(host: Host): Promise<void> {
            * needs a caution, and putting one there would sit between a reader
            * and the language they can definitely read.
            */
+          /*
+           * Applied to the document at once, then written. A reader who cannot
+           * read the screen should not wait on a database round trip to learn
+           * whether the tap worked — and if the write fails, the next refresh
+           * puts the stored value back, which is the honest behaviour.
+           */
+          onChooseTextScale: (scale: number): void => {
+            applyDocumentAttributes(
+              stored?.languageChoice?.language ?? DEFAULT_LANGUAGE,
+              stored?.languageChoice?.urduFace ?? DEFAULT_FACE,
+              scale,
+            );
+            guardConnectedWrite(async (connection) => {
+              await writeDisplay(connection, { textScale: scale });
+              return refresh();
+            });
+          },
           onChooseLanguage: (language, face) => {
             const current = stored?.languageChoice?.language ?? DEFAULT_LANGUAGE;
             if (language === 'ur' && current !== 'ur') {
@@ -1388,6 +1423,7 @@ export async function start(host: Host): Promise<void> {
             editingMine={view.editingMine}
             mineDraft={view.mineDraft}
             timeZone={host.timeZone}
+            onTerm={(key: string): void => { view.glossaryTerm = key; render(); }}
             onEditMine={(id: string | null): void => {
               view.editingMine = id;
               // Seeded from what is already saved, so opening the box on a
@@ -1738,7 +1774,11 @@ export async function start(host: Host): Promise<void> {
       copy = next;
       host.onCopy?.(copy);
     }
-    applyDocumentAttributes(language, stored?.languageChoice?.urduFace ?? DEFAULT_FACE);
+    applyDocumentAttributes(
+      language,
+      stored?.languageChoice?.urduFace ?? DEFAULT_FACE,
+      stored?.display?.textScale ?? TEXT_SCALE_DEFAULT,
+    );
 
     if (!settled && state.screen === 'calculator') {
       settled = true;

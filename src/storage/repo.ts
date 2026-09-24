@@ -30,10 +30,11 @@ import {
 import type {
   AckRow,
   BackupRow,
+  CalibrationRow,
+  DisplayRow,
   DosingHistoryRow,
   EnvelopeRow,
   InstallRow,
-  CalibrationRow,
   LanguageRow,
   LogRevisionRow,
   RecoveryBlock,
@@ -105,6 +106,8 @@ export interface StoredState {
   readonly languageChoice: LanguageRow | null;
   /** Phase 2 — the reader's own grams per food, or null if they have set none. */
   readonly calibration: CalibrationRow | null;
+  /** How large the reader asked for the type, or null if they never asked. */
+  readonly display: DisplayRow | null;
 }
 
 /** One read of everything the reducer needs, in one transaction. */
@@ -116,7 +119,7 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
     async (tx) => {
       const [
         settingsRow, history, log, readings, acks, revision, install, dosing, backup,
-        language, calibration,
+        language, calibration, display,
       ] =
         await Promise.all([
           get<SettingsRow>(tx, STORE.settings, SETTINGS_KEY),
@@ -130,6 +133,7 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
           get<BackupRow>(tx, STORE.meta, META_KEY.backup),
           get<LanguageRow>(tx, STORE.meta, META_KEY.language),
           get<CalibrationRow>(tx, STORE.meta, META_KEY.calibration),
+          get<DisplayRow>(tx, STORE.meta, META_KEY.display),
         ]);
 
       const settings: Settings | null =
@@ -209,6 +213,11 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
         // three states of its own and defaults to the one that keeps asking.
         languageChoice: language ?? null,
         calibration: calibration ?? null,
+        // A reader who has never opened the setting has no row, and the
+        // interface supplies TEXT_SCALE_DEFAULT. Unlike language, there is no
+        // distinction to preserve: not choosing a size and choosing the normal
+        // size are the same thing to a reader and to the renderer.
+        display: display ?? null,
       } satisfies StoredState;
     },
   );
@@ -636,6 +645,15 @@ export function writeCalibration(
 export function clearCalibration(db: IDBDatabase): Promise<IDBValidKey> {
   return runTransaction(db, [STORE.meta], 'readwrite', (tx) =>
     put(tx, STORE.meta, { key: META_KEY.calibration, foods: {} } satisfies CalibrationRow),
+  );
+}
+
+export function writeDisplay(
+  db: IDBDatabase,
+  row: Omit<DisplayRow, 'key'>,
+): Promise<IDBValidKey> {
+  return runTransaction(db, [STORE.meta], 'readwrite', (tx) =>
+    put(tx, STORE.meta, { ...row, key: META_KEY.display } satisfies DisplayRow),
   );
 }
 
