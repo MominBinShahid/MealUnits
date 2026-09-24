@@ -1678,6 +1678,12 @@ button:disabled { cursor: default; }
   display: grid;
   gap: 0.125rem;
   justify-items: center;
+  /* GRAM FIGURES ON ONE LINE ACROSS THE ROW. A picked cell carries a count
+     underneath, an unpicked one does not, and with the default alignment the
+     lone figure centred itself in the taller box — so "41 g" sat lower than the
+     "54 g" beside it for no reason a reader could see. Pinned to the top, the
+     numbers line up and only the count hangs below. */
+  align-content: start;
   min-width: 3.75rem;
   min-height: var(--touch);
   width: 100%;
@@ -1739,7 +1745,14 @@ button:disabled { cursor: default; }
 
 /*
  * The minus is MARKED as the one that takes something away. Momin asked for
- * red so it reads as removal before it is tapped rather than after.
+ * red so it reads as removal before it is tapped rather than after, and then —
+ * seeing one red minus in the matrix strip and a grey one on the food row
+ * below it — asked for the same rule everywhere: "let's make the UI
+ * consistent". Every minus that removes something from the tally is this one.
+ *
+ * The dose stepper on the result screen is deliberately NOT this. Half a unit
+ * less is not a removal, it is a smaller dose, and colouring it like a delete
+ * would say the wrong thing about the most consequential control in the app.
  *
  * `--halt`, OUTLINE ONLY — border and glyph, never a fill. This app spends red
  * on medical stops (band E, a meter reading HI), and a filled red button here

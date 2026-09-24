@@ -2,12 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { asksAboutSugarFree, matchFoods } from '../src/core/foods.js';
 import type { Searchable } from '../src/core/foods.js';
 import { FOODS } from '../src/data/carbs.js';
+import type { Food } from '../src/data/carbs.js';
 import { IN_A_MATRIX, MATRICES } from '../src/ui/matrices.js';
 
-const ROTI: Searchable = { name: 'Home flatbread, medium', roman: 'Roti', aliases: ['roti', 'chapati', 'chappati'] };
-const NAAN: Searchable = { name: 'Tandoor naan, small tier', roman: 'Naan', aliases: ['naan', 'nan'] };
-const QEEMA: Searchable = { name: 'Mince samosa', roman: 'Qeema samosa', aliases: ['keema samosa', 'kheema samosa'] };
+const ROTI: Searchable = { text: { en: { name: 'Home flatbread, medium' } }, roman: 'Roti', aliases: ['roti', 'chapati', 'chappati'] };
+const NAAN: Searchable = { text: { en: { name: 'Tandoor naan, small tier' } }, roman: 'Naan', aliases: ['naan', 'nan'] };
+const QEEMA: Searchable = { text: { en: { name: 'Mince samosa' } }, roman: 'Qeema samosa', aliases: ['keema samosa', 'kheema samosa'] };
 const ALL = [ROTI, NAAN, QEEMA];
+
+/** A row's English name. The table keys text by language; search reads English. */
+const nameOf = (food: Food): string => food.text.en.name;
+/** A row's Urdu name — what Momin's mother reviews. */
+const urduOf = (food: Food): string => food.text.ur.name;
 
 describe('searching the carbohydrate reference', () => {
   it('an empty query returns everything, because the screen opens before anything is typed', () => {
@@ -177,10 +183,10 @@ describe('the shipped table — §11.8\'s exemption conditions, as tests', () =>
   // That is deliberate: with `name` and `roman` identical, `some` and `every`
   // behave the same over the field list and three mutants survive — which is
   // exactly what the gate reported on the first attempt.
-  const SUBSTRING: Searchable = { name: 'Zrotix', roman: 'Qorma', aliases: ['bread'] };
-  const WORD_START: Searchable = { name: 'Moti roti', roman: 'Ghar ki', aliases: ['bread'] };
-  const PREFIX: Searchable = { name: 'Roti, thin', roman: 'Patli', aliases: ['bread'] };
-  const EXACT: Searchable = { name: 'Roti', roman: 'Phulka', aliases: ['bread'] };
+  const SUBSTRING: Searchable = { text: { en: { name: 'Zrotix' } }, roman: 'Qorma', aliases: ['bread'] };
+  const WORD_START: Searchable = { text: { en: { name: 'Moti roti' } }, roman: 'Ghar ki', aliases: ['bread'] };
+  const PREFIX: Searchable = { text: { en: { name: 'Roti, thin' } }, roman: 'Patli', aliases: ['bread'] };
+  const EXACT: Searchable = { text: { en: { name: 'Roti' } }, roman: 'Phulka', aliases: ['bread'] };
   const ADVERSE = [SUBSTRING, WORD_START, PREFIX, EXACT];
 
   it('orders exact, then prefix, then word-start, then substring', () => {
@@ -209,7 +215,7 @@ describe('the shipped table — §11.8\'s exemption conditions, as tests', () =>
     for (const q of queries) {
       const got = [...matchFoods(FOODS, q)].map((f) => f.id).sort();
       const expected = FOODS.filter((f) =>
-        [f.name, f.roman, ...f.aliases].some((v) =>
+        [nameOf(f), f.roman, ...f.aliases].some((v) =>
           v.replace(/\u00A0/g, ' ').trim().toLowerCase().includes(q.trim().toLowerCase())))
         .map((f) => f.id).sort();
       expect(got, `"${q}" changed which rows match`).toEqual(expected);
@@ -285,13 +291,13 @@ describe('the shipped table — §11.8\'s exemption conditions, as tests', () =>
     //
     // Asserting the PROPERTY instead of an example is both stronger and
     // order-independent: whatever is printed on the row must find the row.
-    const rows = FOODS.filter((f) => f.name.includes('\u00A0'));
+    const rows = FOODS.filter((f) => nameOf(f).includes('\u00A0'));
     expect(rows.length, 'no row carries a no-break space — retarget this test').toBeGreaterThan(0);
     for (const row of rows) {
       // Typed with an ordinary space, which is all anyone can type...
-      expect(matchFoods(FOODS, row.name.replace(/\u00A0/g, ' ')), row.id).toContain(row);
+      expect(matchFoods(FOODS, nameOf(row).replace(/\u00A0/g, ' ')), row.id).toContain(row);
       // ...and with the character itself, so neither spelling is privileged.
-      expect(matchFoods(FOODS, row.name), row.id).toContain(row);
+      expect(matchFoods(FOODS, nameOf(row)), row.id).toContain(row);
     }
   });
 
@@ -299,7 +305,7 @@ describe('the shipped table — §11.8\'s exemption conditions, as tests', () =>
     // The general form of the case above: whatever a row displays, typing it
     // finds the row. Guards the next name that gains a no-break space.
     for (const food of FOODS) {
-      const asDisplayed = food.name.replace(/\u00A0/g, ' ');
+      const asDisplayed = nameOf(food).replace(/\u00A0/g, ' ');
       expect(matchFoods(FOODS, asDisplayed), food.id).toContain(food);
     }
   });
@@ -344,7 +350,7 @@ describe('the matrices — a family whose two axes are both real variables', () 
     for (const id of IN_A_MATRIX) {
       const food = FOODS.find((f) => f.id === id);
       if (food === undefined) continue;
-      expect(matchFoods(FOODS, food.name).map((f) => f.id), `${id} is unreachable by search`)
+      expect(matchFoods(FOODS, nameOf(food)).map((f) => f.id), `${id} is unreachable by search`)
         .toContain(id);
     }
   });
@@ -353,8 +359,8 @@ describe('the matrices — a family whose two axes are both real variables', () 
 describe('the Urdu names — display only, and every one distinct', () => {
   it('every row has one, and it is Urdu script', () => {
     for (const food of FOODS) {
-      expect(food.script.length, `${food.id} has no Urdu name`).toBeGreaterThan(0);
-      expect(/[؀-ۿ]/.test(food.script), `${food.id} carries no Urdu letters`).toBe(true);
+      expect(urduOf(food).length, `${food.id} has no Urdu name`).toBeGreaterThan(0);
+      expect(/[؀-ۿ]/.test(urduOf(food)), `${food.id} carries no Urdu letters`).toBe(true);
     }
   });
 
@@ -375,7 +381,7 @@ describe('the Urdu names — display only, and every one distinct', () => {
       .replace(/[\u200B-\u200F\uFEFF\u060C,.\s]/g, '');
     const seen = new Map<string, string>();
     for (const food of FOODS) {
-      const key = fold(food.script);
+      const key = fold(urduOf(food));
       const first = seen.get(key);
       expect(first, `${food.id} and ${String(first)} read the same in Urdu`).toBeUndefined();
       seen.set(key, food.id);
@@ -386,7 +392,7 @@ describe('the Urdu names — display only, and every one distinct', () => {
     // Urdu-Indic digits appear nowhere in this app, and a food name is exactly
     // where they would creep in.
     for (const food of FOODS) {
-      expect(/[۰-۹٠-٩]/.test(food.script), food.id).toBe(false);
+      expect(/[۰-۹٠-٩]/.test(urduOf(food)), food.id).toBe(false);
     }
   });
 
@@ -396,7 +402,7 @@ describe('the Urdu names — display only, and every one distinct', () => {
     // is a name that did not get translated.
     const BRANDS = /^(Cadbury|Dairy|Milk|Caramel|KitKat|Lindt|Excellence|Loacker|Nido|Dawn|Sooper|Rooh|Afza|Royal|Special|Yaadgaar)$/;
     for (const food of FOODS) {
-      for (const word of food.script.match(/[A-Za-z][A-Za-z0-9%-]*/g) ?? []) {
+      for (const word of urduOf(food).match(/[A-Za-z][A-Za-z0-9%-]*/g) ?? []) {
         expect(BRANDS.test(word), `${food.id} has untranslated Latin: ${word}`).toBe(true);
       }
     }
@@ -454,7 +460,61 @@ describe('a search for sugar-free gets an answer, not an absence', () => {
     // If a sugar-free sweet ever gains a row, this fails — and it should, so
     // that the figure and the explanation are reconsidered together.
     for (const food of FOODS) {
-      expect(/sugar[- ]?free/i.test(food.name), food.id).toBe(false);
+      expect(/sugar[- ]?free/i.test(nameOf(food)), food.id).toBe(false);
+    }
+  });
+});
+
+describe('the language map — what T28 said would eventually be needed', () => {
+  // The shape changed from four flat fields (`name`, `script`, `portion`,
+  // `varies`) to `text` keyed by language, on the day the Urdu portions and
+  // varies notes arrived — the one moment all 319 rows were being rewritten
+  // anyway. What follows is the promise that migration was allowed on.
+
+  it('every row speaks both languages, with nothing left blank', () => {
+    for (const food of FOODS) {
+      for (const [lang, text] of Object.entries(food.text)) {
+        expect(text.name.length, `${food.id} has no ${lang} name`).toBeGreaterThan(0);
+        expect(text.portion.length, `${food.id} has no ${lang} portion`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('a row says it varies in both languages or in neither', () => {
+    // `varies` is the honest caveat about what moves the number. A row that
+    // carries one in English and null in Urdu would quietly drop the caveat for
+    // the reader least able to supply it themselves.
+    for (const food of FOODS) {
+      expect(food.text.ur.varies === null, `${food.id} disagrees on varies`)
+        .toBe(food.text.en.varies === null);
+    }
+  });
+
+  it('the Urdu portion keeps every WEIGHT the English one states', () => {
+    // A translation may change every word and no measurement. The portion line
+    // is where a weight reaches the reader, and one saying 150 in one language
+    // and 120 in the other is a dosing error wearing a translation's clothes.
+    //
+    // TWO DIGITS OR MORE, which is the weights and not the counts. Urdu words
+    // its small numbers where English uses a figure — «ڈیڑھ کپ» for "1 and a
+    // half cups", «پورا ڈبہ» for "1 sharing tin" — and demanding digit-for-digit
+    // equality would have forced eleven rows into stilted Urdu to satisfy a
+    // test. Every number that carries a unit has two digits or more; this ran
+    // over all 319 rows and found zero disagreements, so the rule is tight
+    // enough to be worth keeping and loose enough to let the language breathe.
+    const weights = (value: string): string[] => (value.match(/\d{2,}(?:\.\d+)?/g) ?? []).sort();
+    for (const food of FOODS) {
+      expect(weights(food.text.ur.portion), `${food.id} portion weights differ`)
+        .toEqual(weights(food.text.en.portion));
+    }
+  });
+
+  it('no Urdu string writes a range with a dash', () => {
+    // Bidi rule N1: `20-30` between two right-to-left words paints as `30-20`,
+    // and it has shipped in this app once already. Urdu ranges use «سے».
+    for (const food of FOODS) {
+      const all = `${food.text.ur.name} ${food.text.ur.portion} ${food.text.ur.varies ?? ''}`;
+      expect(/\d\s*[-\u2013]\s*\d/.test(all), `${food.id} has a dash range in Urdu`).toBe(false);
     }
   });
 });

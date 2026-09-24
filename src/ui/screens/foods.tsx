@@ -6,7 +6,7 @@ import { FOODS } from '../../data/carbs.js';
 import { IN_A_MATRIX, MATRICES } from '../matrices.js';
 import type { FoodMatrix } from '../matrices.js';
 import { useCopy } from '../copy.js';
-import { displayName, fullName } from '../food-name.js';
+import { displayName, fullName, textOf } from '../food-name.js';
 import { Button, TextInput } from '../components.js';
 
 export interface FoodListProps {
@@ -219,6 +219,7 @@ function FoodRow({
   readonly timeZone: string;
 }): JSX.Element {
   const COPY = useCopy();
+  const text = textOf(food, COPY);
   // PHASE 2: the reader's figure REPLACES the reference in the headline, and
   // the reference moves to the line beneath with the date it was set. It is
   // not shown alongside as an alternative — a row offering two numbers is a
@@ -246,12 +247,12 @@ function FoodRow({
           ) : null}
           {fullName(food, COPY)}
         </div>
-        <div class="hint">{food.portion}</div>
+        <div class="hint">{text.portion}</div>
         {/* §11.8's second condition, on screen. A value whose confidence is
             hidden is presented with the authority of a lab measurement, and the
             gap between those two things is what this table is built on. */}
-        {food.varies === null ? null : (
-          <div class="hint">{COPY.foods.variesPrefix + food.varies}</div>
+        {text.varies === null ? null : (
+          <div class="hint">{COPY.foods.variesPrefix + text.varies}</div>
         )}
         {/* PHASE 2's second constraint, on screen: the reference figure this
             replaced, and when the reader chose to replace it. A calibration
@@ -336,7 +337,7 @@ function FoodRow({
               nothing most of the time. */}
           <div class="tally">
             {count === 0 ? null : (
-              <Button class="tally-step" aria-label={COPY.foods.removeOne}
+              <Button class="tally-step drop" aria-label={COPY.foods.removeOne}
                 onPress={() => { onRemove(food.id); }}>{'\u2212'}</Button>
             )}
             {count === 0 ? null : <span class="tally-n">{COPY.foods.tallyCount(count)}</span>}
