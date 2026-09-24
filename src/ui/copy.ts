@@ -94,7 +94,7 @@ export const COPY = {
     },
     carbohydrate: {
       word: 'carbohydrate',
-      body: 'The part of food that turns into blood sugar: the flour in a roti, the rice, the sugar in chai. Meat, eggs and oil are not carbohydrate and barely move the blood sugar. It is not the weight of the plate — a 250\u00A0g plate of biryani is about 50\u00A0g of carbohydrate.',
+      body: 'The part of food that turns into blood sugar: the flour in a roti, the rice, the sugar in chai. Meat, eggs and oil are not carbohydrate and barely move the blood sugar. It is not the weight of the plate — a 300\u00A0g plate of biryani is about 50\u00A0g of carbohydrate.',
     },
     diabetes: {
       word: 'diabetes',
@@ -190,7 +190,7 @@ export const COPY = {
 
     carbTitle: 'What counts as carbohydrate',
     carbBody: [
-      'The reading comes off your meter. The grams do not — that number is yours, and it is the one thing here the app takes entirely on trust. What it is counting is the carbohydrate in the food: starch and sugar. Rice, roti, potato, biryani, daal, fruit and the sugar in chai all count. A 250\u00A0g plate of biryani is about 50\u00A0g of carbohydrate, so this is never the weight of what is on the plate.',
+      'The reading comes off your meter. The grams do not — that number is yours, and it is the one thing here the app takes entirely on trust. What it is counting is the carbohydrate in the food: starch and sugar. Rice, roti, potato, biryani, daal, fruit and the sugar in chai all count. A 300\u00A0g plate of biryani is about 50\u00A0g of carbohydrate, so this is never the weight of what is on the plate.',
       'Fibre is carbohydrate as well, but your body does not absorb it, so it does not raise blood sugar the way starch does. Some doctors subtract it from the total and some do not. Ask yours which they want, then do the same thing every meal — the app cannot tell which rule you used, and counting the same way every time helps it more than being exactly right once.',
       'Protein and fat are not carbohydrate and do not belong in this number. They do move blood sugar, hours later, and that is in "What this app does not know about" below.',
     ] as const,
@@ -1735,7 +1735,7 @@ export const COPY = {
     askCarbsLead: 'How much carbohydrate ',
     askCarbsRest: 'is in this meal?',
     carbsHint:
-      'The carbohydrate in the food — not what the plate weighs. A 250\u00A0g plate of biryani is about 50\u00A0g of carbohydrate.',
+      'The carbohydrate in the food — not what the plate weighs. A 300\u00A0g plate of biryani is about 50\u00A0g of carbohydrate.',
     /** §10.1 — the field says GRAMS OF CARBOHYDRATE, never "grams" or "carbs". */
     /**
      * A tally line in §10.3's working — "2 × Home flatbread, medium".

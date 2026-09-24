@@ -166,8 +166,15 @@ another is how §2's 200 g got here in the first place. The basal share is corre
 **32–43%**, not 32%.
 
 **The meal estimate was right; the dose estimate was wrong.** The user independently confirmed
-~50 g of carbohydrate for a 250 g plate of biryani — the figure both reviewers derived and the
-one this section already carried. What nobody had was the injection figure.
+~50 g of carbohydrate for a **300 g plate** of biryani — which is what the shipped table says:
+`biryani-unknown-pot` is 50 g on a 300 g plate, 16.7 g per 100 g.
+
+> **Corrected 2026-09-25.** This read "a 250 g plate" and called it independently confirmed. Momin
+> says the 250 was an offhand example rather than a measurement, and the arithmetic agrees: at 250 g
+> only a rice-heavy pot reaches 50 g (20.0/100 g). The middle case is 42.5 and meat-heavy is 34.2.
+> `docs/CARBS.md`'s household-measure defaults put a plate of rice or biryani at **300 g**, and the
+> table's own default row gives exactly 50 g there — so the example is now true rather than true
+> for one pot out of four. What nobody had was the injection figure.
 
 #### The contradiction this exposes, stated without any formula
 
@@ -864,8 +871,8 @@ At the prescribed ratios the app produces 5 units for a 50 g meal at target, 11 
   operand is "reaches", so 20 fires there. It **equals** the top of the reachable band rather
   than clearing it.
 
-**What actually justifies 20** is stronger than either sentence: a 250 g plate entered as
-carbohydrate is 25 units **from the meal term alone**, and a 240 g typo is 24 — so both are
+**What actually justifies 20** is stronger than either sentence: a 300 g plate entered as
+carbohydrate is 30 units **from the meal term alone**, and a 240 g typo is 24 — so both are
 caught **at every blood sugar**, not only at a high reading [R1]. The uncovered gap narrows to
 12–19 units, against v6's 12–29.
 
@@ -1046,7 +1053,7 @@ v3 understated this. The full picture:
 | Any input error yielding a dose in 12–19 units | **nothing** | **Uncovered** — narrowed in v7 from 12–29 by the threshold move to 20 |
 | **An injection taken after a *clamped*-to-zero result** (`correction + meal <= 0`; v11 wrote "negative correction ≥ meal", which has the sign backwards — it means the *magnitude* of the negative correction reaches the meal component [R2]) — §7.2 forbids logging a zero result, so the row cannot exist | **nothing** | **Uncovered — ADDED IN v11** [R1]. The stacking gate is blind to it for up to 12 h. The *suppressed*-to-zero case has an escape through §7.4.1's override; the clamped case has none. Narrow, and stated rather than papered over per this section's own standard |
 | **Blood-sugar mis-entry** (350 → 530 gives +6 units; 350 → 150 under-doses) | **nothing** | **Uncovered** [R1] — §6.5 is carbohydrate-only by design and definitionally cannot see it |
-| **Food weight entered instead of carbohydrate weight** (250 g plate → 25 units instead of 5) | **§6.2's confirmation, at every blood sugar** — the meal term alone is 25 units (§6.2). §6.5 HIGH adds a second look once calibrated | **Covered as a prompt to reread**, not as detection. §18.6 closed |
+| **Food weight entered instead of carbohydrate weight** (300 g plate → 30 units instead of 5) | **§6.2's confirmation, at every blood sugar** — the meal term alone is 30 units (§6.2). §6.5 HIGH adds a second look once calibrated | **Covered as a prompt to reread**, not as detection. §18.6 closed |
 | Injection lost to a failed write plus restart, with an older row under 12 h | **nothing** | **Uncovered** [R1-B2] — see §7.5 |
 | Wrong setting | §10.1.6 delta confirm, §10.3 breakdown | Partly |
 
@@ -2687,8 +2694,8 @@ devices disagree on the form — Roche multiplies by sensitivity, Medtronic divi
 2. **Units do visual work.** One field ends in `mg/dL`, the other in `g`.
 
    **The carbohydrate field says "grams of carbohydrate", never "grams" or "carbs"** [v6]. A
-   250 g plate of biryani contains about 50 g of carbohydrate — two real numbers, both in grams,
-   five-fold apart (§1.4). The label is the first defence against entering the wrong one.
+   300 g plate of biryani contains about 50 g of carbohydrate — two real numbers, both in grams,
+   six-fold apart (§1.4). The label is the first defence against entering the wrong one.
 
    **The keypad is a different contract from the grammar — ADDED IN v20** [R1]. §4.2's grammar
    is the **parser's** contract: uniform across every field, accepting two fractional digits, and
