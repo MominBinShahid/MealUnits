@@ -6,6 +6,7 @@ import type { ComponentChildren, JSX } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { ADVISORY_BUDGET } from '../config.js';
 import { useCopy } from './copy.js';
+import type { Copy } from './copy.js';
 import type { Advisory } from '../core/types.js';
 
 /**
@@ -375,6 +376,12 @@ export function Prose({ text, onTerm }: {
  * for a definition. It renders NOTHING when nothing is open, so it costs an
  * unopened screen one null check.
  */
+/** A source tag's citation, shaped like a glossary entry so the panel is shared. */
+function sourceEntry(copy: Copy, tag: string): { word: string; body: string } | undefined {
+  const body = (copy.foods.sourceMeaning as Record<string, string | undefined>)[tag];
+  return body === undefined ? undefined : { word: copy.foods.sourceTitle, body };
+}
+
 export function GlossaryPanel({ term, onClose }: {
   readonly term: string | null;
   readonly onClose: () => void;
@@ -399,7 +406,21 @@ export function GlossaryPanel({ term, onClose }: {
     return () => { document.removeEventListener('keydown', onKey); };
   }, [term, onClose]);
   if (term === null) return null;
-  const entry = (COPY.glossary as Record<string, { word: string; body: string } | undefined>)[term];
+  /*
+   * TWO KINDS OF EXPLANATION, ONE PANEL. A hard word ("ketones") and a source
+   * tag ("LFAC") are the same interaction — tap a thing you do not recognise,
+   * read what it means, carry on — so they share the panel, its Escape key and
+   * its measure rather than growing a second one that drifts from the first.
+   *
+   * Source tags arrive prefixed `src:`, because a tag is an ARBITRARY string
+   * from the data and a glossary key is a word we chose: without the prefix a
+   * future source called "ketones" would silently shadow the definition of
+   * ketones, on the screen where that word matters most.
+   */
+  const SOURCE = 'src:';
+  const entry = term.startsWith(SOURCE)
+    ? sourceEntry(COPY, term.slice(SOURCE.length))
+    : (COPY.glossary as Record<string, { word: string; body: string } | undefined>)[term];
   if (entry === undefined) return null;
   return (
     <div class="glossary" id="glossary-panel" role="dialog" aria-modal="false" aria-live="polite">

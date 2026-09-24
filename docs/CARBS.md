@@ -220,6 +220,7 @@ The 44 g belongs to Kabuli Pulao. **Biryani is 27 g per 160 g cup = 16.9 g/100 g
 | **Mid pot — rice just over half the plate** | **≈ 17** [**LFAC 16.9**, "incl. 85 g rice" per 160 g] | **≈ 51 g** | ≈ 68 g | **MED-HIGH** — the Pakistani anchor |
 | Rice-heavy / degh / commercial | **20–22** [CoFID homemade 20.9; KHAN 21.9] | **60–66 g** | **80–88 g** | **MED** |
 | + Potato (Sindhi usually; count the chunks) | — | **+8–16 g per chunk** (50–80 g × 15–20/100 g potato — see section 13) | same | **MED** |
+| + **Whole potato, degh** (`Sabut aloo`) | — | **+12–26 g** — a degh potato is a WHOLE one, not the half that goes into a home pot. 80–130 g × the same 15–20/100 g. Pakistani potatoes run **80–100 g each** against a USDA "medium" of 213 g (Recipe52 chicken biryani "5 (400 g) potatoes"; Bohri biryani "½ kg (5 medium)"); the home-pot piece is a **halved** potato (Fatima Cooks Sindhi biryani: "halve and deep fry") at 50–80 g, while FNDDS boiled small at 130 g caps the whole. ⚠ **Added because the chunk figure was silently capping it**: a real degh potato counted as "+16" under-counts by up to 10 g, and half-vs-whole differ by more than a full insulin unit while being obvious on the plate. Density verified: USDA boiled 20.0–20.1 by-difference, FNDDS 20.4, CoFID 13-490 17.5 ME → **16.7 after the §2 conversion**, LFAC implies ~15. ⚠ Piece weights rest on recipe ingredient lines, not weighed served plates — **one kitchen-scale weighing of a commercial Karachi degh potato would settle it**; if they routinely run 150–200 g the top rises to ~30–40 g | (a) whole vs half — if you cannot tell, count it as two chunks | **MED** |
 | Don't know which pot this is | — | assume **50 g** and verify with the meter — now book-backed; honest spread per plate **40–90 g** | — | — |
 
 **Tags: (a)** your plate weight — weigh one typical serving once; **(b)** which row today's pot is + potato count.
@@ -782,6 +783,63 @@ The rendered LFAC page confirms **178 and 20**, not an extraction swap. **20 ÷ 
 - **Sugar-free confectionery's bolus-equivalent CHO:** no universal polyol absorption/insulin conversion follows from a label. Do not import polyol grams or an assumed zero as ordinary CHO.
 
 *CoFID attribution: Contains public sector information licensed under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). McCance and Widdowson's Composition of Foods Integrated Dataset, Public Health England, 2021. © Crown copyright. USDA comparisons use FoodData Central SR Legacy, April 2018. LFAC values: Healthy eating and carbohydrate counting — Pakistani Foods, Edition 1 (2024), Life for a Child / ISPAD, BIDE and Meethi Zindagi. No food photographs reproduced.*
+
+## 21. Dishes added because their ABSENCE was the hazard — 2026-09-25
+
+**Why these exist.** A search returning nothing is not read as *"this food has no carbohydrate"*; it is read as *"the app does not know"*, and the reader then guesses or reads a packet. Worse, the food search is substring-based, so a missing dish is answered by an **accidental match on another dish's name**. Measured against the shipped table before these rows landed:
+
+| typed | what the app answered | what the food is | direction |
+|---|---|---|---|
+| `paya` | Papaya, cup of cubes — **14 g** | trotters; the atta slurry is the only carbohydrate | **over-dose** |
+| `butter` | Restaurant naan, butter — **85–95 g** | butter is 0 | **over-dose** |
+| `ghee` | Roghni naan — **72–78 g** | ghee is 0 | **over-dose** |
+| `yakhni` | Pulao, meat — **29–44 g** | clear broth, near 0 | **over-dose** |
+| `chutney` | thela chana chaat meal — **45–60 g** | hari chutney is 1–3 g | **over-dose** |
+| `sajji` `chargha` `broast` `jhinga` `maghaz` `gurda` `soup` `salad` `achar` `dalia` `oats` `cornflakes` `brown bread` | nothing at all | — | silence |
+
+**Every accidental answer was in the hypoglycaemia direction.** A real row retires each one, because a true name match outranks a substring accident.
+
+**Several of these rows are deliberately near-zero, and that is the point.** *"Do not dose for this"* is an answer the app could not previously give. `protein-anchors` set the precedent.
+
+| Row | Portion | CHO | Conf | Source and reasoning |
+|---|---|---|---|---|
+| **Sajji** (`sajji`) | 1 helping, leg or quarter | **0–4 g** | HIGH | Salted roast meat. **The rice a Balochi sajji is stuffed with or served on is the dose** — count it as the pulao row | [CoFID], [USDA] protein anchors |
+| **Chargha / steam roast** (`chargha`) | 1 quarter chicken | **2–8 g** | **LOW** | The marinade coat only. Yoghurt and spice ≈ 2; a besan or flour coat → 8. The chicken is 0. CALC from the marinade |
+| **Broast, fried chicken** (`broast-quarter`) | 1 quarter with coating | **15–22 g** | MED | The coating is the whole number; coating left on the plate halves it. [FNDDS] fried coated chicken 12.1/100 g |
+| **Jhinga, prawns** (`jhinga`) | 1 helping | **0–6 g** | MED | Prawn meat 0; karahi masala adds a few grams. A besan or crumb coat is the fried-fish pattern. [USDA] crustaceans |
+| **Paya, trotters** (`paya`) | 1 bowl, 250 g | **5–18 g** | **LOW** | ⚠ The atta slurry only — trotters, marrow and gelatin are 0. **The same eightfold flour spread as nihari**: gravy running off the spoon ≈ 5, gravy coating it ≈ 18. The naan is most of the meal. CALC from the nihari flour range |
+| **Kat-a-kat / maghaz / gurda** (`organ-fry`) | 1 katori, 150 g | **5–15 g** | **LOW** | Masala and malai; the organ meat is 0. [KHAN] qeema 10 and kaleji 15 bracket the family |
+| **Yakhni, clear broth** (`yakhni-soup`) | 1 cup, 250 ml | **0–3 g** | HIGH | Free. Cornflour or noodles make it the corn-soup row. Yakhni *pulao* is a rice dish. [USDA] broth |
+| **Chicken corn soup** (`soup-chicken-corn`) | 1 bowl, 250 ml | **12–20 g** | **LOW** | Cornflour and sweet corn; chicken and egg 0. ⚠ Restaurant bowls run bigger than 250 ml. CALC |
+| **Green salad / kachumber** (`salad-kachumber`) | 1 side plate | **0–5 g** | HIGH | Free at side-plate amounts. A creamy or sweet dressing is the exception. [USDA] |
+| **Achar, pickle** (`achar`) | 1 spoonful | **0–2 g** | HIGH | Oil, salt, spice. A sweet murabba or chhundo is the murabba row. [USDA], [CoFID] |
+| **Hari chutney** (`chutney-hari`) | 2 Tbsp | **1–3 g** | HIGH | Podina, dhania, chilli, dahi — near-free. Sweet taste means added sugar or imli → the next row |
+| **Meethi chutney, imli** (`chutney-meethi`) | 1 Tbsp, 20 g | **5–10 g** | MED | The one chutney that counts. The chaat rows already carry one spoon |
+| **Malai, cream** (`malai`) | 2 Tbsp, 30 g | **1–2 g** | HIGH | Nearly all fat. Sugar on top is the sugar's line, 4.2 a spoon. [USDA] cream |
+| **Butter, ghee or oil** — *Makhan* (`butter-ghee-oil`) | any amount | **0 g** | HIGH | **Zero at any amount** — fat changes how fast a meal lands, not its carbohydrate. [USDA] |
+| **Brown / wholemeal bread** (`bread-brown`) | 1 slice ≈ 30 g | **11–14 g** | MED | ⚠ **Corrects the "brown bread does not count" belief** — against white's 13–15. The fibre slows the rise; it does not remove the grams. A bakery "diabetic" loaf is this row unless its packet says otherwise. [USDA-SR 172688](https://fdc.nal.usda.gov/food-details/172688/nutrients); CoFID wholemeal |
+| **Kulcha, bakery (dry, chai)** (`kulcha-bakery`) | 1 piece ≈ 40 g | **21–28 g** | **LOW** | See the ruling below |
+| **Dalia** (`dalia`) | 1 bowl, 250 ml, milk + 2 sugars | **30–40 g** | **LOW** | The dry grain is the number: ~25 g dry = 16–19 g before anything. Milk +5/100 ml, sugar 4.2 a spoon. **Weigh dry once: grams × 0.65.** CALC from [USDA] bulgur |
+| **Oats, porridge** (`oats-porridge`) | ½ cup dry, 40 g | **24–27 g** | MED | ⚠ The packet's own panel beats this row. Top includes fibre — a slight overestimate. [USDA-SR] Quaker quick oats 68.2/100 g |
+| **Cornflakes** (`cornflakes`) | 1 bowl, 30 g flakes | **25–27 g** | HIGH | ⚠ **Bowls pour 30–60 g** — weigh once. Frosted or honey flakes run a third higher. [USDA-SR] corn flakes 88/100 g |
+
+### 21.1 The bakery kulcha — section 20.2's non-promotion ruling, revisited
+
+**20.2 refused to promote a rusk proxy for the dry chai kulcha, and that refusal was right in isolation. It is not right against the alternative.** The status quo was never *"no answer"* — searching `kulcha` returned the **200 g tandoor row at 100 g of carbohydrate**, at MED confidence, for someone holding a 40 g bakery piece. That is a **4–5× over-dose, +7.1 to +7.8 units at ICR 10**, in the acute direction.
+
+**The bound is defensible as a class argument.** Every dry wheat bakery product with a published panel sits in one envelope — CoFID rusk 55.7–73, cake rusk ~47–64, khari 46–60, taralli 60–71, LFAC's own Pakistani rusk 60 — and mass balance explains why nothing escapes it: sugar *is* carbohydrate, and only fat, protein and water can displace it. Khari at 39 g fat still prices at 46. A ghee kulcha is bounded 45–65 g/100 g from both sides. **This app already ships `rusk-plain` and `rusk-cake` at MED**; refusing kulcha split one food class down the middle.
+
+**Clinical tolerance settles the size of the bound.** [Smart 2009 (PMID 19317823)](https://europepmc.org/article/MED/19317823) found ±10 g on a 60 g meal causes no deterioration in postprandial control; [Brazeau 2013 (PMID 23146371)](https://europepmc.org/article/MED/23146371) measured trained adults' real-world error at ±15.4 g per meal. **The tolerance is absolute, not proportional** — both trials used 60 g meals only. An 8 g-wide band is inside both, i.e. clinically equivalent to a measurement. The proxy errs ≤0.6 units typically, −2.1 worst case, in the **under**-dose direction.
+
+⚠ **This row is LOW and says so on its face.** Its `varies` line states plainly that no lab has measured it and that the tandoor row is not a substitute.
+
+**What settles it:** weigh 3–5 chai kulchas from any Karachi bakery — expect **30–50 g each**. Near 40 and the row stands; otherwise re-anchor the portion. Composition closes via 20.2's own pre-approved route, a recipe with weighed ingredients and a weighed finished batch, expected to land 45–65 g/100 g.
+
+### 21.2 The new category
+
+**`side` — "Soups, salads and sides".** Six rows: `yakhni-soup`, `soup-chicken-corn`, `salad-kachumber`, `achar`, `chutney-hari`, `chutney-meethi`. None is a curry, a snack, a dairy food or a packet, and filing a cucumber salad under "Salan and curries" would be wrong. Positioned after `salan`, since these accompany that course. Raita stays in `dairy`.
+
+⚠ **`dalia` is the one poor fit** — shipped in `rice` because a breakfast reader would not look under `sweet`. Open to Momin: widen that heading to "Rice and grain dishes", or move it.
 
 ---
 

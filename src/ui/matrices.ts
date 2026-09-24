@@ -11,7 +11,7 @@ import type { Category } from '../data/carbs.js';
  * everywhere else. A MATRIX is a claim about the DATA: both axes are real
  * variables, so where a cell sits is itself information.
  *
- * Three families qualify out of 319 rows, and in each the arrangement teaches
+ * Three families qualify out of 320 rows, and in each the arrangement teaches
  * something no list can:
  *
  *   both teas     every spoon of sugar is +4 g, at every cup size

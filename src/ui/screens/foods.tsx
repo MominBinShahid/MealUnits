@@ -26,6 +26,7 @@ export interface FoodListProps {
   readonly onClearTally: () => void;
   readonly onEditMine: (id: string | null) => void;
   readonly onMineDraft: (text: string) => void;
+  readonly onTerm: (key: string) => void;
   readonly onSaveMine: (id: string, grams: number | null) => void;
   readonly resetting: boolean;
   readonly onResetting: (value: boolean) => void;
@@ -193,8 +194,44 @@ function tallyGrams(
  * a day, and the packets last.
  */
 const GROUPS: readonly Category[] = [
-  'bread', 'rice', 'daal', 'salan', 'snack', 'sweet', 'drink', 'fruit', 'dairy', 'packaged',
+  'bread', 'rice', 'daal', 'salan', 'side', 'snack', 'sweet', 'drink', 'fruit', 'dairy', 'packaged',
 ];
+
+/**
+ * A row's source line, with the TAGS made tappable.
+ *
+ * §11.8's exemption rests on every row carrying a source "a doctor can be
+ * shown". `Source: LFAC` satisfies that for whoever wrote the row and nobody
+ * else; the tag is an abbreviation whose expansion lived only in
+ * `docs/CARBS.md`. Here it is a control: tap it and the panel says which book,
+ * whose laboratory, and — the part that matters — whether the number was
+ * MEASURED or calculated.
+ *
+ * The rest of a source string is left as plain text. A source reads
+ * "CoFID, USDA-SR hard candy — spread retained", and only the tags have a
+ * definition to give; making the whole string tappable would promise
+ * explanations that do not exist.
+ *
+ * Longest tag first, so `USDA-SR` is matched before `USDA` would swallow its
+ * first four letters and leave `-SR` behind as prose.
+ */
+const SOURCE_TAGS = ['USDA-SR', 'FNDDS', 'CoFID', 'LFAC', 'CALC', 'KHAN', 'USDA', 'NIN'] as const;
+
+function SourceTags({ source, onTerm }: {
+  readonly source: string;
+  readonly onTerm: (key: string) => void;
+}): JSX.Element {
+  const pattern = new RegExp(`(${SOURCE_TAGS.join('|')})`, 'g');
+  const parts = source.split(pattern);
+  return (
+    <>
+      {parts.map((part, at) => ((SOURCE_TAGS as readonly string[]).includes(part) ? (
+        <Button key={`${part}-${String(at)}`} class="link source-tag"
+          onPress={() => { onTerm(`src:${part}`); }}>{part}</Button>
+      ) : part))}
+    </>
+  );
+}
 
 /**
  * One row. Grams lead, because grams are what the app asks for and what the
@@ -203,7 +240,7 @@ const GROUPS: readonly Category[] = [
  */
 function FoodRow({
   food, count, mine, editing, draft, onAdd, onRemove, onEditMine, onMineDraft,
-  onSaveMine, timeZone,
+  onSaveMine, onTerm, timeZone,
 }: {
   readonly food: Food;
   readonly count: number;
@@ -216,6 +253,7 @@ function FoodRow({
   readonly onEditMine: (id: string | null) => void;
   readonly onMineDraft: (text: string) => void;
   readonly onSaveMine: (id: string, grams: number | null) => void;
+  readonly onTerm: (key: string) => void;
   readonly timeZone: string;
 }): JSX.Element {
   const COPY = useCopy();
@@ -264,7 +302,8 @@ function FoodRow({
           </div>
         )}
         <div class="clinical">
-          {`${COPY.foods.confidenceLabel[food.confidence]} · ${COPY.foods.sourcePrefix}${food.source}`}
+          {`${COPY.foods.confidenceLabel[food.confidence]} · ${COPY.foods.sourcePrefix}`}
+          <SourceTags source={food.source} onTerm={onTerm} />
         </div>
         {/* The calibration box, when open, ABOVE the actions rather than in
             place of them. Putting it in the other arm of a ternary took the
@@ -363,7 +402,7 @@ function FoodRow({
 export function FoodListScreen({
   query, openGroup, tally, calibration, editingMine, mineDraft, timeZone, resetting,
   onQuery, onToggleGroup, onAdd, onRemove, onUseTotal, onClearTally, onEditMine, onMineDraft,
-  onSaveMine, onResetting, onResetMine,
+  onSaveMine, onTerm, onResetting, onResetMine,
 }: FoodListProps): JSX.Element {
   const COPY = useCopy();
   const shown = matchFoods(FOODS, query);
@@ -448,7 +487,7 @@ export function FoodListScreen({
           the warning that matters.
 
           Shown only when a marked row is actually ON SCREEN, which is not the
-          same as being in the table. Browsing with every group shut, all 319
+          same as being in the table. Browsing with every group shut, all 320
           rows "contain" one and none is visible — the first version tested the
           table and explained a symbol nobody could see. */}
       {visible.some((food) => food.confidence === 'low') ? (
@@ -457,7 +496,7 @@ export function FoodListScreen({
 
       {browsing ? (
         /*
-         * 319 rows is 63 phone screens, measured. Collapsed groups make that
+         * 320 rows is 63 phone screens, measured. Collapsed groups make that
          * one screen, and opening the largest of them costs ten — which is a
          * list, not a scroll.
          *
@@ -503,7 +542,7 @@ export function FoodListScreen({
                         <FoodRow key={food.id} food={food}
                           count={tally[food.id] ?? 0} onAdd={onAdd} onRemove={onRemove}
                           mine={calibration[food.id] ?? null} editing={editingMine === food.id}
-                          draft={mineDraft} onMineDraft={onMineDraft}
+                          draft={mineDraft} onMineDraft={onMineDraft} onTerm={onTerm}
                           onEditMine={onEditMine} onSaveMine={onSaveMine} timeZone={timeZone} />
                       ))}
                       </ul>
@@ -535,7 +574,7 @@ export function FoodListScreen({
             <FoodRow key={food.id} food={food}
               count={tally[food.id] ?? 0} onAdd={onAdd} onRemove={onRemove}
               mine={calibration[food.id] ?? null} editing={editingMine === food.id}
-              draft={mineDraft} onMineDraft={onMineDraft}
+              draft={mineDraft} onMineDraft={onMineDraft} onTerm={onTerm}
               onEditMine={onEditMine} onSaveMine={onSaveMine} timeZone={timeZone} />
           ))}
         </ul>
@@ -554,7 +593,12 @@ export function FoodListScreen({
         <div class="sheet tally-bar" aria-live="polite">
           <div class="tally-sum">{COPY.foods.tallyTotal(picked, String(total))}</div>
           <Button class="go" onPress={() => { onUseTotal(total); }}>{COPY.foods.tallyUse}</Button>
-          <Button class="link" onPress={onClearTally}>{COPY.foods.tallyClear}</Button>
+          {/* Centred, compact and in the warning colour, because it THROWS THE
+              LIST AWAY. It read as a quiet left-aligned link with the same
+              weight as the hint below it — Momin's point: "this will remove the
+              list, so warn colour is better." Amber rather than the halt red,
+              which this app spends on medical stops. */}
+          <Button class="link tally-clear" onPress={onClearTally}>{COPY.foods.tallyClear}</Button>
           <p class="hint">{COPY.foods.tallyCheck}</p>
         </div>
       )}

@@ -244,7 +244,7 @@ export const COPY = {
      * estimates of a plate nobody weighed.
      */
     intro:
-      'Estimates, not measurements of your plate. Read the number, then type it yourself — nothing here fills the box in for you.',
+      'Estimates, not measurements of your plate. Every number here is the CARBOHYDRATE in a portion — a weight, where one is given, always follows what holds it: "1 katori, 150\u00A0g".',
     searchLabel: 'Search food',
     /**
      * Read aloud, never seen: the control it names is a `×`. §10.2's rule about
@@ -288,16 +288,21 @@ export const COPY = {
      */
     /**
      * The ten section headings, and the reason the list has sections at all:
-     * 319 rows is 63 phone screens. Measured, not estimated.
+     * 320 rows is 63 phone screens. Measured, not estimated.
      *
      * Named the way a person would ask for them rather than the way a
      * composition table would file them — "with rice", not "accompaniments".
      */
     categoryLabel: {
       bread: 'Roti, naan and bread',
-      rice: 'Rice dishes',
+      // Widened from "Rice dishes" when dalia arrived. A wheat porridge filed
+      // under rice is a small untruth, and the heading is what a reader judges
+      // the section by — dalia belongs with the grains, not with the sweets
+      // where a breakfast reader would never look for it.
+      rice: 'Rice and grain dishes',
       daal: 'Daal',
       salan: 'Salan and curries',
+      side: 'Soups, salads and sides',
       snack: 'Snacks and street food',
       sweet: 'Sweets and desserts',
       drink: 'Drinks',
@@ -442,6 +447,36 @@ export const COPY = {
     variesPrefix: 'Varies: ',
     sourcePrefix: 'Source: ',
     /**
+     * WHAT THE TAG ON A ROW MEANS, in the app rather than only in the repository.
+     *
+     * §11.8 exempts `src/data/carbs.ts` from the every-number-is-config rule on
+     * the condition that every row carries a source "a doctor can be shown".
+     * The row printed `Source: LFAC` and stopped, which decodes for the person
+     * who wrote it and nobody else — the condition was met in the data and not
+     * on the screen.
+     *
+     * TEXT, NOT LINKS, and that is the offline-first rule rather than laziness:
+     * this app is used on a phone that may have no signal, and an explanation
+     * that needs connectivity is an explanation that fails exactly when someone
+     * is standing in a kitchen deciding a dose. `docs/CARBS.md` keeps the URLs
+     * for anyone who wants the PDF.
+     *
+     * Kept to what identifies the work — who made it, when, and what kind of
+     * evidence it is. The last part is the one that matters: a lab analysis and
+     * our own arithmetic are not the same claim, and CALC says so out loud.
+     */
+    sourceTitle: 'Where this number comes from',
+    sourceMeaning: {
+      LFAC: 'LFAC — Healthy eating and carbohydrate counting for children and adults with type\u00A01 diabetes: Pakistani Foods, Edition\u00A01, 2024. Life for a Child (Diabetes Australia) with ISPAD, compiled with BIDE and Meethi Zindagi. The ranking Pakistani source here: Pakistani food, type\u00A01-specific, written for patients by dietitians. Its own caution: the values are estimates, because preparation changes them.',
+      CoFID: 'CoFID — McCance and Widdowson, The Composition of Foods Integrated Dataset, United Kingdom, 2021. Laboratory analyses. Its carbohydrate is stated as monosaccharide equivalents, so every figure taken from it is converted before it reaches this table.',
+      CALC: 'CALC — our own arithmetic, from components that are themselves sourced. Not a measurement of the dish. Rows carrying this are the ones most worth checking against your own kitchen.',
+      USDA: 'USDA — FoodData Central, United States Department of Agriculture. Laboratory analyses of single foods.',
+      'USDA-SR': 'USDA-SR — the Standard Reference tables in FoodData Central. Laboratory analyses, the most established of the USDA sets.',
+      KHAN: 'KHAN — Khan and colleagues, 2019: a Pakistani laboratory study using AOAC methods. Few Pakistani dishes have ever been analysed in a laboratory; these are some of them.',
+      FNDDS: 'FNDDS — the Food and Nutrient Database for Dietary Studies, part of USDA FoodData Central. Prepared dishes as eaten, rather than raw ingredients.',
+      NIN: 'NIN — the Indian food-composition lineage, National Institute of Nutrition. Used where a dish is shared across the border and no Pakistani analysis exists.',
+    } as const,
+    /**
      * The single highest-value thing on the screen: a household's own roti,
      * weighed once, beats any table.
      *
@@ -456,6 +491,23 @@ export const COPY = {
       'Put one of your own rotis on a kitchen scale. Multiply WHAT IT WEIGHS by 0.46 — a 50\u00A0g roti holds about 23\u00A0g of carbohydrate. Type that into your roti row below and it stays yours. Naan and paratha are different doughs; weigh those separately.',
     countNote: (shown: number, total: number): string =>
       shown === total ? `${String(total)} foods` : `${String(shown)} of ${String(total)} foods`,
+  },
+
+  /**
+   * READING SIZE — §10.2's legibility rule made adjustable.
+   *
+   * Named steps rather than a slider: a slider on a dosing app is a control you
+   * can nudge by accident and cannot describe afterwards, while three named
+   * sizes can be told apart, restored, and said aloud down a phone to someone
+   * struggling to read the screen.
+   *
+   * The names say what they DO, not what they are — "Larger", never "115%".
+   */
+  textSize: {
+    label: 'Text size',
+    hint: 'Makes everything in the app bigger, not just this screen.',
+    sizes: ['Normal', 'Larger', 'Largest'] as const,
+    inUse: 'in use',
   },
 
   // ── §3's bands ────────────────────────────────────────────────────────────

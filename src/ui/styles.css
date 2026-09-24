@@ -149,6 +149,33 @@
   box-sizing: border-box;
 }
 
+/*
+ * ONE KNOB FOR TWO PROBLEMS, and they turned out to be the same problem.
+ *
+ * Everything in this stylesheet sizes in `rem`, so the root font size scales
+ * the whole interface together and no screen is hand-tuned to a pixel. That
+ * makes a single multiplier enough for both of these:
+ *
+ * 1. **Nastaliq is optically smaller than Latin at the same nominal size.**
+ *    Measured on the deployed build, same 32px, same 440px column: English
+ *    "What's your blood sugar" painted 357px wide, the Urdu «آپ کی بلڈ شوگر»
+ *    140px — about 65% the width per character. Momin saw it as an odd gap on
+ *    the left of the heading and was right that something was wrong, though
+ *    not that it was alignment. `fonts-urdu.css` carries the per-face value,
+ *    because the three Nastaliq faces need more of it than Naskh or Sans.
+ *
+ * 2. **A reader who wants larger type**, which for this app is not a nicety:
+ *    the person reading it may be older, and Nastaliq's dots — the marks that
+ *    separate ب پ ت ث — are the first thing lost at small sizes.
+ *
+ * `--text-scale` is the reader's setting and `--script-scale` the script's
+ * correction; they multiply, so choosing Urdu and choosing larger type
+ * compose instead of fighting.
+ */
+html {
+  font-size: calc(100% * var(--text-scale, 1) * var(--script-scale, 1));
+}
+
 html,
 body {
   height: 100%;
@@ -1599,12 +1626,29 @@ button:disabled { cursor: default; }
 /* The explanation, over the screen rather than as a page — the reader is in the
    middle of something and the result they are reading expires. Sticky to the
    bottom so it never covers the line that was tapped. */
+/*
+ * INSIDE THE COLUMN, like everything else.
+ *
+ * `--column` calls itself "the app's measure. EVERYTHING is inside it", and
+ * this panel was the exception — it is a SIBLING of `.screen` rather than a
+ * child, deliberately, so it can sit over whatever screen the reader is on
+ * without that screen losing its place. Being a sibling also meant it never
+ * inherited the measure, so on a desktop window it ran the full width of the
+ * browser while the content it explains sat in a 30rem column beside it.
+ * Momin caught it on the deployed build.
+ *
+ * The measure is what makes prose readable; a definition is the one thing here
+ * that is actually read rather than scanned, so it needs it most.
+ */
 .glossary {
   position: sticky;
   bottom: 0;
   z-index: 2;
   display: grid;
   gap: 0.5rem;
+  max-width: var(--column);
+  width: 100%;
+  margin-inline: auto;
   margin-block-start: 1rem;
   padding: 1rem;
   background: var(--surface, #151d2e);
@@ -1781,6 +1825,25 @@ button:disabled { cursor: default; }
 /* The reference this replaced, and when. Quieter than the row's other hints
    because it is provenance rather than instruction — but present, because
    BACKLOG 18 makes showing it a condition of the feature existing. */
+/*
+ * A SOURCE TAG THAT LOOKS LIKE A CONTROL. Inline in the clinical line, so it
+ * cannot use the 48px floor without breaking the sentence it sits inside — the
+ * hit area comes from padding instead, and the line keeps its height. This is
+ * the one place in the app where that trade is right: the tag is an
+ * EXPLANATION, never a dose, and a missed tap costs a second attempt.
+ */
+.source-tag {
+  display: inline;
+  padding: 0.25rem 0.125rem;
+  color: var(--ink-2);
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
+  font-size: inherit;
+  min-height: 0;
+}
+
+.source-tag:hover { color: var(--mark); }
+
 .mine-was {
   color: var(--mark);
   opacity: 0.85;
@@ -1788,7 +1851,7 @@ button:disabled { cursor: default; }
 
 /* Underlined text, not a button shape. It is a niche action — most readers
    never set their own figure — and it was wearing the weight of a primary
-   control on every one of 319 rows. */
+   control on every one of 320 rows. */
 /*
  * Deliberately SMALL to read — Momin asked for that, and a calibration link
  * competing with the row's own numbers is the wrong emphasis. Small to read is
@@ -1891,6 +1954,24 @@ button:disabled { cursor: default; }
   background: var(--bg);
   border-block-start: 1px solid var(--line);
   padding-block: 0.75rem;
+}
+
+/*
+ * The control that empties the list. It sat left-aligned in the app's quiet
+ * grey, reading like the hint underneath it rather than like the one button
+ * here that destroys something.
+ *
+ * `--warn` amber, not `--halt` red: red in this app means a medical stop, and
+ * clearing a tally is undoable by re-tapping the foods. Still 48px tall —
+ * §10.7's floor does not bend for a control that only LOOKS small — with the
+ * height coming from padding so the text itself stays modest.
+ */
+.tally-clear {
+  justify-self: center;
+  min-height: var(--touch);
+  padding: 0 1rem;
+  color: var(--warn);
+  font-size: 0.875rem;
 }
 
 .tally-sum {

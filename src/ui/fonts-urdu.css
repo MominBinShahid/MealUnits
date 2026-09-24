@@ -184,8 +184,22 @@
  * sentences printed over each other. Momin found it by looking at a screenshot,
  * which is the third time this project has found a layout defect that way.
  */
+/*
+ * THE SCRIPT CORRECTION, per face.
+ *
+ * Nastaliq at a given nominal size paints about 65% the width per character
+ * that Latin does — measured, not assumed: same 32px in the same 440px column,
+ * English 357px against Urdu 140px. Setting Urdu at the same number therefore
+ * sets it SMALLER, and the reader most likely to be reading Urdu here is the
+ * one least able to afford that.
+ *
+ * 1.25 for the three Nastaliq faces. Naskh and Sans sit closer to Latin
+ * proportions and take 1.1. This multiplies with `--text-scale`, the reader's
+ * own setting, so the two compose.
+ */
 :root[data-urdu-face='nastaliq'] {
   --urdu-family: 'Noto Nastaliq Urdu';
+  --script-scale: 1.25;
   --lh-body: 2.3;
   --lh-prose: 2.2;
   --lh-ask: 1.9;
@@ -194,6 +208,7 @@
 
 :root[data-urdu-face='gulzar'] {
   --urdu-family: 'Gulzar';
+  --script-scale: 1.25;
   --lh-body: 2.3;
   --lh-prose: 2.2;
   --lh-ask: 1.9;
@@ -202,6 +217,7 @@
 
 :root[data-urdu-face='beaconhouse'] {
   --urdu-family: 'Beaconhouse Nastaliq';
+  --script-scale: 1.25;
   /* Nastaliq leading, because it is Nastaliq: the script climbs steeply from
      right to left and a tight setting puts one line inside the next. */
   --lh-body: 2.3;
@@ -212,6 +228,7 @@
 
 :root[data-urdu-face='naskh'] {
   --urdu-family: 'Noto Naskh Arabic';
+  --script-scale: 1.1;
   --lh-body: 1.75;
   --lh-prose: 1.7;
   --lh-ask: 1.45;
@@ -220,6 +237,7 @@
 
 :root[data-urdu-face='sans'] {
   --urdu-family: 'Noto Sans Arabic';
+  --script-scale: 1.1;
   --lh-body: 1.7;
   --lh-prose: 1.65;
   --lh-ask: 1.4;

@@ -90,6 +90,13 @@ const SUGAR_FREE_WORDS = [
   'sugar free', 'sugarfree', 'sugar-free', 'no sugar added', 'gum', 'chewing gum',
   'stevia', 'maltitol', 'sorbitol', 'xylitol', 'erythritol', 'isomalt', 'polyol',
   'sugar alcohol', 'diabetic sweet', 'diabetic mithai', 'diabetic chocolate',
+  // THE BRAND NAMES, which are what a kitchen actually says. `stevia` was here
+  // and `canderel` was not, so the panel answered a chemist's word and stayed
+  // silent on the sachet on the table — the same silence the panel exists to
+  // break. These are sweeteners rather than polyols, so the drinks half of the
+  // panel is the half that answers them.
+  'canderel', 'splenda', 'sweetener', 'aspartame', 'sucralose', 'saccharin',
+  'equal sweetener', 'sugar substitute',
 ] as const;
 
 /**

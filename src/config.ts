@@ -412,6 +412,33 @@ export const UUID_HEX_PAIR = 2;
 /** RFC 4122's 8-4-4-4-12, as BYTE counts per group. */
 export const UUID_GROUPS = [4, 2, 2, 2, 6] as const;
 
+// ─── READING (§10.2) ───────────────────────────────────────
+
+/*
+ * HOW MUCH LARGER A READER CAN MAKE THE TYPE.
+ *
+ * Not a cosmetic setting here. The people this app is built for include one
+ * reading Urdu in Nastaliq, where the marks that separate ب پ ت ث are the first
+ * thing lost at small sizes — and a reader who cannot resolve a dish name picks
+ * the wrong row, which is a wrong dose.
+ *
+ * THREE STEPS, NOT A SLIDER. A slider on a dosing app is a control you can
+ * nudge by accident and cannot describe afterwards; three named steps can be
+ * told apart, restored, and spoken aloud over a phone call to someone who is
+ * struggling with it.
+ *
+ * The ceiling is 1.3 and the reason is the RESULT screen: §10.5 allows two
+ * advisory elements beside the dose, and past about a third larger they stop
+ * fitting one phone screen together with the number they qualify. A warning
+ * pushed below the fold is a warning that was not read.
+ *
+ * These MULTIPLY with the per-script correction in `fonts-urdu.css`, so Urdu at
+ * the largest step is 1.25 × 1.3. Nothing here is hand-tuned to a pixel; every
+ * size in the stylesheet is in `rem`.
+ */
+export const TEXT_SCALES = [1, 1.15, 1.3] as const;
+export const TEXT_SCALE_DEFAULT = 1;
+
 // ─── SERVICE WORKER (§11.4) ────────────────────────────────
 // How often the app may ask whether a newer worker exists, when it returns to
 // the foreground. Registering does NOT check, and the browser's own check needs
