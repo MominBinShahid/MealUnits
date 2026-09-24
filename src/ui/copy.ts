@@ -416,12 +416,12 @@ export const COPY = {
     gramsOne: (grams: string): string => `${grams}\u00A0g`,
     gramsRange: (lo: string, hi: string): string => `${lo}–${hi}\u00A0g`,
     /**
-     * WHICH NAME THIS LANGUAGE SHOWS — `Food.name` here, `Food.script` in Urdu.
-     * Not a word, but a per-language choice, which is what this module holds.
-     * `src/ui/food-name.ts` reads it and says why it is a field name rather
-     * than a third argument to the function below.
+     * WHICH LANGUAGE THIS COPY OBJECT SPEAKS, so `src/ui/food-name.ts` can pick
+     * the matching half of a food row's `text` map. Not a word, but a
+     * per-language fact, which is what this module holds. See `food-name.ts`
+     * for why it is a key rather than another argument to the function below.
      */
-    nameField: 'name',
+    lang: 'en',
     /**
      * HOW A FOOD IS NAMED ON SCREEN, which is not the same question in every
      * language. English leads with the English name and carries the Roman one

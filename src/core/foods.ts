@@ -12,12 +12,30 @@
  * the other half of the same rule.
  */
 
-/** The minimum a row must offer to be findable. */
+/**
+ * The minimum a row must offer to be findable.
+ *
+ * ONLY THE ENGLISH NAME, deliberately, even though rows now carry a name per
+ * language. Search is English and Roman Urdu and nothing else: matching Urdu
+ * script would need every alias mirrored into it and eight normalisation rules
+ * in `fold()`, and a review over the real table found «دال» putting a 78\u00A0g
+ * rice dish above every actual bowl of daal at 13 to 32\u00A0g. Momin does not
+ * search in Urdu, so the hazard is avoided by not building it.
+ *
+ * Nested rather than flat so this stays structural — `Food` satisfies it
+ * without `src/core` importing `src/data`, which is what keeps the golden
+ * cases and the mutation gate possible.
+ */
 export interface Searchable {
-  readonly name: string;
-  /** Roman Urdu. Named for the SCRIPT, not the language — see `Food.roman`. */
+  readonly text: { readonly en: { readonly name: string } };
+  /** Roman Urdu — what the food is called out loud, in Latin letters. */
   readonly roman: string;
   readonly aliases: readonly string[];
+}
+
+/** The one name search reads. */
+function searchName(food: Searchable): string {
+  return food.text.en.name;
 }
 
 /**
@@ -112,7 +130,7 @@ export function matchFoods<T extends Searchable>(foods: readonly T[], query: str
   // below already returns every row. The guard restated the filter's behaviour
   // and read like a decision, which is worse than absent.
   const hits = foods.filter((food) => {
-    if (fold(food.name).includes(needle)) return true;
+    if (fold(searchName(food)).includes(needle)) return true;
     if (fold(food.roman).includes(needle)) return true;
     return food.aliases.some((alias) => fold(alias).includes(needle));
   });
@@ -159,7 +177,7 @@ const TIERS: ReadonlyArray<(field: string, needle: string) => boolean> = [
 ];
 
 function tier(food: Searchable, needle: string): number {
-  const fields = [food.name, food.roman, ...food.aliases].map(fold);
+  const fields = [searchName(food), food.roman, ...food.aliases].map(fold);
   // An ordered LIST rather than a chain of `if`s returning 0, 1, 2, 3 — and
   // §11.8 is why. Those ordinals are literals, and the rule admits only 0, 1,
   // -1 and 100, so the chain failed lint. Writing the tiers as rules in

@@ -393,10 +393,9 @@ export const COPY_UR: Copy = {
     /** The range is isolated; see `isolate`. 14 of 31 rows read backwards without it. */
     gramsOne: (grams: string): string => `${grams}\u00A0گرام`,
     gramsRange: (lo: string, hi: string): string => `${isolate(`${lo}–${hi}`)}\u00A0گرام`,
-    // Urdu displays `Food.script`. The fallback for an empty one lives in
-    // `src/ui/food-name.ts`, not here — this object says WHICH field, not what
-    // to do when it is missing.
-    nameField: 'script',
+    // The fallback for a missing translation lives in `src/ui/food-name.ts`,
+    // not here — this object says WHICH language, not what to do without one.
+    lang: 'ur',
     // The Urdu name leads, the Roman follows in brackets. `isolate` on the
     // Roman only: it is an LTR island in an RTL line, and without the isolate
     // the bracket that closes it can be painted at the wrong end.

@@ -37,7 +37,7 @@ function duplicates(values: readonly string[]): string[] {
 
 describe('every list key the interface uses is unique within its list', () => {
   it('food rows, keyed on the name', () => {
-    expect(duplicates(FOODS.map((food) => food.name))).toEqual([]);
+    expect(duplicates(FOODS.map((food) => food.text.en.name))).toEqual([]);
   });
 
   it('rounding modes, keyed on the mode', () => {
