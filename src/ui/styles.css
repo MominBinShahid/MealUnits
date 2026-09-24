@@ -1020,13 +1020,30 @@ body {
     'actions actions';
   align-items: start;
   column-gap: 0.75rem;
-  row-gap: 0.5rem;
+  --row-gap-food: 0.5rem;
+  row-gap: var(--row-gap-food);
 }
 
 .li.food > :first-child { grid-area: text; }
 .li.food > .v { grid-area: value; align-self: center; }
 .li.food > .mine-edit { grid-area: mine; }
-.li.food > .row-actions { grid-area: actions; }
+/*
+ * NO GRID GAP ABOVE THE ACTIONS, because the controls already carry it.
+ *
+ * `.mine-open` and the `+` are both `var(--touch)` tall — 48px, 62 at the
+ * largest text size — with one line of text centred inside. That leaves ~21px
+ * of empty box above the words before the grid's own `row-gap` is added on
+ * top, and the two together read as a hole between the source line and the
+ * link. Momin spotted it on a daal row.
+ *
+ * Cancelling the gap rather than shrinking `row-gap` for the whole grid: the
+ * `mine-edit` row above genuinely needs its separation, and a gap that is right
+ * for a panel is wrong for a control whose height is mostly padding.
+ */
+.li.food > .row-actions {
+  grid-area: actions;
+  margin-block-start: calc(-1 * var(--row-gap-food, 0.5rem));
+}
 
 /*
  * A row whose right-hand element is an ACTION rather than a value. Only the two

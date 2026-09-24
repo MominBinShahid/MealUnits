@@ -2651,7 +2651,164 @@ The real lesson is the one the header states: the failure message has to describ
 check that fails the same way for "your code is broken" and "you forgot to start the server" spends
 an afternoon and can end up lying in the documentation.
 
-### T28. A third language turns every name field into a map — SKIPPED ON PURPOSE
+### T31. Vessel calibration — "weigh it once", so the plate is the reader's own
+
+**Momin's, repeatedly, and the sharpest framing of it is his:**
+
+> "the whole point of that UI is that you can select — this is the weight of my plate, what can be
+> the carbohydrates… if you are showing me 41 gram, if I know the exact carbohydrates in that plate
+> why will I need you"
+
+**The asymmetry he identified.** A reader knows WEIGHT — they can put the plate on a scale, or
+judge it. They do not know CARBOHYDRATE; that is why they opened the app. The food list currently
+asks them to pick a serving CATEGORY ("plate" / "dawat plate") and hands back carbohydrate, which
+silently assumes their plate is the reference plate.
+
+**What it costs today.** If a household plate holds 450 g of food against the table's 300 g
+reference, every biryani row is short by 20 to 30 g — **two to three units at an ICR of 10**:
+
+| row | shipped | at 450 g | extra units |
+|---|---|---|---|
+| `biryani-meat-heavy-plate` | 41 g | 61.5 | **+2.0** |
+| `biryani-mid-plate` | 51 g | 76.5 | **+2.5** |
+| `biryani-rice-heavy-plate` | 60 g | 90.0 | **+3.0** |
+| `biryani-unknown-pot` | 50 g | 75.0 | **+2.5** |
+
+**Clinical tolerance is ABSOLUTE, not proportional** — [Smart 2009 (PMID 19317823)](https://europepmc.org/article/MED/19317823)
+found ±10 g on a 60 g meal causes no deterioration; both trials used 60 g meals only. Today's
+household error sits at 1.5 to 4.5× that line.
+
+#### It must store a RATIO, not a weight — this is the part that breaks naively
+
+Adversarial verification killed the obvious design. **Fill weight belongs to vessel × food, not to
+the vessel.** A cup calibrated at 220 g from curry, applied to the popcorn row:
+**128 g of carbohydrate against a true 14 g — an over-dose of 11.4 units.** In the real table one
+"cup" spans **24 g (popcorn) to 355 g (daal chawal)**.
+
+Stored as *your fill ÷ the row's own stated weight for that same food*, the same feature is sound.
+**For plates the two are identical**, because every plate row shares the 300 g reference — which is
+why the plate is where this should start.
+
+#### What it must not touch
+
+- **Not "cup"** — two different vessels in this table (Pakistani chai cup 150 ml vs LFAC's 250 ml
+  measuring cup), and a tenfold weight spread.
+- **Not the chai grid** — those 24 rows are driven by sugar count, not fill. They calibrate nothing.
+- **51 vessel rows excluded** — KEPT, simply not scaled. Composites (`meal-nihari-two-naan`, +4.5
+  units if scaled), karahi/korma/pakora where carbohydrate tracks count not fill, 10 rows with no
+  stated weight, both sooji halwa rows. The test is whether carbohydrate IS the bulk: rice scales,
+  `kaddu-gosht` does not — its own note says "the masala is the number", so a bigger bowl is more
+  pumpkin.
+- **102 of 339 rows benefit.**
+
+#### The tare problem needs a structural answer, not a warning
+
+An un-tared plate is **+5.1 to +10.2 units**. Un-tared during CALIBRATION doubles every dose in that
+vessel, permanently. No threshold can catch the katori case — un-tared entries of 180–270 g sit
+inside the genuine 100–250 g serving range. So: **weigh empty, then full, app subtracts**, with the
+stored empty weight doubling as the detector.
+
+**Per-food calibration must always beat vessel-derived**, or it silently re-adds up to +1.7 units of
+the density error that feature exists to remove.
+
+#### Not blocked — Momin corrected the framing 2026-09-25
+
+The research said "weigh a plate first; if households land within ~50 g of 300 g, do not build it".
+Momin's answer:
+
+> "what do you mean by this? like blocked on you weighing the plate? You can use the default 300 as
+> you're doing right now. And when I change that 300 to any other field, then the maths will change,
+> right?"
+
+He is right, and the distinction matters. The measurement would tell us whether the feature is
+WORTH building. It was never needed to build it. **The field defaults to the table's own 300 g, so
+a reader who never touches it gets exactly today's behaviour** — and one who does gets arithmetic
+that matches their kitchen. A default that reproduces the status quo cannot make anything worse.
+
+**The shape, confirmed with him:** an input showing 300 g, changeable; every row using that vessel
+scales by `yours ÷ 300`. The crockery's own weight is tared on the scale and never entered — the
+app wants the food weight only.
+
+### T30. Source integrity — the check that guards §11.8 does not check what it claims
+
+**Found by audit 2026-09-25**, which fetched all 54 URLs in `docs/CARBS.md` and verified numbers
+against the real USDA SR-Legacy, FNDDS and CoFID datasets. Ranked by what it costs a reader trying
+to check a number that becomes insulin.
+
+**1. `check_reference_data` is far weaker than its own error message — DO THIS FIRST.**
+`check-plan.py`, the §11.8 guard. The entire check is:
+
+```python
+if roman.lower() not in doc:   # substring, anywhere in CARBS.md
+```
+
+It **never compares `grams`, `source` or `confidence`**, though its message claims it requires "a
+source and a confidence the document can be checked against". Measured: **81 of 339 romans are five
+characters or fewer**, 55 appear on more than one row, and **28 short ones pass without having an
+entry of their own** — `Aam`, `Chai`, `Besan`, `Honey`. `Paya` passes purely because "papaya"
+contains it. **Every finding below shipped through a green check.**
+
+**2. Source tags used in data and defined nowhere.** Bare `USDA` on **65 rows** — §2 defines only
+`[USDA-SR]` and `[FNDDS]`. `IGNOU` on one row (`lassi-sweet-shop`). `SJSU` cites "v2" of a document
+that **does not exist in the repository or anywhere in its git history**. ⚠ The in-app expansion
+shipped in #133 defines `USDA` from the author's understanding rather than from the document,
+because the document has none — that gap is still open.
+
+**3. A load-bearing claim in §2 is false at 339 rows.** It says every CoFID row carries a
+corroborating source. **84 cite CoFID; 10 rest on it alone, 4 of those at HIGH** — roughly 1 g over
+each, in the over-dose direction. Other wrongly-HIGH rows: `chutney-hari` (HIGH on arithmetic),
+`kinnow`, `jam-murabba` (single proxies), `phulka`, `rice-cup` (HIGH citing only LFAC while the
+document's justification is lab agreement the row does not carry). The low side is honest.
+
+**4. Six CALC rows whose derivation is written nowhere** — unverifiable by anyone, including their
+author six months later: `aloo-qeema`, `fruit-chaat`, `chutney-meethi` (circular, cites other rows'
+CALC, at MED), `moti-roti` (bare CALC on an *assumed* weight, at MED), `chargha`,
+`soup-chicken-corn`.
+
+**5. Dead and fragile links.** All 15 `fdc.nal.usda.gov/food-details/*` return **404** (SPA shell —
+renders in a browser, dead to a checker; the data still exists, verified via the datasets).
+Hard-dead: `daraz.pk`, `esajee.com`, `bazaarapp.com`. **`yaadgaar.co.uk` has a self-signed
+certificate and is the only source for a shipped row.** The **LFAC PDF backs 199 rows** from one
+WordPress upload path with no archive recorded.
+
+#### Momin's rules for this work, stated 2026-09-25 — binding
+
+> "whatever you do we are not removing anything… don't delete anything if you don't have a source
+> for it don't write the source or you can say nothing for source it's fine but don't delete
+> anything… don't replace the dead links, keep the dead links — because I think initially you get
+> the data from there, but you can add more links that are working… you can be honest that these
+> are the links I found the data, but these are dead now, these are the new links now"
+
+1. **Nothing is deleted** — not rows, not sources, not links.
+2. **Dead links stay and are MARKED dead**; working ones are added beside them.
+3. **No source is invented where none exists.** Say there is none.
+
+**What is thin:** two ~1 g nits on rows added in #133 — `bread-brown`'s top implies 46.7 g/100 g,
+slightly above both cited sources, and `kulcha-bakery`'s top used the blanket ÷1.05 rather than the
+starch-aware conversion, exceeding CARBS.md section 21.1's own stated envelope.
+
+### T29. `naan-afghani-half` stated "145 g" twice, meaning two different things — DONE 2026-09-25
+
+The row read `portion: 'half a piece, about 145 g'` — a WEIGHT — beside
+`varies: 'A whole one is about 145 g of carbohydrate'`. The arithmetic was consistent (72 × 2 ≈ 145)
+and the collision was pure coincidence: half of this bread WEIGHS about what a whole one holds in
+carbohydrate.
+
+**The hazard was the reader.** Every other number on that screen is carbohydrate, so the portion
+line's 145 invited being read as carbohydrate — and dosing 145 instead of 72 is **double**, the
+hypoglycaemia direction.
+
+**Fixed by removing the coincidence, not by adding a row.** `varies` now says "a whole one is twice
+this row — tap + twice if you ate all of it", so the number appears once and the sentence teaches
+the stepper.
+
+**A second "full" row was considered and refused.** A whole Afghani naan is 145 g of carbohydrate,
+close to three meals in one bread. With two rows, picking the wrong one costs **+73 g — the
+over-dose direction**. With one row and the stepper, eating a whole one is two taps and getting the
+count wrong costs −72 g, which is hyperglycaemia: slower, and a meter catches it. Same reasoning as
+the half/full ruling recorded for large breads generally.
+
+### T28. A third language turns every name field into a map — DONE 2026-09-25
 **Momin's observation, 2026-09-23, while the Urdu food list was being designed.**
 
 The food table is heading for three name fields: `name` (English), `roman` (Urdu words in Latin
@@ -2674,6 +2831,16 @@ render sites are few, and no stored user data references the field. The thing th
 recover is the REASONING, which is why it is here.
 
 **What would change this:** anyone asking for a third language, or a second one that is Latin-script.
+
+> **BUILT 2026-09-25, ahead of that trigger.** Momin overruled the wait on timing: the Urdu portions
+> and varies notes arrived, so all 319 rows were being rewritten anyway, and doing the map afterwards
+> would have meant rewriting every row twice for no new information. He also caught the shape
+> drifting mid-flight — `script` for one attribute and a proposed `portionUr` for the next — and
+> asked for one rule: *"the logic should be consistent."*
+>
+> Shipped as `text: { en, ur }` in PR #132. `grams`, `gramsMax`, `confidence`, `source`, `category`,
+> `aliases` and every `id` came through **byte-identical**, diffed field by field before anything
+> else was touched. `roman` and `aliases` stayed OUT of the map: neither is a translation.
 
 ### T10. A sanity suite, separate from smoke — decide whether two files are worth it
 
