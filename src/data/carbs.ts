@@ -340,12 +340,12 @@ export const FOODS: readonly Food[] = [
       en: {
         name: 'Afghani naan, half',
         portion: 'half a piece, about 145\u00A0g',
-        varies: 'A whole one is about 145\u00A0g of carbohydrate — close to three meals.',
+        varies: 'A whole one is twice this row — tap + twice if you ate all of it. That is close to three meals of carbohydrate in one bread.',
       },
       ur: {
         name: 'افغانی نان، آدھا',
         portion: 'آدھا نان، تقریباً 145\u00A0گرام',
-        varies: 'پورا نان تقریباً 145\u00A0گرام کاربوہائیڈریٹ ہے — قریب قریب تین کھانوں جتنا۔',
+        varies: 'پورا نان اس لائن سے دگنا ہے — سارا کھایا ہو تو + دو بار دبائیں۔ ایک ہی روٹی میں تقریباً تین وقت کے کھانے جتنا کاربوہائیڈریٹ ہے۔',
       },
     },
     roman: 'Afghani naan',
