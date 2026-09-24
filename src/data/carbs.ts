@@ -474,12 +474,12 @@ export const FOODS: readonly Food[] = [
       en: {
         name: 'Biryani, chicken mutton or beef',
         portion: '1 cup, 160\u00A0g, including 85\u00A0g rice',
-        varies: 'Rice to meat ratio, and whether there is potato. A potato chunk adds 10 to 16\u00A0g.',
+        varies: 'Rice to meat ratio, and whether there is potato. A potato chunk adds 8 to 16\u00A0g.',
       },
       ur: {
         name: 'بریانی، کپ',
         portion: '1 کپ، 160\u00A0گرام، جس میں 85\u00A0گرام چاول',
-        varies: 'چاول اور گوشت کا تناسب، اور آلو ہے یا نہیں۔ آلو کا ایک ٹکڑا 10 سے 16\u00A0گرام بڑھا دیتا ہے۔',
+        varies: 'چاول اور گوشت کا تناسب، اور آلو ہے یا نہیں۔ آلو کا ایک ٹکڑا 8 سے 16\u00A0گرام بڑھا دیتا ہے۔',
       },
     },
     roman: 'Biryani',
@@ -2749,7 +2749,7 @@ export const FOODS: readonly Food[] = [
       },
     },
     roman: 'Seekh kabab',
-    aliases: ['seekh kabab', 'sikh kabab', 'seekh kebab', 'tikka', 'grilled fish', 'anda', 'unda', 'egg', 'omelette', 'kabab', 'curry', 'salan'],
+    aliases: ['seekh kabab', 'sikh kabab', 'seekh kebab', 'tikka', 'grilled fish', 'anda', 'unda', 'egg', 'omelette', 'kabab', 'curry', 'salan', 'boti', 'bihari boti', 'malai boti', 'tikka boti', 'reshmi kabab', 'grilled chicken', 'roast chicken'],
     grams: 0,
     gramsMax: 4,
     confidence: 'high',
@@ -6136,6 +6136,28 @@ export const FOODS: readonly Food[] = [
     gramsMax: 16,
     confidence: 'medium',
     source: 'USDA boiled potato, LFAC potato rows imply the lower end',
+  },
+  {
+    id: 'aloo-whole',
+    category: 'salan',
+    text: {
+      en: {
+        name: 'Whole potato in a degh or salan',
+        portion: '1 whole potato, 80 to 130\u00A0g',
+        varies: 'A degh potato is a whole one, not the half that goes into a home pot — worth about twice a chunk. If you cannot tell which you have, count it as two chunks.',
+      },
+      ur: {
+        name: 'سالم آلو، دیگ یا سالن کا',
+        portion: '1 سالم آلو، 80 سے 130\u00A0گرام',
+        varies: 'دیگ کا آلو سالم ہوتا ہے، گھر کی ہانڈی والے آدھے آلو سے الگ — تقریباً ایک ٹکڑے سے دگنا۔ سمجھ نہ آئے تو اسے دو ٹکڑے گن لیں۔',
+      },
+    },
+    roman: 'Sabut aloo',
+    aliases: ['whole potato', 'sabut aloo', 'poora aloo', 'degh aloo', 'aloo', 'alu', 'aalu', 'potato', 'bara aloo'],
+    grams: 12,
+    gramsMax: 26,
+    confidence: 'medium',
+    source: 'USDA boiled potato 20.0 to 20.1 per 100\u00A0g, FNDDS 20.4, CoFID 16.7 converted, LFAC implies 15 — applied to an 80 to 130\u00A0g Pakistani potato',
   },
   {
     id: 'salan-thin-unnamed',

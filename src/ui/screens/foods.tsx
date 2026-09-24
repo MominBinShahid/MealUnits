@@ -554,7 +554,12 @@ export function FoodListScreen({
         <div class="sheet tally-bar" aria-live="polite">
           <div class="tally-sum">{COPY.foods.tallyTotal(picked, String(total))}</div>
           <Button class="go" onPress={() => { onUseTotal(total); }}>{COPY.foods.tallyUse}</Button>
-          <Button class="link" onPress={onClearTally}>{COPY.foods.tallyClear}</Button>
+          {/* Centred, compact and in the warning colour, because it THROWS THE
+              LIST AWAY. It read as a quiet left-aligned link with the same
+              weight as the hint below it — Momin's point: "this will remove the
+              list, so warn colour is better." Amber rather than the halt red,
+              which this app spends on medical stops. */}
+          <Button class="link tally-clear" onPress={onClearTally}>{COPY.foods.tallyClear}</Button>
           <p class="hint">{COPY.foods.tallyCheck}</p>
         </div>
       )}

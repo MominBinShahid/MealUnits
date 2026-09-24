@@ -1673,6 +1673,60 @@ def check_site_url_agrees(_plan):
     return out
 
 
+def check_potato_chunk_agrees(_plan):
+    r"""One object, one figure — the potato chunk, stated on seven rows.
+
+    `src/data/carbs.ts` tells a reader what a potato chunk adds, on every row
+    where potato is the variable that moves the number. Seven rows said it, and
+    one of them said something different: the `biryani` cup row carried
+    "10 to 16" while the six others carried "8 to 16".
+
+    **It was a fossil, not a distinction.** `docs/CARBS.md` records the v2-to-v3
+    ruling that took +10-16 down to +8-16 when LFAC's potato rows came in at
+    ~15 g/100 g against USDA's 20.1, and states +8-16 in four separate places.
+    The cup row's text predates the 31-to-319 promotion and was never swept; the
+    rows added by that promotion all carry the ruled figure.
+
+    Nothing could have caught it. The document and the code agreed everywhere a
+    check looked, because no check looked at a sentence inside `varies`. This is
+    the check, added with the fix, which is what §20.3 asks for.
+
+    **What it does NOT do.** It compares the chunk figures to EACH OTHER, not to
+    `CARBS.md` — the document states the figure in prose that varies between
+    entries, and parsing it would be a check on the parser. Seven rows agreeing
+    on a wrong number would pass. That is still strictly better than seven rows
+    disagreeing, because the disagreement is what proves at least one is stale.
+    """
+    path = os.path.join(HERE, "src", "data", "carbs.ts")
+    if not os.path.exists(path):
+        return []
+    body = without_block_comments(load(path))
+    # ONLY `varies` LINES, and only a figure the sentence says is ADDED.
+    #
+    # The first version scanned every line mentioning a chunk and immediately
+    # reported a false positive: `aloo-chunk`'s portion line reads "1 gol chunk,
+    # 50 to 80 g", which is what the chunk WEIGHS. Two numbers in grams on one
+    # row mean two different things — the weight of the food and the
+    # carbohydrate in it — and a check that cannot tell them apart is a check
+    # that cries wolf until someone turns it off.
+    chunks = set()
+    for line in body.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("varies:") or "chunk" not in stripped.lower():
+            continue
+        for lo, hi in re.findall(r"adds? (\d+) to (\d+)\\u00A0g", stripped):
+            chunks.add((lo, hi))
+        for lo, hi in re.findall(r"is (\d+) to (\d+)\\u00A0g on top", stripped):
+            chunks.add((lo, hi))
+    if len(chunks) <= 1:
+        return []
+    return ["src/data/carbs.ts states more than one potato-chunk figure — %s."
+            " One object gets one number: docs/CARBS.md rules +8-16 g per chunk,"
+            " and a row carrying anything else is a survivor of an earlier"
+            " ruling rather than a distinction"
+            % ", ".join(sorted("%s to %s" % c for c in chunks))]
+
+
 def check_structural_query_count(_plan):
     """1g. `BACKLOG.md` T3's count of structure-dependent test queries — ADDED
     2026-09-14.
@@ -4570,6 +4624,7 @@ CHECKS = [
     ("unclassified public/ asset", check_public_assets_classified, "plan"),
     ("deployed address disagrees between index.html and vite.config.ts", check_site_url_agrees, "plan"),
     ("service worker answers the app for a non-app file", check_worker_knows_non_app_files, "plan"),
+    ("the potato chunk states one figure, not two", check_potato_chunk_agrees, "plan"),
     ("T3's structural-query count vs the test file", check_structural_query_count, "plan"),
     ("dangling section references", check_references, "plan"),
     ("dangling section references in companions", check_references_corpus, "corpus"),
