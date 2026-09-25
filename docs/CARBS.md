@@ -70,7 +70,7 @@ Rows can carry more than one tag — biryani is (a) *your plate size* **and** (b
 - **Household measure defaults** (all (a)-settings; figures below use the default): **katori** = 150 ml ≈ 150 g of a wet dish · **chai cup** = 150 ml (grid gives 200/250 too) · **glass** = 250 ml · **plate** of rice/biryani = 300 g · **1 tsp sugar** = 4.2 g level [USDA] (heaped ≈ 6 g) · **1 Tbsp** = 15 ml. The LFAC book's own conventions: cup = 250 ml, bowl = 250 ml; its "1 cup" of a wet dish weighs 200–245 g, its "1 cup" of rice 160–190 g — consistent with our katori/plate frame after scaling.
 - **Confidence**: **HIGH** lab-analysed or multi-source agreement, low real-world spread · **MED** good source(s) but portion/recipe moves it · **LOW** weak sources, wide disagreement, or our own calculation.
 - **The `id` in each row** — `` (`naan-small`) `` — is the app's own row identifier, and it is there so this document can be checked against what ships. Every one of the 339 rows in `src/data/carbs.ts` names itself on the line here that carries its figure, and `check-plan.py` fails the build if a figure, a source tag or a confidence drifts apart from what is printed on that line. Search this file for the id shown under a food in the app and you land on the line the number came from.
-- **Source tags**: **[LFAC]** *Healthy eating and carbohydrate counting — Pakistani Foods*, Ed. 1, 2024 (Life for a Child / ISPAD; BIDE + Meethi Zindagi) — **new in v3, and the ranking Pakistani source**: Pakistani, Type 1-specific, patient-facing, dietitian-compiled. Note the book's own caveat: *"The carbohydrate values mentioned in this book are estimates only as many factors can affect the amounts, for example the method of preparation etc."* (p. 23) · **[KHAN]** Khan et al. 2019 Pakistani AOAC lab study · **[USDA]** USDA FoodData Central with **the dataset not recorded on the row** — it says the figure came from FoodData Central but not whether from SR Legacy, Foundation Foods or FNDDS, so it is the weaker tag · **[USDA-SR]/[FNDDS]** USDA FoodData Central · **[CoFID]** UK McCance & Widdowson 2021 · **[SJSU]** dietitian carb-counting handout · **[IDF-DAR]** Diabetes & Ramadan guidelines · **[PK-FCT]** Pakistan FCT 2001 (energy cross-check) · **[KHI-OFFICIAL]** Karachi Commissioner tandoor weight/rate list · **[NIN]** Indian food-composition lineage · **[IGNOU]** Indira Gandhi National Open University dairy course material, for Indian dairy composition specifications — ⚠ **the unit and edition were not recorded and no URL was kept**; it corroborates one row (lassi) beside four other sources and carries nothing alone · **[LIT]** peer-reviewed literature (named per row) · **[LABEL]** manufacturer label · **[LABEL-EST]** manufacturer's published estimate · **[WEAK]** tracker/recipe sites only · **[CALC]** our arithmetic from cited components.
+- **Source tags**: **[LFAC]** *Healthy eating and carbohydrate counting — Pakistani Foods*, Ed. 1, 2024 (Life for a Child / ISPAD; BIDE + Meethi Zindagi) — **new in v3, and the ranking Pakistani source**: Pakistani, Type 1-specific, patient-facing, dietitian-compiled. Note the book's own caveat: *"The carbohydrate values mentioned in this book are estimates only as many factors can affect the amounts, for example the method of preparation etc."* (p. 23) · **[KHAN]** Khan et al. 2019 Pakistani AOAC lab study · **[USDA]** USDA FoodData Central with **the dataset not recorded on the row** — it says the figure came from FoodData Central but not whether from SR Legacy, Foundation Foods or FNDDS, so it is the weaker tag · **[USDA-SR]/[FNDDS]** USDA FoodData Central · **[CoFID]** UK McCance & Widdowson 2021 · **[SJSU]** dietitian carb-counting handout · **[IDF-DAR]** Diabetes & Ramadan guidelines · **[PK-FCT]** Pakistan FCT 2001 (energy cross-check) · **[KHI-OFFICIAL]** Karachi Commissioner tandoor weight/rate list · **[NIN]** Indian food-composition lineage — most likely the National Institute of Nutrition's [*Indian Food Composition Tables 2017*](https://www.nin.res.in/ebooks/IFCT2017_16122024.pdf) (Longvah, Ananthan, Bhaskarachary & Venkaiah; ICMR, Hyderabad), ⚠ **identified after the fact and not confirmed as the edition actually read** — see section 17.1 · **[IGNOU]** Indira Gandhi National Open University dairy course material, for Indian dairy composition specifications — ⚠ **the unit and edition were not recorded and no URL was kept**; it corroborates one row (lassi) beside four other sources and carries nothing alone · **[LIT]** peer-reviewed literature (named per row) · **[LABEL]** manufacturer label · **[LABEL-EST]** manufacturer's published estimate · **[WEAK]** tracker/recipe sites only · **[CALC]** our arithmetic from cited components.
 - **Reconciliation policy (v3):** where [LFAC] and a prior source agree, the row says so and confidence rises. Where they disagree, both values are shown — never averaged — with the recommended one named and the reason given. **Any row without an [LFAC] tag is unconfirmed by the Pakistani source.**
 - **By-difference flag**: rows resting on [KHAN] or USDA by-difference values include fibre — treat as a slight overestimate.
 - **Label traps, found 2026-09-23 and worth knowing before you read any panel.** A Pakistani lassi
@@ -157,7 +157,7 @@ Weight captures diameter and thickness together; density is stable at ≈ 0.43�
 | Variant | CHO per piece | Varies | Conf |
 |---|---|---|---|
 | Plain paratha, home (`paratha-plain-medium`) (`paratha-plain-large`) | **LFAC "1 medium" 74 g = 33 g**; an 8" 90–100 g home paratha ≈ **40–46 g** [FNDDS density 44.6 = LFAC's 44.6 exactly] | (a) your size/thickness — weigh once; ghee changes fat, not carbs | **HIGH** density — was MED; LFAC = FNDDS to the decimal |
-| Frozen plain paratha (Dawn) — labelled (`paratha-frozen-dawn`) | **39 g per 80 g piece** [LABEL] | — packaged | **HIGH** for the packet |
+| Frozen plain paratha (Dawn) — labelled (`paratha-frozen-dawn`) | **39 g per 80 g piece** [[LABEL](https://web.archive.org/web/20211130161332/https://www.dawnfrozenfoods.com/lahore/dawn-plain-paratha-regular-pack.html)] — Dawn's own panel, 80 g serving: 39 g total carbohydrate, 2 g fibre, 262 kcal. The live product page now 404s; Dawn's current site lists no parathas | — packaged | **HIGH** for the packet |
 | Frozen lachha / other brands | read the packet — labels beat every estimate here [LABEL] | — | **HIGH** per packet |
 | **Lachha paratha, fresh** (`paratha-lachha`) | 95 g = **44 g** [LFAC] (46.3/100 g) | (a) size | **MED** — NEW (fresh; frozen row above unchanged) |
 | Aloo paratha (`paratha-aloo`) | **LFAC 103 g = 46 g (44.7/100 g)** vs frozen label 37/100 g — LFAC's is potato-lean; recommended: **weight × 0.37–0.45 by stuffing generosity**; typical 100–120 g piece **≈ 40–50 g** | (a) size; **(b) potato load — the dominant variable** | **MED** — CHANGED: the earlier single 44 g becomes a stuffing-dependent band with LFAC at the top |
@@ -260,7 +260,7 @@ Carbs come from onion masala, potato chunks, and thickeners (atta in nihari, bes
 | Korma (`korma`) | **7–20 g** [CoFID 4.6 vs KHAN 13.2 — thickener decides] | (a); (b) thickener | **MED-LOW** — no LFAC row |
 | **Nihari** (`nihari`) | **CHANGED (top raised 18 → 20):** bowl 250 g = **7–20 g**. LFAC cup 240 g = 7 g (2.9/100 g) at the floor; the top is now **three-source**: KHAN 7.06/100 g = 17.7, **Kohinoor Old Delhi Nihari (label + stated 400 g lamb + stated yield) ≈ 19.6**, **Saakshi's Kitchen (UK) 7.81 total/100 g = 19.5**. Everyday middle 11–17 [Aga Khan 4.19/100 g; Mount Holyoke 4.35; My Choice Foods (PK) 6.0; Saakshi's 6.72 available]. **Two proposals to cut this top (to 11 g, to 13 g) were tested and refused** — they rested on CoFID `Recipe` entries mis-described as measurements. **The atta slurry stirred in at the end is the whole variable:** 14 sourced pack directions and recipes put the flour at **18–150 g per kg of meat, an eightfold range**; gravy runs off the spoon → 7 g, gravy coats the spoon → 20 g. Shan's own jar sauce carries **+28 g carbohydrate per 350 g jar over its own korma/jalfrezi/achar gosht** (16.29 vs 8.0–8.6/100 g) — the thickener, measured. ⚠ **Reject DAHBA canned "Nihari"** — its panel is byte-identical to its own Haleem panel and its ingredients are a haleem list | (a) bowl; **(b) flour load — an 8× range** | **MED** |
 | Aloo gosht (`aloo-gosht`) | **16–17 g** [KHAN 10.8/100 g; **LFAC cup 200 g = 23 g → 11.5/100 g — agreement within 6 %**]; +8–16 g per extra potato chunk | (a); (b) potato count | **MED-HIGH** — was MED |
-| Aloo qeema (`aloo-qeema`) | **12–18 g** [CALC] | (a); (b) potato | **MED-LOW** — no LFAC row |
+| Aloo qeema (`aloo-qeema`) | **12–18 g** [CALC — working in section 17.3] | (a); (b) potato | **MED-LOW** — no LFAC row |
 | Qeema, plain (`qeema-plain`) | **10 g** [KHAN 6.9/100 g] | (a) | **MED** |
 | **Aloo baingan** (`aloo-baingan`) | **CHANGED ("confirmed" withdrawn):** katori **13–18 g, default 15 g**. Default = LFAC ½ cup 138 g = 14 g (10.1/100 g), the only measured Pakistani serving. Top = **CoFID 15-669 13.4 ME → 12.26 label g after the §2 conversion** × 150 = 18.4 (as printed it would be 20.1 — **the conversion is applied**). Floor = a brinjal-led katori: 50 g potato at 0.15 + 100 g of potato-free masala at the **commercially measured 5.0 g/100 g**. **Not a confirmation — 21 % apart is two potato shares.** Brinjal is a free food (1.7–4.9/100 g across seven routes); **count the potato pieces**, and each extra chunk is +8–16 g, worth more than the band itself. ⚠ **No lab has ever analysed this dish and no commercial product containing potato exists**; CoFID 15-669's own Description reads `Recipe from review of recipe collection` | (a); **(b) potato share** | **MED** — was MED-HIGH (CoFID 15-669 is a recipe, not an analysis) |
 | **Aloo gobhi** (`aloo-gobhi`) | ½ cup 122 g = **16 g** [LFAC] (13.1/100 g); katori ≈ **20 g** | (a); (b) | **MED** — NEW |
@@ -300,7 +300,7 @@ Carbs come from onion masala, potato chunks, and thickeners (atta in nihari, bes
 | Chana chaat (`chana-chaat`) | **CHANGED:** LFAC ½ cup 130 g = **30 g** (23/100 g) vs v2 CALC 41 g/katori (27/100 g). **LFAC recommended** — measured plate vs our arithmetic; katori 150 g ≈ **35 g**, + meethi chutney ≈ +5–10 g | (a) katori; (b) potato + chutney | **MED-HIGH** — was MED |
 | **Lobia chaat** (`lobia-chaat`) | cup 117 g = **22 g** [LFAC] (18.8/100 g ≈ USDA lobia 20.3 — coherent) | (a); (b) | **MED** — NEW |
 | **Cream chaat** (`cream-chaat`) | ½ serving 100 g = **30 g** [LFAC] — the cream + sweetener is half the number | (a); (b) recipe | **MED** — NEW |
-| Fruit chaat (`fruit-chaat`) | cup ≈ **20–30 g** [CALC] | (a); (b) fruit mix + sugar | **MED-LOW** — no LFAC row |
+| Fruit chaat (`fruit-chaat`) | cup ≈ **20–30 g** [CALC — working in section 17.3, ⚠ the band is narrower than its own components give] | (a); (b) fruit mix + sugar | **MED-LOW** — no LFAC row |
 | Dahi bhalay (`dahi-bhalay`) | **CHANGED (portion honesty):** LFAC 1 cup 220 g = **35 g** vs the earlier plate ≈ 25 g [SJSU+CALC]. Same food, bigger real serving — a thela plate with chutney is the LFAC number | (a) serving; (b) sweet dahi + chutney | **MED-HIGH** — was MED-LOW |
 | Gol gappay (`gol-gappay-4` `gol-gappay-6`) | **CHANGED:** LFAC 4 pieces w/ chana filling, 32 g = **19 g** (≈ 4.8 g per filled puri) vs the earlier 6 puris ≈ 15 g [SJSU, shells only]. **LFAC recommended** — filled puris are the real unit; 6 filled ≈ **28 g**, + meetha pani **+5–10 g** [CALC] | (a) count; (b) filling + sweet water | **MED** — was MED-LOW |
 | **Bhutta (corn on the cob)** (`bhutta`) | 1 cob 195 g = **22 g** [LFAC — weight includes the cob] | (a) cob size | **MED** — NEW |
@@ -341,7 +341,7 @@ Mithai = **(a)** your sweet shop's piece weight (weigh one box once) + **(b)** s
 | Sheer khurma (`sheer-khurma`) | **CHANGED (raised):** LFAC ¾ cup 125 g = **46 g** (36.8/100 g) vs v2 CALC 35–45/katori (23–30/100 g). **LFAC recommended**; katori 150 g ≈ **55 g** — Eid sheer khurma is nearly rice-kheer-plus-dates rich | (a) katori; (b) Eid richness | **MED** — was LOW-MED |
 | Sooji ka halwa (`sooji-halwa-breakfast` `sooji-halwa-dessert`) | **the 2× spread is now book-internal fact, not source noise:** LFAC prints it at *both* densities — breakfast halwa (with puri) ¼ cup 88 g = **23 g** (26/100 g) and dessert suji halwa ¼ cup 88 g = **43 g** (49/100 g = CoFID 49.1). Sugar:sooji ratio is the whole story; halwa-puri-shop halwa sits at the low end, dawat halwa at the top | (a) serving; (b) sugar load — a genuine 2× | **MED-HIGH** for the range — was MED |
 | Gajar ka halwa (`gajar-halwa` `gajar-halwa-spoons`) | ½ cup 102 g = **44 g** [**LFAC 43.1/100 g**; CoFID 44 — exact agreement]. the earlier "2 heaped Tbsp ≈ 14–22 g" stands for small servings | (a); (b) khoya/sugar | **HIGH** density — was MED |
-| **Sohan halwa** (`sohan-halwa-25g` `sohan-halwa-50g`) | **CHANGED:** LFAC 1 piece 50 g = **20 g** (40/100 g) vs Hafiz's own estimate 55–60/100 g [LABEL-EST]. Not averaged. **LFAC recommended as the dosing default** — dietitian-compiled for T1D vs a marketing approximation — but the Hafiz figure is energy-consistent with PK-FCT's 481 kcal lab value, so a ghee-light Multani sohan may truly run 55–60. Range **40–60/100 g**; a 25 g piece ≈ **10–15 g** | (a) piece; (b) ghee/nut share | **MED-LOW** — was LOW-MED; dose cautiously, verify with meter |
+| **Sohan halwa** (`sohan-halwa-25g` `sohan-halwa-50g`) | **CHANGED:** LFAC 1 piece 50 g = **20 g** (40/100 g) vs Hafiz's own estimate 55–60/100 g [[LABEL-EST](https://hafizhalwa.com/blogs/information/hafiz-sohan-halwa-calories-amp-nutrition-facts)] — the maker's published figure, 450–500 kcal and 55–60 g carbohydrate per 100 g. Not averaged. **LFAC recommended as the dosing default** — dietitian-compiled for T1D vs a marketing approximation — but the Hafiz figure is energy-consistent with PK-FCT's 481 kcal lab value, so a ghee-light Multani sohan may truly run 55–60. Range **40–60/100 g**; a 25 g piece ≈ **10–15 g** | (a) piece; (b) ghee/nut share | **MED-LOW** — was LOW-MED; dose cautiously, verify with meter |
 | Habshi / Karachi halwa | **still no credible value** [LFAC lacks it] — expect very high | (c) | **—** see section 16 |
 | **Petha halwa** (`petha-halwa`) | ½ cup 114 g = **28 g** [LFAC] | (a); (b) | **MED** — NEW |
 | **Daal halwa** (`daal-halwa`) | ½ cup 113 g = **33 g** [LFAC] | (a); (b) | **MED** — NEW |
@@ -564,6 +564,167 @@ Unchanged from v2 (full citations there): **[KHAN]** Khan I et al., Progress in 
 
 **Carbs & Cals World Foods** (its photos appear in the LFAC book itself) remains the best print cross-check to hand to users.
 
+
+### 17.1 Link health — every URL in this file was fetched on 2026-09-25
+
+**Nothing here was deleted.** Where a cited link no longer works, the original stays exactly where it
+was, because it is the honest record of where a number came from, and a working link is added beside
+it. Four markers appear in the text:
+
+- **· [check]** — the original does not work for a machine, and this one does. Usually the same
+  record at a different address.
+- **· [mirror]** — a second live copy of the same file, byte-identical, on the same publisher.
+- **· [archived]** — an Internet Archive snapshot, used when nothing live serves the fact any more.
+  Every snapshot linked here was opened and confirmed to still carry the figure it is cited for.
+- **· dead, no replacement found** — said plainly, rather than quietly dropping the row. The value
+  keeps whatever confidence it already had; it does not gain or lose one for this.
+
+**Four ways a citation breaks, and they are not the same thing.**
+
+1. **Serves an error status while rendering fine in a browser.** All 15 `fdc.nal.usda.gov`
+   `/food-details/<id>/nutrients` links do this: the page returns **HTTP 404 with the application
+   shell as its body**, so a human sees the food and a checker sees a dead link. The data is not
+   gone. `fdc.nal.usda.gov/portal-data/external/<id>` returns the same record as JSON, on the same
+   USDA domain, with no key — that is the **[check]** link on each. ⚠ It is the address USDA's own
+   page fetches rather than a published API, so it carries no stability promise; the documented
+   `api.nal.usda.gov/fdc/v1/food/<id>` needs a reader-supplied key and is the fallback if it goes.
+   **No Wayback snapshot of any of the 15 exists** — verified, and `fdc-app.html` now redirects to
+   a page that 404s, so the old address form is no help either. All 15 figures were re-read from
+   the live database and every row's arithmetic was confirmed against them: the citations were
+   correct all along, only unreachable.
+2. **Blocked to tools, fine for people.** `europepmc.org` returns a bot challenge, and neither
+   article has ever been archived. PubMed serves the same PMIDs cleanly, so both carry a **[check]**.
+3. **Genuinely gone.** `esajee.com` 404s and `bazaarapp.com` is 503 site-wide; both are preserved in
+   snapshots that still show the figures cited. `daraz.pk` 404s with **no snapshot and no other
+   retailer listing the same pack size** — the one citation in this file with nothing behind it.
+   `nimcobazaar.pk` is the subtle one: it answers **HTTP 200 with "under maintenance" as the body**,
+   so a status check calls it healthy. Another Pakistani retailer lists the same 200 g pack.
+4. **Redirects away from the fact.** `oreo.co.uk`'s product-ID URL scheme is retired; the old link
+   301s to a generic homepage, which is worse than a 404 because it answers 200. The manufacturer's
+   current page carries the same 68 g per 100 g and is linked beside it.
+5. **Broken TLS.** `yaadgaar.co.uk` serves a **self-signed certificate** — subject and issuer are
+   both `tb-be03-hclnxs021a.srv.teamblue-ops.net`, a shared host's default, for the wrong hostname.
+   It is not expired (valid to 2027), so this is a standing misconfiguration rather than a lapse.
+   The page and its panel are intact behind it; the snapshot linked beside it carries the identical
+   table over TLS that validates. It remains the only source for its row, which is why that row is
+   rated MED-LOW and stays there.
+
+**No live page contradicts this file.** Every reachable citation still declares the figure it is
+cited for — twelve manufacturer and retailer panels re-read line by line, including all three Lindt
+bars, both Cadbury pages, Werther's, Loacker, Cofresh, the three Extra gums and Morrisons' habshi
+halwa. A silently reformulated product would have been the worst finding available here, because the
+link would still be live and the number behind it would have moved. There is none.
+
+**Two links are bot-gated rather than broken,** and the distinction matters: `kitkat.co.uk`,
+`kitkatarabia.com` and `tesco.com` return Akamai "Access Denied" to every tool, and
+`cadburygiftsdirect.co.uk` answers **HTTP 405 site-wide** from its edge — none of which means the
+page is gone. Snapshots confirm the first three still carried the cited figures within the last four
+months. Tesco is the second citation in this file with nothing behind it: bot-gated, never archived,
+and the pack weight it supports is not stated on the manufacturer's own page either.
+
+**What was checked and found healthy:** the LFAC book (live, 56 pages, its title page reads
+*Pakistani Foods – Edition 1, 2024*, matching the citation; a byte-identical re-upload and a
+snapshot are now linked beside it, so the source behind 199 rows has three addresses instead of
+one), the CoFID dataset and its gov.uk page (2021 is still the current release), the Open Government
+Licence, Diabetes UK, and the Pakistani retail listings at naheed.pk, alfatah.pk, unitedking.com,
+shopatshams.com.pk, shaheenchemistrwp.com and agro.tdap.gov.pk.
+
+### 17.3 The CALC rows, with the working shown — 2026-09-25
+
+A `[CALC]` row whose arithmetic is written nowhere cannot be checked by anybody, including whoever
+wrote it. These six had none. **No shipped figure was changed here** — this records what the
+components give, and says plainly where that disagrees with what ships, because a disagreement
+nobody can see is worse than one printed in the open.
+
+**Two fall out of figures already in this file, and land where the row does.**
+
+- **`moti-roti`** — the weigh-once rule, atta bread × 0.46: a 60–80 g piece gives **27.6–36.8 g**.
+  The row ships 28–37. Nothing more is needed; the derivation was simply never written down.
+- **`aloo-qeema`** — a 150 g katori is potato plus qeema masala, and the potato is the whole number.
+  At [KHAN] 6.9 g/100 g for the masala and this file's own 15–20 g/100 g for potato: 30 g of potato
+  in the katori gives **12.8–14.3 g**, 60 g gives **15.2–18.2 g**. The row ships 12–18, which is a
+  potato share of roughly a fifth to two-fifths. Consistent.
+
+**Four were re-derived from primary sources, and all four disagree with the row.** Components were
+read from USDA FoodData Central SR Legacy and from the CoFID 2021 spreadsheet directly; recipe
+quantities come from named published recipes with stated weights.
+
+- **`soup-chicken-corn` ships 12–20 g per 250 ml bowl; four real recipes give ≈6–11 g.**
+  Cornstarch [USDA 169698] 91.3 g/100 g, [CoFID 11-1045] 92.0 starch → 83.6 after the starch
+  divisor; canned kernels [USDA 169214] 14.3 − 2.0 fibre, [CoFID 13-529] 13.9 → 13.2. Worked
+  through Made With Lau (10.1 g), Food Tribune (6.2), Corner Cooks (8.0), Haris and Momin (10.6).
+  ⚠ **Every one lands below the shipped floor.** The gap closes only if a restaurant bowl is both
+  larger than 250 ml and thicker than these home recipes — plausible, and **no recipe found supports
+  it**. Pakistani retail sells "soup bowls" at 400–500 ml, but that is a bowl's capacity for sale,
+  not a measured fill.
+- **`chargha` ships 2–8 g per quarter; six marinade recipes give ≈0.7–4.8 g.**
+  Yoghurt [USDA 171284] 4.66 g/100 g against [CoFID 12-184] 7.8 → 7.43, a real 68 % disagreement
+  that this file's own `dahi-plain` band already spans; besan [USDA 174288] 57.8 − 10.8 fibre and
+  [CoFID 11-896] 57.0 → 54.3, agreeing within 1 %. ⚠ **The row says a besan coat "pushes toward 8",
+  and the one besan-coated recipe found — Fatima Cooks' Lahori Chargha, gram-weighed, four servings
+  — computes to 2.1–2.3 g.** Nothing found supports 8. It may be a deliberate upper bound; it is not
+  a measured one. The figures also assume the whole marinade stays on the bird, which that recipe
+  itself contradicts by describing marinade pooling off during steaming.
+- **`chutney-meethi` ships 5–10 g per 20 g Tbsp; recipes give ≈6–13 g depending on style.**
+  Tamarind pulp [CoFID 13-856] 64.5 → 61.4, corroborated by [USDA 167763] 62.5 − 5.1 fibre; sugar
+  [CoFID 17-063] 105.0 → 100.0. Cook With Manali's home-style works out at 5.8–6.7 g; Food Fusion's
+  street/chaat-shop style at 10.0–12.9 g, and USDA FNDDS 2709309 (60.6 g/100 g) agrees with the
+  thick one. ⚠ **The row's own note describes the street version** — "thela chaat usually comes with
+  two or three spoons" — and that is the version sitting above the shipped ceiling.
+  ⚠ **Jaggery is in neither USDA nor CoFID at all**, confirmed by direct search of both, so any gur
+  chutney figure inherits the `gur` row's own unverified source. See 17.2.
+- **`fruit-chaat` ships 20–30 g per cup; this file's own fruit figures give ≈14–36 g.**
+  An apple- and guava-heavy 150 g cup lands near **14 g**; a banana- and mango-heavy 200 g cup near
+  **35.5 g** before any sprinkled sugar, which no source quantifies. ⚠ **The band is narrower than
+  the spread its own components produce**, at both ends. No database carries a Pakistani fruit chaat
+  composite, and no cup weight for one could be sourced; CoFID's UK "fruit salad, homemade" (14-333,
+  with added sugar) computes to 14.3 g/100 g as context.
+
+**What this costs a reader, in the direction that matters.** Soup and chargha ship ABOVE what their
+components give, which is the over-dosing direction — soup by up to 9 g at the top, chargha by about
+3 g. Chutney and fruit chaat ship BELOW at the top, which is the under-dosing direction and
+meter-correctable. **None of the four has been changed pending Momin's decision.**
+
+### 17.2 Citations that could not be recovered, and what was already tried
+
+Section 17 has always opened *"Unchanged from v2 (full citations there)"*. **Every revision of this
+file in git carries that sentence, and a v2 of this document has never existed in this repository** —
+it was born at v3. Most tags on that line carry a real citation inline anyway (KHAN has journal,
+volume and pages; PK-FCT has a DOI). These are the ones that pointed at nothing, and what a
+2026-09-25 recovery pass could and could not establish. Nothing was removed; a tag with no citation
+is marked as having none.
+
+**Recovered, exact-match, now linked above:**
+
+- **Dawn frozen plain paratha** — the manufacturer's own panel, 39 g carbohydrate per 80 g serving,
+  matching the row exactly. Only an archived copy survives; Dawn's current site lists no parathas.
+- **Hafiz sohan halwa** — the maker's published 55–60 g/100 g, live on their own site.
+
+**[NIN] — publication identified, figure does not match.** The National Institute of Nutrition's
+current tables are *Indian Food Composition Tables 2017*, and its jaggery row (`I001 Jaggery, cane`)
+gives **84.87 ± 0.63 g per 100 g available carbohydrate** at 11.2 % moisture — not the **95–98** this
+file prints. On a dry-matter basis 84.87 ÷ 0.888 ≈ 95.6, which lands inside our band, but that is an
+arithmetic coincidence being reported rather than an explanation anybody has evidence for. The
+pre-2017 *Nutritive Value of Indian Foods* (Gopalan et al.), which IFCT 2017 supersedes, may be the
+edition actually read; NIN no longer serves it. ⚠ **The `gur` row rests on this, and the difference
+is real: a 15 g lump is 14 g at our figure and 12.7 g at IFCT 2017's.**
+
+**[SJSU] — not established.** "Wagle et al. carb-counting handout", used on about ten rows, has no
+author initial, year, institution page or URL anywhere. San José State's nutrition department pages
+404, and its repository blocks automated access. Every consumer search engine available to the
+recovery pass was broken or exhausted, so **this is an unfinished search, not a concluded one** — it
+needs retrying with working search, and nobody should repeat the plain-web-search attempts.
+
+**[LIT] on four rows — not established:** taftan (Iranian taftoon 62 g/100 g), khoya, falsa, and the
+khoa-jalebi sucrose-spread note. Plausible candidate papers exist for three, all behind paywalls the
+pass could not read, so none can be claimed as *the* source. PubMed, OpenAlex and Crossref queries
+are exhausted; what is missing is full-text access.
+
+**Roghni naan (Sufi/Dawn) — not established.** Dawn Foods' own historical catalogue sold Lahori and
+Tandoori naan and **no roghni naan**; the row's own note says "via N-American labels", which fits. No
+Sufi bakery could be identified — the obvious domains belong to an unrelated organic retailer and to
+a rice-milling engineering firm. A physical packet would settle it faster than any search.
+
 ---
 
 ## 18. Every value that changed from v2 — and why
@@ -684,18 +845,18 @@ chocolate"*, so nobody has to know a brand to find the row.
 
 **Counts identify declarations actually checked.** Multiple sizes of one recipe are not independent manufacturers. Retailer transcriptions are identified. Retail titles supply weights only. Crowd-transcribed tracker entries in the earlier scratchpad draft were **not counted as verified labels**.
 
-- **Milk chocolate:** **2 manufacturer declarations, 1 recipe; both 57 g/100 g**: [Cadbury 45 g](https://www.cadburygiftsdirect.co.uk/cadbury-dairy-milk-bar-45g.html) and [360 g](https://www.cadbury.co.uk/products/cadbury-dairy-milk-chocolate-bar-360g/index.html). The [180 g retailer panel](https://www.onestop.co.uk/product/cadbury-dairy-milk-chocolate-bar-180-g/) also gives 57. [USDA-SR 167587](https://fdc.nal.usda.gov/food-details/167587/nutrients) is a generic comparison, not a brand assay.
+- **Milk chocolate:** **2 manufacturer declarations, 1 recipe; both 57 g/100 g**: [Cadbury 45 g](https://www.cadburygiftsdirect.co.uk/cadbury-dairy-milk-bar-45g.html) · [archived](http://web.archive.org/web/20260825035413/https://www.cadburygiftsdirect.co.uk/cadbury-dairy-milk-bar-45g.html) and [360 g](https://www.cadbury.co.uk/products/cadbury-dairy-milk-chocolate-bar-360g/index.html). The [180 g retailer panel](https://www.onestop.co.uk/product/cadbury-dairy-milk-chocolate-bar-180-g/) also gives 57. [USDA-SR 167587](https://fdc.nal.usda.gov/food-details/167587/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/167587) is a generic comparison, not a brand assay.
 - **Dark chocolate:** **3 product panels, 1 manufacturer; 14–34 g/100 g**: [Lindt 70%](https://www.lindt.co.uk/lindt-excellence-dark-70-bar-100g-10), [85%](https://www.lindt.co.uk/lindt-excellence-dark-85-chocolate-bar-100g), [90%](https://www.lindt.co.uk/lindt-excellence-dark-90-bar-100g). Different cocoa percentages explain these different products; **no cocoa-percentage formula is established**, and no extrapolation to other brands/fillings is made.
-- **Filled / chocolate-wafer bars:** **2 primary product declarations compared**: [Caramel 62 g/100 g](https://www.cadbury.co.uk/products/cadbury-dairy-milk-caramel-chocolate-bar-120g/) and [UK KitKat 26.1 g/41.5 g ≈ 62.9 g/100 g](https://www.kitkat.co.uk/products/kitkat-4-finger-milk). The **62–62.9** spread describes only these two recipes. [KitKat Arabia](https://www.kitkatarabia.com/products/kitkat-4-finger-milk-chocolate-bar) additionally displays 23 g per serving, but the retrieved table did not establish a usable serving-weight pairing; excluded from per-100 g comparison. Match import origin.
-- **Tea biscuits:** **0 verified Pakistani manufacturer panels accepted.** [Bazaar's Sooper transcription](https://www.bazaarapp.com/product/sooper-biscuits-box-rs-20-16-pcs) says 66 g total CHO/100 g, fibre 1.3; its pack description mixes price, weight and unit count. Treat as **[WEAK]**, pending an actual panel/specification. It does not validate a universal “1 Sooper = 4.4 g”. At 66 g/100 g, 4.4 g implies a **6.67 g biscuit** [CALC]; piece mass must be established.
-- **Sandwich biscuits:** **1 relevant manufacturer panel accepted**, [Oreo UK Vanilla: 68 g/100 g](https://www.oreo.co.uk/products/index.html?itm_content=teaser&p=31220); no between-label spread established. [USDA-SR chocolate 172718](https://fdc.nal.usda.gov/food-details/172718/nutrients) and [vanilla 172737](https://fdc.nal.usda.gov/food-details/172737/nutrients) are generic comparisons, not Pakistan-made Oreo assays.
-- **Uncoated wafers:** **1 manufacturer panel**, [Loacker Classic Napolitaner: 58 g/100 g](https://www.loacker.com/int/en/products/world-of-wafers/classic-napolitaner); no between-label spread established. [USDA-SR 172736](https://fdc.nal.usda.gov/food-details/172736/nutrients) is the different generic sugar-wafer recipe.
-- **Boiled sweets:** **0 manufacturer panels used** for the band. [USDA-SR hard candy 167990](https://fdc.nal.usda.gov/food-details/167990/nutrients): **98 g/100 g**, fibre 0. CoFID's old boiled-sweets sample contains **16.6% water**; it is not the same nearly dry recipe as USDA hard candy.
-- **Toffees:** **1 manufacturer panel examined**, [Storck / Werther's Creamy Toffees](https://www.storck.co.uk/fileadmin/pdf/_en_GB_werther-s-original_werther-s-original-creamy-toffees.pdf): **71.8 g/100 g**, piece **6.3 g / 4.5 g printed CHO**. It contains **sorbitol syrup without quantified polyol grams**, so it does not establish available CHO or a local toffee-piece weight. Generic comparison: [USDA-SR caramels 167974](https://fdc.nal.usda.gov/food-details/167974/nutrients), 77 g/100 g.
+- **Filled / chocolate-wafer bars:** **2 primary product declarations compared**: [Caramel 62 g/100 g](https://www.cadbury.co.uk/products/cadbury-dairy-milk-caramel-chocolate-bar-120g/) and [UK KitKat 26.1 g/41.5 g ≈ 62.9 g/100 g](https://www.kitkat.co.uk/products/kitkat-4-finger-milk) · [archived](http://web.archive.org/web/20260519072230/https://www.kitkat.co.uk/products/kitkat-4-finger-milk). The **62–62.9** spread describes only these two recipes. [KitKat Arabia](https://www.kitkatarabia.com/products/kitkat-4-finger-milk-chocolate-bar) · [archived](http://web.archive.org/web/20260826081233/https://www.kitkatarabia.com/products/kitkat-4-finger-milk-chocolate-bar) additionally displays 23 g per serving, but the retrieved table did not establish a usable serving-weight pairing; excluded from per-100 g comparison. Match import origin.
+- **Tea biscuits:** **0 verified Pakistani manufacturer panels accepted.** [Bazaar's Sooper transcription](https://www.bazaarapp.com/product/sooper-biscuits-box-rs-20-16-pcs) · [archived](http://web.archive.org/web/20260307144153/https://www.bazaarapp.com/product/sooper-biscuits-box-rs-20-16-pcs) says 66 g total CHO/100 g, fibre 1.3; its pack description mixes price, weight and unit count. Treat as **[WEAK]**, pending an actual panel/specification. It does not validate a universal “1 Sooper = 4.4 g”. At 66 g/100 g, 4.4 g implies a **6.67 g biscuit** [CALC]; piece mass must be established.
+- **Sandwich biscuits:** **1 relevant manufacturer panel accepted**, [Oreo UK Vanilla: 68 g/100 g](https://www.oreo.co.uk/products/index.html?itm_content=teaser&p=31220) · [check](https://oreo.eu/uk/products/#oreo-vanilla-154g-43080); no between-label spread established. [USDA-SR chocolate 172718](https://fdc.nal.usda.gov/food-details/172718/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/172718) and [vanilla 172737](https://fdc.nal.usda.gov/food-details/172737/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/172737) are generic comparisons, not Pakistan-made Oreo assays.
+- **Uncoated wafers:** **1 manufacturer panel**, [Loacker Classic Napolitaner: 58 g/100 g](https://www.loacker.com/int/en/products/world-of-wafers/classic-napolitaner); no between-label spread established. [USDA-SR 172736](https://fdc.nal.usda.gov/food-details/172736/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/172736) is the different generic sugar-wafer recipe.
+- **Boiled sweets:** **0 manufacturer panels used** for the band. [USDA-SR hard candy 167990](https://fdc.nal.usda.gov/food-details/167990/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/167990): **98 g/100 g**, fibre 0. CoFID's old boiled-sweets sample contains **16.6% water**; it is not the same nearly dry recipe as USDA hard candy.
+- **Toffees:** **1 manufacturer panel examined**, [Storck / Werther's Creamy Toffees](https://www.storck.co.uk/fileadmin/pdf/_en_GB_werther-s-original_werther-s-original-creamy-toffees.pdf): **71.8 g/100 g**, piece **6.3 g / 4.5 g printed CHO**. It contains **sorbitol syrup without quantified polyol grams**, so it does not establish available CHO or a local toffee-piece weight. Generic comparison: [USDA-SR caramels 167974](https://fdc.nal.usda.gov/food-details/167974/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/167974), 77 g/100 g.
 - **Sugar-free gum:** **3 manufacturer declarations**, representing **2 recipes**: [Extra Spearmint 10 pieces](https://www.extragum.co.uk/products/extra-spearmint-chewing-gum-sugarfree-10-pieces-extra-gum), **62 g CHO/100 g**; [Spearmint 46 pieces](https://www.extragum.co.uk/products/extra-spearmint-chewing-gum-sugar-free-bottle-46-pieces-extra-gum), **62 CHO / 62 polyols**; [Extra Plus Deep Clean](https://www.extragum.co.uk/products/extra-plus/extra-plus-deep-clean-bottle), **73 CHO / 72 polyols**. Printed CHO spread **62–73**, quantified polyols **62–72**. Do not use Plus figures for ordinary Spearmint.
-- **Corn snacks:** **0 Pakistani manufacturer panels accepted**. USDA approximate available values: [barbecue chips 167538](https://fdc.nal.usda.gov/food-details/167538/nutrients) **56.2 − 5.2 = 51.0**; [plain chips 167537](https://fdc.nal.usda.gov/food-details/167537/nutrients) **57.27 − 4.0 = 53.27**; [cheese puffs 167949](https://fdc.nal.usda.gov/food-details/167949/nutrients) **54.54 − 0.8 = 53.74**; [cones 167539](https://fdc.nal.usda.gov/food-details/167539/nutrients) **62.9 − 1.1 = 61.8 g/100 g** [CALC]. A US Cheetos panel does not validate Pakistani Cheetos.
+- **Corn snacks:** **0 Pakistani manufacturer panels accepted**. USDA approximate available values: [barbecue chips 167538](https://fdc.nal.usda.gov/food-details/167538/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/167538) **56.2 − 5.2 = 51.0**; [plain chips 167537](https://fdc.nal.usda.gov/food-details/167537/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/167537) **57.27 − 4.0 = 53.27**; [cheese puffs 167949](https://fdc.nal.usda.gov/food-details/167949/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/167949) **54.54 − 0.8 = 53.74**; [cones 167539](https://fdc.nal.usda.gov/food-details/167539/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/167539) **62.9 − 1.1 = 61.8 g/100 g** [CALC]. A US Cheetos panel does not validate Pakistani Cheetos.
 - **Nimco:** **1 commercial label specification**, [Cofresh Bombay Mix, retailer-hosted specification dated 29 September 2022](https://www.onestop.co.uk/wp-content/uploads/Cofresh-Bombay-Mix-Savoury-Indian-Snack-80g-386554.pdf): **48 g/100 g**, fibre separate. No between-label spread or Pakistani brand assay established. The **32–48** difference is CoFID composite versus this product, not a local label survey.
-- **Peanuts:** **0 manufacturer panels used**. [USDA-SR oil-roasted salted 174261](https://fdc.nal.usda.gov/food-details/174261/nutrients): **15.26 total − 9.4 fibre = 5.86**; [dry-roasted salted 174262](https://fdc.nal.usda.gov/food-details/174262/nutrients): **21.26 − 8.4 = 12.86 g/100 g** [CALC]. Importing raw by-difference totals as available CHO would materially bias insulin upward.
+- **Peanuts:** **0 manufacturer panels used**. [USDA-SR oil-roasted salted 174261](https://fdc.nal.usda.gov/food-details/174261/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/174261): **15.26 total − 9.4 fibre = 5.86**; [dry-roasted salted 174262](https://fdc.nal.usda.gov/food-details/174262/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/174262): **21.26 − 8.4 = 12.86 g/100 g** [CALC]. Importing raw by-difference totals as available CHO would materially bias insulin upward.
 
 **CoFID workings** [CoFID; CALC], checked directly in the **2021 workbook, “1.3 Proximates”**, from the [official dataset](https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid):
 
@@ -714,9 +875,9 @@ chocolate"*, so nobody has to know a brand to find the row.
 
 Trace components treated as zero. Published components occasionally sum 0.1 g above reported totals through rounding. Dataset sample counts are **not labels personally compared** in this audit. The existing chevda **35.5** in CARBS.md is unconverted monosaccharide-equivalent CHO and a **calculated homemade recipe**, not a measured Pakistani nimco density. Where its 31.6 g starch is known but the remaining components are not quantified, an approximate conversion is **31.6 ÷ 1.10 + (35.5 − 31.6) ÷ 1.05 ≈ 32.4 g/100 g** [CALC; remainder conversion assumed]. This still cannot establish all packaged mixtures.
 
-**Retail weights:** [Esajee Pakistan](https://esajee.com/products/kitkat-4-finger-milk-chocolate-bar-415g-0pffi) lists the **41.5 g KitKat milk bar** (out of stock when retrieved; UK formulation still needs matching on the wrapper). [Naheed's catalogue](https://www.naheed.pk/sitemap) lists imported Dairy Milk **45 / 180 g** and Caramel **45 / 120 g**. [Pakistan Lindt listing](https://shaheenchemistrwp.com/products/reeses-nut-bar-47-g-copy) identifies a **100 g 70% block**. Al-Fatah's saved public catalogue records (`raw_biscuits-price-in-pakistan.json`, `af_bis.json`, `af_chips.json`, already in the research scratchpad) identify Marie **32.6 / 200 g**, Oreo **19 / 119.6 g**, Loacker Napolitaner **45 / 175 g**, Cheetos **23 / 99.2 / 226.8 g**, Shahi mix **45 g**, Nimcos mix **200 g**, and salted peanuts **27 / 200 g**. Live pages also confirm [Oreo 119.6 g](https://alfatah.pk/products/oreo-biscuit-original-133-gm) and [Loacker 175 g](https://alfatah.pk/products/loacker-wafer-napolitaner-175-gm). **The Oreo URL says 133 g while its title says 119.6 g: use the actual wrapper.** Saved titles establish catalogue examples, not current stock or nutrition.
+**Retail weights:** [Esajee Pakistan](https://esajee.com/products/kitkat-4-finger-milk-chocolate-bar-415g-0pffi) · [archived](http://web.archive.org/web/20250317141110/https://esajee.com/products/kitkat-4-finger-milk-chocolate-bar-415g-0pffi) lists the **41.5 g KitKat milk bar** (out of stock when retrieved; UK formulation still needs matching on the wrapper). [Naheed's catalogue](https://www.naheed.pk/sitemap) lists imported Dairy Milk **45 / 180 g** and Caramel **45 / 120 g**. [Pakistan Lindt listing](https://shaheenchemistrwp.com/products/reeses-nut-bar-47-g-copy) identifies a **100 g 70% block**. Al-Fatah's saved public catalogue records (`raw_biscuits-price-in-pakistan.json`, `af_bis.json`, `af_chips.json`, already in the research scratchpad) identify Marie **32.6 / 200 g**, Oreo **19 / 119.6 g**, Loacker Napolitaner **45 / 175 g**, Cheetos **23 / 99.2 / 226.8 g**, Shahi mix **45 g**, Nimcos mix **200 g**, and salted peanuts **27 / 200 g**. Live pages also confirm [Oreo 119.6 g](https://alfatah.pk/products/oreo-biscuit-original-133-gm) and [Loacker 175 g](https://alfatah.pk/products/loacker-wafer-napolitaner-175-gm). **The Oreo URL says 133 g while its title says 119.6 g: use the actual wrapper.** Saved titles establish catalogue examples, not current stock or nutrition.
 
-Additional pack evidence: [United King 200 g nimco](https://unitedking.com/chips-and-nimco/), [Nimco Bazaar 200 g salted peanuts](https://nimcobazaar.pk/product/peanuts-salted/), [Deemah 250 g toffee pouch, Pakistan retailer](https://www.daraz.pk/products/250-6-i932969431.html), [Cavendish & Harvey 200 g hard drops, Pakistan retailer](https://shopatshams.com.pk/collections/cavendish-harvey), [Naheed Extra 14 g and 46-pellet packs](https://www.naheed.pk/allproducts/?manufacturer=805), and [46-pellet Spearmint bottle mass, 64 g](https://www.tesco.com/shop/en-GB/buylists/chewinggumbottles/chewinggumbottles). The general small/sharing distinction is established; exact small-pack weights for dark chocolate and individual local sweets remain gaps.
+Additional pack evidence: [United King 200 g nimco](https://unitedking.com/chips-and-nimco/), [Nimco Bazaar 200 g salted peanuts](https://nimcobazaar.pk/product/peanuts-salted/) · [check](https://alfatah.pk/products/nimcos-salted-peanuts-200-gm), [Deemah 250 g toffee pouch, Pakistan retailer](https://www.daraz.pk/products/250-6-i932969431.html) · **dead, no replacement found**, [Cavendish & Harvey 200 g hard drops, Pakistan retailer](https://shopatshams.com.pk/collections/cavendish-harvey), [Naheed Extra 14 g and 46-pellet packs](https://www.naheed.pk/allproducts/?manufacturer=805), and [46-pellet Spearmint bottle mass, 64 g](https://www.tesco.com/shop/en-GB/buylists/chewinggumbottles/chewinggumbottles) · **dead, no replacement found**. The general small/sharing distinction is established; exact small-pack weights for dark chocolate and individual local sweets remain gaps.
 
 #### Sugar-free confectionery — an explicit HYPOGLYCAEMIA hazard
 
@@ -737,7 +898,7 @@ For the Extra bottle, **62 − 62 = 0 g non-polyol CHO/100 g** is label arithmet
 
 **Retire “nothing anywhere”; retain the Karachi-specific gap.** [Royal Special Habshi Halwa's 300 g label at Morrisons](https://groceries.morrisons.com/products/royal-special-habshi-halwa/114759672) declares CHO 43.5, protein 8.8, fat 14 and fibre 4.4 g/100 g. Energy cross-check: **4 × (43.5 + 8.8) + 9 × 14 + 2 × 4.4 = 344 kcal**, matching the label [CALC]. Fibre is separate; subtracting it again under-counts.
 
-[Yaadgaar's own table](https://www.yaadgaar.co.uk/product/habshi-halwa/) declares CHO 58, protein 13, fat 22, fibre 0.2 g/100 g and 474 kcal. Calculated energy is **486.4 kcal**, about **2.6% higher** [CALC]. Preserve this limitation; do not “repair” CHO from calories. **Two product nutrition declarations compared: 43.5–58**, one retailer-reproduced and one manufacturer-published; neither is a Pakistan assay. The [Dawn/Mezban brochure](https://agro.tdap.gov.pk/wp-content/uploads/2023/07/Dawn-brochure.pdf) identifies Habshi halwa but did not yield a usable numeric panel in this audit. No number inferred from headings.
+[Yaadgaar's own table](https://www.yaadgaar.co.uk/product/habshi-halwa/) · [check](http://web.archive.org/web/20250815162007/http://www.yaadgaar.co.uk/product/habshi-halwa/) declares CHO 58, protein 13, fat 22, fibre 0.2 g/100 g and 474 kcal. Calculated energy is **486.4 kcal**, about **2.6% higher** [CALC]. Preserve this limitation; do not “repair” CHO from calories. **Two product nutrition declarations compared: 43.5–58**, one retailer-reproduced and one manufacturer-published; neither is a Pakistan assay. The [Dawn/Mezban brochure](https://agro.tdap.gov.pk/wp-content/uploads/2023/07/Dawn-brochure.pdf) identifies Habshi halwa but did not yield a usable numeric panel in this audit. No number inferred from headings.
 
 Do not automatically make **Habshi halwa** and **Karachi/Bombay halwa** interchangeable search aliases. Verified Habshi products contain milk/wheat; a product locally described as starch-based Karachi halwa needs separate identification. Using **58 instead of 43.5** on 50 g adds **7.25 g** counted CHO and biases toward over-dosing/hypoglycaemia; reversing the substitution under-counts equally. No universal endpoint recommended.
 
@@ -745,7 +906,7 @@ Do not automatically make **Habshi halwa** and **Karachi/Bombay halwa** intercha
 
 ### 20.3 Papar — the printed row fails arithmetic
 
-The [LFAC Pakistani book](https://lifeforachild.org/wp-content/uploads/2024/08/Carb-Counting-Book_Pakistan-v4c.pdf), **printed page 37**, really prints **5 pieces / 15 g weight / 15 g carbohydrate**, checked against the rendered page and text. **This is not a shifted-column transcription in CARBS.md.** The mass-based reading gives **15 ÷ 15 × 100 = 100 g CHO/100 g food**, leaving no mass for protein, fat, water or minerals. A monosaccharide-equivalent interpretation would not establish a valid fried-papad composition either.
+The [LFAC Pakistani book](https://lifeforachild.org/wp-content/uploads/2024/08/Carb-Counting-Book_Pakistan-v4c.pdf) · [mirror](https://lifeforachild.org/wp-content/uploads/2026/09/Carb-Counting-Book_Pakistani_Edition-1_2024.pdf) · [archived](http://web.archive.org/web/20250213184418/https://lifeforachild.org/wp-content/uploads/2024/08/Carb-Counting-Book_Pakistan-v4c.pdf), **printed page 37**, really prints **5 pieces / 15 g weight / 15 g carbohydrate**, checked against the rendered page and text. **This is not a shifted-column transcription in CARBS.md.** The mass-based reading gives **15 ÷ 15 × 100 = 100 g CHO/100 g food**, leaving no mass for protein, fat, water or minerals. A monosaccharide-equivalent interpretation would not establish a valid fried-papad composition either.
 
 **LFAC's intended correction cannot be recovered.** A duplicated cell, wrong weight or wrong CHO value is possible; none is demonstrated. No publisher erratum found. The row does **not specify “fried” or 10% moisture**; do not attribute those details to LFAC or assume 15 g means *each*.
 
@@ -756,7 +917,7 @@ The [LFAC Pakistani book](https://lifeforachild.org/wp-content/uploads/2024/08/C
 
 **Working:** CoFID **11-998, “Papadums, takeaway”**, 10 outlets: CHO **28.3**, all **28.3 starch**, per 100 g. **28.3 ÷ 1.10 = 25.727 g/100 g** actual CHO; **13 × 25.727 ÷ 100 = 3.3445 g**; **15 × 25.727 ÷ 100 = 3.8591 g** [CALC]. The general ÷1.05 would give 26.95; **starch-specific ÷1.10** applies here. This record has **38.8 g fat, 11.5 g protein and 3.9 g water/100 g**. [CoFID 2021 workbook](https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid)
 
-Cross-check, **not interchangeable**: [USDA-SR “Papad”, 168106](https://fdc.nal.usda.gov/food-details/168106/nutrients): **59.87 g by-difference CHO**, **18.6 fibre**, **3.25 fat** per 100 g. Its very different fat content rules out treating it as the same fried sample. **41.27 g total-minus-fibre** is only a derived comparison, not evidence that LFAC intended 6, 9 or 15 g per portion.
+Cross-check, **not interchangeable**: [USDA-SR “Papad”, 168106](https://fdc.nal.usda.gov/food-details/168106/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/168106): **59.87 g by-difference CHO**, **18.6 fibre**, **3.25 fat** per 100 g. Its very different fat content rules out treating it as the same fried sample. **41.27 g total-minus-fibre** is only a derived comparison, not evidence that LFAC intended 6, 9 or 15 g per portion.
 
 **Direction of harm:** for the matched fried proxy, LFAC's 15 g instead of **3.9 g per 15 g food** over-counts about **11.1 g**, biasing insulin toward hypoglycaemia. Applying this oily fried density to a different dry/starchy papad could instead under-count. Keep preparation explicit. Size belongs under **(a)**, not the old row's “(b) size”.
 
@@ -768,7 +929,7 @@ Cross-check, **not interchangeable**: [USDA-SR “Papad”, 168106](https://fdc.
 
 The rendered LFAC page confirms **178 and 20**, not an extraction swap. **20 ÷ 178 × 100 = 11.24** is internally correct. Unlike papar, this is **not a mass-balance impossibility**. Low density alone cannot prove a typo: oil, moisture and weight basis can change it.
 
-[USDA-SR raw potato, flesh and skin, 170026](https://fdc.nal.usda.gov/food-details/170026/nutrients) contains **17.49 g total CHO and 2.1 g fibre/100 g**. **If 178 g meant raw edible potato**, it would contain **31.13 g by-difference CHO**, or approximately **27.39 g after subtracting fibre** [CALC]. This conditional comparison is **not a replacement for 178 g finished fried dish**. Neither raw-potato nor French-fries density can silently become measured Sindhi-dish data.
+[USDA-SR raw potato, flesh and skin, 170026](https://fdc.nal.usda.gov/food-details/170026/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/170026) contains **17.49 g total CHO and 2.1 g fibre/100 g**. **If 178 g meant raw edible potato**, it would contain **31.13 g by-difference CHO**, or approximately **27.39 g after subtracting fibre** [CALC]. This conditional comparison is **not a replacement for 178 g finished fried dish**. Neither raw-potato nor French-fries density can silently become measured Sindhi-dish data.
 
 **Resolve a household recipe** by summing CHO from weighed edible raw ingredients, dividing by **measured finished edible batch weight**, then multiplying by eaten weight [CALC]. Pure oil adds no carbohydrate but changes yield/density. Cite ingredients and account for relevant losses; do not invent oil uptake, final yield or potato count. No sufficiently specified local recipe/yield or independent assay was found in this audit.
 
@@ -818,7 +979,7 @@ The rendered LFAC page confirms **178 and 20**, not an extraction swap. **20 ÷ 
 | **Meethi chutney, imli** (`chutney-meethi`) | 1 Tbsp, 20 g | **5–10 g** | MED | The one chutney that counts. The chaat rows already carry one spoon |
 | **Malai, cream** (`malai`) | 2 Tbsp, 30 g | **1–2 g** | HIGH | Nearly all fat. Sugar on top is the sugar's line, 4.2 a spoon. [USDA] cream |
 | **Butter, ghee or oil** — *Makhan* (`butter-ghee-oil`) | any amount | **0 g** | HIGH | **Zero at any amount** — fat changes how fast a meal lands, not its carbohydrate. [USDA] |
-| **Brown / wholemeal bread** (`bread-brown`) | 1 slice ≈ 30 g | **11–14 g** | MED | ⚠ **Corrects the "brown bread does not count" belief** — against white's 13–15. The fibre slows the rise; it does not remove the grams. A bakery "diabetic" loaf is this row unless its packet says otherwise. [USDA-SR 172688](https://fdc.nal.usda.gov/food-details/172688/nutrients); CoFID wholemeal |
+| **Brown / wholemeal bread** (`bread-brown`) | 1 slice ≈ 30 g | **11–14 g** | MED | ⚠ **Corrects the "brown bread does not count" belief** — against white's 13–15. The fibre slows the rise; it does not remove the grams. A bakery "diabetic" loaf is this row unless its packet says otherwise. [USDA-SR 172688](https://fdc.nal.usda.gov/food-details/172688/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/172688); CoFID wholemeal |
 | **Kulcha, bakery (dry, chai)** (`kulcha-bakery`) | 1 piece ≈ 40 g | **21–28 g** | **LOW** | See the ruling below |
 | **Dalia** (`dalia`) | 1 bowl, 250 ml, milk + 2 sugars | **30–40 g** | **LOW** | The dry grain is the number: ~25 g dry = 16–19 g before anything. Milk +5/100 ml, sugar 4.2 a spoon. **Weigh dry once: grams × 0.65.** CALC from [USDA] bulgur |
 | **Oats, porridge** (`oats-porridge`) | ½ cup dry, 40 g | **24–27 g** | MED | ⚠ The packet's own panel beats this row. Top includes fibre — a slight overestimate. [USDA-SR] Quaker quick oats 68.2/100 g |
@@ -830,7 +991,7 @@ The rendered LFAC page confirms **178 and 20**, not an extraction swap. **20 ÷ 
 
 **The bound is defensible as a class argument.** Every dry wheat bakery product with a published panel sits in one envelope — CoFID rusk 55.7–73, cake rusk ~47–64, khari 46–60, taralli 60–71, LFAC's own Pakistani rusk 60 — and mass balance explains why nothing escapes it: sugar *is* carbohydrate, and only fat, protein and water can displace it. Khari at 39 g fat still prices at 46. A ghee kulcha is bounded 45–65 g/100 g from both sides. **This app already ships `rusk-plain` and `rusk-cake` at MED**; refusing kulcha split one food class down the middle.
 
-**Clinical tolerance settles the size of the bound.** [Smart 2009 (PMID 19317823)](https://europepmc.org/article/MED/19317823) found ±10 g on a 60 g meal causes no deterioration in postprandial control; [Brazeau 2013 (PMID 23146371)](https://europepmc.org/article/MED/23146371) measured trained adults' real-world error at ±15.4 g per meal. **The tolerance is absolute, not proportional** — both trials used 60 g meals only. An 8 g-wide band is inside both, i.e. clinically equivalent to a measurement. The proxy errs ≤0.6 units typically, −2.1 worst case, in the **under**-dose direction.
+**Clinical tolerance settles the size of the bound.** [Smart 2009 (PMID 19317823)](https://europepmc.org/article/MED/19317823) · [check](https://pubmed.ncbi.nlm.nih.gov/19317823/) found ±10 g on a 60 g meal causes no deterioration in postprandial control; [Brazeau 2013 (PMID 23146371)](https://europepmc.org/article/MED/23146371) · [check](https://pubmed.ncbi.nlm.nih.gov/23146371/) measured trained adults' real-world error at ±15.4 g per meal. **The tolerance is absolute, not proportional** — both trials used 60 g meals only. An 8 g-wide band is inside both, i.e. clinically equivalent to a measurement. The proxy errs ≤0.6 units typically, −2.1 worst case, in the **under**-dose direction.
 
 ⚠ **This row is LOW and says so on its face.** Its `varies` line states plainly that no lab has measured it and that the tandoor row is not a substitute.
 

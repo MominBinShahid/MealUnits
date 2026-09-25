@@ -2782,11 +2782,34 @@ first `N g` rejects the grids, which print no unit. Closing it properly means gi
 14 a Conf column and a per-cell figure — worth doing, not worth over-fitting a checker to today's
 typography for.
 
-**2. Source tags used in data and defined nowhere.** Bare `USDA` on **65 rows** — §2 defines only
-`[USDA-SR]` and `[FNDDS]`. `IGNOU` on one row (`lassi-sweet-shop`). `SJSU` cites "v2" of a document
-that **does not exist in the repository or anywhere in its git history**. ⚠ The in-app expansion
-shipped in #133 defines `USDA` from the author's understanding rather than from the document,
-because the document has none — that gap is still open.
+**2. Source tags used in data and defined nowhere — MOSTLY DONE 2026-09-25.** Bare `USDA` on
+**65 rows** and `IGNOU` on one are now defined in CARBS.md sections 2 and 17, `[USDA]` as *FoodData
+Central, dataset not recorded on the row* and `[IGNOU]` with its unit and edition marked unrecorded
+rather than guessed.
+
+**The "v2" problem was bigger than SJSU.** Every revision of CARBS.md in git opens section 17 with
+*"Unchanged from v2 (full citations there)"* — **v2 has never existed in this repository**; the file
+was born at v3. A recovery pass established two of the missing citations exactly (Dawn frozen
+paratha's own panel, 39 g per 80 g, archived; Hafiz sohan halwa's own published 55–60 g/100 g, live)
+and they are linked in the rows now. The rest is written down in **section 17.2** as not established,
+with what was already tried so nobody repeats it:
+
+- **`[SJSU]`** — no author initial, year, institution page or URL for "Wagle et al." anywhere. SJSU's
+  nutrition pages 404 and its repository blocks automated access; every search engine available to
+  the pass was broken or exhausted. **An unfinished search, not a concluded one.**
+- **`[LIT]` on taftan, khoya, falsa and khoa-jalebi** — plausible candidate papers found for three,
+  all paywalled, so none can be claimed as the source.
+- **Roghni naan (Sufi/Dawn)** — Dawn's own historical catalogue sold Lahori and Tandoori naan and no
+  roghni naan. No Sufi bakery could be identified at all. A physical packet settles this faster than
+  any search.
+- **`[NIN]` — publication identified, and it disagrees.** NIN's current *Indian Food Composition
+  Tables 2017* gives jaggery **84.87 g/100 g**, not the 95–98 this file prints. ⚠ **The `gur` row
+  rests on it: a 15 g lump is 14 g at our figure and 12.7 g at IFCT 2017's.** The pre-2017 *Nutritive
+  Value of Indian Foods* may be the edition actually read; NIN no longer serves it. **Needs Momin's
+  decision.**
+
+⚠ Still open: the in-app expansion shipped in #133 defines `USDA` from the author's understanding
+rather than from the document. The document now has a definition, so the two should be reconciled.
 
 **3. A load-bearing claim in §2 is false at 339 rows.** It says every CoFID row carries a
 corroborating source. **84 cite CoFID; 10 rest on it alone, 4 of those at HIGH** — roughly 1 g over
@@ -2794,16 +2817,76 @@ each, in the over-dose direction. Other wrongly-HIGH rows: `chutney-hari` (HIGH 
 `kinnow`, `jam-murabba` (single proxies), `phulka`, `rice-cup` (HIGH citing only LFAC while the
 document's justification is lab agreement the row does not carry). The low side is honest.
 
-**4. Six CALC rows whose derivation is written nowhere** — unverifiable by anyone, including their
-author six months later: `aloo-qeema`, `fruit-chaat`, `chutney-meethi` (circular, cites other rows'
-CALC, at MED), `moti-roti` (bare CALC on an *assumed* weight, at MED), `chargha`,
-`soup-chicken-corn`.
+**4. Six CALC rows whose derivation is written nowhere — WRITTEN UP 2026-09-25, four need Momin's
+decision.** All six now have their working in CARBS.md **section 17.3**. **No figure was changed.**
 
-**5. Dead and fragile links.** All 15 `fdc.nal.usda.gov/food-details/*` return **404** (SPA shell —
-renders in a browser, dead to a checker; the data still exists, verified via the datasets).
-Hard-dead: `daraz.pk`, `esajee.com`, `bazaarapp.com`. **`yaadgaar.co.uk` has a self-signed
-certificate and is the only source for a shipped row.** The **LFAC PDF backs 199 rows** from one
-WordPress upload path with no archive recorded.
+- **Two land where the row does.** `moti-roti` is simply the weigh-once rule — 60–80 g × 0.46 =
+  27.6–36.8 against a shipped 28–37; the derivation was never written down, nothing more. `aloo-qeema`
+  falls out of [KHAN] 6.9 g/100 g masala plus this file's own 15–20 g/100 g potato: a 30–60 g potato
+  share of the katori gives 12.8–18.2 against a shipped 12–18.
+- **Four disagree with the row**, re-derived from USDA SR Legacy and the CoFID 2021 spreadsheet read
+  directly, with named published recipes for quantities:
+
+| row | ships | components give | direction |
+|---|---|---|---|
+| `soup-chicken-corn` | 12–20 g / 250 ml | **≈6–11 g** across four recipes | **over-dose, up to 9 g** |
+| `chargha` | 2–8 g / quarter | **≈0.7–4.8 g** across six marinades | **over-dose, ~3 g** |
+| `chutney-meethi` | 5–10 g / 20 g Tbsp | ≈6–7 thin, **≈10–13 street-style** | under-dose at the top |
+| `fruit-chaat` | 20–30 g / cup | **≈14–36 g** across its own fruit rows | narrower than its own spread |
+
+⚠ **`chargha`'s row claims a besan coat "pushes toward 8".** The one besan-coated recipe found —
+gram-weighed, four servings — computes to 2.1–2.3 g. Nothing found supports 8. It may be a
+deliberate upper bound; it is not a measured one.
+⚠ **`soup-chicken-corn` is the largest gap.** Every recipe lands below the shipped floor. It closes
+only if a restaurant bowl is both larger than 250 ml and thicker than home recipes; no recipe found
+supports that, and Pakistani "soup bowls" sold at 400–500 ml are a capacity, not a measured fill.
+⚠ **Jaggery is in neither USDA nor CoFID**, confirmed by direct search of both — so any gur-based
+chutney figure inherits the `gur` row's own unverified source (item 2).
+
+**Side effect worth keeping:** writing section 17.3 made six rows match its prose before their own
+table row, which would have moved them out of the confidence check. `check_reference_data` now
+**prefers an anchor line that rates the row**, falling back to first match. Found by the checker on
+the same edit that caused it.
+
+**5. Dead and fragile links — DONE 2026-09-25.** All 54 URLs were fetched by four agents split by
+host, and every finding below was re-verified independently before anything was written down.
+
+**Nothing was deleted.** Every original link stays where it was; working ones were added beside it
+under four markers documented in CARBS.md section 17.1 — **[check]**, **[mirror]**, **[archived]**,
+and **dead, no replacement found** said plainly.
+
+- **The best result is a negative one: no live page contradicts this file.** Twelve manufacturer and
+  retailer panels were re-read line by line and every one still declares the figure cited for it. A
+  silent reformulation behind a live link was the worst thing available to find here; there is none.
+- **All 15 `fdc.nal.usda.gov` links return HTTP 404 with the app shell as the body** — they render
+  for a human and are dead to a checker. `fdc.nal.usda.gov/portal-data/external/<id>` serves the
+  same record as JSON, same domain, no key; ⚠ it is the address USDA's own page calls rather than a
+  published API, so it carries no stability promise. **No Wayback snapshot of any of the 15 exists.**
+  All 15 figures were re-read from the live database and every row's arithmetic confirmed: the
+  citations were right all along.
+- **The LFAC PDF now has three addresses instead of one** — still live, 56 pages, title page reads
+  *Pakistani Foods – Edition 1, 2024* matching the citation; a byte-identical re-upload on the same
+  site and a Wayback snapshot are linked beside it. It backs 199 rows.
+- **`yaadgaar.co.uk` is genuinely self-signed**, subject and issuer both
+  `tb-be03-hclnxs021a.srv.teamblue-ops.net` — a shared host's default cert for the wrong hostname,
+  valid to 2027, so a standing misconfiguration rather than a lapse. The panel is intact behind it
+  and a snapshot carries the identical table over TLS that validates.
+- **`nimcobazaar.pk` answers HTTP 200 with "under maintenance" as its body** — a status check calls
+  it healthy. Found only because bodies were read, not just codes.
+- **Two citations have nothing behind them, and say so:** `daraz.pk` (404, never archived, no other
+  retailer lists the same pack size) and `tesco.com` (bot-gated, never archived, and the pack weight
+  is not on the manufacturer's page either).
+- **Bot-gated is not dead:** `kitkat.co.uk`, `kitkatarabia.com` and `tesco.com` return Akamai
+  "Access Denied" to every tool; `cadburygiftsdirect.co.uk` answers **405 site-wide** from its edge.
+  Snapshots confirm the first three carried the cited figures within the last four months.
+- **`oreo.co.uk` 301s to a generic homepage** — worse than a 404 because it answers 200. The
+  manufacturer's current page carries the same 68 g/100 g and is linked beside it.
+- **`check_reference_data` now fails on a net loss of citation links** (`CARBS_URL_FLOOR`), which is
+  the mechanical half of the never-delete rule. It cannot see a swap, and says so.
+
+**Still open from this item:** the Internet Archive's CDX backend was intermittently returning 503
+during the audit, so the Open Government Licence link's archive status is inconclusive and the 15
+USDA "no snapshot exists" result deserves one re-check.
 
 #### Momin's rules for this work, stated 2026-09-25 — binding
 
