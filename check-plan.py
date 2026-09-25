@@ -3791,6 +3791,15 @@ def check_404_paths_agree(_plan):
 # quietly blind on that row — exactly what this file exists to prevent.
 CARBS_UNRATED_CEILING = 50
 
+# Momin's binding rule for source work, stated 2026-09-25: "whatever you do we
+# are not removing anything… don't replace the dead links, keep the dead links".
+# A dead link is the honest record of where a number came from, so it stays and
+# a working one is added beside it. This is the mechanical half of that rule: it
+# fails on a NET LOSS of citations. It cannot see a swap — one deleted, one
+# added — and saying so is better than implying it can; review covers that.
+# Raise it when links are added. Never lower it.
+CARBS_URL_FLOOR = 87
+
 # Well below the 339 carbohydrate rows that ship today. This exists because
 # the cross-reference below applies to rows carrying `grams:`, and a row
 # shape that stops matching would make the check pass by examining nothing.
@@ -4010,14 +4019,24 @@ def check_reference_data(_plan):
                         "docs/CARBS.md never defines — a reader cannot check a "
                         "source the document does not name" % (name, row_id, tag))
 
+            # Among the lines that name this row and carry its figures, prefer
+            # one that also RATES it. Prose discussing a row can carry both its
+            # id and its numbers — section 17.3 does, for six rows — and taking
+            # the first match would bind those rows to a paragraph instead of
+            # to the table row that rates them, quietly moving them out of the
+            # confidence check. First match is the fallback, not the rule.
             anchor = None
             for line in doc_lines:
                 if "`%s`" % row_id not in line:
                     continue
                 printed = [float(n) for n in CARBS_NUMBER.findall(line)]
-                if all(any(abs(p - w) <= 0.5 for p in printed) for w in wanted):
+                if not all(any(abs(p - w) <= 0.5 for p in printed) for w in wanted):
+                    continue
+                if CARBS_GRADE.search(line):
                     anchor = line
                     break
+                if anchor is None:
+                    anchor = line
             if anchor is None:
                 out.append(
                     "src/data/%s row `%s` ships %s but no line of "
@@ -4038,6 +4057,13 @@ def check_reference_data(_plan):
                     "docs/CARBS.md rates it %s — the app would tell a reader "
                     "to trust a figure the document does not stand behind"
                     % (name, row_id, grade, "/".join(sorted(set(grades)))))
+
+    urls = len(re.findall(r'https?://[^\s)\]"]+', "\n".join(doc_lines)))
+    if urls < CARBS_URL_FLOOR:
+        out.append(
+            "docs/CARBS.md carries %d citation links, below the %d floor — a "
+            "link is the record of where a number came from, and this file's "
+            "rule is that dead ones are marked rather than removed" % (urls, CARBS_URL_FLOOR))
 
     if checked < CARBS_ROW_FLOOR:
         out.append(
