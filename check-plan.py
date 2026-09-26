@@ -3800,6 +3800,18 @@ CARBS_UNRATED_CEILING = 50
 # Raise it when links are added. Never lower it.
 CARBS_URL_FLOOR = 87
 
+# CoFID publishes monosaccharide equivalents. Recovering label grams needs a
+# divisor — 1.05 on sugars, 1.10 on starch, component-wise for anything mixed —
+# and a row that does not say which one it used cannot be checked by anyone. A
+# missing divisor can only INFLATE a figure, and inflation is the over-dosing
+# direction, so this error class has no benign half.
+#
+# Sixty-four of the 84 CoFID-citing rows still declare nothing. That is a
+# ratchet, not a pass: the count may fall and may not rise. It is pinned rather
+# than enforced outright because failing 64 rows today would mean turning the
+# check off, and a check that is off is worth less than one that is pinned.
+CARBS_COFID_UNDECLARED_CEILING = 64
+
 # Well below the 339 carbohydrate rows that ship today. This exists because
 # the cross-reference below applies to rows carrying `grams:`, and a row
 # shape that stops matching would make the check pass by examining nothing.
@@ -3957,6 +3969,7 @@ def check_reference_data(_plan):
 
     unrated = 0
     checked = 0
+    cofid_rows = []
     for name, body in sorted(sources.items()):
         rows = re.findall(r"\{\s*\n\s*id: '([^']+)',(.*?)\n  \},", body, re.S)
         # A row shape this parser does not recognise is a row it checks nothing
@@ -3989,6 +4002,8 @@ def check_reference_data(_plan):
                     "every row carrying all of them" % (name, row_id))
                 continue
             checked += 1
+            if "CoFID" in source.group(1):
+                cofid_rows.append((row_id, source.group(1)))
 
             # A field that parses as neither a number nor `null` is reported
             # rather than raised on. A checker that crashes stops reporting
@@ -4057,6 +4072,21 @@ def check_reference_data(_plan):
                     "docs/CARBS.md rates it %s — the app would tell a reader "
                     "to trust a figure the document does not stand behind"
                     % (name, row_id, grade, "/".join(sorted(set(grades)))))
+
+    cofid = [r for r in cofid_rows if not re.search(r"convert|divisor|ME-", r[1], re.I)]
+    if len(cofid) > CARBS_COFID_UNDECLARED_CEILING:
+        out.append(
+            "%d rows cite CoFID without saying which divisor recovered label "
+            "grams from its monosaccharide equivalents, up from %d — a missing "
+            "divisor only ever inflates a figure, which is the over-dosing "
+            "direction (%s)" % (len(cofid), CARBS_COFID_UNDECLARED_CEILING,
+                                ", ".join(sorted(r[0] for r in cofid)[:4]) + " …"))
+    if len(cofid) < CARBS_COFID_UNDECLARED_CEILING:
+        out.append(
+            "only %d CoFID rows now lack a declared divisor, below the %d "
+            "pinned here — lower CARBS_COFID_UNDECLARED_CEILING to %d so the "
+            "ground that was won stays won"
+            % (len(cofid), CARBS_COFID_UNDECLARED_CEILING, len(cofid)))
 
     urls = len(re.findall(r'https?://[^\s)\]"]+', "\n".join(doc_lines)))
     if urls < CARBS_URL_FLOOR:
