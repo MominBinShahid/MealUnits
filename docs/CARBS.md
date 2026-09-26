@@ -300,7 +300,7 @@ Carbs come from onion masala, potato chunks, and thickeners (atta in nihari, bes
 | Chana chaat (`chana-chaat`) | **CHANGED:** LFAC ½ cup 130 g = **30 g** (23/100 g) vs v2 CALC 41 g/katori (27/100 g). **LFAC recommended** — measured plate vs our arithmetic; katori 150 g ≈ **35 g**, + meethi chutney ≈ +5–10 g | (a) katori; (b) potato + chutney | **MED-HIGH** — was MED |
 | **Lobia chaat** (`lobia-chaat`) | cup 117 g = **22 g** [LFAC] (18.8/100 g ≈ USDA lobia 20.3 — coherent) | (a); (b) | **MED** — NEW |
 | **Cream chaat** (`cream-chaat`) | ½ serving 100 g = **30 g** [LFAC] — the cream + sweetener is half the number | (a); (b) recipe | **MED** — NEW |
-| Fruit chaat (`fruit-chaat`) | cup ≈ **20–30 g** [CALC — working in section 17.3, ⚠ the band is narrower than its own components give] | (a); (b) fruit mix + sugar | **MED-LOW** — no LFAC row |
+| Fruit chaat (`fruit-chaat`) | **CHANGED 2026-09-26: cup ≈ 14–36 g**, was 20–30 — both ends were wrong, in opposite directions [CALC, working in section 17.3] | (a); (b) fruit mix + sugar | **MED-LOW** — no LFAC row |
 | Dahi bhalay (`dahi-bhalay`) | **CHANGED (portion honesty):** LFAC 1 cup 220 g = **35 g** vs the earlier plate ≈ 25 g [SJSU+CALC]. Same food, bigger real serving — a thela plate with chutney is the LFAC number | (a) serving; (b) sweet dahi + chutney | **MED-HIGH** — was MED-LOW |
 | Gol gappay (`gol-gappay-4` `gol-gappay-6`) | **CHANGED:** LFAC 4 pieces w/ chana filling, 32 g = **19 g** (≈ 4.8 g per filled puri) vs the earlier 6 puris ≈ 15 g [SJSU, shells only]. **LFAC recommended** — filled puris are the real unit; 6 filled ≈ **28 g**, + meetha pani **+5–10 g** [CALC] | (a) count; (b) filling + sweet water | **MED** — was MED-LOW |
 | **Bhutta (corn on the cob)** (`bhutta`) | 1 cob 195 g = **22 g** [LFAC — weight includes the cob] | (a) cob size | **MED** — NEW |
@@ -354,14 +354,14 @@ Mithai = **(a)** your sweet shop's piece weight (weigh one box once) + **(b)** s
 | **Gur papri** (`gur-papri`) | 4 pieces 76 g = **57 g** [LFAC] (75/100 g — coherent with gur at 95–98, section 8 below) | (a); (b) | **MED** — NEW |
 | Kulfi (`kulfi`) | **CHANGED (raised):** LFAC 1 kulfi 74 g = **18 g** (24.3/100 g) vs CoFID UK-recipe floor 13.8. **LFAC recommended** — Pakistani khoya/condensed-milk kulfi is the dense one; the earlier 11–20 band becomes **15–20 g per typical kulfi** | (a) size; (b) recipe | **MED-HIGH** — was MED-LOW |
 | Ice cream, vanilla (`ice-cream-scoop`) | scoop 66 g ≈ **16 g** [USDA-SR] | (a) scoop | **HIGH** |
-| Custard (`custard`) | katori ≈ **24 g** [CoFID] | (a) | **HIGH** |
-| Jelly (`jelly`) | 120 g ≈ **18 g** [CoFID] | (a) | **HIGH** |
+| Custard (`custard`) | katori ≈ **24 g** [CoFID] | (a); (b) how much sugar the batch carried | **MED** — was HIGH; single uncorroborated source and the recipe moves it |
+| Jelly (`jelly`) | 120 g ≈ **18 g** [CoFID] | (a) | **MED** — was HIGH; single uncorroborated source |
 | Falooda (`falooda-cup` `falooda-glass`) | **CLOSED (was component-CALC only):** LFAC 1 cup 248 g = **56 g** (22.6/100 g). the earlier CALC (50–60 per 300 ml) was on target; a large 300 ml glass ≈ **68 g** [scaled from LFAC] | (a) glass; (b) shop recipe | **MED-HIGH** — was LOW |
 | Kheer — moved to section 4 (rice) with the changed value | | | |
 | Sugar (cheeni) (`sugar-tbsp` `sugar-tsp-heaped` `sugar-tsp-level`) | 1 tsp level = **4.2 g**; heaped ≈ 6 g; 1 Tbsp = 12.5 g [USDA-SR] | (a) your spoon | **HIGH** |
-| Gur (jaggery) (`gur`) | **95–98 g/100 g** [NIN lineage]; 15 g lump ≈ **14 g**. LFAC's gur papri (75/100 g with flour+ghee) is coherent with it | (b) moisture | **MED-HIGH** |
+| Gur (jaggery) (`gur`) | **CHANGED 2026-09-26: 15 g lump ≈ 13 g**, was 14. [NIN] was an unsourced tag until section 17.2 identified it as *Indian Food Composition Tables 2017*, whose jaggery row (`I001 Jaggery, cane`) measures **84.87 ± 0.63 g per 100 g as eaten** at 11.2 % moisture — not the **95–98** this row printed. ⚠ **The old 95–98 is kept here and not deleted**, because it may come from the pre-2017 *Nutritive Value of Indian Foods*, which IFCT supersedes and NIN no longer serves. Note the coincidence and do not lean on it: 84.87 ÷ 0.888 ≈ 95.6 on a dry-matter basis, which lands inside the old band — but nobody has evidence that conversion was ever performed, so it earns no weight. **Jaggery is in neither USDA nor CoFID**, so there is no third source to break the tie, and with none the figure errs low. LFAC's gur papri (75/100 g with flour+ghee) remains coherent with either. | (b) moisture — a wet lump runs lower still | **MED** — was MED-HIGH; the only traceable source disagrees with what was printed |
 | Honey (`honey`) | 1 Tbsp 21 g = **17 g** [USDA-SR] | — | **HIGH** |
-| Jam / murabba (`jam-murabba`) | 1 Tbsp ≈ **14–15 g** [USDA] | — | **HIGH** |
+| Jam / murabba (`jam-murabba`) | 1 Tbsp ≈ **14–15 g** [USDA] | (b) murabba is not jam | **MED** — was HIGH; "murabba = jam" is an assumption, and syrup-preserved fruit is a different recipe |
 
 ---
 
@@ -431,7 +431,7 @@ LFAC's fruit pages are international "≈ 15 g" anchors (some weights include pe
 | Kharbooza / sarda / garma (`kharbooza`) | cup ≈ **9–13 g** [USDA; CoFID] | (a) | **HIGH** |
 | Papita (papaya) (`papita`) | cup ≈ **14–16 g** [USDA; CoFID] | (a) | **HIGH** |
 | Jamun (`jamun`) | katori ~100 g ≈ **15.5 g** [USDA-SR] | (a); single source | **MED** |
-| Kinnow / malta / santra (`kinnow`) | 1 medium ≈ **12 g** [USDA tangerine] | (a) | **HIGH** |
+| Kinnow / malta / santra (`kinnow`) | 1 medium ≈ **12 g** [USDA tangerine] | (a); (b) cultivar | **MED** — was HIGH; a tangerine is a proxy for a kinnow, not the same fruit |
 | Saib (apple) (`saib`) | small 150 g ≈ **20 g** [USDA; **LFAC 135 g small = 15 g — agree**] | (a) | **HIGH** |
 | Angoor (grapes) (`angoor`) | 15 grapes ≈ **13.5 g** [USDA 18.1/100 g; LFAC's 20 small = 15 g runs lower — count grapes, verify with meter if a heavy eater] | (a) count them | **HIGH** |
 | Anaar (pomegranate) (`anaar`) | ½ cup arils ≈ **16 g** [USDA; **LFAC ½ cup 130 g = 15 g — agree**] | (a) | **HIGH** |
@@ -649,7 +649,7 @@ nobody can see is worse than one printed in the open.
 read from USDA FoodData Central SR Legacy and from the CoFID 2021 spreadsheet directly; recipe
 quantities come from named published recipes with stated weights.
 
-- **`soup-chicken-corn` ships 12–20 g per 250 ml bowl; four real recipes give ≈6–11 g.**
+- **`soup-chicken-corn` shipped 12–20 g per 250 ml bowl; four real recipes give ≈6–11 g. CHANGED to 6–11.**
   Cornstarch [USDA 169698] 91.3 g/100 g, [CoFID 11-1045] 92.0 starch → 83.6 after the starch
   divisor; canned kernels [USDA 169214] 14.3 − 2.0 fibre, [CoFID 13-529] 13.9 → 13.2. Worked
   through Made With Lau (10.1 g), Food Tribune (6.2), Corner Cooks (8.0), Haris and Momin (10.6).
@@ -657,7 +657,7 @@ quantities come from named published recipes with stated weights.
   larger than 250 ml and thicker than these home recipes — plausible, and **no recipe found supports
   it**. Pakistani retail sells "soup bowls" at 400–500 ml, but that is a bowl's capacity for sale,
   not a measured fill.
-- **`chargha` ships 2–8 g per quarter; six marinade recipes give ≈0.7–4.8 g.**
+- **`chargha` shipped 2–8 g per quarter; six marinade recipes give ≈0.7–4.8 g. CHANGED to 1–5.**
   Yoghurt [USDA 171284] 4.66 g/100 g against [CoFID 12-184] 7.8 → 7.43, a real 68 % disagreement
   that this file's own `dahi-plain` band already spans; besan [USDA 174288] 57.8 − 10.8 fibre and
   [CoFID 11-896] 57.0 → 54.3, agreeing within 1 %. ⚠ **The row says a besan coat "pushes toward 8",
@@ -665,7 +665,7 @@ quantities come from named published recipes with stated weights.
   — computes to 2.1–2.3 g.** Nothing found supports 8. It may be a deliberate upper bound; it is not
   a measured one. The figures also assume the whole marinade stays on the bird, which that recipe
   itself contradicts by describing marinade pooling off during steaming.
-- **`chutney-meethi` ships 5–10 g per 20 g Tbsp; recipes give ≈6–13 g depending on style.**
+- **`chutney-meethi` shipped 5–10 g per 20 g Tbsp; recipes give ≈6–13 g depending on style. CHANGED to 6–13, with the two styles split in the row's own note.**
   Tamarind pulp [CoFID 13-856] 64.5 → 61.4, corroborated by [USDA 167763] 62.5 − 5.1 fibre; sugar
   [CoFID 17-063] 105.0 → 100.0. Cook With Manali's home-style works out at 5.8–6.7 g; Food Fusion's
   street/chaat-shop style at 10.0–12.9 g, and USDA FNDDS 2709309 (60.6 g/100 g) agrees with the
@@ -673,17 +673,23 @@ quantities come from named published recipes with stated weights.
   two or three spoons" — and that is the version sitting above the shipped ceiling.
   ⚠ **Jaggery is in neither USDA nor CoFID at all**, confirmed by direct search of both, so any gur
   chutney figure inherits the `gur` row's own unverified source. See 17.2.
-- **`fruit-chaat` ships 20–30 g per cup; this file's own fruit figures give ≈14–36 g.**
+- **`fruit-chaat` shipped 20–30 g per cup; this file's own fruit figures give ≈14–36 g. CHANGED to 14–36.**
   An apple- and guava-heavy 150 g cup lands near **14 g**; a banana- and mango-heavy 200 g cup near
   **35.5 g** before any sprinkled sugar, which no source quantifies. ⚠ **The band is narrower than
   the spread its own components produce**, at both ends. No database carries a Pakistani fruit chaat
   composite, and no cup weight for one could be sourced; CoFID's UK "fruit salad, homemade" (14-333,
   with added sugar) computes to 14.3 g/100 g as context.
 
-**What this costs a reader, in the direction that matters.** Soup and chargha ship ABOVE what their
-components give, which is the over-dosing direction — soup by up to 9 g at the top, chargha by about
-3 g. Chutney and fruit chaat ship BELOW at the top, which is the under-dosing direction and
-meter-correctable. **None of the four has been changed pending Momin's decision.**
+**All four were changed on 2026-09-26**, after three independent reviews agreed on the bands.
+
+**And the direction of harm was smaller than it first looked, for a reason worth writing down.**
+The app doses off `grams` — the FLOOR of a row's band. `gramsMax` is display only, used to render
+the range a reader sees. So a wrong band TOP never reaches the calculator unless a reader types it
+by hand. Measured against the dosed figure rather than the displayed one, `soup-chicken-corn` was
+1 g above its component ceiling and not 9, `chargha`'s 2 g sat inside its evidence, and
+`fruit-chaat`'s 20 g did too. **The only row of the four whose floor was genuinely wrong was
+`soup-chicken-corn`.** The corrections still stand — a band top a reader reads is a number the app
+is asserting — but none of them was the hazard the raw comparison implied.
 
 ### 17.2 Citations that could not be recovered, and what was already tried
 
@@ -966,21 +972,21 @@ The rendered LFAC page confirms **178 and 20**, not an extraction swap. **20 ÷ 
 | Row | Portion | CHO | Conf | Source and reasoning |
 |---|---|---|---|---|
 | **Sajji** (`sajji`) | 1 helping, leg or quarter | **0–4 g** | HIGH | Salted roast meat. **The rice a Balochi sajji is stuffed with or served on is the dose** — count it as the pulao row | [CoFID], [USDA] protein anchors |
-| **Chargha / steam roast** (`chargha`) | 1 quarter chicken | **2–8 g** | **LOW** | The marinade coat only. Yoghurt and spice ≈ 2; a besan or flour coat → 8. The chicken is 0. CALC from the marinade |
+| **Chargha / steam roast** (`chargha`) | 1 quarter chicken | **1–5 g** | **LOW** | **CHANGED 2026-09-26 (was 2–8).** The marinade coat only; the chicken is 0. Yoghurt and spice ≈ 1–2; a besan or flour coat → 5. ⚠ **The old top of 8 had no source.** Six marinade recipes give 0.7–4.8 g per quarter, and the one gram-weighed besan-coated recipe computes to 2.1–2.3 — the row's own note was steering readers toward a number nothing supported. Working in section 17.3 |
 | **Broast, fried chicken** (`broast-quarter`) | 1 quarter with coating | **15–22 g** | MED | The coating is the whole number; coating left on the plate halves it. [FNDDS] fried coated chicken 12.1/100 g |
 | **Jhinga, prawns** (`jhinga`) | 1 helping | **0–6 g** | MED | Prawn meat 0; karahi masala adds a few grams. A besan or crumb coat is the fried-fish pattern. [USDA] crustaceans |
 | **Paya, trotters** (`paya`) | 1 bowl, 250 g | **5–18 g** | **LOW** | ⚠ The atta slurry only — trotters, marrow and gelatin are 0. **The same eightfold flour spread as nihari**: gravy running off the spoon ≈ 5, gravy coating it ≈ 18. The naan is most of the meal. CALC from the nihari flour range |
 | **Kat-a-kat / maghaz / gurda** (`organ-fry`) | 1 katori, 150 g | **5–15 g** | **LOW** | Masala and malai; the organ meat is 0. [KHAN] qeema 10 and kaleji 15 bracket the family |
 | **Yakhni, clear broth** (`yakhni-soup`) | 1 cup, 250 ml | **0–3 g** | HIGH | Free. Cornflour or noodles make it the corn-soup row. Yakhni *pulao* is a rice dish. [USDA] broth |
-| **Chicken corn soup** (`soup-chicken-corn`) | 1 bowl, 250 ml | **12–20 g** | **LOW** | Cornflour and sweet corn; chicken and egg 0. ⚠ Restaurant bowls run bigger than 250 ml. CALC |
+| **Chicken corn soup** (`soup-chicken-corn`) | 1 bowl, 250 ml | **6–11 g** | **LOW** | Cornflour and sweet corn; chicken and egg 0. ⚠ Restaurant bowls run bigger than 250 ml. CALC |
 | **Green salad / kachumber** (`salad-kachumber`) | 1 side plate | **0–5 g** | HIGH | Free at side-plate amounts. A creamy or sweet dressing is the exception. [USDA] |
 | **Achar, pickle** (`achar`) | 1 spoonful | **0–2 g** | HIGH | Oil, salt, spice. A sweet murabba or chhundo is the murabba row. [USDA], [CoFID] |
-| **Hari chutney** (`chutney-hari`) | 2 Tbsp | **1–3 g** | HIGH | Podina, dhania, chilli, dahi — near-free. Sweet taste means added sugar or imli → the next row |
-| **Meethi chutney, imli** (`chutney-meethi`) | 1 Tbsp, 20 g | **5–10 g** | MED | The one chutney that counts. The chaat rows already carry one spoon |
+| **Hari chutney** (`chutney-hari`) | 2 Tbsp | **1–3 g** | MED | Was HIGH on component arithmetic, which this file's own grades do not admit at HIGH. It stays trustworthy for a different reason: every ingredient is near zero, so 30 g of it cannot exceed about 2 g whatever the recipe. Podina, dhania, chilli, dahi — near-free. Sweet taste means added sugar or imli → the next row |
+| **Meethi chutney, imli** (`chutney-meethi`) | 1 Tbsp, 20 g | **6–13 g** | MED | The one chutney that counts. The chaat rows already carry one spoon |
 | **Malai, cream** (`malai`) | 2 Tbsp, 30 g | **1–2 g** | HIGH | Nearly all fat. Sugar on top is the sugar's line, 4.2 a spoon. [USDA] cream |
 | **Butter, ghee or oil** — *Makhan* (`butter-ghee-oil`) | any amount | **0 g** | HIGH | **Zero at any amount** — fat changes how fast a meal lands, not its carbohydrate. [USDA] |
-| **Brown / wholemeal bread** (`bread-brown`) | 1 slice ≈ 30 g | **11–14 g** | MED | ⚠ **Corrects the "brown bread does not count" belief** — against white's 13–15. The fibre slows the rise; it does not remove the grams. A bakery "diabetic" loaf is this row unless its packet says otherwise. [USDA-SR 172688](https://fdc.nal.usda.gov/food-details/172688/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/172688); CoFID wholemeal |
-| **Kulcha, bakery (dry, chai)** (`kulcha-bakery`) | 1 piece ≈ 40 g | **21–28 g** | **LOW** | See the ruling below |
+| **Brown / wholemeal bread** (`bread-brown`) | 1 slice ≈ 30 g | **11–13 g** | MED | **CORRECTED 2026-09-26 (top was 14, which implied 46.7 g/100 g — above even the total carbohydrate its own source prints).** The two ends are different quantities rather than a measurement spread: 11 is *available* carbohydrate (42.71 total − 6.0 fibre) and 13 is *total*, both from USDA-SR 172688 on a 30 g slice. ⚠ **Corrects the "brown bread does not count" belief** — against white's 13–15. The fibre slows the rise; it does not remove the grams. A bakery "diabetic" loaf is this row unless its packet says otherwise. [USDA-SR 172688](https://fdc.nal.usda.gov/food-details/172688/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/172688); CoFID wholemeal |
+| **Kulcha, bakery (dry, chai)** (`kulcha-bakery`) | 1 piece ≈ 40 g | **20–26 g** | **LOW** | **CORRECTED 2026-09-26 (was 21–28).** Both ends now use the **starch divisor 1.10**, not 1.05 — rusk is nearly all starch, and a band whose two ends were computed on different bases is not a band. 26 also sits inside the 45–65 g/100 g envelope section 21.1 argued for; 28 did not, which means the row's top had been outside the ruling that created it. The class envelope's own floor would be 18 g on a 40 g piece, shown here rather than shipped, because 20 is what this row's cited rusk figures actually give. See the ruling below |
 | **Dalia** (`dalia`) | 1 bowl, 250 ml, milk + 2 sugars | **30–40 g** | **LOW** | The dry grain is the number: ~25 g dry = 16–19 g before anything. Milk +5/100 ml, sugar 4.2 a spoon. **Weigh dry once: grams × 0.65.** CALC from [USDA] bulgur |
 | **Oats, porridge** (`oats-porridge`) | ½ cup dry, 40 g | **24–27 g** | MED | ⚠ The packet's own panel beats this row. Top includes fibre — a slight overestimate. [USDA-SR] Quaker quick oats 68.2/100 g |
 | **Cornflakes** (`cornflakes`) | 1 bowl, 30 g flakes | **25–27 g** | HIGH | ⚠ **Bowls pour 30–60 g** — weigh once. Frosted or honey flakes run a third higher. [USDA-SR] corn flakes 88/100 g |
@@ -991,7 +997,7 @@ The rendered LFAC page confirms **178 and 20**, not an extraction swap. **20 ÷ 
 
 **The bound is defensible as a class argument.** Every dry wheat bakery product with a published panel sits in one envelope — CoFID rusk 55.7–73, cake rusk ~47–64, khari 46–60, taralli 60–71, LFAC's own Pakistani rusk 60 — and mass balance explains why nothing escapes it: sugar *is* carbohydrate, and only fat, protein and water can displace it. Khari at 39 g fat still prices at 46. A ghee kulcha is bounded 45–65 g/100 g from both sides. **This app already ships `rusk-plain` and `rusk-cake` at MED**; refusing kulcha split one food class down the middle.
 
-**Clinical tolerance settles the size of the bound.** [Smart 2009 (PMID 19317823)](https://europepmc.org/article/MED/19317823) · [check](https://pubmed.ncbi.nlm.nih.gov/19317823/) found ±10 g on a 60 g meal causes no deterioration in postprandial control; [Brazeau 2013 (PMID 23146371)](https://europepmc.org/article/MED/23146371) · [check](https://pubmed.ncbi.nlm.nih.gov/23146371/) measured trained adults' real-world error at ±15.4 g per meal. **The tolerance is absolute, not proportional** — both trials used 60 g meals only. An 8 g-wide band is inside both, i.e. clinically equivalent to a measurement. The proxy errs ≤0.6 units typically, −2.1 worst case, in the **under**-dose direction.
+**Clinical tolerance settles the size of the bound.** [Smart 2009 (PMID 19317823)](https://europepmc.org/article/MED/19317823) · [check](https://pubmed.ncbi.nlm.nih.gov/19317823/) found ±10 g on a 60 g meal causes no deterioration in postprandial control; [Brazeau 2013 (PMID 23146371)](https://europepmc.org/article/MED/23146371) · [check](https://pubmed.ncbi.nlm.nih.gov/23146371/) measured real-world counting error at **±15.4 g per meal**. **CORRECTED 2026-09-26.** This paragraph used to read *"the tolerance is absolute, not proportional — both trials used 60 g meals only"*, and both halves were wrong. Smart fed **31 children and adolescents** meals of 50, 60 and 70 g with the dose fixed for 60 g, so the meals varied and the dose did not; Brazeau was not a tolerance trial at all but a cross-sectional 72-hour food-record and CGM study of 50 adults over 448 meals averaging **72.4 ± 34.7 g**. And a trial run at one meal size could never have shown tolerance to be absolute rather than proportional, so the stated reason argued for nothing. **Nor does Brazeau settle it**: it reports the same error as **20.9 ± 9.7 %**, which reads as proportional exactly as well as ±15.4 g reads as absolute. **So ±10 g is a working convention in this file, not a demonstrated law** — do not scale it up for a large meal, and do not assume it is benign on a small one. Two further things belong here: Smart's 70 g arm *did* run higher at 3 hours (max 1.9 mmol/L, P = 0.01), and Brazeau found **63 % of meals underestimated**, so real-world error already leans toward under-dosing — which means "err low where uncertain" compounds the common bias rather than offsetting it. It stays the right rule, because hypoglycaemia is the acute harm, but it is not free. An 8 g-wide band sits inside both figures, i.e. within the error a trained counter already contributes. The proxy errs ≤0.6 units typically, −2.1 worst case, in the **under**-dose direction.
 
 ⚠ **This row is LOW and says so on its face.** Its `varies` line states plainly that no lab has measured it and that the tandoor row is not a substitute.
 
