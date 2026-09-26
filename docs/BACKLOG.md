@@ -2900,9 +2900,61 @@ USDA "no snapshot exists" result deserves one re-check.
 2. **Dead links stay and are MARKED dead**; working ones are added beside them.
 3. **No source is invented where none exists.** Say there is none.
 
-**What is thin:** two ~1 g nits on rows added in #133 — `bread-brown`'s top implies 46.7 g/100 g,
-slightly above both cited sources, and `kulcha-bakery`'s top used the blanket ÷1.05 rather than the
-starch-aware conversion, exceeding CARBS.md section 21.1's own stated envelope.
+**6. Two ~1 g nits on rows added in #133 — DONE 2026-09-26.** `bread-brown` 11–14 → **11–13** (the
+top implied 46.7 g/100 g, above even the total carbohydrate its own source prints; the two ends also
+turn out to be available-carb against total-carb rather than a spread, which the row now says).
+`kulcha-bakery` 21–28 → **21–27**, via 20–26 — corrected twice in one day, because the first fix
+applied a flat starch divisor and the band's two ends are *different CoFID foods* (cake rusk 55.7 →
+51.7, rusk 73.0 → 67.4).
+
+**7. The CoFID conversion sweep — DONE 2026-09-26, and it was the largest error class in the file.**
+Found by a reviewer asking a question nobody had: how many of the other CoFID rows missed the same
+conversion. Answer: **84 rows cite CoFID, 20 declared a conversion, and the sweep changed 29.**
+
+The root cause is now marked withdrawn in CARBS.md section 2 rather than deleted: that bullet used
+to end *"No shipped row needs changing — all seven rows citing CoFID carry a corroborating source."*
+Seven was wrong (84), "none rests on it alone" was wrong (ten do), and the corroboration argument
+was wrong in principle, because CoFID frequently sets one END of a band while another source sets
+the other — so a row looks corroborated while an unconverted figure is what ships.
+
+**The divisor was settled from the dataset, not assumed.** The 2021 spreadsheet publishes starch and
+total sugars separately, so the recovery is component-wise (`starch ÷ 1.10 + sugars ÷ 1.05`) and the
+method was validated on single-component foods first — white sugar 105.0 → **exactly 100.0**. Every
+figure this file cites matched a real CoFID record to the decimal. Savoury rice lands at **1.085–
+1.100** across all 80 rice-family rows (median 1.097), not the 1.05 the brief had assumed; sugar-led
+foods land at 1.050–1.065, with jelly, plain yoghurt and raw dates at exactly 1.050 because their
+starch is literally 0.0. Full working in CARBS.md **section 17.4**.
+
+⚠ **This was a correctness debt, not a hazard, and the record should say so.** Dosing errors ran
+**0.4 to 4 g** against a ±10 g working tolerance, most under 1 g. What made it worth paying is that
+every instance leaned the same way — a missing divisor can only inflate, and inflation is the
+over-dosing direction.
+
+Four findings that were not simple omissions: `nimco-loose` shipped a figure **section 20.1 had
+already diagnosed and corrected** without carrying the fix back; `dahi-plain` used the raw 7.8 from
+a record this file converts to 7.43 in two other places; `aloo-baingan` prints a divisor of 1.093,
+which no rule permits; and the potato line's "17.5 ME → 16.7 converted" quotes that record's
+**starch column**, not its converted total — the two are the same number, which is what made it
+invisible. The real figure is 15.9.
+
+**The worse defect is in the bands, not the drift.** Nineteen affected rows set a CoFID end against
+a USDA/FNDDS/KHAN/LFAC end — monosaccharide equivalents against label grams. The meat-heavy biryani
+band printed 13–17 g/100 g is **13.6–15.1 on a common basis**, so roughly half its width was a unit
+mismatch rather than variation between pots.
+
+**`check_reference_data` now ratchets on it:** a CoFID-citing row that does not declare its divisor
+is counted, the count may fall and may not rise (`CARBS_COFID_UNDECLARED_CEILING`, 64 today). Pinned
+rather than enforced outright, because failing 64 rows would mean turning the check off.
+
+**Left open:** twelve rows print `[USDA; CoFID]` with no per-100 g figure for either, so neither the
+setting source nor the basis is establishable. Nine are near-zero and immaterial; `kheer-home`,
+`bread-brown` and `besan-coating` would matter.
+
+**A check that was measured and deliberately NOT built:** "a row may not cite a source its own
+document line never names" fails **74 of 339 rows**, because this file's convention is to name the
+recommending source rather than every corroborator — `rice-cup` cites USDA-SR while its line names
+only LFAC, and that is correct documentation. At 22 % failure a gate argues with a convention rather
+than catching a defect. One genuine case existed, `salan-thick-unnamed`, and that row was fixed.
 
 ### T29. `naan-afghani-half` stated "145 g" twice, meaning two different things — DONE 2026-09-25
 

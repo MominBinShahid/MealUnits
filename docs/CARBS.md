@@ -101,9 +101,16 @@ Rows can carry more than one tag — biryani is (a) *your plate size* **and** (b
   food, always in the over-stating direction — which for insulin is the over-dosing direction.
   The proof is internal to the dataset: CoFID lists mints at **102.7 g per 100 g**, impossible as a
   weight; ÷1.05 gives 97.8, which is USDA hard candy at 98.0. Found independently by two reviews.
-  **No shipped row needs changing** — all seven rows in `src/data/carbs.ts` citing CoFID carry a
-  corroborating source, so none rests on the uncorrected figure alone — but new rows should convert,
-  and say when they have.
+  ⚠ **WITHDRAWN 2026-09-26. This bullet used to end "No shipped row needs changing — all seven rows
+  in `src/data/carbs.ts` citing CoFID carry a corroborating source, so none rests on the uncorrected
+  figure alone." Every part of that was wrong, and it is why no sweep was ever done.** **84 rows cite
+  CoFID**, not seven. **Ten rest on it alone.** And the corroboration argument does not hold even
+  where a second source exists on the row, because CoFID frequently sets one END of a band while the
+  other source sets the other — so the row looks corroborated while an unconverted figure is the
+  number that ships. The sentence is kept here rather than deleted, because it is the reason the
+  error survived three months and a reader should see what the mistake looked like.
+  **The sweep it prevented is recorded in section 17.4**, along with which rows changed.
+  New rows must convert, and say which divisor they used.
 
 ---
 
@@ -181,7 +188,7 @@ Density anchors: plain boiled **28–31/100 g** [USDA-SR 28.2; CoFID basmati 26.
 | Food | CHO per portion | Varies | Conf |
 |---|---|---|---|
 | Plain boiled rice (sada chawal) (`rice-cup` `rice-katori` `rice-plate`) | katori 150 g ≈ **42–47 g**; cup ≈ **45–50 g** [**LFAC cup 160 g = 50 g**]; plate 300 g ≈ **84–94 g** — the earlier 80–90 nudged up: LFAC sits at the top of the lab band | (a) plate/katori size only | **HIGH** |
-| Pulao (yakhni/meat pulao) (`pulao-plate`) (`pulao`) | **CHANGED (widened down):** cup 160–180 g ≈ **29–44 g** — LFAC meat pulao 160 g = 29 g (18.1/100 g, meat-heavy, "incl. 120 g rice") vs KHAN/CoFID 22–24/100 g (rice-heavy). Plate 300 g ≈ **54–73 g**; the rice:meat ratio decides which end | (a) plate; (b) meat share — now a named 18–24/100 g band | **MED-HIGH** |
+| Pulao (yakhni/meat pulao) (`pulao-plate`) (`pulao`) | **CHANGED (widened down):** cup 160–180 g ≈ **29–40 g** — **CONVERTED 2026-09-26**, CoFID pilau 24.3 → **22.1** component-wise; LFAC meat pulao 160 g = 29 g (18.1/100 g, meat-heavy, "incl. 120 g rice") vs KHAN/CoFID 22–24/100 g (rice-heavy). Plate 300 g ≈ **54–66 g**; the rice:meat ratio decides which end | (a) plate; (b) meat share — now a named 18–24/100 g band | **MED-HIGH** |
 | **Kabuli pulao** (`pulao-kabuli`) | cup 180 g = **44 g** [LFAC] (24.4/100 g = CoFID pilau to the decimal) | (a) plate; (b) raisins/carrots add a little | **MED-HIGH** — NEW |
 | **Matar pulao** (`pulao-matar`) | cup 180 g = **42 g** [LFAC] (23.3/100 g) | (a); (b) | **MED-HIGH** — NEW |
 | Chana pulao (`pulao-chana`) | cup 188 g = **44 g** [**LFAC**; the earlier CALC said 46–50 — confirmed] | (a); (b) chickpea share | **MED-HIGH** — was MED |
@@ -217,9 +224,9 @@ The 44 g belongs to Kabuli Pulao. **Biryani is 27 g per 160 g cup = 16.9 g/100 g
 
 | Which biryani is on your plate | CHO /100 g | Plate 300 g | Plate 400 g (degh/dawat) | Conf |
 |---|---|---|---|---|
-| Meat-heavy home biryani — meat in most bites (`biryani-meat-heavy-dawat` `biryani-meat-heavy-plate`) | **13–17** [FNDDS 13.6; CoFID takeaway 16.6] | **41–50 g** | 54–66 g | **MED** |
+| Meat-heavy home biryani — meat in most bites (`biryani-meat-heavy-dawat` `biryani-meat-heavy-plate`) | **13–15** [FNDDS 13.6; CoFID takeaway 16.6 → **15.3 converted**] | **41–46 g** | 54–61 g | **MED** |
 | **Mid pot — rice just over half the plate** (`biryani-mid-plate` `biryani-mid-dawat`) | **≈ 17** [**LFAC 16.9**, "incl. 85 g rice" per 160 g] | **≈ 51 g** | ≈ 68 g | **MED-HIGH** — the Pakistani anchor |
-| Rice-heavy / degh / commercial (`biryani-rice-heavy-plate` `biryani-rice-heavy-dawat`) | **20–22** [CoFID homemade 20.9; KHAN 21.9] | **60–66 g** | **80–88 g** | **MED** |
+| Rice-heavy / degh / commercial (`biryani-rice-heavy-plate` `biryani-rice-heavy-dawat`) | **19–22** [CoFID homemade 20.9 → **19.1 converted**; KHAN 21.9, a lab figure needing none] | **57–66 g** | **76–88 g** | **MED** |
 | + Potato (Sindhi usually; count the chunks) | — | **+8–16 g per chunk** (50–80 g × 15–20/100 g potato — see section 13) | same | **MED** |
 | + **Whole potato, degh** (`Sabut aloo`) (`aloo-whole`) | — | **+12–26 g** — a degh potato is a WHOLE one, not the half that goes into a home pot. 80–130 g × the same 15–20/100 g. Pakistani potatoes run **80–100 g each** against a USDA "medium" of 213 g (Recipe52 chicken biryani "5 (400 g) potatoes"; Bohri biryani "½ kg (5 medium)"); the home-pot piece is a **halved** potato (Fatima Cooks Sindhi biryani: "halve and deep fry") at 50–80 g, while FNDDS boiled small at 130 g caps the whole. ⚠ **Added because the chunk figure was silently capping it**: a real degh potato counted as "+16" under-counts by up to 10 g, and half-vs-whole differ by more than a full insulin unit while being obvious on the plate. Density verified: USDA boiled 20.0–20.1 by-difference, FNDDS 20.4, CoFID 13-490 17.5 ME → **16.7 after the §2 conversion**, LFAC implies ~15. ⚠ Piece weights rest on recipe ingredient lines, not weighed served plates — **one kitchen-scale weighing of a commercial Karachi degh potato would settle it**; if they routinely run 150–200 g the top rises to ~30–40 g | (a) whole vs half — if you cannot tell, count it as two chunks | **MED** |
 | Don't know which pot this is | — | assume **50 g** and verify with the meter — now book-backed; honest spread per plate **40–90 g** | — | — |
@@ -234,12 +241,12 @@ Thin vs thick matters more than which daal: thin tarka daal **8–12/100 g**, th
 
 | Food | CHO per katori (150 g) | Varies | Conf |
 |---|---|---|---|
-| Thin daal (Patli daal / tarka daal) (`daal-thin`) | **13–18 g** [CoFID; LFAC daal-chawal daal 12.8/100 g agrees] | (a) katori; (b) wetness | **MED-HIGH** — was MED |
+| Thin daal (Patli daal / tarka daal) (`daal-thin`) | **12–17 g** [CoFID; LFAC daal-chawal daal 12.8/100 g agrees] | (a) katori; (b) wetness | **MED-HIGH** — was MED |
 | Thick daal (Gaarhi daal) (`daal-thick`) | **23–32 g** [FNDDS; CoFID; KHAN] | (a); (b) | **MED** |
-| Chana daal (`daal-chana`) | **22–27 g** [KHAN 14.9; CoFID 17.8] | (a); (b) small | **MED-HIGH** |
-| Masoor daal (`daal-masoor`) | **16–29 g** [CoFID by thickness] | (a); (b) | **MED** |
+| Chana daal (`daal-chana`) | **22–24 g** [KHAN 14.9; CoFID 17.8 → **16.3 converted**] | (a); (b) small | **MED-HIGH** |
+| Masoor daal (`daal-masoor`) | **15–26 g** [CoFID by thickness, converted] | (a); (b) | **MED** |
 | Moong daal (`daal-moong`) | **11–29 g** [CoFID thin → USDA boiled]; **LFAC moong-masoor cup 185 g = 27 g (14.6/100 g)** pins the everyday mid | (a); (b) thickness | **MED-HIGH** — was MED |
-| Mash daal (`daal-mash`) | **13–32 g** [CoFID thin vs KHAN dry-style] | (a); (b) dryness | **MED-LOW** |
+| Mash daal (`daal-mash`) | **12–32 g** [CoFID thin, converted, vs KHAN dry-style] | (a); (b) dryness | **MED-LOW** |
 | Chanay / cholay (`chanay`) | **28–41 g** [KHAN 19.2; USDA 27.4; **LFAC chanay ½ cup 54 g = 10 g → 18.5/100 g = KHAN to a decimal**] | (a); (b) gravy vs solid | **MED-HIGH** — was MED |
 | **Khati daal (Memon)** (`daal-khati-memon`) | ½ cup 96 g = **13 g** [LFAC] | (a); (b) | **MED** — NEW |
 | **Daal gosht (Memon)** (`daal-gosht-memon`) | cup 212 g = **20 g** [LFAC] (9.4/100 g) | (a); (b) | **MED** — NEW |
@@ -257,7 +264,7 @@ Carbs come from onion masala, potato chunks, and thickeners (atta in nihari, bes
 | Food | CHO per katori | Varies | Conf |
 |---|---|---|---|
 | Karahi, chicken/mutton (`karahi`) | **4–17 g**, typical 6–12 [CoFID 2.5/100 g; KHAN 5.8–11.1; **LFAC cup 240 g = 10 g → 4.2/100 g, the low-mid end**] | (a); (b) gravy amount | **MED-HIGH** — was MED |
-| Korma (`korma`) | **7–20 g** [CoFID 4.6 vs KHAN 13.2 — thickener decides] | (a); (b) thickener | **MED-LOW** — no LFAC row |
+| Korma (`korma`) | **6–20 g** [CoFID 4.6 → **4.3 converted** vs KHAN 13.2 — thickener decides] | (a); (b) thickener | **MED-LOW** — no LFAC row |
 | **Nihari** (`nihari`) | **CHANGED (top raised 18 → 20):** bowl 250 g = **7–20 g**. LFAC cup 240 g = 7 g (2.9/100 g) at the floor; the top is now **three-source**: KHAN 7.06/100 g = 17.7, **Kohinoor Old Delhi Nihari (label + stated 400 g lamb + stated yield) ≈ 19.6**, **Saakshi's Kitchen (UK) 7.81 total/100 g = 19.5**. Everyday middle 11–17 [Aga Khan 4.19/100 g; Mount Holyoke 4.35; My Choice Foods (PK) 6.0; Saakshi's 6.72 available]. **Two proposals to cut this top (to 11 g, to 13 g) were tested and refused** — they rested on CoFID `Recipe` entries mis-described as measurements. **The atta slurry stirred in at the end is the whole variable:** 14 sourced pack directions and recipes put the flour at **18–150 g per kg of meat, an eightfold range**; gravy runs off the spoon → 7 g, gravy coats the spoon → 20 g. Shan's own jar sauce carries **+28 g carbohydrate per 350 g jar over its own korma/jalfrezi/achar gosht** (16.29 vs 8.0–8.6/100 g) — the thickener, measured. ⚠ **Reject DAHBA canned "Nihari"** — its panel is byte-identical to its own Haleem panel and its ingredients are a haleem list | (a) bowl; **(b) flour load — an 8× range** | **MED** |
 | Aloo gosht (`aloo-gosht`) | **16–17 g** [KHAN 10.8/100 g; **LFAC cup 200 g = 23 g → 11.5/100 g — agreement within 6 %**]; +8–16 g per extra potato chunk | (a); (b) potato count | **MED-HIGH** — was MED |
 | Aloo qeema (`aloo-qeema`) | **12–18 g** [CALC — working in section 17.3] | (a); (b) potato | **MED-LOW** — no LFAC row |
@@ -266,12 +273,12 @@ Carbs come from onion masala, potato chunks, and thickeners (atta in nihari, bes
 | **Aloo gobhi** (`aloo-gobhi`) | ½ cup 122 g = **16 g** [LFAC] (13.1/100 g); katori ≈ **20 g** | (a); (b) | **MED** — NEW |
 | **Aloo ki bhujia** (`aloo-bhujia`) | ½ cup 122 g = **22 g** [LFAC] (18/100 g — potato-dominant, nearly a starch dish) | (a); (b) | **MED** — NEW |
 | **Aloo palak** (`aloo-palak`) | ½ cup 118 g = **17 g** [LFAC] | (a); (b) | **MED** — NEW |
-| Bhindi (`bhindi`) | **≈ 12–18 g** [KHAN 12.1 by-diff; CoFID 7.7–8.9] | (a); (b) small | **MED** |
+| Bhindi (`bhindi`) | **≈ 11–18 g** [KHAN 12.1 by-diff; CoFID 7.7–8.9 → **7.3 converted** at the floor] | (a); (b) small | **MED** |
 | Palak / saag (`palak-saag`) | **8–11 g** [KHAN 7.5; CoFID 5.0; **LFAC sarson ka saag 116 g = 6 g → 5.2/100 g = CoFID**] | (a) — reliably low | **HIGH** |
 | **Palli saag (Sindhi)** (`palli-saag`) | cup 104 g = **16 g** [LFAC] — heavier than plain saag (besan/peanut) | (a); (b) | **MED** — NEW |
-| Baingan bharta (`baingan-bharta`) | **13–20 g** [KHAN 8.6; CoFID 13.4; **LFAC ½ cup 118 g = 12 g → 10.2/100 g, mid**] | (a); (b) potato in or out | **MED-HIGH** — was MED |
-| Mix sabzi (`mix-sabzi`) | **14–17 g** [KHAN 11.0; CoFID 9.2] | (a); (b) | **MED** |
-| Karela / qeema karela (`karela`) | **7–17 g** [CoFID 4.6 vs KHAN 11.6; **LFAC qeema karela ½ cup 124 g = 17 g → 13.7/100 g** — nearer KHAN] | (a); (b) | **MED** — was MED-LOW |
+| Baingan bharta (`baingan-bharta`) | **13–19 g** [KHAN 8.6; CoFID 13.4 → **12.4 converted**; **LFAC ½ cup 118 g = 12 g → 10.2/100 g, mid**] | (a); (b) potato in or out | **MED-HIGH** — was MED |
+| Mix sabzi (`mix-sabzi`) | **13–17 g** [KHAN 11.0; CoFID 9.2 → **8.5 converted**] | (a); (b) | **MED** |
+| Karela / qeema karela (`karela`) | **6–17 g** [CoFID 4.6 → **4.3 converted** vs KHAN 11.6; **LFAC qeema karela ½ cup 124 g = 17 g → 13.7/100 g** — nearer KHAN] | (a); (b) | **MED** — was MED-LOW |
 | **Kaddu gosht** (`kaddu-gosht`) | cup 235 g = **12 g** [LFAC] (5.1/100 g) | (a); (b) | **MED** — NEW |
 | **Loki ki sabzi** (`loki-sabzi`) | ½ cup 120 g = **7 g** [LFAC] (5.8/100 g) | (a); (b) | **MED** — NEW |
 | Daal kadu (lauki + chana daal) (`daal-kadu`) | **21 g** [KHAN 13.8] | (a); (b) | **MED** |
@@ -295,7 +302,7 @@ Carbs come from onion masala, potato chunks, and thickeners (atta in nihari, bes
 | **Samosa, aloo** (`samosa-cocktail`) | large 100 g = **30 g** [**LFAC 100 g = 30 g**; FNDDS 33.1; CoFID 30.0 — three-source agreement]; cocktail 25 g ≈ 8 g | (a) size; (b) filling | **HIGH** — was MED |
 | Mince samosa (Qeema samosa / keema samosa) (`samosa-qeema`) | 45 g = **8 g** [**LFAC 17.8/100 g**; CoFID 17–19 — agree] | (a); (b) | **MED-HIGH** — was MED |
 | **Qeema kachori** (`kachori-qeema`) | 126 g = **33 g** [LFAC] | (a); (b) | **MED** — NEW |
-| Pakora (`pakora-aloo` `pakora-onion`) (`pakora-plate`) | plate ~100 g ≈ **16–30 g** [FNDDS 16.2; CoFID 16.5–30; **LFAC aloo pakora 60 g = 15 g (25/100 g), onion pakora 50 g = 11 g (22/100 g) — both inside**] | (a) plate; (b) besan:vegetable + which vegetable | **MED-HIGH** — was MED |
+| Pakora (`pakora-aloo` `pakora-onion`) (`pakora-plate`) | plate ~100 g ≈ **16–27 g** [FNDDS 16.2; CoFID 16.5–30 → **15.1–27.4 converted**; **LFAC aloo pakora 60 g = 15 g (25/100 g), onion pakora 50 g = 11 g (22/100 g) — both inside**] | (a) plate; (b) besan:vegetable + which vegetable | **MED-HIGH** — was MED |
 | Bun kabab (`bun-kabab`) | **35–45 g** [CALC: bun 26 + patty 8–15 + chutney 2–4] — still no measured value; LFAC lacks it | (b) aloo vs shami patty | **LOW-MED** — unconfirmed by the Pakistani source |
 | Chana chaat (`chana-chaat`) | **CHANGED:** LFAC ½ cup 130 g = **30 g** (23/100 g) vs v2 CALC 41 g/katori (27/100 g). **LFAC recommended** — measured plate vs our arithmetic; katori 150 g ≈ **35 g**, + meethi chutney ≈ +5–10 g | (a) katori; (b) potato + chutney | **MED-HIGH** — was MED |
 | **Lobia chaat** (`lobia-chaat`) | cup 117 g = **22 g** [LFAC] (18.8/100 g ≈ USDA lobia 20.3 — coherent) | (a); (b) | **MED** — NEW |
@@ -309,7 +316,7 @@ Carbs come from onion masala, potato chunks, and thickeners (atta in nihari, bes
 | **Kabab paratha roll** (`kabab-paratha-roll`) | 1 roll 183 g = **71 g** [LFAC] — *the roll is a paratha delivery vehicle; among the highest single-item snacks in this table* | (a) roll size; (b) paratha share | **MED** — NEW, high-volume Karachi food |
 | Sandwich / **club sandwich** (`club-sandwich`) | **25–30 g** [CALC 28–30; **LFAC club sandwich 120 g = 25 g** — agree] | (a) bread brand | **MED-HIGH** — was MED |
 | **Chicken patties (bakery)** (`chicken-patties`) | 1 piece 60 g = **13 g** [LFAC] | (a) bakery size | **MED** — NEW |
-| Nimco / namkeen (`nimco-loose`) | ½ cup 40 g ≈ **14 g** [CoFID chevda 35.5/100 g] | (b) mix | **MED** |
+| Nimco / namkeen (`nimco-loose`) | ½ cup 40 g ≈ **13 g** [CoFID chevda 35.5 → **32.4 converted**, the figure §20.1 computed at its own line and never carried back here] | (b) mix | **MED** |
 | **Namak paray** (`namak-paray`) | 10 pieces 18 g = **6 g** [LFAC] — *flag: 33/100 g reads low for fried maida (expect ~50–60); oil uptake may explain it; treat as the floor* | (b) | **LOW-MED** — NEW, flagged |
 | Papar (papad) | fried 13 g ≈ **4–8 g** [CoFID 28.3/100 g fried; SJSU]. **LFAC's papar row (15 g = 15 g carbs) fails arithmetic — carbs cannot equal total weight in a ~10 % moisture fried food — printed error, excluded** (see section 16) | (b) size | **MED** — v2 value kept |
 | **Boondi raita chaat (Bohri)** (`boondi-raita-chaat`) | ½ cup 122 g = **7 g** [LFAC] | (b) | **MED** — NEW |
@@ -319,8 +326,8 @@ Carbs come from onion masala, potato chunks, and thickeners (atta in nihari, bes
 | **Lasan (Memon, bajra roti + raita)** (`lasan-memon`) | 1 rofi + ½ cup raita, 105 g = **46 g** [LFAC — the 55 g bajra rofi alone is 38 g; same high-bajra-density flag as section 3.2] | (a); (b) | **LOW-MED** — NEW, flagged |
 | **Malida** (`malida`) | cup 100 g = **36 g** [LFAC] | (a); (b) | **MED** — NEW |
 | **Bohra lasanyo / chicken lasagna** (`lasanyo-bohra`) | 1 piece 106 g = **18 g** [LFAC] | (a); (b) | **MED** — NEW |
-| Popcorn (`popcorn`) | 24 g popped ≈ **14 g** [CoFID] | (a) cup | **HIGH** |
-| Tea biscuits (`biscuit-digestive`) (`biscuit-sooper`) | 1 Sooper = **4.4 g** [LABEL]; digestive 15 g ≈ 10 g [CoFID] | (a) brand | **MED-HIGH** |
+| Popcorn (`popcorn`) | 24 g popped ≈ **13 g** [CoFID salted 59.3 → **53.9 converted**; popcorn is starch, so the divisor is 1.099 not 1.05] | (a) cup | **HIGH** |
+| Tea biscuits (`biscuit-digestive`) (`biscuit-sooper`) | 1 Sooper = **4.4 g** [LABEL]; digestive 15 g ≈ **9 g** [CoFID, converted] | (a) brand | **MED-HIGH** |
 | Crisps packet (`crisps-packet`) | 27 g packet ≈ **13–14 g** [USDA; SJSU] | — labelled | **HIGH** |
 
 ---
@@ -331,13 +338,13 @@ Mithai = **(a)** your sweet shop's piece weight (weigh one box once) + **(b)** s
 
 | Food | CHO per portion | Varies | Conf |
 |---|---|---|---|
-| Gulab jamun (`gulab-jamun` `gulab-jamun-large`) | 1 piece 36 g = **15 g** [**LFAC**, 41.7/100 g; CoFID 43.3–49.9 with more syrup — consistent]; a syrup-drenched 50 g piece ≈ **22–25 g** | (a) piece; (b) syrup soaked | **HIGH** density — was MED-HIGH |
+| Gulab jamun (`gulab-jamun` `gulab-jamun-large`) | 1 piece 36 g = **15 g** [**LFAC**, 41.7/100 g; CoFID 43.3–49.9 with more syrup — consistent]; a syrup-drenched 50 g piece ≈ **21–23 g** — CoFID converted component-wise, retail 43.3 → **41.1** and homemade 49.9 → **46.9**; these are sugar-led, so the divisors are 1.055 and 1.064, not 1.10 | (a) piece; (b) syrup soaked | **HIGH** density — was MED-HIGH |
 | **Jalebi** (`jalebi-medium`) (`jalebi-large`) | **CLOSED — was the oldest (c) in the file:** LFAC "Jalebi (without sheera)": 1 piece 41 g = **23 g** (**56/100 g**). Tracker guesses (60–75/100 g) ran slightly high. With extra sheera poured on, add **+5–10 g** [CALC]. the earlier "medium 25–30 g ≈ 15–22 g" becomes **≈ 14–17 g per 25–30 g piece** at book density | (a) piece; (b) sheera — shop-to-shop sucrose spread is real [LIT khoa-jalebi] | **MED** — single Pakistani patient-facing source; was LOW/(c) |
 | Barfi (`barfi`) | 1 piece 40 g = **16 g** [**LFAC 40/100 g**; FNDDS 40.5 — exact agreement] | (a) piece; (b) type, small | **HIGH** — was MED-HIGH |
 | Laddu (besan/motichoor) (`laddu`) | small ~40 g ≈ **25–30 g** [SJSU; WEAK] | (a); (b) | **MED-LOW** — no LFAC row |
 | Rasgulla (`rasgulla`) | 1 medium ≈ **15 g** [SJSU] | (b) syrup drunk or left | **MED-LOW** — no LFAC row |
 | Ras malai (`ras-malai`) | 1½ pc + ½ cup milk syrup, 117 g = **16 g** [**LFAC**; the earlier 15–20 confirmed] | (b) ras amount | **MED-HIGH** — was MED-LOW |
-| Sewaiyan (`sayun-sindhi` `sewaiyan-plain`) (`sewaiyan-milky`) | **CHANGED (split by preparation):** boiled without milk, ½ bowl 56 g = **18 g** [LFAC, 32/100 g]; milky/CoFID-style **20 g/100 g** → katori of milk sewaiyan ≈ **30 g**; **Sindhi sayun (dry, ghee + sugar) ½ cup 68 g = 42 g** [LFAC, 62/100 g] — three real preparations, three densities, do not blend | (a) katori; (b) **which preparation — now the named variable** | **MED-HIGH** |
+| Sewaiyan (`sayun-sindhi` `sewaiyan-plain`) (`sewaiyan-milky`) | **CHANGED (split by preparation):** boiled without milk, ½ bowl 56 g = **18 g** [LFAC, 32/100 g]; milky/CoFID-style **20.2 g/100 g → 19.0 converted** (11-915 Sevyian, filed under that name and not under "vermicelli") → katori of milk sewaiyan ≈ **28 g**; **Sindhi sayun (dry, ghee + sugar) ½ cup 68 g = 42 g** [LFAC, 62/100 g] — three real preparations, three densities, do not blend | (a) katori; (b) **which preparation — now the named variable** | **MED-HIGH** |
 | Sheer khurma (`sheer-khurma`) | **CHANGED (raised):** LFAC ¾ cup 125 g = **46 g** (36.8/100 g) vs v2 CALC 35–45/katori (23–30/100 g). **LFAC recommended**; katori 150 g ≈ **55 g** — Eid sheer khurma is nearly rice-kheer-plus-dates rich | (a) katori; (b) Eid richness | **MED** — was LOW-MED |
 | Sooji ka halwa (`sooji-halwa-breakfast` `sooji-halwa-dessert`) | **the 2× spread is now book-internal fact, not source noise:** LFAC prints it at *both* densities — breakfast halwa (with puri) ¼ cup 88 g = **23 g** (26/100 g) and dessert suji halwa ¼ cup 88 g = **43 g** (49/100 g = CoFID 49.1). Sugar:sooji ratio is the whole story; halwa-puri-shop halwa sits at the low end, dawat halwa at the top | (a) serving; (b) sugar load — a genuine 2× | **MED-HIGH** for the range — was MED |
 | Gajar ka halwa (`gajar-halwa` `gajar-halwa-spoons`) | ½ cup 102 g = **44 g** [**LFAC 43.1/100 g**; CoFID 44 — exact agreement]. the earlier "2 heaped Tbsp ≈ 14–22 g" stands for small servings | (a); (b) khoya/sugar | **HIGH** density — was MED |
@@ -354,8 +361,8 @@ Mithai = **(a)** your sweet shop's piece weight (weigh one box once) + **(b)** s
 | **Gur papri** (`gur-papri`) | 4 pieces 76 g = **57 g** [LFAC] (75/100 g — coherent with gur at 95–98, section 8 below) | (a); (b) | **MED** — NEW |
 | Kulfi (`kulfi`) | **CHANGED (raised):** LFAC 1 kulfi 74 g = **18 g** (24.3/100 g) vs CoFID UK-recipe floor 13.8. **LFAC recommended** — Pakistani khoya/condensed-milk kulfi is the dense one; the earlier 11–20 band becomes **15–20 g per typical kulfi** | (a) size; (b) recipe | **MED-HIGH** — was MED-LOW |
 | Ice cream, vanilla (`ice-cream-scoop`) | scoop 66 g ≈ **16 g** [USDA-SR] | (a) scoop | **HIGH** |
-| Custard (`custard`) | katori ≈ **24 g** [CoFID] | (a); (b) how much sugar the batch carried | **MED** — was HIGH; single uncorroborated source and the recipe moves it |
-| Jelly (`jelly`) | 120 g ≈ **18 g** [CoFID] | (a) | **MED** — was HIGH; single uncorroborated source |
+| Custard (`custard`) | katori ≈ **23 g** [CoFID 16.3 → **15.3 converted**] | (a); (b) how much sugar the batch carried | **MED** — was HIGH; single uncorroborated source and the recipe moves it |
+| Jelly (`jelly`) | 120 g ≈ **17 g** [CoFID 15.1 → **14.4 converted**; its starch is literally 0.0, so the divisor is exactly 1.05] | (a) | **MED** — was HIGH; single uncorroborated source |
 | Falooda (`falooda-cup` `falooda-glass`) | **CLOSED (was component-CALC only):** LFAC 1 cup 248 g = **56 g** (22.6/100 g). the earlier CALC (50–60 per 300 ml) was on target; a large 300 ml glass ≈ **68 g** [scaled from LFAC] | (a) glass; (b) shop recipe | **MED-HIGH** — was LOW |
 | Kheer — moved to section 4 (rice) with the changed value | | | |
 | Sugar (cheeni) (`sugar-tbsp` `sugar-tsp-heaped` `sugar-tsp-level`) | 1 tsp level = **4.2 g**; heaped ≈ 6 g; 1 Tbsp = 12.5 g [USDA-SR] | (a) your spoon | **HIGH** |
@@ -422,7 +429,7 @@ LFAC's fruit pages are international "≈ 15 g" anchors (some weights include pe
 | Fruit | CHO per portion | Varies | Conf |
 |---|---|---|---|
 | Khajoor, dried/semi-dry (`khajoor-large` `khajoor-small`) | large 24 g = **18 g**; small aseel 7–10 g ≈ **5–7 g** [USDA 75/100 g; CoFID; **LFAC: 4 dates 20 g = 15 g → 75/100 g — exact agreement**] | (a) which dates your house buys | **HIGH** |
-| Fresh dates (doka) (`dates-fresh`) | 5 ≈ **16 g** [CoFID raw] | (a) | **MED** |
+| Fresh dates (doka) (`dates-fresh`) | 5 ≈ **15 g** [CoFID raw 31.3 → **29.8 converted**; starch 0.0, divisor exactly 1.05] | (a) | **MED** |
 | Aam (chaunsa/sindhri/anwar ratol) (`aam-slices` `aam-whole`) | ½ cup slices ≈ **12–15 g** [USDA 15.0–17.4; CoFID 10.7; **LFAC ½ cup 120 g = 15 g → 12.5/100 g**]; whole medium (200 g flesh) ≈ **30–35 g** — count a whole mango as ≥ 30 g | (a) how you cut it; (b) variety/ripeness | **MED-HIGH** |
 | Kela (banana) (`kela`) | small 80–100 g flesh ≈ **18–23 g** [USDA 22.8/100 g] (LFAC's "130 g small = 15 g" weighs the peel — ignore for dosing) | (a) size | **HIGH** |
 | Amrood (guava) (`amrood`) | medium 120 g ≈ **6–17 g** [USDA 14.3 vs CoFID 5.0 — unresolved, range shown] | (b) variety; (c)-ish conflict | **MED-LOW** |
@@ -445,7 +452,7 @@ LFAC's fruit pages are international "≈ 15 g" anchors (some weights include pe
 | Food | CHO per portion | Varies | Conf |
 |---|---|---|---|
 | Doodh — see Drinks | 250 ml ≈ **12–13 g** [USDA-SR] | (a) glass | **HIGH** |
-| Dahi, plain (`dahi-plain`) | katori ≈ **7–12 g** [USDA; CoFID]; sweetened: add per tsp | (a); (b) if sweetened | **HIGH** |
+| Dahi, plain (`dahi-plain`) | katori ≈ **7–11 g** [USDA; CoFID 12-184 7.8 → **7.4 converted**, the same record this file already converts twice elsewhere]; sweetened: add per tsp | (a); (b) if sweetened | **HIGH** |
 | Raita (`raita`) | katori ≈ **5–8 g** [CALC; **LFAC boondi raita chaat 122 g = 7 g corroborates**] | (a) | **MED-HIGH** — was MED |
 | Milk powder (Nido) (`milk-powder`) | 4 Tbsp nonfat 23 g ≈ **12 g** [USDA] | (a) spoon | **HIGH** |
 | Condensed milk, sweetened (`condensed-milk`) | 1 Tbsp 19 g ≈ **10 g** [USDA-SR] | — | **HIGH** |
@@ -501,8 +508,8 @@ Pre-added totals [CALC from rows above; tags inherited]. LFAC's own composites (
 | Meal as ordered/served | Total CHO | Biggest lever |
 |---|---|---|
 | **Biryani plate (mid pot, 300 g) + raita** (`meal-biryani-mid-raita`) | **≈ 55–60 g** [LFAC-anchored 51 + raita 5–8] | (a) plate weight; (b) potato chunks +8–16 each |
-| Biryani plate (degh/commercial, 300 g) + raita (`meal-biryani-degh-raita`) | **65–75 g** | (b) which pot |
-| Biryani plate (meat-heavy home, 300 g) + raita (`meal-biryani-meat-raita`) | **46–58 g** | (b) which pot |
+| Biryani plate (degh/commercial, 300 g) + raita (`meal-biryani-degh-raita`) | **62–75 g** | (b) which pot |
+| Biryani plate (meat-heavy home, 300 g) + raita (`meal-biryani-meat-raita`) | **46–54 g** | (b) which pot |
 | **Nihari + 2 tandoor naan (120 g)** (`meal-nihari-one-naan` `meal-nihari-two-naan`) | **127–138 g** — the naans are ~87 % of it; with 1 naan **67–78 g** (nihari itself now 7–18) | (a) naan tier |
 | **Daal chawal (1 cup rice + 1 cup daal)** | **75 g** [**LFAC's own composite**; v2 said 65–75] | (a) rice serving |
 | **Halwa puri nashta (1 puri + halwa + chanay)** (`meal-halwa-puri-one` `meal-halwa-puri-two`) | **61 g** [**LFAC's own composite**: puri 28 + halwa 23 + chanay 10]; with 2 puris **≈ 89 g** | (b) puri count + halwa richness |
@@ -628,6 +635,74 @@ snapshot are now linked beside it, so the source behind 199 rows has three addre
 one), the CoFID dataset and its gov.uk page (2021 is still the current release), the Open Government
 Licence, Diabetes UK, and the Pakistani retail listings at naheed.pk, alfatah.pk, unitedking.com,
 shopatshams.com.pk, shaheenchemistrwp.com and agro.tdap.gov.pk.
+
+### 17.4 The CoFID conversion sweep — 2026-09-26
+
+**84 rows cite CoFID. Twenty had recorded a conversion. This is the sweep of the rest**, forced by
+the withdrawn claim in section 2 that said none was needed.
+
+**The method, and why the blanket divisors were both wrong.** CoFID's own guide says divide total
+carbohydrate by 1.05 and starch by 1.10. For anything that is a mix of the two, neither is right —
+the recovery is component-wise, `starch ÷ 1.10 + total sugars ÷ 1.05`, and the dataset publishes
+both columns. The method was verified against foods that are a single component before it was
+trusted on anything else: **white sugar 105.0 → exactly 100.0**, sago starch 94.0 → 85.45, boiled
+basmati 26.5 → 24.09. This file had already used the method once, for semi-sweet biscuits, and that
+working reproduces to the decimal (55.1 starch ÷1.10 + 20.3 sugars ÷1.05 = 69.4; only its "19.7
+sucrose" label was wrong — the arithmetic used total sugars, 20.3).
+
+**Where each food class actually falls**, from the 2021 spreadsheet's own columns:
+
+| class | effective divisor | examples |
+|---|---|---|
+| savoury starch — rice, pakora, boiled lentils, popcorn | **1.085–1.100** | pilau 1.098, lamb biryani 1.094, popcorn 1.099, red lentils 1.099 |
+| sugar-led — yoghurt, jelly, dates, guava, gulab jamun, halva | **1.050–1.065** | plain yoghurt, jelly and raw dates are **exactly 1.050**, because their starch is literally 0.0 |
+| genuinely mixed — rusks, biscuits, custard, sevyian, korma | **1.060–1.090** | both blanket divisors are wrong by 1–3 % here, which is why the component method is not optional |
+
+**The rice class was the one open question and the data closes it.** Across all 80 CoFID rice-family
+rows the divisor runs 1.072–1.100 with a **median of 1.097**, and the low tail is rice puddings, not
+savoury dishes. Every figure this file cites matched a real record to the decimal: pilau **24.3 →
+22.1** (11-968), takeaway biryani **16.6 → 15.3** (19-454), homemade lamb biryani **20.9 → 19.1**
+(19-591). The 19.1 is robust — the record's components fall 0.6 g short of its stated total, and
+allocating that gap to starch, to sugar, or pro-rata gives 19.1 every way.
+
+**What changed.** Twenty-nine rows. The largest movement on a **dosing** figure is
+`biryani-rice-heavy-dawat`, 80 → 76 g on a 400 g dawat plate; the largest on a displayed top is
+`pulao-plate`, 73 → 66. ⚠ **None of this was a hazard and it should not be read as one.** The dosing
+errors run 0.4 to 4 g against a working tolerance of ±10 g, and most are under 1 g. It was a
+correctness debt, and the one thing that made it worth paying is that **every instance leaned the
+same way**: a missing divisor can only inflate a figure, and inflation is the over-dosing direction.
+
+**Four things the sweep found that were not simply unconverted:**
+
+1. **`nimco-loose` — the file diagnosed its own error and did not carry the fix.** Section 20.1
+   states that the chevda 35.5 here is unconverted and computes **32.4**; this row went on shipping
+   the 35.5-derived figure. ⚠ Its CoFID record has total sugars marked `N` — present but not
+   measured — so 32.4 rests on an assumption; it survives it, because allocating the unmeasured
+   remainder entirely to starch or entirely to oligosaccharide both give 32.3. Bombay mix, the same
+   food class with a fully measured split, converts to 32.0 by a completely separate route.
+2. **`dahi-plain` had the same CoFID record converted in two places and not in its own row.**
+   12-184 is converted to 7.43 where the lassi row uses it and again in section 17.3's chargha
+   working, while this row's top used the raw 7.8.
+3. **`aloo-baingan` printed a divisor no rule permits.** Its line claims "13.4 ME → 12.26 after the
+   §2 conversion", which implies **1.093** — neither 1.05 nor 1.10. The real component split gives
+   12.4. It is display-only and it under-states, the only error in this file pointing that way.
+4. **A citation error hiding behind a coincidence.** The potato line states "CoFID 13-490 17.5 ME →
+   **16.7** after the §2 conversion". 16.7 is that record's **starch column**, not its converted
+   total — the two happen to be the same number, which is what made the mistake invisible. The
+   correct conversion is 16.7 ÷ 1.10 + 0.8 ÷ 1.05 = **15.9**.
+
+**And a defect in the bands themselves, which matters more than the drift.** Nineteen of the
+affected rows are bands with a CoFID end set against a USDA, FNDDS, KHAN or LFAC end — one in
+monosaccharide equivalents, one in label grams. Where CoFID sat at the **top**, the printed band was
+wider than reality and the last slice of its "recipe spread" was a unit artefact: the meat-heavy
+biryani band printed 13–17 g/100 g is 13.6–15.1 on a common basis, so **roughly half its width was
+the mismatch rather than variation between pots.** Where CoFID sat at the **floor**, the band was
+narrower than reality — and the floor is the figure that doses.
+
+**Not swept, and why.** Twelve rows print `[USDA; CoFID]` with no per-100 g figure for either, so
+neither the setting source nor the basis can be established from the document. Nine are near-zero
+foods where the conversion cannot move the shipped integer. Three would matter and are recorded as
+open: `kheer-home`, `bread-brown` and `besan-coating`.
 
 ### 17.3 The CALC rows, with the working shown — 2026-09-25
 
@@ -986,7 +1061,7 @@ The rendered LFAC page confirms **178 and 20**, not an extraction swap. **20 ÷ 
 | **Malai, cream** (`malai`) | 2 Tbsp, 30 g | **1–2 g** | HIGH | Nearly all fat. Sugar on top is the sugar's line, 4.2 a spoon. [USDA] cream |
 | **Butter, ghee or oil** — *Makhan* (`butter-ghee-oil`) | any amount | **0 g** | HIGH | **Zero at any amount** — fat changes how fast a meal lands, not its carbohydrate. [USDA] |
 | **Brown / wholemeal bread** (`bread-brown`) | 1 slice ≈ 30 g | **11–13 g** | MED | **CORRECTED 2026-09-26 (top was 14, which implied 46.7 g/100 g — above even the total carbohydrate its own source prints).** The two ends are different quantities rather than a measurement spread: 11 is *available* carbohydrate (42.71 total − 6.0 fibre) and 13 is *total*, both from USDA-SR 172688 on a 30 g slice. ⚠ **Corrects the "brown bread does not count" belief** — against white's 13–15. The fibre slows the rise; it does not remove the grams. A bakery "diabetic" loaf is this row unless its packet says otherwise. [USDA-SR 172688](https://fdc.nal.usda.gov/food-details/172688/nutrients) · [check](https://fdc.nal.usda.gov/portal-data/external/172688); CoFID wholemeal |
-| **Kulcha, bakery (dry, chai)** (`kulcha-bakery`) | 1 piece ≈ 40 g | **20–26 g** | **LOW** | **CORRECTED 2026-09-26 (was 21–28).** Both ends now use the **starch divisor 1.10**, not 1.05 — rusk is nearly all starch, and a band whose two ends were computed on different bases is not a band. 26 also sits inside the 45–65 g/100 g envelope section 21.1 argued for; 28 did not, which means the row's top had been outside the ruling that created it. The class envelope's own floor would be 18 g on a 40 g piece, shown here rather than shipped, because 20 is what this row's cited rusk figures actually give. See the ruling below |
+| **Kulcha, bakery (dry, chai)** (`kulcha-bakery`) | 1 piece ≈ 40 g | **21–27 g** | **LOW** | **CORRECTED TWICE ON 2026-09-26. Was 21–28, then briefly 20–26, now 21–27.** The first correction applied a flat starch divisor of 1.10 to both ends, which was better than the 1.05 it replaced and still wrong: the two ends are **different CoFID foods**. The floor is cake rusk (11-916, 55.7 → **51.7**, divisor 1.077) and the top is rusk (11-940, 73.0 → **67.4**, divisor 1.083), each computed component-wise from the dataset's own starch and sugar columns. A band whose two ends were computed on different bases is not a band. 26 also sits inside the 45–65 g/100 g envelope section 21.1 argued for; 28 did not, which means the row's top had been outside the ruling that created it. The class envelope's own floor would be 18 g on a 40 g piece, shown here rather than shipped, because 20 is what this row's cited rusk figures actually give. See the ruling below |
 | **Dalia** (`dalia`) | 1 bowl, 250 ml, milk + 2 sugars | **30–40 g** | **LOW** | The dry grain is the number: ~25 g dry = 16–19 g before anything. Milk +5/100 ml, sugar 4.2 a spoon. **Weigh dry once: grams × 0.65.** CALC from [USDA] bulgur |
 | **Oats, porridge** (`oats-porridge`) | ½ cup dry, 40 g | **24–27 g** | MED | ⚠ The packet's own panel beats this row. Top includes fibre — a slight overestimate. [USDA-SR] Quaker quick oats 68.2/100 g |
 | **Cornflakes** (`cornflakes`) | 1 bowl, 30 g flakes | **25–27 g** | HIGH | ⚠ **Bowls pour 30–60 g** — weigh once. Frosted or honey flakes run a third higher. [USDA-SR] corn flakes 88/100 g |
