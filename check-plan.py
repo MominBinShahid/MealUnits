@@ -4116,6 +4116,42 @@ def check_reference_data(_plan):
     return out
 
 
+def check_backlog_numbers_unique(_plan):
+    r"""Two backlog entries may not share a number.
+
+    ADDED 2026-09-26, because it happened twice. `T17` fixed a duplicate `T14`;
+    by 2026-09-23 two entries were both numbered `T26`, and `src/ui/styles.css`
+    and `test/integration.test.ts` were citing "T26" at a heading that no longer
+    resolved to one thing. Nothing noticed, because nothing was looking.
+
+    This file's own rule says not to renumber for tidiness — reusing a number is
+    how `PLAN.md` v14 came to assert three falsehoods about the backlog. A
+    duplicate is the other failure: not untidiness, but a citation that cannot
+    resolve. The rule against renumbering is what makes catching a collision
+    early matter, since the longer it sits the more pointers accumulate on it.
+    """
+    path = os.path.join(HERE, "docs", "BACKLOG.md")
+    if not os.path.exists(path):
+        return []
+    seen = {}
+    out = []
+    with open(path, encoding="utf-8") as fh:
+        for line_no, line in enumerate(fh, 1):
+            m = re.match(r"^### (T\d+)\.", line)
+            if not m:
+                continue
+            num = m.group(1)
+            if num in seen:
+                out.append(
+                    "docs/BACKLOG.md:%d reuses %s, already taken at line %d — a "
+                    "number is an entry's identity here and source files cite "
+                    "it, so two entries sharing one is a pointer that resolves "
+                    "to whichever a reader finds first"
+                    % (line_no, num, seen[num]))
+            else:
+                seen[num] = line_no
+    return out
+
 def check_mutation_coverage_list(_plan):
     r"""Tests that exercise mutated code but are missing from the Stryker run.
 
@@ -4912,6 +4948,7 @@ CHECKS = [
     ("§10.4: a number joined to its unit by a plain space", check_number_unit_nowrap, "plan"),
     ("10a: a stylesheet declaration that names a side", check_logical_properties, "plan"),
     ("10a: a number range that bidi will reverse", check_rtl_ranges_isolated, "plan"),
+    ("a backlog number used twice", check_backlog_numbers_unique, "plan"),
     ("tests missing from the mutation run", check_mutation_coverage_list, "plan"),
     ("§20.5 listing vs the directory", check_file_listing, "plan"),
     ("NEXT-STEPS.md has come back", check_next_steps, "plan"),

@@ -259,8 +259,13 @@ prescriber who wants longer.
 **With no insulin named — "I don't know, or mine isn't listed" — the app states no wait at all.** It
 says it cannot tell them when to eat and to ask their doctor. An absence is never rendered as a fact.
 
-**The stacking windows did NOT move with this.** Section 3's 4 and 12 hours are still applied to
-every class, pending question 10c. Shortening a gate is the dose-raising direction, and holding a
+**The stacking windows did not move with this, and then they did.** ⚠ **CORRECTED 2026-09-26:
+this paragraph said section 3's 4 and 12 hours are "still applied to every class", which stopped
+being true when T20 shipped.** Regular human insulin now carries **4 and 18** — its own label's
+tail — while both analogue classes stay at **4 and 12**. `test/insulin.test.ts` pins the difference
+and also pins the relationship that must not invert: the slowest insulin gets the longest window.
+Question 10c is answered for the advisory window and the suppression window remains 4 for every
+class. Shortening a gate is the dose-raising direction, and holding a
 correction longer than an analogue needs runs high — which section 2.1 tolerates, and which §7.4.1's
 recorded per-dose override releases.
 
@@ -511,7 +516,48 @@ Recording a reading exposes no insulin quantity and does not weaken the block. T
 
 ---
 
-## 11a. The prescription is prefilled, and what that costs
+## 11a. The prescription WAS prefilled — reversed, and what the reversal cost
+
+> **REVERSED 2026-09-13. The three fields now ship empty.** `PRESCRIBED_TARGET` 150,
+> `PRESCRIBED_ISF` 30 and `PRESCRIBED_ICR` 10 are deleted from `src/config.ts`; nothing is prefilled
+> and the app cannot be used until a person enters their own three numbers. **The section below is
+> the argument as it stood while the prefill shipped, kept under §19's rule that a withdrawal is
+> recorded rather than quietly deleted** — and this notice is itself a correction, because the
+> reversal happened on 2026-09-13 and was not written here until 2026-09-26.
+
+**Why it was reversed, and it is one reason rather than a change of mind about the hazard.** The
+prefill was accepted against an explicit earlier refusal on a single argument: *this app has
+exactly one user, he needs zero friction, and the values ARE his prescription.* On 2026-09-08 the audience
+changed — the app is for anyone with type 1 who can enter their own three numbers — and that premise
+was the whole of what the argument rested on. Nothing else about it survived.
+
+**For a stranger, 150 / 30 / 10 is not a stale prescription. It is SOMEONE ELSE'S**, and the worked
+example below applies with more force rather than less: an ICR of 10 against a real 15 doses a 150 g
+meal at 15 units instead of 10, roughly 150 mg/dL of unintended drop, on a person for whom those
+numbers were never right to begin with.
+
+**There is also no citable universal default to fall back on, and that was checked before the
+change.** ISPAD's 500 and 1800 rules derive ISF and ICR from the person's own total daily dose,
+which this app does not collect and does not ask for. The MiniMed 780G and the t:slim both require a
+clinician to supply these values and **prefill nothing**. A prefilled 150 is a prescription wearing
+the clothes of a default.
+
+**What went with it.** The first-run acknowledgement used to fire by design, because 150 sits
+outside its own 90–140 soft band and that made the prefilled value conspicuous. With the fields
+empty there is no prefilled value to make conspicuous. The acknowledgement still fires for anyone
+who genuinely enters 150 — it has simply stopped being a first-run tripwire, and nothing else
+depended on it. **The 90–140 band still must not be widened**, for the reason given below.
+
+**What the reversal costs, stated as plainly as the original risk was.** The person this was built
+for now has to enter three numbers before the app will help him, and the argument for the prefill
+was that an app demanding data entry loses to the habit it exists to replace — he injects a fixed
+24–25 units at every meal regardless of reading or carbohydrate. That cost is real and was accepted
+knowingly. It was accepted because the alternative is shipping one person's prescription to everyone
+else's phone.
+
+---
+
+### 11a (historical) — the argument as it stood while the prefill shipped
 
 **The app opens with target 150, ISF 30 and ICR 10 already in the fields.** They are shown, not
 applied silently, and nothing is stored until the setup is saved.
@@ -675,7 +721,9 @@ NICE and Diabetes UK material is quoted with citation here and **must not be cop
    explicitly not to be built before this is answered.
 8. **Does the new on-screen wording about which insulin this app is timed for say the right thing?**
    Added 2026-09-13, and the disclosure itself is not in doubt — sections 3 and 4 have said since the
-   beginning that Humulin R's 5-8 hour tail is why the stacking windows are 4 and 12, and that
+   beginning that Humulin R's 5-8 hour tail is why the stacking windows are 4 and 18 for regular
+   human insulin against 4 and 12 for the analogues (⚠ corrected 2026-09-26; this line said 4 and
+   12 for everything, which T20 changed), and that
    "advice written for analogs is wrong here". What was missing was that the APP never said it. It
    named Humulin R in four places as though it were the reader's insulin, which is a different claim
    from the true one, and `T5` widened the audience to include the analogue user who is now the more
