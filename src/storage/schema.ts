@@ -80,6 +80,7 @@ export const META_KEY = {
   language: 'language',
   calibration: 'calibration',
   display: 'display',
+  vessel: 'vessel',
 } as const;
 
 /**
@@ -261,6 +262,59 @@ export interface CalibrationRow {
   readonly key: typeof META_KEY.calibration;
   /** `Food.id` to the reader's own grams of carbohydrate, and when they set it. */
   readonly foods: Readonly<Record<string, { readonly grams: number; readonly setAt: number }>>;
+}
+
+/**
+ * T31 — what the reader's own vessel holds, as a RATIO of what the table
+ * assumes, plus the two weighings that produced it.
+ *
+ * A ratio and not a weight, and that is the whole design. Fill weight belongs
+ * to vessel × food, not to the vessel: T31's adversarial pass calibrated a cup
+ * at 220 g from curry and applied it to the popcorn row, which gives **128 g
+ * of carbohydrate against a true 14 — an over-dose of 11.4 units**. In this
+ * table one "cup" spans 24 g to 355 g. Stored as *your fill ÷ the row's own
+ * stated weight for that same food*, the same feature is sound.
+ *
+ * It arrives by the same route as `language`, `calibration` and `display`:
+ * `meta` is a keyed table, so a new key costs no migration and neither
+ * `SCHEMA_VERSION` nor `STRUCTURE_VERSION` moves. That matters more than
+ * convenience here — #63's keyPath rename bricked every install that existed,
+ * and #70 shipped a repair engine whose general case would have answered "this
+ * store has a missing index" with `deleteObjectStore` on the dose log. A new
+ * store would drag both hazards in for a feature that needs neither.
+ *
+ * **`emptyGrams` is not bookkeeping, it is the tare detector.** An un-tared
+ * plate is +5.1 to +10.2 units, and un-tared during CALIBRATION doubles every
+ * dose in that vessel permanently. No threshold can catch it — un-tared katori
+ * entries of 180–270 g sit inside the genuine 100–250 g serving range — so the
+ * structure catches it instead: the reader weighs empty, then serves what they
+ * would actually eat, and the stored empty weight is shown back to them
+ * afterwards as a number they can re-read against the plate in their hand.
+ *
+ * `sourceFoodId` and `referenceGrams` record which row's stated weight the
+ * fill was divided by, so the arithmetic can be audited rather than inferred.
+ *
+ * The ratio is stored UNROUNDED. 450 ÷ 300 is exactly 1.5, but 445 ÷ 300 is
+ * 1.48333…, and feeding a displayed 1.5 back into the arithmetic is the second
+ * rounding engine §5.3 forbids. Rounding happens at the formatter.
+ */
+export interface VesselRow {
+  readonly key: typeof META_KEY.vessel;
+  readonly vessels: Readonly<Record<string, {
+    /** Fill ÷ reference. What the arithmetic multiplies by. */
+    readonly ratio: number;
+    /** The vessel empty. Zero ONLY when `tared` is `'scale'`. */
+    readonly emptyGrams: number;
+    /** Vessel plus food, as the scale showed it. */
+    readonly fullGrams: number;
+    /** Whether the app subtracted the tare or the scale had already zeroed. */
+    readonly tared: 'subtracted' | 'scale';
+    /** Which row's stated weight the fill was divided by. */
+    readonly sourceFoodId: string;
+    /** That row's `vessel.grams` at the time, so the working survives. */
+    readonly referenceGrams: number;
+    readonly setAt: number;
+  }>>;
 }
 
 export type MetaRow =

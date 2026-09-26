@@ -37,9 +37,44 @@ import type { Settings } from '../core/types.js';
  * `threshold` is in the token even though §7.7 keeps it out of
  * `settingsHistory`: it never changes a dose VALUE, but §4.3 step 1 invalidates
  * on it because it changes whether the dose is shown at all.
+ *
+ * **The reader's own figures are in it too, added 2026-09-26 with T31 — and
+ * they were missing before that, which was the same defect one layer down.**
+ * A per-food calibration already changed what a row doses, so tab A could
+ * calibrate a roti while tab B kept rendering the table's figure until
+ * something unrelated refreshed it. The comment above says why that is wrong:
+ * *a settings change is as dose-affecting as a log append*, and so is a
+ * calibration. T31's vessel ratios would have doubled the reach of it — up to
+ * **+4.2 units on `rice-plate`** — so both maps go in together.
+ *
+ * Keyed on `setAt` rather than on the value, because that is what makes a
+ * revert visible: calibrating to 28, back to 18, and to 28 again is three
+ * distinct states, and a token built from the value alone would call the first
+ * and third identical. Sorted, because object key order is not a promise and a
+ * token that changes when nothing did is a poll that never settles.
+ *
+ * The parameter defaults to empty so this stays callable from tests and from
+ * any path that has not read storage yet — and an empty map produces the same
+ * token shape rather than a special case.
  */
-export function stateToken(logRevision: number, settings: Settings | null): string {
-  if (settings === null) return `${String(logRevision)}|none`;
+/** Just enough of the reader's own figures to tell one state from another. */
+export interface OwnFigureVersions {
+  readonly foods: Readonly<Record<string, { readonly setAt: number }>>;
+  readonly vessels: Readonly<Record<string, { readonly setAt: number }>>;
+}
+
+export function stateToken(
+  logRevision: number,
+  settings: Settings | null,
+  own: OwnFigureVersions = { foods: {}, vessels: {} },
+): string {
+  const mine = [
+    ...Object.entries(own.foods).map(([id, row]) => `f:${id}:${String(row.setAt)}`),
+    ...Object.entries(own.vessels).map(([id, row]) => `v:${id}:${String(row.setAt)}`),
+  ]
+    .sort()
+    .join(',');
+  if (settings === null) return `${String(logRevision)}|none|${mine}`;
   return [
     logRevision,
     settings.revision,
@@ -48,6 +83,7 @@ export function stateToken(logRevision: number, settings: Settings | null): stri
     settings.icr,
     settings.roundingMode,
     settings.threshold,
+    mine,
   ]
     .map((part) => String(part))
     .join('|');

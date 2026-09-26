@@ -549,7 +549,10 @@ export async function start(host: Host): Promise<void> {
     readToken: async () => {
       if (db === null) return 'closed';
       const current = await readAll(db, host.now());
-      return stateToken(current.logRevision, current.settings);
+      return stateToken(current.logRevision, current.settings, {
+        foods: current.calibration?.foods ?? {},
+        vessels: current.vessel?.vessels ?? {},
+      });
     },
     onChanged: () => {
       void refresh();
@@ -1829,7 +1832,10 @@ export async function start(host: Host): Promise<void> {
       state.outcome !== null &&
       ['result', 'confirm_inputs', 'stacking_override', 'amount'].includes(state.step);
     if (watching && stored !== null) {
-      watch.start(stateToken(stored.logRevision, stored.settings));
+      watch.start(stateToken(stored.logRevision, stored.settings, {
+        foods: stored.calibration?.foods ?? {},
+        vessels: stored.vessel?.vessels ?? {},
+      }));
     } else {
       watch.stop();
     }

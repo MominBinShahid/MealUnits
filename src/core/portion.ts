@@ -94,3 +94,30 @@ export function tallyGrams(
   }
   return Math.round(total);
 }
+
+/**
+ * The ratio a weighing produces, or null when no honest one exists.
+ *
+ * `null` rather than a fallback, because every plausible fallback is wrong.
+ * Returning 1 would silently tell a reader their calibration worked and change
+ * nothing; returning the raw fill would hand back a weight where a ratio
+ * belongs. A refusal is the only answer that cannot be mistaken for a result.
+ *
+ * The subtraction is the tare, and it is the reason this is a function rather
+ * than a division at the call site. An un-tared plate is **+5.1 to +10.2
+ * units**, and un-tared during calibration doubles every dose in that vessel
+ * permanently — so the empty weight is a required input, not an option.
+ */
+export function vesselRatio(
+  weighed: { readonly emptyGrams: number; readonly fullGrams: number },
+  referenceGrams: number,
+): number | null {
+  if (!Number.isFinite(weighed.emptyGrams) || !Number.isFinite(weighed.fullGrams)) return null;
+  if (!Number.isFinite(referenceGrams) || referenceGrams <= 0) return null;
+  if (weighed.emptyGrams < 0) return null;
+  const fill = weighed.fullGrams - weighed.emptyGrams;
+  // A fill at or below zero is a reading taken in the wrong order, or the same
+  // number typed twice. Neither is a vessel.
+  if (fill <= 0) return null;
+  return fill / referenceGrams;
+}

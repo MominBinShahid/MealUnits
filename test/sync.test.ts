@@ -56,7 +56,12 @@ describe('§11.3 layer 2 polls a TOKEN, not the log revision', () => {
   });
 
   it('handles the pre-settings state without pretending it has values', () => {
-    expect(stateToken(0, null)).toBe('0|none');
+    // The literal gained a trailing segment on 2026-09-26 when T31 put the
+    // reader's own figures in the token. The assertion's POINT is unchanged —
+    // it still refuses to fabricate settings values — and the empty segment is
+    // deliberate: one token shape rather than two, so there is no special case
+    // where a reader with no calibrations produces a differently-built string.
+    expect(stateToken(0, null)).toBe('0|none|');
     expect(stateToken(0, null)).not.toBe(stateToken(1, null));
   });
 });
@@ -187,5 +192,44 @@ describe('§11.3 layer 3 — the visibility recheck', () => {
     await Promise.resolve();
     expect(changed).toBe(1);
     watch.dispose();
+  });
+});
+
+describe('T31 — the token covers the reader\'s own figures', () => {
+  it('changes when a food calibration is set', () => {
+    // Before this, tab A could calibrate a roti while tab B kept rendering the
+    // table's figure until something unrelated refreshed it. A calibration is
+    // as dose-affecting as a settings change, which is why it belongs here.
+    const base = stateToken(1, SETTINGS);
+    const mine = stateToken(1, SETTINGS, { foods: { roti: { setAt: 100 } }, vessels: {} });
+    expect(mine).not.toBe(base);
+  });
+
+  it('changes when a vessel ratio is set', () => {
+    const base = stateToken(1, SETTINGS);
+    const mine = stateToken(1, SETTINGS, { foods: {}, vessels: { plate: { setAt: 100 } } });
+    expect(mine).not.toBe(base);
+  });
+
+  it('distinguishes a revert from never having changed', () => {
+    // 28, then 18, then 28 again is three states. Keying on the VALUE would
+    // call the first and third identical and stop polling.
+    const first = stateToken(1, SETTINGS, { foods: { roti: { setAt: 100 } }, vessels: {} });
+    const third = stateToken(1, SETTINGS, { foods: { roti: { setAt: 300 } }, vessels: {} });
+    expect(third).not.toBe(first);
+  });
+
+  it('does not change when only key order differs', () => {
+    // Object key order is not a promise, and a token that moves when nothing
+    // did is a poll that never settles.
+    const a = stateToken(1, SETTINGS, {
+      foods: { roti: { setAt: 1 }, rice: { setAt: 2 } },
+      vessels: {},
+    });
+    const b = stateToken(1, SETTINGS, {
+      foods: { rice: { setAt: 2 }, roti: { setAt: 1 } },
+      vessels: {},
+    });
+    expect(a).toBe(b);
   });
 });
