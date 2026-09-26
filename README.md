@@ -103,7 +103,7 @@ Everything is on its latest release except two, both deliberate:
 ```
 docs/              PLAN.md, CLINICAL.md, CARBS.md, BUILD-NOTES.md, BACKLOG.md, the designs
 src/config.ts      every number in the codebase, and nothing else has one
-src/data/          reference data: the carbohydrate table, which drives nothing
+src/data/          reference data: the carbohydrate table and the insulin list
 src/core/          pure functions: the arithmetic, the bands, the gates, the parsing
 src/state/         one application state and one pure transition function
 src/storage/       IndexedDB, the two exports, the import, cross-tab invalidation
@@ -158,7 +158,7 @@ no backend, no accounts, no sync, no analytics.
 
 | File | What it is |
 |---|---|
-| [PLAN.md](docs/PLAN.md) | The specification, and the single source of truth. Twenty-seven revisions and twenty-two adversarial review rounds went into it; `git log` is the record of them. |
+| [PLAN.md](docs/PLAN.md) | The specification, and the single source of truth. Twenty-five revisions and twenty-two adversarial review rounds went into it; `git log` is the record of them. |
 | [CLINICAL.md](docs/CLINICAL.md) | Every clinical decision with its source, and the reversals. |
 | [BUILD-NOTES.md](docs/BUILD-NOTES.md) | Every decision the build had to make that the plan does not state. |
 | [CARBS.md](docs/CARBS.md) | The carbohydrate reference for Pakistani food, every value with its source, confidence and licence. |

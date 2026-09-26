@@ -17,7 +17,7 @@ not that it is technically hard. **Technical** is not a priority tier — it is 
 entry, waiting on something outside this project rather than on a decision of ours.
 
 **Numbers are identity, not rank.** The feature entries are ONE sequence partitioned across the
-tiers — 1-25 today — so a number stays stable enough to cite, while **position within a tier**
+tiers — 1-26 today — so a number stays stable enough to cite, while **position within a tier**
 carries the priority. That is why 20, 18, 19, 21, 22, 25 and 24 sit above 1, and why 4a and 10a sit above 6. Do not
 renumber to tidy it: reusing a number is how `PLAN.md` v14 came to assert three falsehoods about
 this file, which is why §20.3 says reference an entry by NAME, never by number.
@@ -357,8 +357,10 @@ shape is his, after two rounds of review that first argued against it and then w
 
 **What shipped, against the nine points.** 1, 2, 3, 4, 6, 7, 8 and 9 in full. Point 5 shipped in two
 halves that are not the same: the eat delay is editable and prefilled per class from the labels, and
-the stacking windows are keyed by class **in shape and not yet in value** — every row declares the
-same 4 and 12 hours, pending `CLINICAL.md` question 10c. That is a hold rather than an omission, and
+the stacking windows are keyed by class **in shape and, since T20, in value too** — ⚠ **corrected
+2026-09-26; this said "every row declares the same 4 and 12 hours", which T20 ended.** Regular human
+insulin declares **4 and 18** against the analogues' 4 and 12, and `test/insulin.test.ts` pins the
+inequality. That is a hold rather than an omission, and
 the entry itself argues for it: the windows fail toward running high, which §2.1 tolerates, while the
 eat delay fails toward hypoglycaemia. Shortening a gate is the dose-raising direction and §20.1.1
 forbids taking that number off a reading of the literature, so the mechanism ships complete and the
@@ -2381,6 +2383,26 @@ contention with the other twenty-eight files sharing the cores during a full `vi
 pays for the whole file. It now carries an explicit 30-second timeout, stated as being about process
 start rather than about the assertion — far past anything observed, far short of the run hanging.
 
+**Seen a third time on 2026-09-26, in a DIFFERENT file — `test/integration.test.ts`.** Two cases
+timed out at 5 s during a full `npm run check` while a Codex process and two agents were competing
+for the cores (load average 7.5, suite duration 182 s against a usual ~60 s). Both were timeouts
+rather than assertion failures, and the change in flight was markdown and `check-plan.py` — nothing
+the app executes.
+
+Measured rather than assumed: `stays silent when the browser will not say` passes in **1.75 s run
+alone** with those changes applied, and **passes on a stashed tree too**. So it is the same
+contention pattern this entry already diagnosed, now visible in the integration suite, which is the
+largest file in the run.
+
+**Not fixed, deliberately, and this is the open half.** The lint-config fix was a 30-second timeout
+on one case that spawns a process. Doing the same here means choosing a timeout for app-drive cases
+whose honest runtime is under two seconds, and a number picked to survive an arbitrarily loaded
+machine stops being evidence of anything. What would settle it: run the full suite N times on an
+idle machine and on a loaded one, and set the timeout from the observed spread rather than from a
+guess. Until then the sighting is recorded so the next person does not start from zero — and the
+reason it matters is stated above: a required job that fails on load trains the reflex "re-run it",
+which is the reflex that hides a real one.
+
 Fixed rather than left because it had begun failing the verification of other work, and a green run
 you cannot trust is worse than a red one.
 
@@ -2627,7 +2649,45 @@ back wrong is one they cannot report.
 that IS in `copy-ur.ts`. Widening it is its own change, and worth doing before the next such string
 lands.
 
-### T26. `npm run smoke` said `(no #app)` when the thing it needed was not running — FIXED 2026-09-23
+### T33. `THRESHOLD_MEAL_GRAMS` says 100 g is the largest portion in the table. It is 167.
+
+**Found 2026-09-26 by a documentation review, and the code itself asked for this.**
+`src/config.ts:75` reads:
+
+> 100 g is not a guess. It is the largest single portion in `src/data/carbs.ts` — a tandoor kulcha —
+> measured against that table on 2026-09-13, where the median portion is 37 g. … **if the table
+> grows a bigger dish this number is the one to revisit.**
+
+The table grew. `sheermal-large` ships **167 g**, and two packaged rows sit above 100 too
+(`boiled-sweet-tin` 166.8, `toffee-pouch` 149.8). The premise the constant was derived from has been
+false since section 21 landed, and nothing noticed because `check_constants` pins the VALUE across
+three files — it has no way to check the SENTENCE that justifies it.
+
+**What it drives.** `deriveThreshold` in `src/core/threshold.ts` computes the confirmation gate as
+one and a half times the dose that `THRESHOLD_MEAL_GRAMS / icr` would need. So the constant decides
+when the app asks *"is that right?"* on a large dose.
+
+**Why this is Momin's call and not a mechanical update, and the trade runs both ways:**
+
+- **Raising it to 167** stops a legitimate large sheermal from tripping a false confirmation — but a
+  typo producing a dose between the old and new gates now passes **silently**, which is the
+  permissive direction on a safety gate.
+- **Leaving it at 100** keeps the tighter gate and accepts that the largest real portions in the
+  table now trip it, which is the crying-wolf failure this project names elsewhere: a gate that
+  fires on legitimate input trains the reflex to dismiss it.
+- **A third reading**: is a *tin* of boiled sweets or a *pouch* of toffees a "single portion" in the
+  sense this constant means? `sheermal-large` plainly is — it is one bread. The packaged rows are
+  arguably a different unit, and if they are excluded the honest figure is 167, not 166.8 or 149.8.
+
+**What would settle it:** a decision about which of those three readings the gate is for. No amount
+of measurement answers it, because the question is what the gate is protecting against.
+
+⚠ **Whatever is decided, the comment must stop asserting "a tandoor kulcha"**, which has not been the
+largest row since 2026-09-25.
+
+### T32. `npm run smoke` said `(no #app)` when the thing it needed was not running — FIXED 2026-09-23
+
+⚠ **RENUMBERED from T26 on 2026-09-26.** Two entries carried T26, and `src/ui/styles.css:870`, `test/integration.test.ts:84` and `:997` all cite "T26" meaning the **keyPath** entry above. This file's rule is not to renumber for tidiness — but a duplicate is not untidiness, it is a citation that cannot resolve, and T17 settled the same collision once before when two entries shared T14. The entry with no external citations is the one that moved.
 **This entry previously claimed Chrome 153 had broken the harness. That was wrong**, and it is kept
 rather than deleted because a false entry in this file is the failure mode the file exists to avoid.
 

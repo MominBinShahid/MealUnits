@@ -1425,12 +1425,18 @@ move §8.5 made in asking for the brand on the dose rather than the concentratio
 multiplier is attached to it rather than left floating beside a mention of U-200, where it would be
 wrong about one of the two.
 
-### The one piece that is not built, and why
+### The one piece that was not built — BUILT, and this note said otherwise for too long
 
-Entry 26 point 4 asks the not-listed path to link the blog's feedback form. **The screen carries the
-sentence and no link**, because nobody has given this build the form's address. A control labelled
-"tell us about it" that lands somewhere wrong is worse on that screen than the words alone. It is one
-line when the URL arrives.
+⚠ **CORRECTED 2026-09-26.** This note read *"the screen carries the sentence and no link, because
+nobody has given this build the form's address"*. That was true when written and stopped being true
+once Momin supplied the address: `src/ui/screens/insulin.tsx` builds a `mailto:` from
+`CONTACT_EMAIL`, and `BACKLOG.md` entry 26 records it as shipped. Two documents disagreed with the
+code and with each other, and `check-plan.py` could not see it — a cross-document status claim is
+not something it checks.
+
+The original reasoning is kept because it still governs: a control labelled "tell us about it" that
+lands somewhere wrong is worse on that screen than the words alone. That is why it waited for a real
+address rather than shipping a placeholder.
 
 ### A pre-existing gap this did not touch — CLOSED 2026-09-20
 
