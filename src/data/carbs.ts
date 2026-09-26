@@ -78,6 +78,22 @@ export interface FoodText {
   readonly varies: string | null;
 }
 
+/**
+ * A vessel a portion is served in, and the weight this table assumes it holds.
+ *
+ * The id is deliberately more specific than the English word. T31's adversarial
+ * pass found that "cup" is two different vessels in this table — a Pakistani
+ * chai cup at 150 ml against LFAC's 250 ml measuring cup — spanning a tenfold
+ * weight range across the rows that use it. Ids like `cup-chai` and
+ * `cup-measuring` keep a ratio measured through one from transferring to the
+ * other, which is the whole hazard.
+ */
+export interface VesselRef {
+  readonly id: string;
+  /** What the TABLE assumes this vessel holds, for this food. */
+  readonly grams: number;
+}
+
 export interface Food {
   /** Stable key. Never shown; used for the "always use this one" choice later. */
   readonly id: string;
@@ -128,6 +144,34 @@ export interface Food {
   readonly grams: number;
   /** Upper bound where the sources genuinely disagree, else null. */
   readonly gramsMax: number | null;
+  /**
+   * The vessel this row's portion is measured in, and what the table assumes
+   * that vessel holds — or `null` where the row does not scale with one.
+   *
+   * T31 phase 1. **Every row is `null` today and nothing reads this field**;
+   * declaring it first is deliberate, so that the row-by-row decision about
+   * what scales is reviewed on its own rather than inside the change that
+   * starts scaling things.
+   *
+   * REQUIRED rather than optional, so a new row is a compile error until its
+   * author decides. `null` is a decision somebody typed, and that is the point:
+   * the alternative — an optional field — lets a row default into or out of
+   * scaling silently, and a row that silently stops scaling is a silent dose
+   * change.
+   *
+   * The nested object rather than two flat fields makes "a vessel with no
+   * stated weight" unrepresentable, which retires one of T31's own exclusions
+   * by construction.
+   *
+   * `grams` here is used at WRITE time only — it is what a reader's measured
+   * fill is divided BY to get a ratio. The read is `food.grams × ratio`.
+   * Storing a fill weight and dividing by each row's own reference at read time
+   * is the catastrophe T31's adversarial pass found: a cup calibrated at 220 g
+   * of curry, applied to the popcorn row, gives 128 g of carbohydrate against a
+   * true 14 — an over-dose of 11.4 units. The normalisation happens once, at
+   * write, against the row the reader actually calibrated through.
+   */
+  readonly vessel: VesselRef | null;
   readonly confidence: Confidence;
   /** Which source, using docs/CARBS.md's tags. */
   readonly source: string;
@@ -156,6 +200,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 15,
     confidence: 'high',
     source: 'LFAC; FNDDS agrees on the density',
+    vessel: null,
   },
   {
     id: 'roti-medium',
@@ -178,6 +223,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 19,
     confidence: 'high',
     source: 'FNDDS',
+    vessel: null,
   },
   {
     id: 'roti-thin-8',
@@ -200,6 +246,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from FNDDS density',
+    vessel: null,
   },
   {
     id: 'moti-roti',
@@ -222,6 +269,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 37,
     confidence: 'medium',
     source: 'CALC',
+    vessel: null,
   },
   {
     id: 'chapatti-large',
@@ -244,6 +292,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 46,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'naan-small',
@@ -266,6 +315,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'KHI-OFFICIAL, corroborated by LFAC',
+    vessel: null,
   },
   {
     id: 'naan-middle',
@@ -288,6 +338,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 75,
     confidence: 'medium',
     source: 'KHI-OFFICIAL',
+    vessel: null,
   },
   {
     id: 'naan-large',
@@ -310,6 +361,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'KHI-OFFICIAL',
+    vessel: null,
   },
   {
     id: 'naan-restaurant',
@@ -332,6 +384,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 95,
     confidence: 'medium',
     source: 'FNDDS',
+    vessel: null,
   },
   {
     id: 'naan-afghani-half',
@@ -354,6 +407,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'naan-roghni',
@@ -376,6 +430,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 78,
     confidence: 'medium',
     source: 'LABEL',
+    vessel: null,
   },
   {
     id: 'kulcha-bakery',
@@ -398,6 +453,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 27,
     confidence: 'low',
     source: 'CALC from CoFID rusk 55.7 to 73 per 100, converted at the starch divisor 1.10 at both ends',
+    vessel: null,
   },
   {
     id: 'kulcha-tandoor',
@@ -420,6 +476,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
 
   // ── Rice ──────────────────────────────────────────────────────────────────
@@ -444,6 +501,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 47,
     confidence: 'high',
     source: 'LFAC, USDA-SR',
+    vessel: null,
   },
   {
     id: 'rice-cup',
@@ -466,6 +524,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 50,
     confidence: 'high',
     source: 'USDA-SR, LFAC at the top',
+    vessel: null,
   },
   {
     id: 'rice-plate',
@@ -488,6 +547,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 94,
     confidence: 'high',
     source: 'LFAC, USDA-SR',
+    vessel: null,
   },
   {
     id: 'biryani',
@@ -510,6 +570,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'pulao',
@@ -532,6 +593,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 40,
     confidence: 'medium',
     source: 'LFAC, CoFID, CoFID converted at 1.098',
+    vessel: null,
   },
   {
     id: 'pulao-kabuli',
@@ -554,6 +616,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'pulao-matar',
@@ -576,6 +639,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'pulao-chana',
@@ -598,6 +662,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
 
   // ── Daal and salan ────────────────────────────────────────────────────────
@@ -622,6 +687,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 17,
     confidence: 'medium',
     source: 'CoFID, LFAC, CoFID converted at 1.093',
+    vessel: null,
   },
   {
     id: 'daal-thick',
@@ -644,6 +710,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 32,
     confidence: 'medium',
     source: 'FNDDS, CoFID, KHAN, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'karahi',
@@ -666,6 +733,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 17,
     confidence: 'medium',
     source: 'LFAC, KHAN, CoFID, CoFID converted at 1.06',
+    vessel: null,
   },
   {
     id: 'korma',
@@ -688,6 +756,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 20,
     confidence: 'low',
     source: 'CoFID vs KHAN — unresolved, CoFID converted at 1.067',
+    vessel: null,
   },
 
   // ── Snacks ────────────────────────────────────────────────────────────────
@@ -712,6 +781,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'LFAC, FNDDS, CoFID agree, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'samosa-qeema',
@@ -734,6 +804,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, CoFID, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'kachori-qeema',
@@ -756,6 +827,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
 
   // ── Chai ──────────────────────────────────────────────────────────────────
@@ -782,6 +854,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified',
+    vessel: null,
   },
   {
     id: 'chai-150-2',
@@ -804,6 +877,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified',
+    vessel: null,
   },
   {
     id: 'chai-200-2',
@@ -826,6 +900,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC, LFAC-verified at 10\u00A0g for 1 sugar',
+    vessel: null,
   },
   {
     id: 'chai-250-2',
@@ -848,6 +923,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA',
+    vessel: null,
   },
 
 // ── Breads, naan family (CARBS.md 3.1) ────────────────────────────────────
@@ -872,6 +948,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'sheermal-small',
@@ -894,6 +971,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, CALC at the same density',
+    vessel: null,
   },
   {
     id: 'taftan',
@@ -916,6 +994,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 70,
     confidence: 'low',
     source: 'LIT Iranian taftoon, CALC — no LFAC row, unconfirmed by the Pakistani source',
+    vessel: null,
   },
   {
     id: 'naan-qeema',
@@ -938,6 +1017,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
 
   // ── Breads, roti and chapati family (CARBS.md 3.2) ─────────────────────────
@@ -962,6 +1042,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 55,
     confidence: 'medium',
     source: 'KHI-OFFICIAL, LFAC',
+    vessel: null,
   },
   {
     id: 'chapati-laal',
@@ -984,6 +1065,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'roti-bajra',
@@ -1006,6 +1088,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'LFAC — flagged, passes no independent check',
+    vessel: null,
   },
   {
     id: 'roti-makkai',
@@ -1028,6 +1111,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'LFAC — flagged, passes no independent check',
+    vessel: null,
   },
   {
     id: 'koki',
@@ -1050,6 +1134,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'roti-rumali',
@@ -1072,6 +1157,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'roti-khamiri',
@@ -1094,6 +1180,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 90,
     confidence: 'low',
     source: 'CALC from the atta anchor — no LFAC row',
+    vessel: null,
   },
   {
     id: 'bread-slice',
@@ -1116,6 +1203,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 15,
     confidence: 'high',
     source: 'SJSU, USDA, LFAC agree',
+    vessel: null,
   },
   {
     id: 'bhatura',
@@ -1138,6 +1226,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
 
   // ── Breads, paratha family (CARBS.md 3.3) ──────────────────────────────────
@@ -1162,6 +1251,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, FNDDS agree on the density to the decimal',
+    vessel: null,
   },
   {
     id: 'paratha-plain-large',
@@ -1184,6 +1274,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 46,
     confidence: 'medium',
     source: 'FNDDS density, LFAC agrees',
+    vessel: null,
   },
   {
     id: 'paratha-frozen-dawn',
@@ -1206,6 +1297,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'LABEL',
+    vessel: null,
   },
   {
     id: 'paratha-lachha',
@@ -1228,6 +1320,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'paratha-aloo',
@@ -1250,6 +1343,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 50,
     confidence: 'medium',
     source: 'LFAC, LABEL',
+    vessel: null,
   },
   {
     id: 'paratha-qeema',
@@ -1272,6 +1366,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, CALC agree',
+    vessel: null,
   },
   {
     id: 'paratha-anda',
@@ -1294,6 +1389,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'paratha-cheese',
@@ -1316,6 +1412,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'paratha-chicken',
@@ -1338,6 +1435,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'paratha-puri',
@@ -1360,6 +1458,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'paratha-baisan',
@@ -1382,6 +1481,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'puri-small',
@@ -1404,6 +1504,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 14,
     confidence: 'medium',
     source: 'SJSU, FNDDS, LFAC agree on the density',
+    vessel: null,
   },
   {
     id: 'puri-halwa-shop',
@@ -1426,6 +1527,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, FNDDS',
+    vessel: null,
   },
   {
     id: 'bakarkhani',
@@ -1448,6 +1550,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC recommended over LABEL export mirrors',
+    vessel: null,
   },
   {
     id: 'bolani',
@@ -1470,6 +1573,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'rusk-plain',
@@ -1492,6 +1596,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, CoFID agree, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'rusk-cake',
@@ -1514,6 +1619,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CoFID, CoFID converted at 1.077',
+    vessel: null,
   },
 
   // ── Rice dishes, and the rice-based sweets (CARBS.md 4) ───────────────────
@@ -1538,6 +1644,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 66,
     confidence: 'medium',
     source: 'LFAC, KHAN, CoFID — band widened down, not averaged, CoFID converted at 1.098',
+    vessel: null,
   },
   {
     id: 'pulao-qeema-masoor',
@@ -1560,6 +1667,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'akni-chicken',
@@ -1582,6 +1690,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'pulao-cholistani',
@@ -1604,6 +1713,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'khichdi',
@@ -1626,6 +1736,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'SJSU, LFAC agree',
+    vessel: null,
   },
   {
     id: 'khichdi-qeema-bohra',
@@ -1648,6 +1759,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'tahiri-cup',
@@ -1670,6 +1782,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC recommended over FNDDS, which measures a wetter vegetable pilaf',
+    vessel: null,
   },
   {
     id: 'tahiri-plate',
@@ -1692,6 +1805,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, CALC to a 300\u00A0g plate',
+    vessel: null,
   },
   {
     id: 'fried-rice-vegetable',
@@ -1714,6 +1828,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'daal-chawal-plate',
@@ -1736,6 +1851,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC composite',
+    vessel: null,
   },
   {
     id: 'daal-chawal-palidu',
@@ -1758,6 +1874,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'bademjan',
@@ -1780,6 +1897,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'zarda',
@@ -1802,6 +1920,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 50,
     confidence: 'low',
     source: 'FNDDS honey-rice proxy, WEAK trackers — no LFAC row, still an open unknown',
+    vessel: null,
   },
   {
     id: 'kheer-home',
@@ -1824,6 +1943,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CoFID, FNDDS at 19\u00A0g per 100, CoFID divisor unestablished — see section 17.4',
+    vessel: null,
   },
   {
     id: 'kheer-shop',
@@ -1846,6 +1966,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC recommended over CoFID and FNDDS, which measure a UK rice pudding, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'firni',
@@ -1868,6 +1989,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'kheer-kharkoon',
@@ -1890,6 +2012,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
 
   // ── Biryani, by which pot it came from (CARBS.md 4.1) ──────────────────────
@@ -1914,6 +2037,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 46,
     confidence: 'medium',
     source: 'FNDDS, CoFID takeaway, CoFID converted at 1.085',
+    vessel: null,
   },
   {
     id: 'biryani-mid-plate',
@@ -1936,6 +2060,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'biryani-rice-heavy-plate',
@@ -1958,6 +2083,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 66,
     confidence: 'medium',
     source: 'CoFID homemade, KHAN, CoFID converted at 1.094',
+    vessel: null,
   },
   {
     id: 'biryani-meat-heavy-dawat',
@@ -1980,6 +2106,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 61,
     confidence: 'medium',
     source: 'FNDDS, CoFID takeaway, CoFID converted at 1.085',
+    vessel: null,
   },
   {
     id: 'biryani-mid-dawat',
@@ -2002,6 +2129,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'biryani-rice-heavy-dawat',
@@ -2024,6 +2152,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 88,
     confidence: 'medium',
     source: 'CoFID homemade, KHAN, CoFID converted at 1.094',
+    vessel: null,
   },
   {
     id: 'biryani-unknown-pot',
@@ -2046,6 +2175,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 90,
     confidence: 'medium',
     source: 'LFAC, FNDDS, CoFID, KHAN — the honest spread, deliberately not narrowed, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
 
   // ── Lentils and legumes (CARBS.md 5) ───────────────────────────────────────
@@ -2070,6 +2200,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 24,
     confidence: 'medium',
     source: 'KHAN, CoFID, CoFID converted at 1.093',
+    vessel: null,
   },
   {
     id: 'daal-masoor',
@@ -2092,6 +2223,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 26,
     confidence: 'medium',
     source: 'CoFID by thickness, CoFID converted at 1.099',
+    vessel: null,
   },
   {
     id: 'daal-moong',
@@ -2114,6 +2246,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 29,
     confidence: 'medium',
     source: 'CoFID, USDA-SR, LFAC moong-masoor pins the middle, CoFID converted at 1.093',
+    vessel: null,
   },
   {
     id: 'daal-mash',
@@ -2136,6 +2269,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 32,
     confidence: 'low',
     source: 'CoFID thin style, KHAN dry style — unresolved, not averaged, CoFID converted at 1.093',
+    vessel: null,
   },
   {
     id: 'chanay',
@@ -2158,6 +2292,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 41,
     confidence: 'medium',
     source: 'KHAN, USDA-SR, LFAC agree with KHAN to a decimal',
+    vessel: null,
   },
   {
     id: 'daal-khati-memon',
@@ -2180,6 +2315,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'daal-gosht-memon',
@@ -2202,6 +2338,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'shorwa-pashtun',
@@ -2224,6 +2361,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'lobia',
@@ -2246,6 +2384,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 30,
     confidence: 'medium',
     source: 'USDA-SR, KHAN',
+    vessel: null,
   },
   {
     id: 'rajma',
@@ -2268,6 +2407,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 34,
     confidence: 'medium',
     source: 'USDA-SR, KHAN, LFAC agrees with USDA',
+    vessel: null,
   },
   {
     id: 'haleem',
@@ -2290,6 +2430,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 55,
     confidence: 'low',
     source: 'LFAC, KHAN, SJSU for the default; LIT Al-Faris and LABEL Shan at the floor; CALC and LIT dry-matter at the top. PK-FCT rejected as unreachable from its own recipe',
+    vessel: null,
   },
 
   // ── Salan and curries (CARBS.md 6) ─────────────────────────────────────────
@@ -2314,6 +2455,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 20,
     confidence: 'medium',
     source: 'LFAC at the floor; KHAN, LABEL Kohinoor and LIT Saakshi at the top; LIT Aga Khan, Mount Holyoke and My Choice Foods in the middle',
+    vessel: null,
   },
   {
     id: 'aloo-gosht',
@@ -2336,6 +2478,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 17,
     confidence: 'medium',
     source: 'KHAN, LFAC agree within a twentieth',
+    vessel: null,
   },
   {
     id: 'aloo-qeema',
@@ -2358,6 +2501,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 18,
     confidence: 'low',
     source: 'CALC — no LFAC row, unconfirmed by the Pakistani source',
+    vessel: null,
   },
   {
     id: 'qeema-plain',
@@ -2380,6 +2524,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'KHAN',
+    vessel: null,
   },
   {
     id: 'aloo-baingan',
@@ -2402,6 +2547,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 18,
     confidence: 'medium',
     source: 'LFAC for the default, CoFID converted for the top, CALC for the floor — CoFID 15-669 is a recipe, not an analysis',
+    vessel: null,
   },
   {
     id: 'aloo-gobhi',
@@ -2424,6 +2570,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'aloo-bhujia',
@@ -2446,6 +2593,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'aloo-palak',
@@ -2468,6 +2616,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'bhindi',
@@ -2490,6 +2639,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 18,
     confidence: 'medium',
     source: 'KHAN by difference, CoFID, CoFID converted at 1.054',
+    vessel: null,
   },
   {
     id: 'palak-saag',
@@ -2512,6 +2662,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 11,
     confidence: 'high',
     source: 'KHAN, CoFID, LFAC sarson ka saag agrees with CoFID, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'palli-saag',
@@ -2534,6 +2685,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'baingan-bharta',
@@ -2556,6 +2708,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 19,
     confidence: 'medium',
     source: 'KHAN, CoFID, LFAC sits mid-band, CoFID converted at 1.085',
+    vessel: null,
   },
   {
     id: 'mix-sabzi',
@@ -2578,6 +2731,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 17,
     confidence: 'medium',
     source: 'KHAN, CoFID, CoFID converted at 1.077',
+    vessel: null,
   },
   {
     id: 'karela',
@@ -2600,6 +2754,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 17,
     confidence: 'medium',
     source: 'CoFID at the floor, KHAN and LFAC qeema karela at the top — not averaged, CoFID converted at 1.059',
+    vessel: null,
   },
   {
     id: 'kaddu-gosht',
@@ -2622,6 +2777,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'loki-sabzi',
@@ -2644,6 +2800,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'daal-kadu',
@@ -2666,6 +2823,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'KHAN',
+    vessel: null,
   },
   {
     id: 'kadhi',
@@ -2688,6 +2846,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 25,
     confidence: 'medium',
     source: 'KHAN and LFAC, the only direct measurements — SJSU excluded, its higher figure was a per-cup unit error',
+    vessel: null,
   },
   {
     id: 'koftay',
@@ -2710,6 +2869,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 12,
     confidence: 'medium',
     source: 'KHAN at the top, LFAC at the floor — not averaged',
+    vessel: null,
   },
   {
     id: 'kabab-chapli',
@@ -2732,6 +2892,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'KHAN — no LFAC row',
+    vessel: null,
   },
   {
     id: 'kabab-shami',
@@ -2754,6 +2915,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC recommended over an earlier CALC that over-weighted the daal',
+    vessel: null,
   },
   {
     id: 'protein-anchors',
@@ -2776,6 +2938,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 4,
     confidence: 'high',
     source: 'CoFID, USDA, CoFID divisor unestablished — see section 17.4',
+    vessel: null,
   },
   {
     id: 'fish-fried-masala',
@@ -2798,6 +2961,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'KHAN, coating only',
+    vessel: null,
   },
   {
     id: 'kaleji',
@@ -2820,6 +2984,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'KHAN',
+    vessel: null,
   },
   {
     id: 'mantu',
@@ -2842,6 +3007,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'aushak',
@@ -2864,6 +3030,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'pineapple-chicken',
@@ -2886,6 +3053,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
 
   // ── Snacks and street food (CARBS.md 7) ────────────────────────────────────
@@ -2910,6 +3078,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, FNDDS, CoFID density, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'pakora-plate',
@@ -2932,6 +3101,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 27,
     confidence: 'medium',
     source: 'FNDDS, CoFID, LFAC aloo and onion pakora both sit inside, CoFID converted at 1.095',
+    vessel: null,
   },
   {
     id: 'pakora-aloo',
@@ -2954,6 +3124,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'pakora-onion',
@@ -2976,6 +3147,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'bun-kabab',
@@ -2998,6 +3170,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 45,
     confidence: 'low',
     source: 'CALC from bun, patty and chutney — no measured value anywhere, unconfirmed by the Pakistani source',
+    vessel: null,
   },
   {
     id: 'chana-chaat',
@@ -3020,6 +3193,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC recommended over an earlier component CALC',
+    vessel: null,
   },
   {
     id: 'lobia-chaat',
@@ -3042,6 +3216,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, coherent with USDA lobia',
+    vessel: null,
   },
   {
     id: 'cream-chaat',
@@ -3064,6 +3239,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'fruit-chaat',
@@ -3086,6 +3262,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 36,
     confidence: 'low',
     source: 'CALC from the fruit rows in this table across a 150 to 200\u00A0g cup — no LFAC row, unconfirmed by the Pakistani source',
+    vessel: null,
   },
   {
     id: 'dahi-bhalay',
@@ -3108,6 +3285,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC — the real street serving is bigger than the earlier SJSU plate',
+    vessel: null,
   },
   {
     id: 'gol-gappay-4',
@@ -3130,6 +3308,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC — filled puris, not shells',
+    vessel: null,
   },
   {
     id: 'gol-gappay-6',
@@ -3152,6 +3331,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, CALC scaled to six',
+    vessel: null,
   },
   {
     id: 'bhutta',
@@ -3174,6 +3354,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'fries-street',
@@ -3196,6 +3377,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 23,
     confidence: 'medium',
     source: 'FNDDS',
+    vessel: null,
   },
   {
     id: 'fries-franchise',
@@ -3218,6 +3400,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'FNDDS',
+    vessel: null,
   },
   {
     id: 'spring-roll',
@@ -3240,6 +3423,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 19,
     confidence: 'medium',
     source: 'FNDDS',
+    vessel: null,
   },
   {
     id: 'kabab-paratha-roll',
@@ -3262,6 +3446,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'club-sandwich',
@@ -3284,6 +3469,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 30,
     confidence: 'medium',
     source: 'LFAC, CALC agree',
+    vessel: null,
   },
   {
     id: 'chicken-patties',
@@ -3306,6 +3492,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'nimco-loose',
@@ -3328,6 +3515,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CoFID chevda, CoFID converted at 1.096',
+    vessel: null,
   },
   {
     id: 'namak-paray',
@@ -3350,6 +3538,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'LFAC — flagged, the implied density is below what fried maida should give',
+    vessel: null,
   },
   {
     id: 'papar-fried',
@@ -3372,6 +3561,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 4,
     confidence: 'medium',
     source: 'CoFID papadums takeaway, converted; CALC. The LFAC row for this food fails arithmetic and is excluded',
+    vessel: null,
   },
   {
     id: 'boondi-raita-chaat',
@@ -3394,6 +3584,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'bajra-fritters',
@@ -3416,6 +3607,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'dhokray',
@@ -3438,6 +3630,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'khow-suey',
@@ -3460,6 +3653,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, without chips or papdi',
+    vessel: null,
   },
   {
     id: 'lasan-memon',
@@ -3482,6 +3676,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'LFAC — flagged',
+    vessel: null,
   },
   {
     id: 'malida',
@@ -3504,6 +3699,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'lasanyo-bohra',
@@ -3526,6 +3722,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'popcorn',
@@ -3548,6 +3745,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'CoFID, CoFID converted at 1.099',
+    vessel: null,
   },
   {
     id: 'biscuit-sooper',
@@ -3570,6 +3768,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'LABEL, downgraded to WEAK by the section 20 label audit',
+    vessel: null,
   },
   {
     id: 'biscuit-digestive',
@@ -3592,6 +3791,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CoFID, CoFID converted at 1.086',
+    vessel: null,
   },
   {
     id: 'crisps-packet',
@@ -3614,6 +3814,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 14,
     confidence: 'high',
     source: 'USDA, SJSU',
+    vessel: null,
   },
 
   // ── Mithai and desserts (CARBS.md 8) ───────────────────────────────────────
@@ -3638,6 +3839,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, CoFID consistent at more syrup, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'gulab-jamun-large',
@@ -3660,6 +3862,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 23,
     confidence: 'medium',
     source: 'CoFID, LFAC density, CoFID converted at 1.06',
+    vessel: null,
   },
   {
     id: 'jalebi-large',
@@ -3682,6 +3885,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC — the single Pakistani patient-facing source, was an open unknown until it',
+    vessel: null,
   },
   {
     id: 'jalebi-medium',
@@ -3704,6 +3908,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 17,
     confidence: 'medium',
     source: 'LFAC density, CALC to a smaller piece',
+    vessel: null,
   },
   {
     id: 'barfi',
@@ -3726,6 +3931,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'LFAC, FNDDS agree exactly',
+    vessel: null,
   },
   {
     id: 'laddu',
@@ -3748,6 +3954,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 30,
     confidence: 'low',
     source: 'SJSU, WEAK trackers — no LFAC row, unconfirmed by the Pakistani source',
+    vessel: null,
   },
   {
     id: 'rasgulla',
@@ -3770,6 +3977,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'SJSU — no LFAC row, unconfirmed by the Pakistani source',
+    vessel: null,
   },
   {
     id: 'ras-malai',
@@ -3792,6 +4000,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'sewaiyan-plain',
@@ -3814,6 +4023,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'sewaiyan-milky',
@@ -3836,6 +4046,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CoFID, CoFID converted at 1.066',
+    vessel: null,
   },
   {
     id: 'sayun-sindhi',
@@ -3858,6 +4069,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'sheer-khurma',
@@ -3880,6 +4092,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC recommended over an earlier component CALC',
+    vessel: null,
   },
   {
     id: 'sooji-halwa-breakfast',
@@ -3902,6 +4115,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC breakfast halwa',
+    vessel: null,
   },
   {
     id: 'sooji-halwa-dessert',
@@ -3924,6 +4138,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC dessert halwa, CoFID agrees, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'gajar-halwa',
@@ -3946,6 +4161,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, CoFID agree exactly, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'gajar-halwa-spoons',
@@ -3968,6 +4184,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 22,
     confidence: 'medium',
     source: 'LFAC, CoFID density, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'petha-halwa',
@@ -3990,6 +4207,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'daal-halwa',
@@ -4012,6 +4230,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'malpua',
@@ -4034,6 +4253,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'rabri',
@@ -4056,6 +4276,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'pinni',
@@ -4078,6 +4299,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'kaju-katli',
@@ -4100,6 +4322,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'shahi-tukray',
@@ -4122,6 +4345,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'lab-e-shireen',
@@ -4144,6 +4368,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'gur-papri',
@@ -4166,6 +4391,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'LFAC, coherent with the gur figure',
+    vessel: null,
   },
   {
     id: 'sohan-halwa-50g',
@@ -4188,6 +4414,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'LFAC recommended as the default, LABEL-EST Hafiz as the upper bound — not averaged',
+    vessel: null,
   },
   {
     id: 'sohan-halwa-25g',
@@ -4210,6 +4437,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 15,
     confidence: 'low',
     source: 'LFAC and LABEL-EST Hafiz, the two ends kept apart',
+    vessel: null,
   },
   {
     id: 'kulfi',
@@ -4232,6 +4460,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC recommended over the CoFID UK-recipe floor, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'ice-cream-scoop',
@@ -4254,6 +4483,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA-SR',
+    vessel: null,
   },
   {
     id: 'custard',
@@ -4276,6 +4506,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CoFID, CoFID converted at 1.065',
+    vessel: null,
   },
   {
     id: 'jelly',
@@ -4298,6 +4529,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CoFID, CoFID converted at 1.05',
+    vessel: null,
   },
   {
     id: 'falooda-cup',
@@ -4320,6 +4552,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'falooda-glass',
@@ -4342,6 +4575,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, CALC scaled to a 300\u00A0ml glass',
+    vessel: null,
   },
   {
     id: 'sugar-tsp-level',
@@ -4364,6 +4598,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA-SR',
+    vessel: null,
   },
   {
     id: 'sugar-tsp-heaped',
@@ -4386,6 +4621,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA-SR',
+    vessel: null,
   },
   {
     id: 'sugar-tbsp',
@@ -4408,6 +4644,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA-SR',
+    vessel: null,
   },
   {
     id: 'gur',
@@ -4430,6 +4667,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'NIN, Indian Food Composition Tables 2017 jaggery row, 84.87 per 100 as eaten',
+    vessel: null,
   },
   {
     id: 'honey',
@@ -4452,6 +4690,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA-SR',
+    vessel: null,
   },
   {
     id: 'jam-murabba',
@@ -4474,6 +4713,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 15,
     confidence: 'medium',
     source: 'USDA',
+    vessel: null,
   },
 
   // ── Chai, the rest of the grid (CARBS.md 9.1) ──────────────────────────────
@@ -4498,6 +4738,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified at two cells of the grid',
+    vessel: null,
   },
   {
     id: 'chai-150-3',
@@ -4520,6 +4761,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified at two cells of the grid',
+    vessel: null,
   },
   {
     id: 'chai-200-0',
@@ -4542,6 +4784,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified at two cells of the grid',
+    vessel: null,
   },
   {
     id: 'chai-200-1',
@@ -4564,6 +4807,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified at this cell',
+    vessel: null,
   },
   {
     id: 'chai-200-3',
@@ -4586,6 +4830,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified at two cells of the grid',
+    vessel: null,
   },
   {
     id: 'chai-250-0',
@@ -4608,6 +4853,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA',
+    vessel: null,
   },
   {
     id: 'chai-250-1',
@@ -4630,6 +4876,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA',
+    vessel: null,
   },
   {
     id: 'chai-250-3',
@@ -4652,6 +4899,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA',
+    vessel: null,
   },
   {
     id: 'patti-150-0',
@@ -4674,6 +4922,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified at 230\u00A0ml unsweetened',
+    vessel: null,
   },
   {
     id: 'patti-150-1',
@@ -4696,6 +4945,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified at 230\u00A0ml unsweetened',
+    vessel: null,
   },
   {
     id: 'patti-150-2',
@@ -4718,6 +4968,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified at 230\u00A0ml unsweetened',
+    vessel: null,
   },
   {
     id: 'patti-150-3',
@@ -4740,6 +4991,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified at 230\u00A0ml unsweetened',
+    vessel: null,
   },
   {
     id: 'patti-200-0',
@@ -4762,6 +5014,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified',
+    vessel: null,
   },
   {
     id: 'patti-200-1',
@@ -4784,6 +5037,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified at 230\u00A0ml unsweetened',
+    vessel: null,
   },
   {
     id: 'patti-200-2',
@@ -4806,6 +5060,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified at 230\u00A0ml unsweetened',
+    vessel: null,
   },
   {
     id: 'patti-200-3',
@@ -4828,6 +5083,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA, LFAC-verified at 230\u00A0ml unsweetened',
+    vessel: null,
   },
   {
     id: 'patti-250-0',
@@ -4850,6 +5106,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA',
+    vessel: null,
   },
   {
     id: 'patti-250-1',
@@ -4872,6 +5129,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA',
+    vessel: null,
   },
   {
     id: 'patti-250-2',
@@ -4894,6 +5152,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA',
+    vessel: null,
   },
   {
     id: 'patti-250-3',
@@ -4916,6 +5175,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from USDA',
+    vessel: null,
   },
   {
     id: 'chai-kashmiri',
@@ -4938,6 +5198,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'chai-condensed-milk',
@@ -4960,6 +5221,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'USDA-SR',
+    vessel: null,
   },
 
   // ── Other drinks (CARBS.md 9.2) ────────────────────────────────────────────
@@ -4984,6 +5246,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'CoFID, CoFID converted at 1.05',
+    vessel: null,
   },
   {
     id: 'leemu-pani',
@@ -5006,6 +5269,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'milk-cow',
@@ -5028,6 +5292,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 12,
     confidence: 'high',
     source: 'USDA-SR',
+    vessel: null,
   },
   {
     id: 'milk-buffalo',
@@ -5050,6 +5315,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA-SR',
+    vessel: null,
   },
   {
     id: 'lassi-sweet-home',
@@ -5072,6 +5338,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC rescaled to a 250\u00A0ml glass, CoFID lab analysis nearby, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'lassi-sweet-shop',
@@ -5094,6 +5361,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'CoFID converted, LABEL Prema Sweet Laban, LIT recipe studies, NIN and IGNOU dairy specifications',
+    vessel: null,
   },
   {
     id: 'lassi-namkeen',
@@ -5116,6 +5384,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 6,
     confidence: 'high',
     source: 'CALC, LFAC lands dead centre',
+    vessel: null,
   },
   {
     id: 'mango-shake-plain',
@@ -5138,6 +5407,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'mango-shake-sweet',
@@ -5160,6 +5430,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 40,
     confidence: 'medium',
     source: 'LFAC floor plus CALC for the sugar',
+    vessel: null,
   },
   {
     id: 'banana-milkshake',
@@ -5182,6 +5453,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'doodh-soda',
@@ -5204,6 +5476,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'rooh-afza-water',
@@ -5226,6 +5499,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, LABEL mirrors agree',
+    vessel: null,
   },
   {
     id: 'rooh-afza-milk',
@@ -5248,6 +5522,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, LABEL mirrors agree',
+    vessel: null,
   },
   {
     id: 'sugarcane-juice',
@@ -5270,6 +5545,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 27,
     confidence: 'low',
     source: 'LIT and WEAK trackers — no LFAC row, unconfirmed by the Pakistani source',
+    vessel: null,
   },
   {
     id: 'juice-fresh',
@@ -5292,6 +5568,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 26,
     confidence: 'high',
     source: 'USDA, LFAC',
+    vessel: null,
   },
   {
     id: 'juice-apple',
@@ -5314,6 +5591,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA-SR',
+    vessel: null,
   },
   {
     id: 'soft-drink-250',
@@ -5336,6 +5614,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA, CoFID, CoFID divisor unestablished — see section 17.4',
+    vessel: null,
   },
   {
     id: 'soft-drink-300',
@@ -5358,6 +5637,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA, CoFID, CoFID divisor unestablished — see section 17.4',
+    vessel: null,
   },
   {
     id: 'soft-drink-500',
@@ -5380,6 +5660,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA, CoFID, CoFID divisor unestablished — see section 17.4',
+    vessel: null,
   },
   {
     id: 'sattu-drink',
@@ -5402,6 +5683,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, component CALC coherent',
+    vessel: null,
   },
   {
     id: 'saffron-milk-bohri',
@@ -5424,6 +5706,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
+    vessel: null,
   },
   {
     id: 'zero-drinks',
@@ -5446,6 +5729,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA, CoFID, CoFID divisor unestablished — see section 17.4',
+    vessel: null,
   },
   {
     id: 'flavoured-milk',
@@ -5468,6 +5752,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'FNDDS',
+    vessel: null,
   },
 
   // ── Fruit (CARBS.md 10) ────────────────────────────────────────────────────
@@ -5492,6 +5777,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA, CoFID, LFAC agree exactly, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'khajoor-small',
@@ -5514,6 +5800,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 7,
     confidence: 'high',
     source: 'USDA, CoFID, LFAC, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'dates-fresh',
@@ -5536,6 +5823,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CoFID raw, CoFID converted at 1.05',
+    vessel: null,
   },
   {
     id: 'aam-slices',
@@ -5558,6 +5846,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 15,
     confidence: 'medium',
     source: 'USDA, CoFID, LFAC, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'aam-whole',
@@ -5580,6 +5869,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 35,
     confidence: 'medium',
     source: 'USDA, CoFID, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'kela',
@@ -5602,6 +5892,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 23,
     confidence: 'high',
     source: 'USDA-SR',
+    vessel: null,
   },
   {
     id: 'amrood',
@@ -5624,6 +5915,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 17,
     confidence: 'low',
     source: 'USDA against CoFID — unresolved, range shown rather than averaged, CoFID converted at 1.051',
+    vessel: null,
   },
   {
     id: 'chikoo',
@@ -5646,6 +5938,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA-SR',
+    vessel: null,
   },
   {
     id: 'tarbooz-cup',
@@ -5668,6 +5961,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA, LFAC agree',
+    vessel: null,
   },
   {
     id: 'tarbooz-wedge',
@@ -5690,6 +5984,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA, LFAC agree',
+    vessel: null,
   },
   {
     id: 'kharbooza',
@@ -5712,6 +6007,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 13,
     confidence: 'high',
     source: 'USDA, CoFID, CoFID divisor unestablished — see section 17.4',
+    vessel: null,
   },
   {
     id: 'papita',
@@ -5734,6 +6030,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 16,
     confidence: 'high',
     source: 'USDA, CoFID, CoFID divisor unestablished — see section 17.4',
+    vessel: null,
   },
   {
     id: 'jamun',
@@ -5756,6 +6053,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'USDA-SR, single source',
+    vessel: null,
   },
   {
     id: 'kinnow',
@@ -5778,6 +6076,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'USDA tangerine',
+    vessel: null,
   },
   {
     id: 'saib',
@@ -5800,6 +6099,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA, LFAC agree',
+    vessel: null,
   },
   {
     id: 'angoor',
@@ -5822,6 +6122,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA-SR, LFAC runs lower',
+    vessel: null,
   },
   {
     id: 'anaar',
@@ -5844,6 +6145,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA, LFAC agree',
+    vessel: null,
   },
   {
     id: 'aaroo',
@@ -5866,6 +6168,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA',
+    vessel: null,
   },
   {
     id: 'falsa',
@@ -5888,6 +6191,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 10,
     confidence: 'low',
     source: 'LIT review ranges — no LFAC row, unconfirmed by the Pakistani source',
+    vessel: null,
   },
 
   // ── Dairy (CARBS.md 11) ────────────────────────────────────────────────────
@@ -5912,6 +6216,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 11,
     confidence: 'high',
     source: 'USDA, CoFID, CoFID converted at 1.05',
+    vessel: null,
   },
   {
     id: 'raita',
@@ -5934,6 +6239,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 8,
     confidence: 'medium',
     source: 'CALC, LFAC boondi raita chaat corroborates',
+    vessel: null,
   },
   {
     id: 'milk-powder',
@@ -5956,6 +6262,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA',
+    vessel: null,
   },
   {
     id: 'condensed-milk',
@@ -5978,6 +6285,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA-SR',
+    vessel: null,
   },
   {
     id: 'evaporated-milk',
@@ -6000,6 +6308,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA',
+    vessel: null,
   },
   {
     id: 'paneer-cheese',
@@ -6022,6 +6331,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 3,
     confidence: 'high',
     source: 'USDA',
+    vessel: null,
   },
   {
     id: 'khoya-100g',
@@ -6044,6 +6354,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 25,
     confidence: 'medium',
     source: 'LIT dairy science — no LFAC row',
+    vessel: null,
   },
   {
     id: 'khoya-mithai-portion',
@@ -6066,6 +6377,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 12,
     confidence: 'medium',
     source: 'LIT dairy science — no LFAC row',
+    vessel: null,
   },
 
   // ── Ramadan quick sheet (CARBS.md 12) ──────────────────────────────────────
@@ -6090,6 +6402,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA, SJSU, IDF-DAR, LFAC agree',
+    vessel: null,
   },
 
   // ── Estimating something not on this list (CARBS.md 13) ────────────────────
@@ -6114,6 +6427,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'USDA anchor',
+    vessel: null,
   },
   {
     id: 'rice-tablespoon',
@@ -6136,6 +6450,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'USDA anchor',
+    vessel: null,
   },
   {
     id: 'aloo-chunk',
@@ -6158,6 +6473,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 16,
     confidence: 'medium',
     source: 'USDA boiled potato, LFAC potato rows imply the lower end',
+    vessel: null,
   },
   {
     id: 'aloo-whole',
@@ -6180,6 +6496,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 26,
     confidence: 'medium',
     source: 'USDA boiled potato 20.0 to 20.1 per 100\u00A0g, FNDDS 20.4, CoFID 16.7 converted, LFAC implies 15 — applied to an 80 to 130\u00A0g Pakistani potato',
+    vessel: null,
   },
   {
     id: 'salan-thin-unnamed',
@@ -6202,6 +6519,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 10,
     confidence: 'medium',
     source: 'KHAN, CoFID and LFAC pattern across every thin salan in this table, CoFID corroborating only — no divisor applies',
+    vessel: null,
   },
   {
     id: 'salan-thick-unnamed',
@@ -6224,6 +6542,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 20,
     confidence: 'medium',
     source: 'KHAN korma and kadhi pattern',
+    vessel: null,
   },
   {
     id: 'besan-coating',
@@ -6246,6 +6565,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 15,
     confidence: 'medium',
     source: 'CoFID and LFAC pakora pattern, CoFID divisor unestablished — see section 17.4',
+    vessel: null,
   },
 
   // ── Meals as served, pre-added (CARBS.md 14) ───────────────────────────────
@@ -6270,6 +6590,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 60,
     confidence: 'medium',
     source: 'LFAC-anchored biryani plus the raita row',
+    vessel: null,
   },
   {
     id: 'meal-biryani-degh-raita',
@@ -6292,6 +6613,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 75,
     confidence: 'medium',
     source: 'CoFID and KHAN biryani plus the raita row, CoFID converted at 1.094',
+    vessel: null,
   },
   {
     id: 'meal-biryani-meat-raita',
@@ -6314,6 +6636,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 54,
     confidence: 'medium',
     source: 'FNDDS and CoFID biryani plus the raita row, CoFID converted at 1.085',
+    vessel: null,
   },
   {
     id: 'meal-nihari-two-naan',
@@ -6336,6 +6659,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 138,
     confidence: 'medium',
     source: 'CALC from the nihari and naan rows',
+    vessel: null,
   },
   {
     id: 'meal-nihari-one-naan',
@@ -6358,6 +6682,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 78,
     confidence: 'medium',
     source: 'CALC from the nihari and naan rows',
+    vessel: null,
   },
   {
     id: 'meal-halwa-puri-one',
@@ -6380,6 +6705,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC composite',
+    vessel: null,
   },
   {
     id: 'meal-halwa-puri-two',
@@ -6402,6 +6728,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC composite plus one more puri',
+    vessel: null,
   },
   {
     id: 'meal-sehri-paratha',
@@ -6424,6 +6751,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 66,
     confidence: 'medium',
     source: 'CALC from LFAC-confirmed rows',
+    vessel: null,
   },
   {
     id: 'meal-haleem-half-naan',
@@ -6446,6 +6774,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 68,
     confidence: 'low',
     source: 'CALC from the haleem and naan rows',
+    vessel: null,
   },
   {
     id: 'meal-qorma-naan',
@@ -6468,6 +6797,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 80,
     confidence: 'low',
     source: 'CALC from the qorma and naan rows',
+    vessel: null,
   },
   {
     id: 'meal-bun-kabab-drink',
@@ -6490,6 +6820,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 76,
     confidence: 'low',
     source: 'CALC from the bun kabab and soft-drink rows',
+    vessel: null,
   },
   {
     id: 'meal-roll-drink',
@@ -6512,6 +6843,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC roll plus the soft-drink row',
+    vessel: null,
   },
   {
     id: 'meal-chai-two-biscuits',
@@ -6534,6 +6866,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'CALC from the chai grid and the Sooper row',
+    vessel: null,
   },
   {
     id: 'meal-chai-cake-rusk',
@@ -6556,6 +6889,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'CALC from the chai grid and the cake rusk row',
+    vessel: null,
   },
   {
     id: 'meal-kat-a-kat-naan',
@@ -6578,6 +6912,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 128,
     confidence: 'low',
     source: 'CALC worked example from the naan rows',
+    vessel: null,
   },
   {
     id: 'meal-shaadi-plate',
@@ -6600,6 +6935,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 128,
     confidence: 'low',
     source: 'CALC worked example from the qorma, naan, zarda and soft-drink rows',
+    vessel: null,
   },
   {
     id: 'meal-thela-chana-chaat',
@@ -6622,6 +6958,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 60,
     confidence: 'medium',
     source: 'CALC worked example, LFAC-adjusted',
+    vessel: null,
   },
 
   // ── Packaged food (CARBS.md 20.1) ──────────────────────────────────────────
@@ -6648,6 +6985,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LABEL, two manufacturer declarations of the same recipe',
+    vessel: null,
   },
   {
     id: 'chocolate-milk-block',
@@ -6670,6 +7008,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LABEL, retailer panel agrees at 57\u00A0g per 100',
+    vessel: null,
   },
   {
     id: 'chocolate-dark-70',
@@ -6692,6 +7031,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LABEL',
+    vessel: null,
   },
   {
     id: 'chocolate-dark-85',
@@ -6714,6 +7054,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LABEL',
+    vessel: null,
   },
   {
     id: 'chocolate-dark-90',
@@ -6736,6 +7077,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LABEL',
+    vessel: null,
   },
   {
     id: 'chocolate-caramel-bar',
@@ -6758,6 +7100,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LABEL at 62\u00A0g per 100',
+    vessel: null,
   },
   {
     id: 'chocolate-caramel-block',
@@ -6780,6 +7123,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LABEL at 62\u00A0g per 100',
+    vessel: null,
   },
   {
     id: 'kitkat-4-finger',
@@ -6802,6 +7146,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LABEL, CALC to the bar weight',
+    vessel: null,
   },
   {
     id: 'biscuit-tea-pack-small',
@@ -6824,6 +7169,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'CoFID converted, CALC — no Pakistani manufacturer panel verified',
+    vessel: null,
   },
   {
     id: 'biscuit-tea-pack-family',
@@ -6846,6 +7192,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'CoFID converted, CALC — no Pakistani manufacturer panel verified',
+    vessel: null,
   },
   {
     id: 'biscuit-sandwich-small',
@@ -6868,6 +7215,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 13.4,
     confidence: 'medium',
     source: 'CoFID converted, USDA-SR, CALC — not a Pakistani label',
+    vessel: null,
   },
   {
     id: 'biscuit-sandwich-roll',
@@ -6890,6 +7238,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 84.4,
     confidence: 'medium',
     source: 'CoFID converted, USDA-SR, CALC — not a Pakistani label',
+    vessel: null,
   },
   {
     id: 'wafer-loacker-small',
@@ -6912,6 +7261,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LABEL, CALC',
+    vessel: null,
   },
   {
     id: 'wafer-loacker-sharing',
@@ -6934,6 +7284,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LABEL, CALC',
+    vessel: null,
   },
   {
     id: 'wafer-unidentified',
@@ -6956,6 +7307,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 31,
     confidence: 'low',
     source: 'LABEL, USDA-SR sugar wafers, CALC — spread retained',
+    vessel: null,
   },
   {
     id: 'boiled-sweet-one',
@@ -6978,6 +7330,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 4.9,
     confidence: 'low',
     source: 'CoFID converted, USDA-SR hard candy — spread retained',
+    vessel: null,
   },
   {
     id: 'boiled-sweet-tin',
@@ -7000,6 +7353,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 196,
     confidence: 'low',
     source: 'CoFID converted, USDA-SR hard candy — spread retained',
+    vessel: null,
   },
   {
     id: 'toffee-one',
@@ -7022,6 +7376,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 3.9,
     confidence: 'low',
     source: 'CoFID converted, USDA-SR caramels — spread retained',
+    vessel: null,
   },
   {
     id: 'toffee-pouch',
@@ -7044,6 +7399,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 192.5,
     confidence: 'low',
     source: 'CoFID converted, USDA-SR caramels — spread retained',
+    vessel: null,
   },
   {
     id: 'corn-snack-small',
@@ -7066,6 +7422,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 14.2,
     confidence: 'medium',
     source: 'USDA-SR minus fibre, CoFID converted, CALC',
+    vessel: null,
   },
   {
     id: 'corn-snack-medium',
@@ -7088,6 +7445,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 61.3,
     confidence: 'medium',
     source: 'USDA-SR minus fibre, CoFID converted, CALC',
+    vessel: null,
   },
   {
     id: 'corn-snack-sharing',
@@ -7110,6 +7468,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 140.2,
     confidence: 'medium',
     source: 'USDA-SR minus fibre, CoFID converted, CALC',
+    vessel: null,
   },
   {
     id: 'nimco-pack-small',
@@ -7132,6 +7491,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 21.6,
     confidence: 'low',
     source: 'CoFID converted, LABEL Cofresh specification, CALC — both endpoints retained',
+    vessel: null,
   },
   {
     id: 'nimco-pack-sharing',
@@ -7154,6 +7514,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 96,
     confidence: 'low',
     source: 'CoFID converted, LABEL Cofresh specification, CALC — both endpoints retained',
+    vessel: null,
   },
   {
     id: 'peanuts-pack-small',
@@ -7176,6 +7537,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 3.5,
     confidence: 'low',
     source: 'USDA-SR minus fibre, CoFID converted, CALC — spread retained',
+    vessel: null,
   },
   {
     id: 'peanuts-pack-sharing',
@@ -7198,6 +7560,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 25.7,
     confidence: 'low',
     source: 'USDA-SR minus fibre, CoFID converted, CALC — spread retained',
+    vessel: null,
   },
 
   // ── Habshi halwa, the two labelled products (CARBS.md 20.2) ────────────────
@@ -7222,6 +7585,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LABEL, retailer reproduction, energy cross-check passes',
+    vessel: null,
   },
   {
     id: 'habshi-halwa-yaadgaar',
@@ -7244,6 +7608,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'low',
     source: 'LABEL, manufacturer website — single declaration',
+    vessel: null,
   },
 
   // ── Added 2026-09-25: dishes whose ABSENCE was the hazard ───────────────
@@ -7281,6 +7646,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 4,
     confidence: 'high',
     source: 'CoFID, USDA protein anchors, CoFID divisor unestablished — see section 17.4',
+    vessel: null,
   },
   {
     id: 'chargha',
@@ -7303,6 +7669,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 5,
     confidence: 'low',
     source: 'CALC from USDA yoghurt and besan, six named marinade recipes per quarter bird',
+    vessel: null,
   },
   {
     id: 'broast-quarter',
@@ -7325,6 +7692,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 22,
     confidence: 'medium',
     source: 'FNDDS fried coated chicken, 12.1 per 100\u00A0g',
+    vessel: null,
   },
   {
     id: 'jhinga',
@@ -7347,6 +7715,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 6,
     confidence: 'medium',
     source: 'USDA crustaceans; CALC masala',
+    vessel: null,
   },
   {
     id: 'paya',
@@ -7369,6 +7738,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 18,
     confidence: 'low',
     source: 'CALC from the nihari flour range and the salan pattern',
+    vessel: null,
   },
   {
     id: 'organ-fry',
@@ -7391,6 +7761,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 15,
     confidence: 'low',
     source: 'CALC; KHAN qeema and kaleji bracket',
+    vessel: null,
   },
   {
     id: 'yakhni-soup',
@@ -7413,6 +7784,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 3,
     confidence: 'high',
     source: 'USDA broth',
+    vessel: null,
   },
   {
     id: 'soup-chicken-corn',
@@ -7435,6 +7807,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 11,
     confidence: 'low',
     source: 'CALC from USDA cornstarch and canned sweetcorn, four named recipes at a measured 250\u00A0ml bowl',
+    vessel: null,
   },
   {
     id: 'salad-kachumber',
@@ -7457,6 +7830,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 5,
     confidence: 'high',
     source: 'USDA vegetables',
+    vessel: null,
   },
   {
     id: 'achar',
@@ -7479,6 +7853,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 2,
     confidence: 'high',
     source: 'USDA, CoFID pickles, CoFID divisor unestablished — see section 17.4',
+    vessel: null,
   },
   {
     id: 'chutney-hari',
@@ -7501,6 +7876,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 3,
     confidence: 'medium',
     source: 'CALC from USDA components — every ingredient is near zero, so the answer is bounded',
+    vessel: null,
   },
   {
     id: 'chutney-meethi',
@@ -7523,6 +7899,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 13,
     confidence: 'medium',
     source: 'CALC from CoFID tamarind pulp and sugar, USDA tamarind agreeing, two named recipes by style, CoFID converted at component-wise, 1.05 on the sugars and 1.10 on the starch',
+    vessel: null,
   },
   {
     id: 'malai',
@@ -7545,6 +7922,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 2,
     confidence: 'high',
     source: 'USDA cream',
+    vessel: null,
   },
   {
     id: 'butter-ghee-oil',
@@ -7567,6 +7945,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'high',
     source: 'USDA',
+    vessel: null,
   },
   {
     id: 'bread-brown',
@@ -7589,6 +7968,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 13,
     confidence: 'medium',
     source: 'USDA-SR 172688 — 42.71 total minus 6.0 fibre at the floor, total carbohydrate at the top; CoFID wholemeal, CoFID divisor unestablished — see section 17.4',
+    vessel: null,
   },
   {
     id: 'dalia',
@@ -7611,6 +7991,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 40,
     confidence: 'low',
     source: 'CALC from USDA bulgur, milk and sugar',
+    vessel: null,
   },
   {
     id: 'oats-porridge',
@@ -7633,6 +8014,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 27,
     confidence: 'medium',
     source: 'USDA-SR Quaker quick oats 68.2 per 100\u00A0g; labels near 60',
+    vessel: null,
   },
   {
     id: 'cornflakes',
@@ -7655,5 +8037,6 @@ export const FOODS: readonly Food[] = [
     gramsMax: 27,
     confidence: 'high',
     source: 'USDA-SR corn flakes 88 per 100\u00A0g; labels agree',
+    vessel: null,
   },
 ];
