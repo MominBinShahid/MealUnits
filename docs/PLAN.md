@@ -3967,6 +3967,23 @@ second must not soften it into a habit:**
 app branches on, compares against, or was chosen rather than measured stays in `config.ts`, wherever
 it physically sits.
 
+**A third field arrived under this exemption on 2026-09-26, and it is the first one that describes
+a MEASUREMENT RULE rather than a measurement.** Every row now declares `vessel` — the vessel its
+portion is served in and what this table assumes that vessel holds — or `null` where it does not
+scale with one. T31 will divide a reader's own weighed fill by that figure to get a ratio.
+
+It sits in `src/data/` rather than `config.ts` because it is a property of the row: *this* biryani
+plate is 300 g, *that* chai cup is 150 ml, and the pairing is exactly the kind of fact §11.8's
+exemption was granted for. What would NOT belong here is the ratio's own bounds or the decision to
+scale at all — those are choices, and they live in `config.ts`.
+
+**Required rather than optional, so a new row is a compile error until somebody decides**, and
+`null` is a decision they had to type. `check_vessel_rows` pins the set that may scale, by name, in
+`check-plan.py`, and that set is **empty today** — the field landed before any scaling did, so the
+row-by-row question of what scales is reviewed on its own rather than inside the change that starts
+scaling things. A row that silently began or stopped scaling would be a silent dose change, which is
+the class this whole arrangement exists to make loud.
+
 #### There are no prescription defaults, and that is the point — CORRECTED IN v9
 
 **v8's file shipped `DEFAULT_TARGET = 150`, `DEFAULT_ISF = 30`, `DEFAULT_ICR = 10` under the

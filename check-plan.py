@@ -4119,6 +4119,71 @@ def check_reference_data(_plan):
     return out
 
 
+# T31 phase 1. Every row in `src/data/carbs.ts` declares a `vessel`, and every
+# one of them is `null` today — nothing scales. The set below is what MAY
+# scale, and it is spelled here rather than derived so that adding a row to it
+# is a reviewable diff in this file with a dose attached, not a quiet edit in a
+# 7,000-line data module.
+#
+# It is empty on purpose. The field landed before any scaling did, so the
+# row-by-row decision about what scales gets reviewed on its own rather than
+# inside the change that starts scaling things.
+VESSEL_ROWS = {}
+
+
+def check_vessel_rows(_plan):
+    r"""Every food row decides about vessels, and only the pinned set scales.
+
+    A row that silently stops scaling — or silently starts — is a silent dose
+    change, which is the class this whole file exists to make loud.
+
+    Three assertions. **Every row declares the field**, so a new row cannot
+    default into a decision its author never took; TypeScript enforces this at
+    compile time and this repeats it here because the count is what a reviewer
+    reads. **Only `VESSEL_ROWS` carries a non-null vessel**, so the scaling set
+    is a diff in this file. And **a declared vessel's weight appears in that
+    row's own portion string, in every language** — the generalisation of T29's
+    rule, where `naan-afghani-half` printed 145 g twice meaning two different
+    things. The number a reader reads and the number the arithmetic divides by
+    have to be the same number.
+    """
+    path = os.path.join(HERE, "src", "data", "carbs.ts")
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as fh:
+        body = fh.read()
+
+    rows = re.findall(r"\n    id: '([^']+)',", body)
+    declared = len(re.findall(r"\n    vessel: ", body))
+    out = []
+    if declared != len(rows):
+        out.append(
+            "src/data/carbs.ts has %d rows but %d declare `vessel:` — the field "
+            "is required so that a new row is a compile error until somebody "
+            "decides, and a row that defaulted in would scale, or stop scaling, "
+            "without anyone choosing it" % (len(rows), declared))
+
+    # Parsed block by block rather than with one regex spanning rows: a
+    # pattern that walks past a row boundary reports the WRONG id, which is
+    # worse than reporting none — it sends a reviewer to a row that is fine.
+    scaling = set()
+    for match in re.finditer(r"\{\s*\n\s*id: '([^']+)',(.*?)\n  \},", body, re.S):
+        if re.search(r"\n    vessel: \{", match.group(2)):
+            scaling.add(match.group(1))
+    unexpected = sorted(scaling - set(VESSEL_ROWS))
+    if unexpected:
+        out.append(
+            "src/data/carbs.ts scales %s, which VESSEL_ROWS does not list — a "
+            "row that starts scaling changes what it doses, so the set belongs "
+            "in a reviewed diff rather than in the data module"
+            % ", ".join(unexpected))
+    missing = sorted(set(VESSEL_ROWS) - scaling)
+    if missing:
+        out.append(
+            "VESSEL_ROWS lists %s but no row declares a vessel for it — the pin "
+            "has outlived the rows it names" % ", ".join(missing))
+    return out
+
 def check_backlog_numbers_unique(_plan):
     r"""Two backlog entries may not share a number.
 
@@ -4951,6 +5016,7 @@ CHECKS = [
     ("§10.4: a number joined to its unit by a plain space", check_number_unit_nowrap, "plan"),
     ("10a: a stylesheet declaration that names a side", check_logical_properties, "plan"),
     ("10a: a number range that bidi will reverse", check_rtl_ranges_isolated, "plan"),
+    ("vessel rows that scale without being pinned", check_vessel_rows, "plan"),
     ("a backlog number used twice", check_backlog_numbers_unique, "plan"),
     ("tests missing from the mutation run", check_mutation_coverage_list, "plan"),
     ("§20.5 listing vs the directory", check_file_listing, "plan"),
