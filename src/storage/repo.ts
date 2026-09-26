@@ -31,6 +31,7 @@ import type {
   AckRow,
   BackupRow,
   CalibrationRow,
+  VesselRow,
   DisplayRow,
   DosingHistoryRow,
   EnvelopeRow,
@@ -108,6 +109,14 @@ export interface StoredState {
   readonly calibration: CalibrationRow | null;
   /** How large the reader asked for the type, or null if they never asked. */
   readonly display: DisplayRow | null;
+  /**
+   * T31 — the reader's own vessels, as ratios, or null if they have set none.
+   *
+   * Absent reads as "nothing calibrated", which is exactly today's behaviour:
+   * a ratio of 1 reproduces the table. That is what lets this feature ship
+   * without a default that could make anything worse.
+   */
+  readonly vessel: VesselRow | null;
 }
 
 /** One read of everything the reducer needs, in one transaction. */
@@ -119,7 +128,7 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
     async (tx) => {
       const [
         settingsRow, history, log, readings, acks, revision, install, dosing, backup,
-        language, calibration, display,
+        language, calibration, display, vessel,
       ] =
         await Promise.all([
           get<SettingsRow>(tx, STORE.settings, SETTINGS_KEY),
@@ -134,6 +143,7 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
           get<LanguageRow>(tx, STORE.meta, META_KEY.language),
           get<CalibrationRow>(tx, STORE.meta, META_KEY.calibration),
           get<DisplayRow>(tx, STORE.meta, META_KEY.display),
+          get<VesselRow>(tx, STORE.meta, META_KEY.vessel),
         ]);
 
       const settings: Settings | null =
@@ -218,6 +228,7 @@ export async function readAll(db: IDBDatabase, nowMs: number): Promise<StoredSta
         // distinction to preserve: not choosing a size and choosing the normal
         // size are the same thing to a reader and to the renderer.
         display: display ?? null,
+        vessel: vessel ?? null,
       } satisfies StoredState;
     },
   );
@@ -620,6 +631,41 @@ export function writeDosingHistory(
  * carbohydrate figure in this table now, so it cannot double as "no longer
  * calibrated".
  */
+/**
+ * T31 — record what one vessel holds, as a ratio, with its working.
+ *
+ * Read-modify-write over the whole map for the same reason `writeCalibration`
+ * does it: `meta` holds one row per key, so setting one vessel means rewriting
+ * the row that holds them all, and doing it inside the transaction is what
+ * stops two tabs clobbering each other.
+ *
+ * `ratio === null` clears the vessel, and clearing returns the reader to the
+ * table's figures — which is the same state as never having calibrated. There
+ * is no third state, deliberately: a vessel the app remembers but does not
+ * apply is a number nobody can see and everybody would forget.
+ */
+export function writeVessel(
+  db: IDBDatabase,
+  vesselId: string,
+  entry: {
+    readonly ratio: number;
+    readonly emptyGrams: number;
+    readonly fullGrams: number;
+    readonly tared: 'subtracted' | 'scale';
+    readonly sourceFoodId: string;
+    readonly referenceGrams: number;
+    readonly setAt: number;
+  } | null,
+): Promise<IDBValidKey> {
+  return runTransaction(db, [STORE.meta], 'readwrite', async (tx) => {
+    const existing = await get<VesselRow>(tx, STORE.meta, META_KEY.vessel);
+    const vessels = { ...existing?.vessels };
+    if (entry === null) delete vessels[vesselId];
+    else vessels[vesselId] = entry;
+    return put(tx, STORE.meta, { key: META_KEY.vessel, vessels } satisfies VesselRow);
+  });
+}
+
 export function writeCalibration(
   db: IDBDatabase,
   foodId: string,

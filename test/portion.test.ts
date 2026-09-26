@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gramsFor, tallyGrams } from '../src/core/portion.js';
+import { gramsFor, tallyGrams, vesselRatio } from '../src/core/portion.js';
 import type { Portioned } from '../src/core/portion.js';
 
 /**
@@ -82,5 +82,51 @@ describe('tallyGrams — what a counted plate comes to', () => {
   it('counts a row twice when the tally says two', () => {
     // Kills a mutant that ignores the count and adds grams once.
     expect(tallyGrams([ROTI], { roti: 2 }, NONE)).toBe(36);
+  });
+});
+
+describe('vesselRatio — the tare, the division, and the refusal', () => {
+  it('subtracts the empty weight before dividing', () => {
+    // 735 on the scale, 285 of it plate: 450 g of food against a 300 g
+    // reference is 1.5x. If the subtraction were dropped this would be 2.45.
+    expect(vesselRatio({ emptyGrams: 285, fullGrams: 735 }, 300)).toBe(1.5);
+  });
+
+  it('returns exactly 1 when the reader matches the table', () => {
+    expect(vesselRatio({ emptyGrams: 285, fullGrams: 585 }, 300)).toBe(1);
+  });
+
+  it('keeps the ratio unrounded', () => {
+    // 445 / 300 = 1.48333...  Storing a displayed 1.5 and feeding it back is
+    // the second rounding engine §5.3 forbids.
+    expect(vesselRatio({ emptyGrams: 285, fullGrams: 730 }, 300)).toBeCloseTo(1.48333, 5);
+  });
+
+  it('accepts a scale that was already zeroed', () => {
+    expect(vesselRatio({ emptyGrams: 0, fullGrams: 450 }, 300)).toBe(1.5);
+  });
+
+  it('refuses a fill of zero rather than returning a ratio of zero', () => {
+    expect(vesselRatio({ emptyGrams: 300, fullGrams: 300 }, 300)).toBeNull();
+  });
+
+  it('refuses the weighings taken in the wrong order', () => {
+    // Full lower than empty: the reader entered them the other way round.
+    expect(vesselRatio({ emptyGrams: 500, fullGrams: 300 }, 300)).toBeNull();
+  });
+
+  it('refuses a negative empty weight', () => {
+    expect(vesselRatio({ emptyGrams: -10, fullGrams: 400 }, 300)).toBeNull();
+  });
+
+  it('refuses a reference of zero or below rather than dividing by it', () => {
+    expect(vesselRatio({ emptyGrams: 0, fullGrams: 450 }, 0)).toBeNull();
+    expect(vesselRatio({ emptyGrams: 0, fullGrams: 450 }, -300)).toBeNull();
+  });
+
+  it('refuses anything that is not a finite number', () => {
+    expect(vesselRatio({ emptyGrams: Number.NaN, fullGrams: 450 }, 300)).toBeNull();
+    expect(vesselRatio({ emptyGrams: 0, fullGrams: Number.POSITIVE_INFINITY }, 300)).toBeNull();
+    expect(vesselRatio({ emptyGrams: 0, fullGrams: 450 }, Number.NaN)).toBeNull();
   });
 });
