@@ -1,6 +1,6 @@
 import type { JSX } from 'preact';
 import { asksAboutSugarFree, matchFoods } from '../../core/foods.js';
-import { gramsFor, tallyGrams } from '../../core/portion.js';
+import { gramsFor, tallyGrams, vesselRatio } from '../../core/portion.js';
 import { formatDayAndMonth } from '../../core/calendar.js';
 import type { Category, Food } from '../../data/carbs.js';
 import { FOODS } from '../../data/carbs.js';
@@ -27,6 +27,16 @@ export interface FoodListProps {
   readonly onUseTotal: (grams: number) => void;
   readonly onClearTally: () => void;
   readonly onEditMine: (id: string | null) => void;
+  /** T31 — the plate weighing: which step is open, the drafts, and the save. */
+  readonly plateStep: 'empty' | 'served' | 'confirm' | null;
+  readonly plateEmptyDraft: string;
+  readonly plateServedDraft: string;
+  readonly plateTared: boolean;
+  readonly onPlateStep: (step: 'empty' | 'served' | 'confirm' | null) => void;
+  readonly onPlateEmptyDraft: (text: string) => void;
+  readonly onPlateServedDraft: (text: string) => void;
+  readonly onPlateTared: () => void;
+  readonly onPlateSave: (ratio: number, empty: number, served: number) => void;
   readonly onMineDraft: (text: string) => void;
   readonly onTerm: (key: string) => void;
   readonly onSaveMine: (id: string, grams: number | null) => void;
@@ -214,7 +224,7 @@ function SourceTags({ source, onTerm }: {
  */
 function FoodRow({
   food, count, mine, editing, draft, onAdd, onRemove, onEditMine, onMineDraft,
-  onSaveMine, onTerm, timeZone,
+  onSaveMine, onTerm, timeZone, vesselRatioSet, onWeighPlate,
 }: {
   readonly food: Food;
   readonly count: number;
@@ -225,6 +235,15 @@ function FoodRow({
   readonly onAdd: (id: string) => void;
   readonly onRemove: (id: string) => void;
   readonly onEditMine: (id: string | null) => void;
+  /**
+   * T31 — the ratio in force for THIS row's vessel, or null.
+   *
+   * Passed rather than looked up inside, so the row need not know where
+   * calibrations live, and so a row with no vessel is structurally incapable
+   * of showing a plate line.
+   */
+  readonly vesselRatioSet: number | null;
+  readonly onWeighPlate: () => void;
   readonly onMineDraft: (text: string) => void;
   readonly onSaveMine: (id: string, grams: number | null) => void;
   readonly onTerm: (key: string) => void;
@@ -274,6 +293,26 @@ function FoodRow({
           <div class="hint mine-was">
             {COPY.foods.mineWas(String(food.grams), formatDayAndMonth(mine.setAt, timeZone))}
           </div>
+        )}
+        {/* T31 — the plate line. Shown only when this row's vessel is
+            calibrated AND the reader has NOT set a per-food figure, because
+            per-food beats vessel and two provenance lines on one row is a
+            question rather than an answer. */}
+        {mine === null && vesselRatioSet !== null && food.vessel !== null ? (
+          <div class="hint mine-was">
+            {COPY.foods.plateWas(
+              String(food.grams), String(food.vessel.grams),
+              String(Math.round(food.vessel.grams * vesselRatioSet)), '',
+            )}
+          </div>
+        ) : null}
+        {/* The entry point sits on the portion line's row, where a WEIGHT is
+            already stated — the one place on the row that already talks about
+            grams of food rather than grams of carbohydrate. */}
+        {food.vessel === null ? null : (
+          <Button class="go quiet plate-set" onPress={onWeighPlate}>
+            {vesselRatioSet === null ? COPY.foods.plateSet : COPY.foods.plateAgain}
+          </Button>
         )}
         <div class="clinical">
           {`${COPY.foods.confidenceLabel[food.confidence]} · ${COPY.foods.sourcePrefix}`}
@@ -373,8 +412,128 @@ function FoodRow({
  * Reachable only from the carbohydrate step. It is an answer to the question
  * being asked at that exact moment, and it is noise anywhere else.
  */
+/**
+ * T31 — the two-step plate weighing.
+ *
+ * The ORDER is the safety mechanism, not the copy. Step two does not render
+ * until step one has an answer, because an un-tared plate is +5.1 to +10.2
+ * units and, weighed into a calibration, doubles every dose in that vessel
+ * permanently. No threshold catches it afterwards: un-tared katori entries of
+ * 180–270 g sit inside the genuine serving range. So there is no path that
+ * produces a fill weight with no empty weight.
+ *
+ * And the confirmation is not a courtesy. It prints the subtraction, the
+ * ratio, and what happens to one real row, because a reader who transposed the
+ * two weighings cannot tell from the numbers alone — but they can tell from
+ * "the food alone: 450 g" whether that is their dinner.
+ */
+/**
+ * The row the plate sheet quotes as its worked example.
+ *
+ * `biryani-mid-plate` because it is the middle of the biryani grid and the row
+ * T31's own arithmetic is stated against — and because a reader calibrating a
+ * plate is almost certainly looking at biryani. Read from the table rather
+ * than written here, so the example moves when the figure does.
+ */
+const PLATE_REFERENCE = FOODS.find((food) => food.id === 'biryani-mid-plate');
+
+function PlateSheet({
+  vesselGrams, exampleName, exampleGrams, step, emptyDraft, servedDraft, tared,
+  onEmptyDraft, onServedDraft, onTared, onStep, onSave, onClose,
+}: {
+  readonly vesselGrams: number;
+  readonly exampleName: string;
+  readonly exampleGrams: number;
+  readonly step: 'empty' | 'served' | 'confirm';
+  readonly emptyDraft: string;
+  readonly servedDraft: string;
+  readonly tared: boolean;
+  readonly onEmptyDraft: (value: string) => void;
+  readonly onServedDraft: (value: string) => void;
+  readonly onTared: () => void;
+  readonly onStep: (step: 'empty' | 'served' | 'confirm') => void;
+  readonly onSave: (ratio: number, empty: number, served: number) => void;
+  readonly onClose: () => void;
+}): JSX.Element {
+  const COPY = useCopy();
+  const empty = tared ? 0 : Number(emptyDraft.trim());
+  const served = Number(servedDraft.trim());
+  const emptyAnswered = tared || (emptyDraft.trim() !== '' && Number.isFinite(empty) && empty >= 0);
+  const ratio = vesselRatio({ emptyGrams: empty, fullGrams: served }, vesselGrams);
+  const fill = served - empty;
+
+  return (
+    <div class="sheet plate" role="dialog" aria-modal="false" aria-live="polite">
+      {step === 'empty' ? (
+        <>
+          <b>{COPY.foods.plateStep1Title}</b>
+          <p>{COPY.foods.plateStep1Question}</p>
+          <TextInput value={emptyDraft} onValue={onEmptyDraft}
+            aria-label={COPY.foods.plateStep1Title} inputMode="decimal" />
+          <p class="hint">{COPY.foods.plateStep1Hint}</p>
+          <Button class="go quiet" onPress={onTared}>{COPY.foods.plateStep1Tared}</Button>
+          {emptyAnswered ? (
+            <Button class="go" onPress={() => { onStep('served'); }}>{COPY.next}</Button>
+          ) : null}
+        </>
+      ) : null}
+
+      {step === 'served' ? (
+        <>
+          <b>{COPY.foods.plateStep2Title}</b>
+          <p>{COPY.foods.plateStep2Question}</p>
+          <TextInput value={servedDraft} onValue={onServedDraft}
+            aria-label={COPY.foods.plateStep2Title} inputMode="decimal" />
+          {/* The serve-versus-hold sentence. This is the +4.2 unit defect. */}
+          <p class="hint">{COPY.foods.plateStep2Hint}</p>
+          {tared ? <p class="hint">{COPY.foods.plateStep2TaredHint}</p> : null}
+          {ratio === null ? null : (
+            <Button class="go" onPress={() => { onStep('confirm'); }}>
+              {COPY.foods.plateShow}
+            </Button>
+          )}
+          {/* The core already refuses this input; a refusal with no words is
+              the dead-end class notes 38/47/51 keep finding. */}
+          {servedDraft.trim() !== '' && ratio === null ? (
+            <p class="hint halt">{COPY.foods.plateOrderWrong}</p>
+          ) : null}
+        </>
+      ) : null}
+
+      {step === 'confirm' && ratio !== null ? (
+        <>
+          <b>{COPY.foods.plateConfirmTitle}</b>
+          <p>{tared
+            ? COPY.foods.plateWorkingTared(String(fill))
+            : COPY.foods.plateWorking(String(served), String(empty), String(fill))}</p>
+          <p>{COPY.foods.plateRatioLine(
+            String(fill), String(vesselGrams), String(Math.round(ratio * 100) / 100),
+          )}</p>
+          {/* The WHOLE gram, because that is what the app will count. Showing
+              76.5 here and then dosing 77 would be a third rounding of the
+              same figure, and §5.3 allows one. */}
+          <p>{COPY.foods.plateExample(
+            exampleName, String(exampleGrams), String(Math.round(exampleGrams * ratio)),
+          )}</p>
+          <p class="hint">{COPY.foods.plateTrust(String(fill))}</p>
+          <Button class="go" onPress={() => { onSave(ratio, empty, served); }}>
+            {COPY.foods.plateSave}
+          </Button>
+          <Button class="go quiet" onPress={() => { onStep('empty'); }}>
+            {COPY.foods.plateChangeWeights}
+          </Button>
+        </>
+      ) : null}
+
+      <Button class="go quiet" onPress={onClose}>{COPY.glossaryClose}</Button>
+    </div>
+  );
+}
+
 export function FoodListScreen({
   query, openGroup, tally, calibration, vessels, editingMine, mineDraft, timeZone, resetting,
+  plateStep, plateEmptyDraft, plateServedDraft, plateTared,
+  onPlateStep, onPlateEmptyDraft, onPlateServedDraft, onPlateTared, onPlateSave,
   onQuery, onToggleGroup, onAdd, onRemove, onUseTotal, onClearTally, onEditMine, onMineDraft,
   onSaveMine, onTerm, onResetting, onResetMine,
 }: FoodListProps): JSX.Element {
@@ -517,7 +676,11 @@ export function FoodListScreen({
                           count={tally[food.id] ?? 0} onAdd={onAdd} onRemove={onRemove}
                           mine={calibration[food.id] ?? null} editing={editingMine === food.id}
                           draft={mineDraft} onMineDraft={onMineDraft} onTerm={onTerm}
-                          onEditMine={onEditMine} onSaveMine={onSaveMine} timeZone={timeZone} />
+                          onEditMine={onEditMine} onSaveMine={onSaveMine} timeZone={timeZone}
+                          vesselRatioSet={food.vessel === null
+                            ? null
+                            : (vessels[food.vessel.id]?.ratio ?? null)}
+                          onWeighPlate={() => { onPlateStep('empty'); }} />
                       ))}
                       </ul>
                     </div>
@@ -549,7 +712,11 @@ export function FoodListScreen({
               count={tally[food.id] ?? 0} onAdd={onAdd} onRemove={onRemove}
               mine={calibration[food.id] ?? null} editing={editingMine === food.id}
               draft={mineDraft} onMineDraft={onMineDraft} onTerm={onTerm}
-              onEditMine={onEditMine} onSaveMine={onSaveMine} timeZone={timeZone} />
+              onEditMine={onEditMine} onSaveMine={onSaveMine} timeZone={timeZone}
+              vesselRatioSet={food.vessel === null
+                ? null
+                : (vessels[food.vessel.id]?.ratio ?? null)}
+              onWeighPlate={() => { onPlateStep('empty'); }} />
           ))}
         </ul>
       )}
@@ -563,6 +730,28 @@ export function FoodListScreen({
        * `.sheet` is the screen's bottom bar, the same shape the settings save
        * uses — so it sits where the reader's thumb already expects a commit.
        */}
+      {/* T31 — the plate weighing. One vessel ships, so the reference and the
+          worked example are read from the rows themselves rather than named
+          here: §11.8 keeps numbers out of the interface, and a literal 300
+          would be a second place to update when the table moves. */}
+      {plateStep === null ? null : (
+        <PlateSheet
+          vesselGrams={PLATE_REFERENCE?.vessel?.grams ?? 0}
+          exampleName={PLATE_REFERENCE === undefined ? '' : displayName(PLATE_REFERENCE, COPY)}
+          exampleGrams={PLATE_REFERENCE?.grams ?? 0}
+          step={plateStep}
+          emptyDraft={plateEmptyDraft}
+          servedDraft={plateServedDraft}
+          tared={plateTared}
+          onEmptyDraft={onPlateEmptyDraft}
+          onServedDraft={onPlateServedDraft}
+          onTared={onPlateTared}
+          onStep={onPlateStep}
+          onSave={onPlateSave}
+          onClose={() => { onPlateStep(null); }}
+        />
+      )}
+
       {picked === 0 ? null : (
         <div class="sheet tally-bar" aria-live="polite">
           <div class="tally-sum">{COPY.foods.tallyTotal(picked, String(total))}</div>

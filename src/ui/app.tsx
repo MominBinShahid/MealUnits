@@ -47,11 +47,13 @@ import {
   readAll,
   recordJsonExport,
   writeCalibration,
+  writeVessel,
   writeDisplay,
   writeDosingHistory,
   writeLanguage,
 } from '../storage/repo.js';
 import type { StoredState } from '../storage/repo.js';
+import { FOODS } from '../data/carbs.js';
 import { stateToken, watchForChanges } from '../storage/sync.js';
 import { initialState, reduce } from '../state/machine.js';
 import type { Action, AppState, FrozenLogPayload, RecordContext } from '../state/machine.js';
@@ -183,6 +185,36 @@ interface ViewState {
   mineDraft: string;
   /** Whether the "put them all back" confirm is showing. */
   resettingMine: boolean;
+  /**
+   * T31 — which step of the plate weighing is open, or null when it is shut.
+   *
+   * Three states rather than a boolean, because the ORDER is the safety
+   * mechanism: `'empty'` asks for the bare plate, `'served'` asks for the
+   * meal, and `'confirm'` shows the working before anything is written. Step
+   * two is unreachable until step one holds an answer — not a disabled button
+   * with a tooltip, unreachable — because an un-tared plate is +5.1 to +10.2
+   * units and no threshold can catch it after the fact.
+   */
+  plateStep: 'empty' | 'served' | 'confirm' | null;
+  /**
+   * What the reader has typed for each weighing, character for character.
+   *
+   * Drafts rather than numbers for `mineDraft`'s reason, recorded a few lines
+   * above: parsing on every keystroke eats a decimal point the moment it is
+   * typed, and a scale that reads 285.5 is an ordinary scale.
+   */
+  plateEmptyDraft: string;
+  plateServedDraft: string;
+  /**
+   * Whether the reader said their scale already reads 0 with the plate on it.
+   *
+   * A flag set by a button, NOT a typed zero. The record has to tell "the
+   * scale tared itself" from "the reader skipped the step", because on the
+   * tared path the app never holds an empty weight and is blind to a zero
+   * that moves between the two weighings — the catastrophic direction there
+   * is about +7.4 units. A numeral cannot carry that distinction.
+   */
+  plateTared: boolean;
   /**
    * Which hard word is open, or null. ONE at a time — the panel explains the
    * word you tapped, and two open would be two answers to one question.
@@ -491,6 +523,10 @@ export async function start(host: Host): Promise<void> {
     foodTally: {},
     editingMine: null,
     mineDraft: '',
+    plateStep: null,
+    plateEmptyDraft: '',
+    plateServedDraft: '',
+    plateTared: false,
     resettingMine: false,
     glossaryTerm: null,
     recordDeletedElsewhere: false,
@@ -1426,6 +1462,63 @@ export async function start(host: Host): Promise<void> {
             tally={view.foodTally}
             calibration={stored?.calibration?.foods ?? {}}
             vessels={stored?.vessel?.vessels ?? {}}
+            plateStep={view.plateStep}
+            plateEmptyDraft={view.plateEmptyDraft}
+            plateServedDraft={view.plateServedDraft}
+            plateTared={view.plateTared}
+            onPlateStep={(step): void => {
+              // Closing clears the drafts. A half-finished weighing left lying
+              // about is a number the reader has stopped thinking about, and
+              // reopening onto somebody's abandoned 285 is how the wrong empty
+              // weight gets confirmed by accident.
+              view.plateStep = step;
+              if (step === null || step === 'empty') {
+                if (step === null) {
+                  view.plateEmptyDraft = '';
+                  view.plateServedDraft = '';
+                  view.plateTared = false;
+                }
+              }
+              render();
+            }}
+            onPlateEmptyDraft={(text): void => {
+              view.plateEmptyDraft = text;
+              // Typing a weight retracts the "my scale is already zeroed"
+              // claim, because both cannot be true and the typed number is the
+              // more recent statement.
+              if (text.trim() !== '') view.plateTared = false;
+              render();
+            }}
+            onPlateServedDraft={(text): void => {
+              view.plateServedDraft = text;
+              render();
+            }}
+            onPlateTared={(): void => {
+              view.plateTared = true;
+              view.plateEmptyDraft = '';
+              view.plateStep = 'served';
+              render();
+            }}
+            onPlateSave={(ratio, empty, served): void => {
+              if (db === null) return;
+              const reference = FOODS.find((food) => food.id === 'biryani-mid-plate');
+              void (async (): Promise<void> => {
+                await writeVessel(db, 'plate', {
+                  ratio,
+                  emptyGrams: empty,
+                  fullGrams: served,
+                  tared: view.plateTared ? 'scale' : 'subtracted',
+                  sourceFoodId: reference?.id ?? '',
+                  referenceGrams: reference?.vessel?.grams ?? 0,
+                  setAt: host.now(),
+                });
+                view.plateStep = null;
+                view.plateEmptyDraft = '';
+                view.plateServedDraft = '';
+                view.plateTared = false;
+                await refresh();
+              })();
+            }}
             editingMine={view.editingMine}
             mineDraft={view.mineDraft}
             timeZone={host.timeZone}
