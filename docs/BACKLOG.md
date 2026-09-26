@@ -2993,11 +2993,21 @@ paratha's own panel, 39 g per 80 g, archived; Hafiz sohan halwa's own published 
 and they are linked in the rows now. The rest is written down in **section 17.2** as not established,
 with what was already tried so nobody repeats it:
 
-- **`[SJSU]`** — no author initial, year, institution page or URL for "Wagle et al." anywhere. SJSU's
-  nutrition pages 404 and its repository blocks automated access; every search engine available to
-  the pass was broken or exhausted. **An unfinished search, not a concluded one.**
-- **`[LIT]` on taftan, khoya, falsa and khoa-jalebi** — plausible candidate papers found for three,
-  all paywalled, so none can be claimed as the source.
+- **`[SJSU]` — ESTABLISHED 2026-09-26 on the retry.** The first pass called it *"an unfinished
+  search, not a concluded one"* and was right: the obstacle was tooling. **Wagle A.,
+  *Carbohydrate Counting for Traditional South Asian Foods*, 4th ed., SJSU, 2016** — two free full
+  texts live, the PDF downloaded and read, and eight cited figures matching its entries exactly.
+  ⚠ Two things reading it changed, both bigger than the citation: **it is an ADA exchange list, so
+  every figure from it is a multiple of 7.5 g** — a resolution floor, not precision — and **it cites
+  Gopalan 1989 (NIN/ICMR)**, so `[SJSU]` and `[NIN]` may be **one source counted twice** wherever a
+  row treats their agreement as corroboration. Its licence was also stated all along
+  ("All Rights Reserved", 19 pages), where CARBS.md section 19.1 claimed none was.
+- **`[LIT]` — two of four solved 2026-09-26.** **Taftan**: Kazemi 2020, open access and read —
+  taftoon across 15 Tehran bakeries, 61.1 g total and **58.9 available** per 100 g, against the 62
+  this file prints. **Falsa**: the Heliyon 2024 review, whose Table 1 genuinely is a range
+  (21.10 / 14.70 / 21.10). **Khoya and khoa-jalebi remain uncited** — Europe PMC returns HTTP 500
+  for khoya's one open-access candidate, and neither khoa-jalebi candidate is readable or confirmed
+  to contain a sucrose measurement.
 - **Roghni naan (Sufi/Dawn)** — Dawn's own historical catalogue sold Lahori and Tandoori naan and no
   roghni naan. No Sufi bakery could be identified at all. A physical packet settles this faster than
   any search.

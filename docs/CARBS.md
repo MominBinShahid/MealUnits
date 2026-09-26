@@ -70,7 +70,7 @@ Rows can carry more than one tag — biryani is (a) *your plate size* **and** (b
 - **Household measure defaults** (all (a)-settings; figures below use the default): **katori** = 150 ml ≈ 150 g of a wet dish · **chai cup** = 150 ml (grid gives 200/250 too) · **glass** = 250 ml · **plate** of rice/biryani = 300 g · **1 tsp sugar** = 4.2 g level [USDA] (heaped ≈ 6 g) · **1 Tbsp** = 15 ml. The LFAC book's own conventions: cup = 250 ml, bowl = 250 ml; its "1 cup" of a wet dish weighs 200–245 g, its "1 cup" of rice 160–190 g — consistent with our katori/plate frame after scaling.
 - **Confidence**: **HIGH** lab-analysed or multi-source agreement, low real-world spread · **MED** good source(s) but portion/recipe moves it · **LOW** weak sources, wide disagreement, or our own calculation.
 - **The `id` in each row** — `` (`naan-small`) `` — is the app's own row identifier, and it is there so this document can be checked against what ships. Every one of the 339 rows in `src/data/carbs.ts` names itself on the line here that carries its figure, and `check-plan.py` fails the build if a figure, a source tag or a confidence drifts apart from what is printed on that line. Search this file for the id shown under a food in the app and you land on the line the number came from.
-- **Source tags**: **[LFAC]** *Healthy eating and carbohydrate counting — Pakistani Foods*, Ed. 1, 2024 (Life for a Child / ISPAD; BIDE + Meethi Zindagi) — **new in v3, and the ranking Pakistani source**: Pakistani, Type 1-specific, patient-facing, dietitian-compiled. Note the book's own caveat: *"The carbohydrate values mentioned in this book are estimates only as many factors can affect the amounts, for example the method of preparation etc."* (p. 23) · **[KHAN]** Khan et al. 2019 Pakistani AOAC lab study · **[USDA]** USDA FoodData Central with **the dataset not recorded on the row** — it says the figure came from FoodData Central but not whether from SR Legacy, Foundation Foods or FNDDS, so it is the weaker tag · **[USDA-SR]/[FNDDS]** USDA FoodData Central · **[CoFID]** UK McCance & Widdowson 2021 · **[SJSU]** dietitian carb-counting handout · **[IDF-DAR]** Diabetes & Ramadan guidelines · **[PK-FCT]** Pakistan FCT 2001 (energy cross-check) · **[KHI-OFFICIAL]** Karachi Commissioner tandoor weight/rate list · **[NIN]** Indian food-composition lineage — most likely the National Institute of Nutrition's [*Indian Food Composition Tables 2017*](https://www.nin.res.in/ebooks/IFCT2017_16122024.pdf) (Longvah, Ananthan, Bhaskarachary & Venkaiah; ICMR, Hyderabad), ⚠ **identified after the fact and not confirmed as the edition actually read** — see section 17.1 · **[IGNOU]** Indira Gandhi National Open University dairy course material, for Indian dairy composition specifications — ⚠ **the unit and edition were not recorded and no URL was kept**; it corroborates one row (lassi) beside four other sources and carries nothing alone · **[LIT]** peer-reviewed literature (named per row) · **[LABEL]** manufacturer label · **[LABEL-EST]** manufacturer's published estimate · **[WEAK]** tracker/recipe sites only · **[CALC]** our arithmetic from cited components.
+- **Source tags**: **[LFAC]** *Healthy eating and carbohydrate counting — Pakistani Foods*, Ed. 1, 2024 (Life for a Child / ISPAD; BIDE + Meethi Zindagi) — **new in v3, and the ranking Pakistani source**: Pakistani, Type 1-specific, patient-facing, dietitian-compiled. Note the book's own caveat: *"The carbohydrate values mentioned in this book are estimates only as many factors can affect the amounts, for example the method of preparation etc."* (p. 23) · **[KHAN]** Khan et al. 2019 Pakistani AOAC lab study · **[USDA]** USDA FoodData Central with **the dataset not recorded on the row** — it says the figure came from FoodData Central but not whether from SR Legacy, Foundation Foods or FNDDS, so it is the weaker tag · **[USDA-SR]/[FNDDS]** USDA FoodData Central · **[CoFID]** UK McCance & Widdowson 2021 · **[SJSU]** Wagle A., *Carbohydrate Counting for Traditional South Asian Foods*, 4th ed., San José State University, 2016 — ⚠ an **ADA exchange list**, so every figure from it is a multiple of 7.5 g: a resolution floor, not precision. Full citation and what reading it changed in section 17.2 · **[IDF-DAR]** Diabetes & Ramadan guidelines · **[PK-FCT]** Pakistan FCT 2001 (energy cross-check) · **[KHI-OFFICIAL]** Karachi Commissioner tandoor weight/rate list · **[NIN]** Indian food-composition lineage — most likely the National Institute of Nutrition's [*Indian Food Composition Tables 2017*](https://www.nin.res.in/ebooks/IFCT2017_16122024.pdf) (Longvah, Ananthan, Bhaskarachary & Venkaiah; ICMR, Hyderabad), ⚠ **identified after the fact and not confirmed as the edition actually read** — see section 17.1 · **[IGNOU]** Indira Gandhi National Open University dairy course material, for Indian dairy composition specifications — ⚠ **the unit and edition were not recorded and no URL was kept**; it corroborates one row (lassi) beside four other sources and carries nothing alone · **[LIT]** peer-reviewed literature (named per row) · **[LABEL]** manufacturer label · **[LABEL-EST]** manufacturer's published estimate · **[WEAK]** tracker/recipe sites only · **[CALC]** our arithmetic from cited components.
 - **Reconciliation policy (v3):** where [LFAC] and a prior source agree, the row says so and confidence rises. Where they disagree, both values are shown — never averaged — with the recommended one named and the reason given. **Any row without an [LFAC] tag is unconfirmed by the Pakistani source.**
 - **By-difference flag**: rows resting on [KHAN] or USDA by-difference values include fibre — treat as a slight overestimate.
 - **Label traps, found 2026-09-23 and worth knowing before you read any panel.** A Pakistani lassi
@@ -561,7 +561,7 @@ Ranked by (how often eaten) × (grams of uncertainty removed) × (stability of t
 
 ## 17. Sources & weighting
 
-Unchanged from v2 (full citations there): **[KHAN]** Khan I et al., Progress in Nutrition 2019;21(2):421–429 — Pakistani AOAC lab analysis of 30 cooked dishes (by difference) · **[USDA-SR]/[FNDDS]** USDA FoodData Central SR-Legacy 2018 / FNDDS 2019–2020 · **[USDA]** the same database where the row did not record which dataset · **[CoFID]** McCance & Widdowson 2021 · **[SJSU]** Wagle et al. carb-counting handout · **[IDF-DAR]** IDF-DAR Practical Guidelines 2021 · **[KHI-OFFICIAL]** Commissioner Karachi tandoor rate notifications 2024–May 2026 · **[PK-FCT]** Pakistan FCT 2001 energy extract via PLOS ONE 10.1371/journal.pone.0185466 · plus the v2 [LIT]/[NIN]/[LABEL] additions (taftoon, khoa, phalsa, khoa-jalebi, gur, Dawn paratha, Sufi/Dawn roghni naan, Hafiz sohan halwa). · **[IGNOU]** IGNOU dairy course material, unit and edition unrecorded
+Unchanged from v2 (full citations there): **[KHAN]** Khan I et al., Progress in Nutrition 2019;21(2):421–429 — Pakistani AOAC lab analysis of 30 cooked dishes (by difference) · **[USDA-SR]/[FNDDS]** USDA FoodData Central SR-Legacy 2018 / FNDDS 2019–2020 · **[USDA]** the same database where the row did not record which dataset · **[CoFID]** McCance & Widdowson 2021 · **[SJSU]** Wagle A. 2016, *Carbohydrate Counting for Traditional South Asian Foods*, 4th ed., SJSU — an exchange list at 7.5 g resolution; see section 17.2 · **[IDF-DAR]** IDF-DAR Practical Guidelines 2021 · **[KHI-OFFICIAL]** Commissioner Karachi tandoor rate notifications 2024–May 2026 · **[PK-FCT]** Pakistan FCT 2001 energy extract via PLOS ONE 10.1371/journal.pone.0185466 · plus the v2 [LIT]/[NIN]/[LABEL] additions (taftoon, khoa, phalsa, khoa-jalebi, gur, Dawn paratha, Sufi/Dawn roghni naan, Hafiz sohan halwa). · **[IGNOU]** IGNOU dairy course material, unit and edition unrecorded
 
 **New in v3 — [LFAC]:** *Healthy eating and carbohydrate counting for children and adults with type 1 diabetes — Pakistani Foods, Edition 1, 2024.* Life for a Child (Diabetes Australia) with ISPAD. Project consultant Salma Mehar RD; project leads Dr. Sana Ajmal (Meethi Zindagi) and Prof. Dr. Asher Fawwad (Baqai Medical University / BIDE); authors Sheryl Salis, Anna Pham-Short, Carmel Smart, Cecile Eigenmann, Graham Ogle. https://lifeforachild.org/wp-content/uploads/2024/08/Carb-Counting-Book_Pakistan-v4c.pdf
 
@@ -815,16 +815,79 @@ pre-2017 *Nutritive Value of Indian Foods* (Gopalan et al.), which IFCT 2017 sup
 edition actually read; NIN no longer serves it. ⚠ **The `gur` row rests on this, and the difference
 is real: a 15 g lump is 14 g at our figure and 12.7 g at IFCT 2017's.**
 
-**[SJSU] — not established.** "Wagle et al. carb-counting handout", used on about ten rows, has no
-author initial, year, institution page or URL anywhere. San José State's nutrition department pages
-404, and its repository blocks automated access. Every consumer search engine available to the
-recovery pass was broken or exhausted, so **this is an unfinished search, not a concluded one** — it
-needs retrying with working search, and nobody should repeat the plain-web-search attempts.
+**[SJSU] — ESTABLISHED 2026-09-26 on the retry.** The first pass called it *"an unfinished search,
+not a concluded one"*, and that was right: the obstacle was search tooling, not the question.
 
-**[LIT] on four rows — not established:** taftan (Iranian taftoon 62 g/100 g), khoya, falsa, and the
-khoa-jalebi sucrose-spread note. Plausible candidate papers exist for three, all behind paywalls the
-pass could not read, so none can be claimed as *the* source. PubMed, OpenAlex and Crossref queries
-are exhausted; what is missing is full-text access.
+> **Wagle, Ashwini. *Carbohydrate Counting for Traditional South Asian Foods*. 4th edition,
+> Department of Nutrition, Food Science and Packaging, San José State University. © 2016.** 20 pp.
+> Free full text: [pediatrix.com](https://www.pediatrix.com/-/media/default-website/files/carbohydrate-counting-for-traditional-south-asian-foods-ashwini.pdf) ·
+> 2014 printing [archived](http://web.archive.org/web/20260825122234/http://www.wsmclinic.com/formpdf/South-Asian-Carb-Counting-tool.pdf) ·
+> author's page [sjsu.edu/people/ashwini.wagle](https://www.sjsu.edu/people/ashwini.wagle/Tools/)
+
+The "et al." is earned: the preface names Tanay Prabhu on the 4th edition and, on earlier versions,
+Sajida Arsiwala MS RD, Bhavna Subhedar MS, and Dr Kathryn Sucher ScD RD. **The PDF was downloaded
+and read** rather than accepted on a search result, and eight figures this file attributes to it
+match its entries exactly — `Kichadi/Khichri Cooked ½ cup`, `Pani Puri 6`, `Papad 2`, `Puris 2, 5"`,
+`Laddoo ½ small`, `Dates 3`, `Bread 1 slice`, and the kadhi row.
+
+**Three things reading it changed.**
+
+1. ⚠ **Every [SJSU] figure is a multiple of 7.5 g, because it is an ADA-style exchange list** — each
+   entry is the portion holding 15 g of carbohydrate, and a half portion gives 7.5. **That is a
+   resolution floor, not precision**, and it is how every figure taken from it should be read. It
+   was never a measurement and never claimed to be.
+2. ⚠ **[SJSU] and [NIN] may not be independent.** The handout's own resource list cites **Gopalan,
+   Rama Sastri & Balasubramanian (1989), *Nutritive Value of Indian Foods*, NIN/ICMR** — exactly the
+   pre-2017 NIN edition section 17.2 suspects the `gur` figure came from. A row counting SJSU and
+   NIN as two agreeing sources may be **counting one source twice**, and any confidence resting on
+   that agreement is weaker than it looks.
+3. **The licence is stated, and section 19.1 said it was not.** All 19 pages carry *"All Rights
+   Reserved"*. The cite-don't-reproduce posture was already right; it is now right for a documented
+   reason rather than an assumed one.
+
+⚠ **A printed error in the handout, the same class as LFAC's papar row.**
+`Rasgulla — 1 medium (50 gms) — 5 Carbohydrates` is **75 g of carbohydrate in a 50 g sweet**, which
+is impossible. This file ships 15 g, the one-choice reading — a right answer taken from a
+wrong-as-printed line.
+
+⚠ **One claim in this file could not be supported.** The kadhi row says *"A later edition of the same
+handout revises it down again."* The 2014 and 2016 printings were diffed line by line: the only
+table change is `Bagel ½` → `Bagel ¼`, plus an added dairy line. **Kadhi reads `1 cup = 1½
+Carbohydrates` in both.** If that revision exists it is in the paywalled 2024 commercial edition,
+unread — so as written the claim is unverifiable, and it is flagged here rather than repeated.
+
+**[LIT] on four rows — TWO SOLVED 2026-09-26, two still not established.**
+
+**Taftan — solved, open access, full text read.** Kazemi F et al., *"Glycemic Index (GI) Values for
+Major Sources of Dietary Carbohydrates in Iran"*, **Int J Endocrinol Metab 2020;18(3):e99793**,
+doi:[10.5812/ijem.99793](https://doi.org/10.5812/ijem.99793), PMC7695225. Taftoon bought from **15
+randomly selected Tehran bakeries**, per 100 g: **total carbohydrate 61.1 g, available 58.9 g**,
+starch 58.1, fibre 2.2, sugar 0.8, 28 % water. ⚠ The figure this file prints is **62**, and the
+paper says **61.1** — close, so this is very likely the source but not provably the exact one; it
+supports the row either way, and 58.9 available is the honest number to reason from. The paper also
+gives a measured **GI of 79** for taftoon, which this file does not currently carry.
+
+**Falsa — solved, and "[LIT review ranges]" turns out to be literal.** *"Phytochemical and
+pharmacological characteristics of phalsa (Grewia asiatica L.): A comprehensive review"*,
+**Heliyon 2024;10:e25046**, doi:[10.1016/j.heliyon.2024.e25046](https://doi.org/10.1016/j.heliyon.2024.e25046),
+PMC10835009. Its Table 1 gives carbohydrate as **21.10 / 14.70 / 21.10 g per 100 g across three
+cited sources** — an actual range, which is what the tag said. Moisture 76.3 %, fibre 1.20–5.53.
+Alternative if that one is ever withdrawn: Zia-Ul-Haq M et al., *Molecules* 2013;18(3):2663–2682,
+doi:[10.3390/molecules18032663](https://doi.org/10.3390/molecules18032663).
+
+**Khoya — still not established, and what is missing is now one table.** The best open-access
+candidate is Badola R et al., *J Food Sci Technol* 2022,
+doi:[10.1007/s13197-022-05355-x](https://doi.org/10.1007/s13197-022-05355-x), PMC10020399, but
+Europe PMC's full-text endpoint returns HTTP 500 for that PMCID, repeatably, and the publisher
+paths serve HTML rather than the PDF. The 20–29 g/100 g band most likely traces to **Aneja et al.,
+*Technology of Indian Milk Products*** (khoa lactose ~20–25, cow against buffalo), which nobody has
+read. ⚠ **Do not cite either until one is actually opened.**
+
+**Khoa-jalebi — still not established.** Two candidates, neither readable: Pagote & Jayaraj Rao
+(2012), no DOI and its ICAR host did not respond at all; and Kumari R (2012),
+doi:10.4172/scientificreports.469, flagged open access but serving no PDF, on a venue worth
+treating carefully. **Neither is confirmed to contain a shop-to-shop sucrose measurement, so neither
+is cited.**
 
 **Roghni naan (Sufi/Dawn) — not established.** Dawn Foods' own historical catalogue sold Lahori and
 Tandoori naan and **no roghni naan**; the row's own note says "via N-American labels", which fits. No
@@ -881,7 +944,7 @@ Structural changes under Task 3: exchange columns and "(N ex)" tags deleted thro
 | **NIN / IFCT lineage (India)** | the gur/jaggery value only | **Terms could not be verified this pass.** ICMR-NIN's IFCT 2017 is a priced publication; no open licence found in earlier searches. | Unclear. Exposure is one value on one row. Mitigations: treat as a single uncopyrightable fact with citation, or re-source gur (e.g. lab literature) before release. **Flag for real check.** |
 | **Karachi Commissioner rate lists** (via Dawn, Express Tribune, Aaj, Pakistan Today) | official naan/roti weights | Government notifications and the weights they fix are facts; news articles are copyrighted but we reproduce none of their expression, only the gazetted numbers. (Reasoning — Pakistan's Copyright Ordinance 1962 protects expression, not facts.) | Not required; cite the notifications for verifiability. |
 | **Manufacturer labels / published estimates** (Dawn, Sufi, Hafiz, Peek Freans…) | per-pack values | Nutrition declarations are uncopyrightable facts; naming the brands to identify the products is nominative use. (Reasoning.) | Not required; keep brand names purely descriptive. |
-| **SJSU dietitian handout** (Wagle et al.) | scattered cross-check values | Copyrighted educational handout; no licence stated. We use individual values with citation, and must **not** reproduce the sheet itself. (Reasoning.) | Cite; do not reproduce wholesale. |
+| **SJSU dietitian handout** — Wagle A., *Carbohydrate Counting for Traditional South Asian Foods*, 4th ed., SJSU, 2016 | scattered cross-check values | ⚠ **CORRECTED 2026-09-26: this said "no licence stated".** All 19 pages carry **"All Rights Reserved"**. The posture below was already right; it is now right for a documented reason. We use individual values with citation, and must **not** reproduce the sheet itself. (Reasoning.) | Cite; do not reproduce wholesale. |
 | **PK-FCT 2001 energy extract** | energy cross-checks only | Obtained via a PLOS ONE paper — PLOS is **CC BY 4.0**: reuse permitted, attribution required. | **YES** — cite the PLOS ONE paper (19.2). |
 | **IDF-DAR 2021, ISPAD 2022, [LIT] papers** (taftoon, khoa, phalsa, khoa-jalebi) | single derived values / context | Various publisher terms; we take individual findings (facts) with citation, no reproduced text/tables/figures. (Reasoning.) | Cite per row, as already done. |
 | **Carbs & Cals** | recommendation only — no values or photos taken | Fully commercial, all rights reserved. Nothing reproduced. | n/a — keep it that way; in particular its photos inside the LFAC book are among the excluded images. |
