@@ -2042,7 +2042,7 @@ export const FOODS: readonly Food[] = [
     },
     roman: 'Biryani',
     aliases: ['biryani', 'biriyani', 'briyani', 'biriani', 'plate of biryani'],
-    grams: 50,
+    grams: 40,
     gramsMax: 90,
     confidence: 'medium',
     source: 'LFAC, FNDDS, CoFID, KHAN — the honest spread, deliberately not narrowed',

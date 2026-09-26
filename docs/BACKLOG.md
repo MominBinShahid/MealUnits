@@ -2659,7 +2659,70 @@ back wrong is one they cannot report.
 that IS in `copy-ur.ts`. Widening it is its own change, and worth doing before the next such string
 lands.
 
-### T33. `THRESHOLD_MEAL_GRAMS` says 100 g is the largest portion in the table. It is 167.
+### T34. The backup does not carry the reader's own measured figures, and three strings say it does
+
+**Found 2026-09-26 by a review asked to settle it from the code. DECIDED: include it.** The
+implementation is its own PR; this entry is the finding and the ruling.
+
+**The omission, verified at four levels.** `Envelope` in `src/storage/envelope.ts` carries
+`schemaVersion`, `settings`, `dosingHistoryBeforeApp`, `settingsHistory`, `readings` and `log`.
+**Neither `envelope.ts` nor `readable.ts` mentions calibration once.** `exportJson` in
+`src/ui/app.tsx` passes exactly five fields — while `stored.calibration` is in hand in the same
+object, used forty lines away. So **neither of the two exports carries it, and there is no path by
+which a reader recovers it.**
+
+**It is dose-bearing.** `tallyGrams` sums `calibration[food.id]?.grams ?? food.grams`; the matrix and
+the calculator read the same override. A reader who weighed their own roti and then restored onto a
+new phone silently gets the table's figure back.
+
+**What that costs, on real rows, using this file's own weigh-once rule:**
+
+| calibrated | reference | reader's own | revert | at ICR 10 |
+|---|---|---|---|---|
+| `sheermal-large`, a 120 g bakery piece | 167 | 78 | **+89 g** | **+8.9 U** |
+| `kulcha-tandoor`, a 120 g kulcha | 100 | 60 | +40 g | **+4.0 U** |
+| 3 × `roti-medium`, household 60 g rotis | 54 | 84 | −30 g | −3.0 U |
+
+Every one is outside the ±10 g line, and the first two are in the **over-dose** direction.
+
+**Three claims currently assert the opposite**, which is what makes this a false-recoverability
+defect rather than a missing feature:
+
+- `docs/PLAN.md` §7.7.1: *"Contains: Everything, machine-shaped"* · *"Restores? **Yes**"* ·
+  *"Counts as a backup? **Yes**"*
+- `COPY.exports.lastCopy`: *"Last made a copy you can restore from"*
+- `COPY.clear.startOverBody` enumerates four things that go — *"the record, your prescription, its
+  history, and the note about how you dosed before"* — and calibration is not among them, though
+  start over is `deleteDatabase` and takes it too.
+
+⚠ **The complete loss path, and every step of it is live today:** `COPY.clear.exportFirst`
+(*"Save a copy first"*) renders on the start-over dialog → the copy omits calibration → start over
+deletes it → the enumeration never said it would. **The app offers a save that does not cover what
+the next button destroys.**
+
+**Why include rather than document.** Documenting means rewriting three strings and a spec table to
+say the backup does not carry the reader's own figures, and then leaving *"Save a copy first"* on a
+dialog where it is misleading. The app already makes a per-row provenance promise —
+`COPY.foods.mineWas`, *"Yours. The reference is X g — you set this on DATE"* — justified in
+`schema.ts` by *"a number whose provenance is gone is the class §7.7 exists to prevent"*. §7.7's own
+file is the one dropping it.
+
+**What the implementation must handle, none of it blocking:**
+
+- **No version bump.** `parseEnvelope` rejects only HIGHER `schemaVersion`, so adding the block
+  without bumping is compatible both ways — today's builds ignore it, new builds read it. Bumping
+  would make every new file unreadable to older builds. `meta` is a keyed table, so no IndexedDB
+  migration either.
+- ⚠ **§11.3's re-validate rule has no implementation for this map on EITHER path.** `readAll`
+  returns `calibration ?? null` unchecked, and the input validates finiteness only — no range check,
+  no negative check. A `readCalibration` validator closes the load-path gap at the same time, and
+  should reject an id absent from `FOODS` so a renamed row cannot leave a permanent orphan.
+- **One decision needed in the PR:** on import, does the file's calibration replace or merge with
+  what is on the device. Import is a restore elsewhere in this app, which argues replace.
+- `languageChoice` and `display.textScale` are omitted too. Those are presentation, not dose-bearing
+  — worth carrying, not worth blocking on.
+
+### T33. `THRESHOLD_MEAL_GRAMS` said 100 g is the largest portion. It is 167 — RESOLVED 2026-09-26, value kept
 
 **Found 2026-09-26 by a documentation review, and the code itself asked for this.**
 `src/config.ts:75` reads:
@@ -2689,8 +2752,30 @@ when the app asks *"is that right?"* on a large dose.
   sense this constant means? `sheermal-large` plainly is — it is one bread. The packaged rows are
   arguably a different unit, and if they are excluded the honest figure is 167, not 166.8 or 149.8.
 
-**What would settle it:** a decision about which of those three readings the gate is for. No amount
-of measurement answers it, because the question is what the gate is protecting against.
+**RESOLVED by measurement, and the value did not move.** The question turned out to be answerable
+after all, because the rows say what they are:
+
+- **The 11 rows above 100 g are not everyday portions, by their own text.** Six carry "sharing" or
+  "family" in their portion string; four are `meal-*` composites; the eleventh is `sheermal-large`,
+  which `docs/CARBS.md` already calls *"a dawat-size piece, not a default"* and rates MED on a
+  *"plausible-but-extreme density"*. Excluding those, the largest everyday portion is still a 200 g
+  tandoor kulcha at **100 g**. The constant and its citation were both right; only the word
+  "largest in the table" was wrong.
+- **False alarms at 100 measure at 2 rows out of 339**, tripping by 0.03 and 0.01 units, and only at
+  a reading of 249 or above. **Zero of the 17 whole-meal composites trip at any ICR from 5 to 30.**
+  The crying-wolf case for raising it does not exist.
+- **Raising it to 167 breaks the gate's actual job.** The tenfold typo of the *median* row — 21 g
+  typed as 210 — passes silently at every ICR of 10 or more, where 100 catches it at all of them.
+- **And 167 pushes the formula out of the app's own range.** At an ICR of 5, inside `RANGE.icr`'s
+  soft band, the derivation reaches 55.1 and `RANGE.threshold`'s hard ceiling of 45 silently
+  absorbs it.
+
+**Two further corrections this turned up.** *"Median 37 g"* was never the median of the dosing
+figure — on the day cited it was 30, and 37 was the median of `gramsMax`, the band top. Today the
+median is **21** and 37 is the 75th percentile. And `threshold.ts`'s own docstring worked its example
+as *"50 g typed as 500 g"*, which **cannot reach this gate**: `RANGE.carbs.hard` is [0, 300] and 500
+is rejected before a dose is computed. The gate's real job is the tenfold typo of a small row, and
+**228 of 339 rows are 30 g or under**, so theirs lands inside the enterable range.
 
 ⚠ **Whatever is decided, the comment must stop asserting "a tandoor kulcha"**, which has not been the
 largest row since 2026-09-25.

@@ -72,11 +72,33 @@ export const DEFAULT_MODE = 'nearest'; // §5
 // Read the formula aloud: one and a half times the dose that the largest single
 // portion in this app's own food table would need at a high reading.
 //
-// 100 g is not a guess. It is the largest single portion in `src/data/carbs.ts`
-// — a tandoor kulcha — measured against that table on 2026-09-13, where the
-// median portion is 37 g. Grounding it in the project's own data beats picking
-// a round number, and if the table grows a bigger dish this number is the one
-// to revisit.
+// 100 g is not a guess. It is the largest EVERYDAY single portion in
+// `src/data/carbs.ts` — a tandoor kulcha — where the median row is 21 g.
+//
+// CORRECTED 2026-09-26, and the value deliberately did not move. This comment
+// said "the largest single portion" and "median 37 g". Both were wrong by the
+// time they were read: 11 rows now sit above 100 g, and the median of `grams`
+// is 21 (37 was the median of `gramsMax`, the band TOP, and is the 75th
+// percentile today). The comment also promised "if the table grows a bigger
+// dish this number is the one to revisit" — so it was revisited, and measured.
+//
+// The 11 rows above 100 are not everyday portions, and they say so themselves:
+// six carry "sharing" or "family" in their own portion text, four are `meal-*`
+// composites by construction, and the eleventh is `sheermal-large`, which
+// `docs/CARBS.md` explicitly calls a dawat-size piece rather than a default.
+// Excluding those, the largest is still a 200 g tandoor kulcha at 100 g.
+//
+// RAISING IT TO 167 WAS TESTED AND REJECTED, on three measurements:
+//   - False alarms at 100 are 2 rows out of 339, and only at a reading of 249
+//     or above. Zero of the 17 whole-meal composites trip it at any ICR.
+//   - At 167 the tenfold typo of the MEDIAN row — 21 g typed as 210 — passes
+//     SILENTLY at every ICR of 10 or more. At 100 it is caught at all of them.
+//   - At an ICR of 5, which `RANGE.icr`'s soft band admits, 167 drives the
+//     derivation to 55.1 and `RANGE.threshold`'s hard ceiling of 45 silently
+//     absorbs it. The constant would be pushing the formula outside the range
+//     this app accepts.
+// The gate at 100 sits about 1.25× above the largest whole meal the table
+// describes, which is the margin it was meant to have.
 export const THRESHOLD_MEAL_GRAMS = 100;
 
 // NOT `KETONE_ADVISORY`, which also holds 250. That one is a clinical trigger

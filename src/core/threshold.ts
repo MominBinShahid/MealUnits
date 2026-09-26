@@ -7,7 +7,13 @@
  * a target of 150, an ISF of 30 and an ICR of 10. Against a different
  * prescription it is silently inert:
  *
- *   ISF 30, ICR 10 — 50 g typed as 500 g doses 51.0 units. Caught at 20.
+ *   ISF 30, ICR 10 — 21 g typed as 210 g doses 24.3 units. Caught at 20.
+ *   ⚠ Corrected 2026-09-26: this example was "50 g typed as 500 g", which
+ *   CANNOT REACH THIS GATE — `RANGE.carbs.hard` is [0, 300] and
+ *   `rangeErrorFor` rejects 500 before any dose is computed. The gate's
+ *   real job is the tenfold typo of a SMALL row, which is most of the
+ *   table: 228 of 339 rows are 30 g or under, so their ten-times
+ *   mistyping lands inside the enterable range and reaches here.
  *   ISF 50, ICR 30 — the same typo doses 16.7 units. NOT caught at 20, and
  *                    that person's ordinary mealtime dose is 1.7 units.
  *
