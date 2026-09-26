@@ -397,6 +397,57 @@ export const COPY = {
     mineResetCancel: 'Keep mine',
     mineWas: (reference: string, date: string): string =>
       `Yours. The reference is ${reference}\u00A0g — you set this on ${date}.`,
+    /**
+     * T31 — the plate, and every string the two-step weighing needs.
+     *
+     * The whole set turns on one distinction: this measures **what you serve
+     * yourself**, not **what the plate can hold**. The brief originally said
+     * "weigh empty, then FULL", and a reader whose plate holds 450 g but who
+     * serves 300 g would have calibrated at 1.5× for a meal that never
+     * changes — `rice-plate` 84 → 126 g, **+4.2 units, introduced by the act
+     * of calibrating.** Larger than the error the feature removes.
+     *
+     * Every number is interpolated from the vessel record, never written as a
+     * literal here (§11.8).
+     */
+    plateLead: (ref: string): string =>
+      `Every plate row here describes a ${ref}\u00A0g serving. If yours is different, weigh your plate once — every plate row then follows your serving.`,
+    plateSet: 'Weigh my plate once',
+    plateStep1Title: 'First, the empty plate',
+    plateStep1Question:
+      'Put the plate you eat from on the scale — completely empty, nothing on it. What does the scale show?',
+    plateStep1Hint:
+      'This weight gets subtracted, so the plate itself is never counted as food.',
+    plateStep1Tared: 'My scale shows 0 with the empty plate on it',
+    plateStep2Title: 'Now, what you actually eat',
+    plateStep2Question:
+      'Serve yourself the rice or biryani you would eat at an ordinary meal — your usual amount, nothing added for the measuring. Put the plate back on the scale. What does it show now?',
+    plateStep2Hint:
+      'Not a plate filled to the brim. This measures how much you serve yourself, not how much the plate can hold — heap it now and every dose from these rows comes out too big, meal after meal, until you change it.',
+    plateStep2TaredHint:
+      'If the scale switched itself off, or you pressed the zero or TARE button again, go back and start from the empty plate — a changed zero makes this number wrong in a way the app cannot see.',
+    plateShow: 'Show what changes',
+    plateConfirmTitle: 'Check the working before you save it.',
+    plateWorking: (served: string, empty: string, fill: string): string =>
+      `Plate and food together: ${served}\u00A0g. The empty plate: ${empty}\u00A0g. The food alone: ${fill}\u00A0g — that is one serving, for you.`,
+    plateWorkingTared: (fill: string): string =>
+      `Your scale was at zero with the plate on it, so the whole reading is food: ${fill}\u00A0g — that is one serving, for you.`,
+    plateRatioLine: (fill: string, ref: string, ratio: string): string =>
+      `The table's plate rows describe a ${ref}\u00A0g serving. Yours is ${fill}\u00A0g, so every plate row is multiplied by ${ratio}.`,
+    plateExample: (name: string, before: string, after: string): string =>
+      `${name}: ${before}\u00A0g of carbohydrate now counts as ${after}\u00A0g.`,
+    plateTrust: (fill: string): string =>
+      `Every plate row will trust this. If ${fill}\u00A0g is not what you actually eat at one meal, change the weights before you save.`,
+    plateSave: 'Save my plate',
+    plateChangeWeights: 'Change the weights',
+    plateOrderWrong:
+      'These two weights say the food weighs less than nothing. The empty plate goes first and the served plate second — start the weighing again.',
+    plateWas: (reference: string, ref: string, fill: string, date: string): string =>
+      `Your plate. The reference is ${reference}\u00A0g for a ${ref}\u00A0g serving — you weighed ${fill}\u00A0g on ${date}.`,
+    plateAgain: 'Weigh my plate again',
+    plateClear: 'Back to the reference plate',
+    plateCompositeNote:
+      'Rows that say "with a katori of raita" are not sized to your plate — to count your plate, add the biryani row and the raita row separately.',
     addOne: 'Add one',
     removeOne: 'Remove one',
     tallyCount: (n: number): string => `${String(n)}×`,

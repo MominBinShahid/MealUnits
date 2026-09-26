@@ -40,6 +40,7 @@ export interface CalculatorHandlers {
   readonly foodTally: Record<string, number>;
   /** Phase 2 — the reader's own figures, so the breakdown matches the total. */
   readonly calibration: Readonly<Record<string, { readonly grams: number }>>;
+  readonly vessels: Readonly<Record<string, { readonly ratio: number }>>;
   /** Open the explanation for a marked word. */
   readonly onTerm: (key: string) => void;
   readonly onDigit: (field: 'bloodSugar' | 'carbs', digit: string) => void;
@@ -175,12 +176,14 @@ function Working({
   doseHundredths,
   tally,
   calibration,
+  vessels,
 }: {
   readonly state: AppState;
   readonly breakdown: Breakdown;
   readonly doseHundredths: number;
   readonly tally: Record<string, number>;
   readonly calibration: Readonly<Record<string, { readonly grams: number }>>;
+  readonly vessels: Readonly<Record<string, { readonly ratio: number }>>;
 }): JSX.Element {
   const COPY = useCopy();
   const settings = state.settings;
@@ -242,7 +245,7 @@ function Working({
                   The comment above claims the two cannot disagree; phase 2 is
                   what made them, and the claim was written before it existed. */}
               <b>{COPY.foods.gramsOne(String(
-                gramsFor(food, { foods: calibration }).grams * (tally[food.id] ?? 0),
+                gramsFor(food, { foods: calibration, vessels }).grams * (tally[food.id] ?? 0),
               ))}</b>
             </div>
           ))}
@@ -700,7 +703,7 @@ function ResultScreen({
         ) : null}
         <Working state={state} breakdown={outcome.breakdown}
           doseHundredths={outcome.hundredths} tally={handlers.foodTally}
-          calibration={handlers.calibration} />
+          calibration={handlers.calibration} vessels={handlers.vessels} />
         <Advisories views={views} onMore={handlers.onToggleMore}
           expanded={handlers.moreExpanded} onTerm={handlers.onTerm} />
         <TimingLine state={state} outcome={outcome} timeZone={handlers.timeZone} />

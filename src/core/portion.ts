@@ -34,11 +34,21 @@ export interface Portioned {
   readonly id: string;
   /** Grams of carbohydrate, and for a banded row this is the FLOOR. */
   readonly grams: number;
+  /**
+   * The vessel this row is served in, and what the TABLE assumes it holds —
+   * or null where the row does not scale with one.
+   *
+   * `grams` here is a divisor used when a ratio is WRITTEN, never when one is
+   * read. The read is `food.grams × ratio`.
+   */
+  readonly vessel: { readonly id: string; readonly grams: number } | null;
 }
 
 /** What the reader has measured for themselves, as storage reports it. */
 export interface OwnFigures {
   readonly foods: Readonly<Record<string, { readonly grams: number }>>;
+  /** Vessel id to the ratio the reader's own weighing produced. */
+  readonly vessels: Readonly<Record<string, { readonly ratio: number }>>;
 }
 
 /**
@@ -50,7 +60,7 @@ export interface OwnFigures {
  * reader's, and this app makes an explicit promise about that — the row says
  * "Yours" and prints the date it was set.
  */
-export type GramsSource = 'table' | 'own';
+export type GramsSource = 'table' | 'own' | 'vessel';
 
 /**
  * The grams one row contributes, and which figure it is.
@@ -64,10 +74,21 @@ export function gramsFor(
   food: Portioned,
   own: OwnFigures,
 ): { readonly grams: number; readonly from: GramsSource } {
+  // PRECEDENCE, NOT ARITHMETIC. A per-food figure already contains the vessel
+  // term — the reader weighed THAT food in THEIR plate — so multiplying the
+  // two would count the plate twice: `rice-plate` measured at 126 g with a
+  // 1.5x plate would read 189 against a true 126, **+6.3 units at ICR 10**.
   const mine = own.foods[food.id];
-  return mine === undefined
-    ? { grams: food.grams, from: 'table' }
-    : { grams: mine.grams, from: 'own' };
+  if (mine !== undefined) return { grams: mine.grams, from: 'own' };
+
+  // A row with no vessel never scales, whatever the reader has calibrated.
+  // This is what keeps a plate ratio off the 332 rows that are not plates.
+  if (food.vessel === null) return { grams: food.grams, from: 'table' };
+
+  const vessel = own.vessels[food.vessel.id];
+  if (vessel === undefined) return { grams: food.grams, from: 'table' };
+
+  return { grams: food.grams * vessel.ratio, from: 'vessel' };
 }
 
 /**
