@@ -4125,10 +4125,36 @@ def check_reference_data(_plan):
 # is a reviewable diff in this file with a dose attached, not a quiet edit in a
 # 7,000-line data module.
 #
-# It is empty on purpose. The field landed before any scaling did, so the
-# row-by-row decision about what scales gets reviewed on its own rather than
-# inside the change that starts scaling things.
-VESSEL_ROWS = {}
+# SEVEN ROWS, added 2026-09-26. Each one's portion string reads `1 plate,
+# 300\u00A0g` verbatim in both languages, which is what makes the plate the
+# right vessel to start with: every one of them divides by the same reference,
+# so a ratio measured through any of them transfers to all of them.
+#
+# THREE ROWS THAT ALSO SAY "1 plate, 300 g" ARE DELIBERATELY ABSENT, and this
+# is the decision this list exists to record. `meal-biryani-mid-raita`,
+# `meal-biryani-degh-raita` and `meal-biryani-meat-raita` are COMPOSITES — a
+# plate of biryani plus a katori of raita. Scaling the whole thing by the
+# plate's ratio would scale the raita too, which does not live on the plate.
+#
+# ⚠ The cost of excluding them is real and belongs here rather than in a
+# comment nobody reads: at a 1.5x plate, `biryani-mid-plate` reads 76.5 g while
+# `meal-biryani-mid-raita` stays at 55 — a 21.5 g gap, +2.15 units, for the
+# same plate of food, and the reader gets whichever row their search surfaced.
+# Today those two agree within 4 g. The interface has to say so; the fix is not
+# to scale the composite.
+VESSEL_ROWS = {
+    "rice-plate": ("plate", 300),
+    "pulao-plate": ("plate", 300),
+    "tahiri-plate": ("plate", 300),
+    "biryani-meat-heavy-plate": ("plate", 300),
+    "biryani-mid-plate": ("plate", 300),
+    "biryani-rice-heavy-plate": ("plate", 300),
+    # Three independent reviews agreed the objection to scaling this one was
+    # arithmetically empty: `grams` and `gramsMax` scale by the same factor so
+    # the width-to-dose ratio is invariant, and band width never reaches a dose
+    # because the tally sums `grams` alone.
+    "biryani-unknown-pot": ("plate", 300),
+}
 
 
 def check_vessel_rows(_plan):
@@ -4182,6 +4208,26 @@ def check_vessel_rows(_plan):
         out.append(
             "VESSEL_ROWS lists %s but no row declares a vessel for it — the pin "
             "has outlived the rows it names" % ", ".join(missing))
+
+    # T29's rule, generalised. `naan-afghani-half` printed 145 g twice meaning
+    # two different things — a piece that WEIGHS 145 g and one that HOLDS 145 g
+    # of carbohydrate — and the fix was to remove the collision rather than
+    # label it. The number a reader reads and the number the arithmetic divides
+    # by have to be the same number, in whichever language they are reading.
+    for match in re.finditer(r"\{\s*\n\s*id: '([^']+)',(.*?)\n  \},", body, re.S):
+        row_id, rest = match.group(1), match.group(2)
+        vessel = re.search(r"\n    vessel: \{ id: '[^']+', grams: ([\d.]+) \}", rest)
+        if not vessel:
+            continue
+        weight = vessel.group(1)
+        for lang, portion in re.findall(r"\n      (en|ur): \{.*?portion: '([^']*)'", rest, re.S):
+            if weight not in portion:
+                out.append(
+                    "src/data/carbs.ts row `%s` scales against %s g but its %s "
+                    "portion reads \"%s\" — a reader who never sees the number "
+                    "the arithmetic divides by cannot check it, which is T29's "
+                    "defect in a new place"
+                    % (row_id, weight, lang, portion.replace("\\u00A0", " ")))
     return out
 
 def check_backlog_numbers_unique(_plan):

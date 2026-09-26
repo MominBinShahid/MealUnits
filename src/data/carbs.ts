@@ -547,7 +547,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 94,
     confidence: 'high',
     source: 'LFAC, USDA-SR',
-    vessel: null,
+    vessel: { id: 'plate', grams: 300 },
   },
   {
     id: 'biryani',
@@ -1644,7 +1644,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 66,
     confidence: 'medium',
     source: 'LFAC, KHAN, CoFID — band widened down, not averaged, CoFID converted at 1.098',
-    vessel: null,
+    vessel: { id: 'plate', grams: 300 },
   },
   {
     id: 'pulao-qeema-masoor',
@@ -1805,7 +1805,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC, CALC to a 300\u00A0g plate',
-    vessel: null,
+    vessel: { id: 'plate', grams: 300 },
   },
   {
     id: 'fried-rice-vegetable',
@@ -2037,7 +2037,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 46,
     confidence: 'medium',
     source: 'FNDDS, CoFID takeaway, CoFID converted at 1.085',
-    vessel: null,
+    vessel: { id: 'plate', grams: 300 },
   },
   {
     id: 'biryani-mid-plate',
@@ -2060,7 +2060,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: null,
     confidence: 'medium',
     source: 'LFAC',
-    vessel: null,
+    vessel: { id: 'plate', grams: 300 },
   },
   {
     id: 'biryani-rice-heavy-plate',
@@ -2083,7 +2083,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 66,
     confidence: 'medium',
     source: 'CoFID homemade, KHAN, CoFID converted at 1.094',
-    vessel: null,
+    vessel: { id: 'plate', grams: 300 },
   },
   {
     id: 'biryani-meat-heavy-dawat',
@@ -2175,7 +2175,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 90,
     confidence: 'medium',
     source: 'LFAC, FNDDS, CoFID, KHAN — the honest spread, deliberately not narrowed, CoFID corroborating only — no divisor applies',
-    vessel: null,
+    vessel: { id: 'plate', grams: 300 },
   },
 
   // ── Lentils and legumes (CARBS.md 5) ───────────────────────────────────────

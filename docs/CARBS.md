@@ -181,6 +181,37 @@ Weight captures diameter and thickness together; density is stable at ≈ 0.43�
 
 ---
 
+### The `plate` vessel — what "1 plate, 300 g" means, and which rows use it
+
+**T31 phase 4, 2026-09-26.** Seven rows now declare a vessel: `rice-plate`, `pulao-plate`,
+`tahiri-plate`, `biryani-meat-heavy-plate`, `biryani-mid-plate`, `biryani-rice-heavy-plate` and
+`biryani-unknown-pot`. Each one's portion reads **`1 plate, 300 g`** verbatim in both languages, and
+that 300 g is the figure a reader's own weighed fill will be divided by.
+
+**Where the 300 g comes from.** Section 2's household defaults set it: *"plate of rice/biryani =
+300 g"*, raised from 250 g on 2026-09-25 after Momin's own measurement. It is deliberately the same
+number for all seven, which is what makes the plate the right vessel to start with — a ratio
+measured through any one of them transfers correctly to the other six, because they all divide by
+the same reference.
+
+⚠ **Three rows that also print "1 plate, 300 g" are deliberately excluded**, and the exclusion costs
+something worth stating. `meal-biryani-mid-raita`, `meal-biryani-degh-raita` and
+`meal-biryani-meat-raita` are **composites** — a plate of biryani plus a katori of raita — so scaling
+them by the plate's ratio would scale the raita too, and the raita is not on the plate. But at a
+1.5× plate, `biryani-mid-plate` reads **76.5 g** while `meal-biryani-mid-raita` stays at **55** — a
+21.5 g gap, **+2.15 units**, for the same plate of food, and the reader gets whichever row their
+search surfaced. Today those two agree within 4 g. **The interface has to say so; the answer is not
+to scale the composite.**
+
+**`check_vessel_rows` holds three things**: every row declares the field, so a new one cannot default
+into scaling; only the seven above carry a vessel, so the set is a reviewed diff in the checker
+rather than a quiet edit here; and **a declared vessel's weight must appear in that row's own portion
+string in every language** — T29's rule generalised, after `naan-afghani-half` printed 145 g twice
+meaning two different things. A reader who never sees the number the arithmetic divides by cannot
+check it.
+
+---
+
 ## 4. Rice dishes — Chawal, with biryani done properly
 
 Density anchors: plain boiled **28–31/100 g** [USDA-SR 28.2; CoFID basmati 26.5–32.2; **LFAC white rice 160 g cup = 50 g → 31.3** — top of the band]; pulao **18–24/100 g** [KHAN beef pulao 22.2; CoFID pilau 24.3; **LFAC meat pulao 160 g = 29 g → 18.1** — *widened down in v3*: a meaty pulao runs lighter than the lab recipes].
