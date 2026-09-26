@@ -100,10 +100,33 @@ export interface Envelope {
    * restore path tombstones exist to protect.
    */
   readonly log: readonly LogRow[];
+  /**
+   * §7.7 T34 — the reader's OWN measured grams per food, added 2026-09-26.
+   *
+   * It was absent for as long as the feature existed, and three strings said
+   * otherwise: §7.7.1's table claims "Contains: everything" and "Restores?
+   * Yes", `COPY.exports.lastCopy` offers "a copy you can restore from", and
+   * start over's enumeration of what it destroys never mentioned it — while
+   * `COPY.clear.exportFirst` offered "Save a copy first" on that very dialog.
+   * A save that does not cover what the next button destroys is worse than no
+   * save, because the reader stops looking.
+   *
+   * It is dose-bearing: `tallyGrams` sums `calibration[id]?.grams ?? grams`.
+   * Losing it silently restores the table's figure — worth +8.9 units on a
+   * sheermal calibrated down to a bakery piece, in the over-dosing direction.
+   *
+   * OPTIONAL, and `schemaVersion` deliberately does not move. `parseEnvelope`
+   * rejects only a HIGHER version, so an absent block reads clean on both
+   * sides: today's builds ignore it, newer builds read it. Bumping would make
+   * every new file unreadable to any older build, for a field that build would
+   * never have written.
+   */
+  readonly calibration?: Readonly<Record<string, { readonly grams: number; readonly setAt: number }>>;
 }
 
 export interface ExportInput {
   readonly settings: Settings | null;
+  readonly calibration: Readonly<Record<string, { readonly grams: number; readonly setAt: number }>>;
   readonly settingsHistory: readonly SettingsPeriod[];
   readonly log: readonly LogRow[];
   readonly readings: readonly Reading[];
@@ -146,16 +169,26 @@ export function buildEnvelope(input: ExportInput): Envelope {
     log: input.log,
   };
 
+  // Omitted when empty rather than written as `{}`, so a reader who never
+  // calibrated anything exports a file byte-identical to what they got before
+  // T34 — which is what makes this change invisible to everyone it does not
+  // affect.
+  const calibration = Object.fromEntries(
+    Object.entries(input.calibration).filter(([, row]) => readCalibrationEntry(row) !== null),
+  );
+  const withCalibration: Envelope =
+    Object.keys(calibration).length === 0 ? envelope : { ...envelope, calibration };
+
   if (input.dosingHistory.state === 'answered' && input.dosingHistory.answeredAtMs !== null) {
     return {
-      ...envelope,
+      ...withCalibration,
       dosingHistoryBeforeApp: {
         answeredAtMs: input.dosingHistory.answeredAtMs,
         text: input.dosingHistory.text,
       },
     };
   }
-  return envelope;
+  return withCalibration;
 }
 
 // ─── import ─────────────────────────────────────────────────────────────────
@@ -266,6 +299,34 @@ function readInjection(value: Record<string, unknown>): Injection | null {
  * One function for both paths deliberately: two validators that are supposed to
  * agree are two validators that will eventually disagree.
  */
+/**
+ * One food's calibrated grams, or null.
+ *
+ * §11.3 says re-validate on every load AND every import, and until T34 this map
+ * had NO validator on either path: `readAll` returned it unchecked and the
+ * input field tested `Number.isFinite` and nothing else — no range, no sign.
+ * So the import path and the load path are both fixed by this one function,
+ * for the reason `readLogRow` states above: two validators meant to agree are
+ * two validators that will eventually disagree.
+ *
+ * A row that fails is DROPPED rather than repaired, on the same rule — a
+ * repaired calibration would invent a figure the reader never measured, which
+ * is worse than falling back to the table's, because the app would then claim
+ * "Yours" over a number that is not theirs.
+ *
+ * `RANGE.carbs.hard` bounds it because that is the same bound the carbohydrate
+ * field enforces; a calibration outside it could never have been typed.
+ */
+export function readCalibrationEntry(
+  value: unknown,
+): { readonly grams: number; readonly setAt: number } | null {
+  if (!isRecord(value)) return null;
+  if (!finiteNumber(value.grams) || !finiteNumber(value.setAt)) return null;
+  const [low, high] = RANGE.carbs.hard;
+  if (value.grams < low || value.grams > high) return null;
+  return { grams: value.grams, setAt: value.setAt };
+}
+
 export function readLogRow(value: unknown): LogRow | null {
   if (!isRecord(value)) return null;
   return value.deleted === true ? readTombstone(value) : readInjection(value);
@@ -398,13 +459,26 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
     if (row !== null) readings.push(row);
   }
 
-  const envelope: Envelope = {
+  // Same drop-don't-repair rule the log and readings use above: a bad entry
+  // vanishes, the row falls back to the table's figure, and nothing invents a
+  // number the reader never measured.
+  const calibration: Record<string, { grams: number; setAt: number }> = {};
+  if (isRecord(raw.calibration)) {
+    for (const [id, entry] of Object.entries(raw.calibration)) {
+      const row = readCalibrationEntry(entry);
+      if (row !== null) calibration[id] = row;
+    }
+  }
+
+  const base: Envelope = {
     schemaVersion: schemaVersion as number,
     settings,
     settingsHistory,
     readings,
     log,
   };
+  const envelope: Envelope =
+    Object.keys(calibration).length === 0 ? base : { ...base, calibration };
 
   const dosing = raw.dosingHistoryBeforeApp;
   if (isRecord(dosing) && finiteNumber(dosing.answeredAtMs) && typeof dosing.text === 'string') {

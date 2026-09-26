@@ -826,6 +826,8 @@ export async function start(host: Host): Promise<void> {
       log: stored.log,
       readings: stored.readings,
       dosingHistory: stored.dosingHistory,
+      // T34 — it was in hand here all along and simply never passed.
+      calibration: stored.calibration?.foods ?? {},
     });
     host.download(exportFilename('.json'), 'application/json', JSON.stringify(envelope, null, JSON_INDENT));
     // §7.7.1 — set on the DOWNLOAD ROUTE ONLY. A share that resolves is not

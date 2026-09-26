@@ -3806,11 +3806,14 @@ CARBS_URL_FLOOR = 87
 # missing divisor can only INFLATE a figure, and inflation is the over-dosing
 # direction, so this error class has no benign half.
 #
-# Sixty-four of the 84 CoFID-citing rows still declare nothing. That is a
-# ratchet, not a pass: the count may fall and may not rise. It is pinned rather
-# than enforced outright because failing 64 rows today would mean turning the
-# check off, and a check that is off is worth less than one that is pinned.
-CARBS_COFID_UNDECLARED_CEILING = 64
+# It shipped at 64 on 2026-09-26 as a ratchet rather than a hard rule, because
+# failing 64 rows that day would have meant turning the check off, and a check
+# that is off is worth less than one that is pinned. It reached ZERO the same
+# day, so it is now an invariant rather than a ceiling to work down: every one
+# of the 84 CoFID-citing rows says which divisor produced its figure, or that
+# CoFID only corroborates a figure another source set, or that the basis could
+# not be established from the document. All three are answers. Silence was not.
+CARBS_COFID_UNDECLARED_CEILING = 0
 
 # Well below the 339 carbohydrate rows that ship today. This exists because
 # the cross-reference below applies to rows carrying `grams:`, and a row

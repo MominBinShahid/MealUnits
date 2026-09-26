@@ -1885,7 +1885,7 @@ opinion, and his own reading in five years.
 |---|---|---|
 | **Format** | The §7.7 JSON envelope | A **self-contained HTML file** |
 | **For** | Continuity of the app — restoring onto a new device, via §7.7's import | The record itself, readable by anyone, on anything |
-| **Contains** | Everything, machine-shaped | Everything, rendered |
+| **Contains** | Everything, machine-shaped — ⚠ **T34, 2026-09-26: this said "everything" while omitting the reader's own weighed figures, which are dose-bearing. The JSON now carries them; the readable copy still does not, because it is for a person to read rather than to restore from** | Everything, rendered |
 | **Restores?** | **Yes** — this is the only file import accepts | **No**, and it says so on its face |
 | **Counts as a backup?** | **Yes** | **No** — see below |
 
