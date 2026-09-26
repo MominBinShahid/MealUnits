@@ -3783,6 +3783,54 @@ def check_404_paths_agree(_plan):
     return out
 
 
+# docs/CARBS.md rates confidence per TABLE, and three of its tables have no Conf
+# column: the chai and doodh-patti grids (section 9.1), the estimate-anything
+# sheet (section 13) and the combination-meals table (section 14). A row
+# anchored there cannot have its confidence checked. The count is pinned rather
+# than skipped, because a row drifting onto an unrated line is the check going
+# quietly blind on that row — exactly what this file exists to prevent.
+CARBS_UNRATED_CEILING = 50
+
+# Well below the 339 carbohydrate rows that ship today. This exists because
+# the cross-reference below applies to rows carrying `grams:`, and a row
+# shape that stops matching would make the check pass by examining nothing.
+CARBS_ROW_FLOOR = 300
+
+# The doc writes five confidence grades; `src/data` ships three. This is the
+# collapse, and it is deliberately asymmetric: the map gives the HIGHEST grade a
+# doc rating may ship as. MED-HIGH caps at `medium` because it is not HIGH, and
+# MED-LOW caps at `low` for the same reason in the other direction. Shipping
+# BELOW the cap is always allowed — under-claiming confidence sends a reader to
+# the meter, which is safe. Shipping above it tells them to trust a number the
+# document does not stand behind.
+CARBS_CONFIDENCE_CAP = {"HIGH": 3, "MED-HIGH": 2, "MED": 2, "MED-LOW": 1, "LOW": 1}
+CARBS_CONFIDENCE_RANK = {"high": 3, "medium": 2, "low": 1}
+
+# A citation tag inside a `source:` string. Two capitals minimum per segment, so
+# "Al-Faris" and "Kohinoor" — real names that appear in these strings — are not
+# read as tags, while "USDA-SR", "KHI-OFFICIAL" and "PK-FCT" survive whole. The
+# three-character floor drops "UK-recipe" and "ME-converted", which are English
+# compound modifiers rather than citations. A two-letter tag would go unchecked;
+# no source in this file has one, and inventing a carve-out for a hypothetical
+# reads worse than saying so here.
+CARBS_TAG = re.compile(r"\b[A-Z][A-Z0-9]+(?:-[A-Z0-9]{2,})*\b")
+CARBS_GRADE = re.compile(r"\b(HIGH|MED-HIGH|MED-LOW|MED|LOW)\b")
+CARBS_NUMBER = re.compile(r"\d+(?:\.\d+)?")
+
+
+def _carbs_cited_tags(source):
+    """The citation tags one `source:` string claims.
+
+    `CoFID` is matched literally because it is the one tag in this file written
+    in mixed case, and widening the pattern to admit it would also admit every
+    capitalised word in the prose these strings are written in.
+    """
+    tags = set(t for t in CARBS_TAG.findall(source) if len(t) >= 3)
+    if "CoFID" in source:
+        tags.add("CoFID")
+    return tags
+
+
 def check_reference_data(_plan):
     r"""§11.8's second exemption, and the two conditions it was granted on.
 
@@ -3798,11 +3846,48 @@ def check_reference_data(_plan):
     see it. Enforced by refusing control flow outright: a data file has no need
     of any, so there is no honest false positive to weigh.
 
-    **Condition 2 — every row is documented.** A food in the code that is not in
-    `docs/CARBS.md` has no source and no confidence anyone can check, which is
-    worse in a data file than in `config.ts` — at least `config.ts` has a header
-    saying who may change a value. Matched on the Roman Urdu name, because that
-    is the stable one: English descriptions get reworded, "Qorma" does not.
+    **Condition 2 — every row is documented, and the document is what says so.**
+
+    REWRITTEN 2026-09-25, because the first version did not do this. It asked
+    whether a row's romanised name appeared as a lowercase substring anywhere in
+    `docs/CARBS.md` — never comparing a gram figure, a source or a confidence,
+    the three things §11.8's exemption is actually granted on. Eighty-one of the
+    339 romans are five characters or fewer, so `Paya` passed on the strength of
+    the word *papaya*. A row could have shipped any number at any confidence and
+    the check would have called it documented.
+
+    What it demands instead: every row names its own `id`, in backticks, on a
+    line of `docs/CARBS.md` that also carries its `grams` and its `gramsMax`.
+    The id is the only anchor that cannot be coincidence — a name is shared by
+    nine rows and appears in thirty lines of prose, and matching on one binds
+    rows to whichever line happened to come first. `milk-buffalo` was bound that
+    way to the dairy section's *see Drinks* cross-reference rather than to the
+    drinks row that carries its figure, and nothing noticed.
+
+    Figures compare within half a gram, because the document shows its working
+    (*"180 g sharing block ≈ 102.6 g"*) where the shipped row carries the whole
+    gram a dose is calculated from. Half a gram is below the resolution of any
+    dose this app produces and far below the ±10 g a meal estimate is good to.
+
+    **Confidence may not exceed what the document rates the row.** Under-
+    claiming is allowed and stays allowed: it sends a reader to the meter. Over-
+    claiming tells them to trust a figure `CARBS.md` does not stand behind.
+
+    **What this still does not catch, stated rather than implied.** A doc line
+    usually prints more numbers than the row it anchors: the naan row shows
+    `≈ 60 g` next to the 66 g LFAC figure that corroborates it, so a row that
+    shipped 66 would find its number on the line and pass. Two tighter rules
+    were measured and both failed on the document as written — requiring the
+    figure inside a `**bold**` span rejects 34 rows the doc simply does not bold
+    (the chai grid bolds one column, not the value each row ships), and reading
+    the first `N g` on the line rejects the grids, which print no unit at all.
+    So the guarantee is: the figure a row ships is printed on the line that
+    names it. Which of that line's figures it is remains a reader's judgement.
+
+    **Condition 3 — every citation resolves.** A `source:` naming a tag that
+    section 2's glossary never defines is a citation to nothing. `USDA` sat on
+    65 rows undefined, distinct from the `USDA-SR` and `FNDDS` beside it in a
+    way no reader could have known.
     """
     data_dir = os.path.join(HERE, "src", "data")
     carbs_doc = os.path.join(HERE, "docs", "CARBS.md")
@@ -3846,17 +3931,132 @@ def check_reference_data(_plan):
         return out
 
     with open(carbs_doc, encoding="utf-8") as fh:
-        doc = fh.read().lower()
+        doc_lines = fh.read().splitlines()
 
-    for name, body in sources.items():
-        for m in re.finditer(r"^\s*roman:\s*'([^']+)'", body, re.M):
-            roman = m.group(1)
-            if roman.lower() not in doc:
+    # Parsed from the document rather than spelled here, so a tag defined in one
+    # place is defined for the check too. A glossary this check cannot find is
+    # reported, not skipped: silently admitting every tag is the failure mode.
+    glossary = set()
+    for line in doc_lines:
+        if line.startswith("- **Source tags**"):
+            glossary = set(re.findall(r"\[([A-Za-z][A-Za-z0-9-]*)\]", line))
+            break
+    if not glossary:
+        out.append("docs/CARBS.md has no `- **Source tags**:` bullet — that "
+                   "list is what every [TAG] in src/data resolves against, and "
+                   "without it no citation in the shipped table can be checked")
+
+    unrated = 0
+    checked = 0
+    for name, body in sorted(sources.items()):
+        rows = re.findall(r"\{\s*\n\s*id: '([^']+)',(.*?)\n  \},", body, re.S)
+        # A row shape this parser does not recognise is a row it checks nothing
+        # about, and it would say nothing while doing so.
+        declared = len(re.findall(r"^\s+id: '", body, re.M))
+        if len(rows) != declared:
+            out.append(
+                "src/data/%s declares %d rows but this check could parse %d — "
+                "the unparsed ones are checked against docs/CARBS.md for "
+                "nothing at all" % (name, declared, len(rows)))
+
+        for row_id, rest in rows:
+            grams = re.search(r"\n\s+grams: ([-\d.]+),", rest)
+            grams_max = re.search(r"\n\s+gramsMax: ([^,\n]+),", rest)
+            confidence = re.search(r"\n\s+confidence: '([^']*)'", rest)
+            source = re.search(r"\n\s+source: '([^']*)'", rest)
+            # `insulins.ts` is reference data too, and carries its source on
+            # every row, but it is not a carbohydrate table: a vial has no gram
+            # figure and `docs/CARBS.md` says nothing about it. Its
+            # documentation is its own module header, which §11.8's first
+            # condition already reads. The rows that ARE carbohydrate rows are
+            # the ones with `grams:`, and CARBS_ROW_FLOOR below is what stops
+            # that distinction from quietly becoming "check nothing".
+            if not grams:
+                continue
+            if not (grams_max and confidence and source):
                 out.append(
-                    "src/data/%s offers \"%s\" but docs/CARBS.md never mentions "
-                    "it — §11.8's exemption requires every row to carry a source "
-                    "and a confidence the document can be checked against"
-                    % (name, roman))
+                    "src/data/%s row `%s` is missing one of gramsMax, "
+                    "confidence or source — §11.8's exemption is granted on "
+                    "every row carrying all of them" % (name, row_id))
+                continue
+            checked += 1
+
+            # A field that parses as neither a number nor `null` is reported
+            # rather than raised on. A checker that crashes stops reporting
+            # every finding after it, including the one that mattered.
+            wanted = [float(grams.group(1))]
+            top = grams_max.group(1).strip()
+            if top != "null":
+                if not re.fullmatch(r"-?\d+(?:\.\d+)?", top):
+                    out.append(
+                        "src/data/%s row `%s` has gramsMax `%s`, which is "
+                        "neither a number nor null — nothing can check it "
+                        "against docs/CARBS.md" % (name, row_id, top))
+                    continue
+                wanted.append(float(top))
+            grade = confidence.group(1)
+            if grade not in CARBS_CONFIDENCE_RANK:
+                out.append(
+                    "src/data/%s row `%s` ships confidence '%s', which is not "
+                    "one of %s — docs/CARBS.md has no rating to compare it to"
+                    % (name, row_id, grade,
+                       "/".join(sorted(CARBS_CONFIDENCE_RANK))))
+                continue
+
+            for tag in sorted(_carbs_cited_tags(source.group(1))):
+                if glossary and tag not in glossary:
+                    out.append(
+                        "src/data/%s row `%s` cites [%s], which section 2 of "
+                        "docs/CARBS.md never defines — a reader cannot check a "
+                        "source the document does not name" % (name, row_id, tag))
+
+            anchor = None
+            for line in doc_lines:
+                if "`%s`" % row_id not in line:
+                    continue
+                printed = [float(n) for n in CARBS_NUMBER.findall(line)]
+                if all(any(abs(p - w) <= 0.5 for p in printed) for w in wanted):
+                    anchor = line
+                    break
+            if anchor is None:
+                out.append(
+                    "src/data/%s row `%s` ships %s but no line of "
+                    "docs/CARBS.md names `%s` and carries that figure — the "
+                    "row is undocumented in the only sense §11.8 asks for"
+                    % (name, row_id,
+                       " to ".join("%g g" % w for w in wanted), row_id))
+                continue
+
+            grades = CARBS_GRADE.findall(anchor)
+            if not grades:
+                unrated += 1
+                continue
+            cap = max(CARBS_CONFIDENCE_CAP[g] for g in grades)
+            if CARBS_CONFIDENCE_RANK[grade] > cap:
+                out.append(
+                    "src/data/%s row `%s` ships confidence '%s' where "
+                    "docs/CARBS.md rates it %s — the app would tell a reader "
+                    "to trust a figure the document does not stand behind"
+                    % (name, row_id, grade, "/".join(sorted(set(grades)))))
+
+    if checked < CARBS_ROW_FLOOR:
+        out.append(
+            "only %d carbohydrate rows were cross-referenced against "
+            "docs/CARBS.md, below the %d floor — either the table shrank by a "
+            "third or the row shape moved and this check is reading past it"
+            % (checked, CARBS_ROW_FLOOR))
+    if glossary and unrated > CARBS_UNRATED_CEILING:
+        out.append(
+            "%d shipped rows are anchored to a docs/CARBS.md line that carries "
+            "no confidence rating, up from %d — their confidence is checked "
+            "against nothing, and the count is pinned so the gap cannot spread"
+            % (unrated, CARBS_UNRATED_CEILING))
+    if glossary and unrated < CARBS_UNRATED_CEILING:
+        out.append(
+            "only %d shipped rows now sit on an unrated docs/CARBS.md line, "
+            "below the %d pinned here — lower CARBS_UNRATED_CEILING to %d so "
+            "the ground that was won stays won"
+            % (unrated, CARBS_UNRATED_CEILING, unrated))
     return out
 
 

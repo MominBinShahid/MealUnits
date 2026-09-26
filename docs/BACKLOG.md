@@ -2735,18 +2735,52 @@ app wants the food weight only.
 against the real USDA SR-Legacy, FNDDS and CoFID datasets. Ranked by what it costs a reader trying
 to check a number that becomes insulin.
 
-**1. `check_reference_data` is far weaker than its own error message — DO THIS FIRST.**
-`check-plan.py`, the §11.8 guard. The entire check is:
+**1. `check_reference_data` is far weaker than its own error message — DONE 2026-09-25.**
+`check-plan.py`, the §11.8 guard. The entire check was:
 
 ```python
 if roman.lower() not in doc:   # substring, anywhere in CARBS.md
 ```
 
-It **never compares `grams`, `source` or `confidence`**, though its message claims it requires "a
+It **never compared `grams`, `source` or `confidence`**, though its message claimed it required "a
 source and a confidence the document can be checked against". Measured: **81 of 339 romans are five
-characters or fewer**, 55 appear on more than one row, and **28 short ones pass without having an
-entry of their own** — `Aam`, `Chai`, `Besan`, `Honey`. `Paya` passes purely because "papaya"
+characters or fewer**, 55 appear on more than one row, and **28 short ones passed without having an
+entry of their own** — `Aam`, `Chai`, `Besan`, `Honey`. `Paya` passed purely because "papaya"
 contains it. **Every finding below shipped through a green check.**
+
+**What replaced it.** Every row now names its own `id`, in backticks, on the line of
+`docs/CARBS.md` that carries its `grams` and `gramsMax` — 339 anchors, matched within half a gram.
+The id is the anchor because a name is not one: nine rows share "Chai" and thirty lines mention it,
+so name-matching binds a row to whichever line comes first in the file. **Confidence may not exceed
+what that line rates the row** (the doc's five grades cap the code's three; under-claiming stays
+allowed, because it sends a reader to the meter). **Every `[TAG]` in a `source:` must be defined in
+§2's glossary**, parsed from the document rather than spelled in the checker.
+
+**What it found, none of which anything had ever looked at:**
+
+- **`milk-buffalo` was documented against the wrong line.** It pointed at the dairy section's
+  *"Doodh — see Drinks"* cross-reference, not at the drinks row that carries its figure. A
+  name-match did that, and only an id could have caught it.
+- **Zero rows over-state their confidence.** 289 rows were checkable and all 289 hold. The earlier
+  suspicion that `dahi-plain` shipped HIGH against a MED rating was an artefact of name-matching —
+  it had bound to the *sweet lassi* line.
+- **`[USDA]` (65 rows) and `[IGNOU]` (1 row) resolved to nothing** — now defined in §2 and §17,
+  `[USDA]` as *FoodData Central, dataset not recorded on the row*, `[IGNOU]` with its unit and
+  edition marked unrecorded rather than guessed. That is item 2's first half; the `SJSU` "v2"
+  citation break is still open.
+- **50 rows sit on lines with no confidence rating at all** — the chai and doodh-patti grids
+  (CARBS.md section 9.1), the estimate-anything sheet (section 13) and the combination-meals
+  table (section 14) have no Conf
+  column. Pinned as `CARBS_UNRATED_CEILING` so the gap cannot spread, and the ceiling ratchets
+  down: the check fails if the number drops, too.
+
+**Left open, deliberately.** A doc line usually prints more numbers than the row it anchors — the
+naan row shows `≈ 60 g` beside the 66 g LFAC figure corroborating it, so a row shipping 66 would
+still find its number on that line. Two tighter rules were measured and both failed on the document
+as written: requiring a `**bold**` figure rejects 34 rows the doc does not bold, and reading the
+first `N g` rejects the grids, which print no unit. Closing it properly means giving CARBS.md sections 9.1, 13 and
+14 a Conf column and a per-cell figure — worth doing, not worth over-fitting a checker to today's
+typography for.
 
 **2. Source tags used in data and defined nowhere.** Bare `USDA` on **65 rows** — §2 defines only
 `[USDA-SR]` and `[FNDDS]`. `IGNOU` on one row (`lassi-sweet-shop`). `SJSU` cites "v2" of a document
