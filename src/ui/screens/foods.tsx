@@ -1,5 +1,6 @@
 import type { JSX } from 'preact';
 import { asksAboutSugarFree, matchFoods } from '../../core/foods.js';
+import { gramsFor, tallyGrams } from '../../core/portion.js';
 import { formatDayAndMonth } from '../../core/calendar.js';
 import type { Category, Food } from '../../data/carbs.js';
 import { FOODS } from '../../data/carbs.js';
@@ -65,7 +66,7 @@ function Matrix({ matrix, tally, calibration, onAdd, onRemove }: {
       return [{
         id,
         count,
-        grams: calibration[id]?.grams ?? food.grams,
+        grams: gramsFor(food, { foods: calibration }).grams,
         label: `${axis[row] ?? ''} · ${axis[matrix.columns[columnIndex] ?? ''] ?? ''}`,
       }];
     })
@@ -97,7 +98,7 @@ function Matrix({ matrix, tally, calibration, onAdd, onRemove }: {
                 if (id === null) return <td key={column} />;
                 const food = FOODS.find((candidate) => candidate.id === id);
                 if (food === undefined) return <td key={column} />;
-                const grams = calibration[id]?.grams ?? food.grams;
+                const grams = gramsFor(food, { foods: calibration }).grams;
                 const count = tally[id] ?? 0;
                 return (
                   <td key={column}>
@@ -157,49 +158,6 @@ function Matrix({ matrix, tally, calibration, onAdd, onRemove }: {
   );
 }
 
-/**
- * What the tally comes to.
- *
- * `grams`, which for a banded row IS the low end — and this comment used to say
- * the opposite, naming "taking the low end of every row" as a rejected
- * alternative while the code did exactly that. Corrected 2026-09-26.
- *
- * The low end is right, and the reason is stronger than the one that was here.
- * A midpoint is not available: `docs/CARBS.md` opens by ruling that where
- * sources disagree the range is shown and **never averaged into a false
- * midpoint**, and **100 of the 130 banded rows have a band that spans two or
- * more sources** — `rice-cup` is 45–50 because USDA-SR sets the floor and LFAC
- * the top. Averaging those is the forbidden operation, performed silently, a
- * hundred times. Only 30 bands are one source's own portion spread, and nothing
- * in the data distinguishes the two kinds.
- *
- * So the choice is between two figures a source actually stated, and the low
- * one wins: under-dosing is meter-correctable, over-dosing is the hypo. The
- * cost is real and measured — a six-item plate of banded rows lands about 24 g
- * below its own midpoint, 2.4 units at an ICR of 10 — and it is paid back by
- * the phase 3 ruling: the total arrives as a number the reader CONFIRMS, with
- * the range printed beside every row, so it informs their edit rather than
- * being a decision the app makes for them.
- *
- * Rounded once, at the end. Rounding each row first and summing would drift by
- * up to half a gram per food, which on a six-item plate is a whole unit at some
- * ratios.
- */
-function tallyGrams(
-  tally: Record<string, number>,
-  calibration: Readonly<Record<string, { readonly grams: number }>>,
-): number {
-  let total = 0;
-  for (const food of FOODS) {
-    const count = tally[food.id];
-    // PHASE 2 MEETS PHASE 3. If the reader has said what theirs weighs, the
-    // total is built from THEIR figure — otherwise calibrating a food would
-    // change what the row says and not what the dose says, which is the worse
-    // half of both features.
-    if (count !== undefined) total += (calibration[food.id]?.grams ?? food.grams) * count;
-  }
-  return Math.round(total);
-}
 
 /**
  * The order the groups appear in, which is the order a meal is built rather
@@ -430,7 +388,7 @@ export function FoodListScreen({
     ? FOODS.filter((food) => food.category === openGroup)
     : shown;
   const picked = Object.values(tally).reduce((sum, n) => sum + n, 0);
-  const total = tallyGrams(tally, calibration);
+  const total = tallyGrams(FOODS, tally, { foods: calibration });
 
   return (
     <div class="screen">

@@ -18,6 +18,7 @@ import {
   WIZARD_STEPS,
 } from '../../config.js';
 import { formatClockTime } from '../../core/calendar.js';
+import { gramsFor } from '../../core/portion.js';
 import { formatHundredths } from '../../core/decimal.js';
 import { elapsedHours } from '../../core/stacking.js';
 import { eatWindow } from '../../core/timing.js';
@@ -241,7 +242,7 @@ function Working({
                   The comment above claims the two cannot disagree; phase 2 is
                   what made them, and the claim was written before it existed. */}
               <b>{COPY.foods.gramsOne(String(
-                (calibration[food.id]?.grams ?? food.grams) * (tally[food.id] ?? 0),
+                gramsFor(food, { foods: calibration }).grams * (tally[food.id] ?? 0),
               ))}</b>
             </div>
           ))}
