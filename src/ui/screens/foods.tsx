@@ -16,6 +16,7 @@ export interface FoodListProps {
   readonly tally: Record<string, number>;
   /** Phase 2 — the reader's own figures, keyed by `Food.id`. */
   readonly calibration: Readonly<Record<string, { readonly grams: number; readonly setAt: number }>>;
+  readonly vessels: Readonly<Record<string, { readonly ratio: number }>>;
   readonly editingMine: string | null;
   readonly mineDraft: string;
   readonly timeZone: string;
@@ -45,10 +46,11 @@ export interface FoodListProps {
  * the same reason the tally sums theirs — a calibration that changed the row
  * but not the table would be worse than no calibration.
  */
-function Matrix({ matrix, tally, calibration, onAdd, onRemove }: {
+function Matrix({ matrix, tally, calibration, vessels, onAdd, onRemove }: {
   readonly matrix: FoodMatrix;
   readonly tally: Record<string, number>;
   readonly calibration: Readonly<Record<string, { readonly grams: number }>>;
+  readonly vessels: Readonly<Record<string, { readonly ratio: number }>>;
   readonly onAdd: (id: string) => void;
   readonly onRemove: (id: string) => void;
 }): JSX.Element {
@@ -66,7 +68,7 @@ function Matrix({ matrix, tally, calibration, onAdd, onRemove }: {
       return [{
         id,
         count,
-        grams: gramsFor(food, { foods: calibration }).grams,
+        grams: gramsFor(food, { foods: calibration, vessels }).grams,
         label: `${axis[row] ?? ''} · ${axis[matrix.columns[columnIndex] ?? ''] ?? ''}`,
       }];
     })
@@ -98,7 +100,7 @@ function Matrix({ matrix, tally, calibration, onAdd, onRemove }: {
                 if (id === null) return <td key={column} />;
                 const food = FOODS.find((candidate) => candidate.id === id);
                 if (food === undefined) return <td key={column} />;
-                const grams = gramsFor(food, { foods: calibration }).grams;
+                const grams = gramsFor(food, { foods: calibration, vessels }).grams;
                 const count = tally[id] ?? 0;
                 return (
                   <td key={column}>
@@ -372,7 +374,7 @@ function FoodRow({
  * being asked at that exact moment, and it is noise anywhere else.
  */
 export function FoodListScreen({
-  query, openGroup, tally, calibration, editingMine, mineDraft, timeZone, resetting,
+  query, openGroup, tally, calibration, vessels, editingMine, mineDraft, timeZone, resetting,
   onQuery, onToggleGroup, onAdd, onRemove, onUseTotal, onClearTally, onEditMine, onMineDraft,
   onSaveMine, onTerm, onResetting, onResetMine,
 }: FoodListProps): JSX.Element {
@@ -388,7 +390,7 @@ export function FoodListScreen({
     ? FOODS.filter((food) => food.category === openGroup)
     : shown;
   const picked = Object.values(tally).reduce((sum, n) => sum + n, 0);
-  const total = tallyGrams(FOODS, tally, { foods: calibration });
+  const total = tallyGrams(FOODS, tally, { foods: calibration, vessels });
 
   return (
     <div class="screen">
@@ -506,7 +508,7 @@ export function FoodListScreen({
                           two ways to add one cup of chai. */}
                       {MATRICES.filter((matrix) => matrix.category === group).map((matrix) => (
                         <Matrix key={matrix.key} matrix={matrix}
-                          tally={tally} calibration={calibration}
+                          tally={tally} calibration={calibration} vessels={vessels}
                           onAdd={onAdd} onRemove={onRemove} />
                       ))}
                       <ul class="list">

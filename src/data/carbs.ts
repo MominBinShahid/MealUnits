@@ -531,12 +531,12 @@ export const FOODS: readonly Food[] = [
     category: 'rice',
     text: {
       en: {
-        name: 'Plain boiled rice, full plate',
+        name: 'Plain boiled rice, plate',
         portion: '1 plate, 300\u00A0g',
         varies: 'Plate size. This is the largest single carbohydrate a meal usually holds.',
       },
       ur: {
-        name: 'سادہ چاول، بھری پلیٹ',
+        name: 'سادہ چاول، پلیٹ',
         portion: '1 پلیٹ، 300\u00A0گرام',
         varies: 'پلیٹ کا سائز۔ عام کھانے میں اکیلا سب سے بڑا کاربوہائیڈریٹ یہی ہوتا ہے۔',
       },

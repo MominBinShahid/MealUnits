@@ -1425,6 +1425,7 @@ export async function start(host: Host): Promise<void> {
             }}
             tally={view.foodTally}
             calibration={stored?.calibration?.foods ?? {}}
+            vessels={stored?.vessel?.vessels ?? {}}
             editingMine={view.editingMine}
             mineDraft={view.mineDraft}
             timeZone={host.timeZone}
@@ -1536,6 +1537,7 @@ export async function start(host: Host): Promise<void> {
           amountDiverging: view.amountDiverging,
           foodTally: view.foodTally,
           calibration: stored?.calibration?.foods ?? {},
+          vessels: stored?.vessel?.vessels ?? {},
           onTerm: (key: string): void => { view.glossaryTerm = key; render(); },
           onDigit: (field, digit) => {
             const current = state.inputs[field];
