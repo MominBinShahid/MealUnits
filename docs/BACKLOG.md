@@ -47,13 +47,18 @@ these steps have a dependency that is not obvious from reading them.
 | 2 | **Confirm updates reach a real phone** | **DONE.** Both paths confirmed on Momin's device: the in-app bar renders and can be tapped, and a full restart activates a waiting worker anyway | `T4` closed 2026-09-09 |
 | 3 | **Rule on the `[CONFIRM]` build notes**, one at a time | **DONE 2026-09-13.** No entry carries the tag any more. 52 and 59 ruled keep; 16 rewritten to stop hand-carrying counts; 60 split, its open half now entry 20 | Moved AHEAD of `T5` on Momin's instruction. Each recorded a decision already implemented; the question was whether it was right |
 | 3a | **Prune every Markdown document** | **DONE 2026-09-13.** `BUILD-NOTES.md` lost most of its body, `PLAN.md` its revision history, `BLOG-FIX.md` its investigation; `CLINICAL.md` and `CARBS.md` untouched. `git log` has the figures — they rot if written here | **After step 3**, because the `[CONFIRM]` rulings decided what the notes still had to carry. *"We can't keep everything for ever, so we will only keep things that earn their place."* Every build-note NUMBER survived even where its body did not — many are cited from source and tests |
-| 4 | **`T5` — the audience change.** Empty prescription fields with the strengthened hints, and the confirmation threshold made relative | | **This gates step 5.** Ranking an app that prefills a stranger's dosing ratios is the version of this that goes wrong |
+| 4 | **`T5` — the audience change.** Empty prescription fields with the strengthened hints, and the confirmation threshold made relative | **DONE 2026-09-13.** `PRESCRIBED_TARGET/ISF/ICR` deleted; `deriveThreshold` replaced the flat 20 | **This gates step 5.** Ranking an app that prefills a stranger's dosing ratios is the version of this that goes wrong |
 | 5 | **`4a` + `T6` — search and measurement.** Open Graph, canonical, sitemap, Search Console | **DONE 2026-09-14, to the scope written in this row.** `4a` shipped whole; `T6`'s Search Console half is verified on both properties and the sitemap submitted. **Analytics was never in this row** — it is the other half of `T6`, it moved to item 12, and Momin deferred it the day this closed | After `T5`, never before |
-| 6 | **`T3` — Preact** | | Kills the whole render-teardown defect class by construction |
-| 7 | **`10a` — Urdu** | | **Depends on `T3`**: the current render destroys IME composition state, which is how Urdu is typed |
+| 6 | **`T3` — Preact** | **DONE.** Shipped and in `package.json` | Kills the whole render-teardown defect class by construction |
+| 7 | **`10a` — Urdu** | **DONE.** All 339 rows carry `ur:` text (#130, #132) | **Depended on `T3`**: the pre-Preact render destroyed IME composition state, which is how Urdu is typed. ⚠ Corrected 2026-09-26 — this cell said "the current render destroys", present tense, which T3 ended |
 
-**The two dependencies worth restating, because getting them wrong is expensive:** search work waits
-on `T5`, and Urdu waits on `T3`.
+**CLOSED 2026-09-26 — all seven steps shipped.** Three State cells were empty, so this table read
+as three steps still pending long after they landed, and row 7 asserted a render defect `T3` had
+removed. Kept rather than deleted for the one thing it exists to record: **both dependencies were
+real and neither is obvious from reading the steps.** Search work waited on `T5` because measuring
+discovery before the audience changed would have measured the wrong app; Urdu waited on `T3` because
+the pre-Preact render destroyed IME composition state, which is how Urdu is typed. Getting either
+order wrong would have cost a rebuild, and that is the lesson worth more than the schedule.
 
 **Deliberately not in this table: carbohydrate reference phases 2 and 3** (entries 18 and 19).
 They are real work with code already depending on them, but every slot above is earned and `T5`
@@ -1628,10 +1633,13 @@ source is not an exemption from anything.** A personal tool shared with a brothe
 public calculator sit differently with that. Plenty of such calculators exist publicly; the point is
 that going public should be a decision made with this in view rather than around it.
 
-**Wording to change once the above is ruled on**, currently in six places: `src/ui/copy.ts` line 368
-(*"configured for one specific person's prescription. If you are not that person, the numbers here
-are wrong for you"* — this is in the **first-run disclaimer**, so it is the first thing a stranger
-reads), `README.md`, `CLAUDE.md`, and `docs/PLAN.md` §1.
+~~**Wording to change once the above is ruled on**, currently in six places: `src/ui/copy.ts` line
+368 (*"configured for one specific person's prescription. If you are not that person, the numbers
+here are wrong for you"*), `README.md`, `CLAUDE.md`, and `docs/PLAN.md` §1.~~
+**DONE — struck 2026-09-26.** That wording is in **none** of those four files; it went out with the
+audience change itself, which is the same ruling this paragraph was waiting on. The quoted
+`copy.ts` line 368 no longer exists either — the file is 2,314 lines now and that line holds
+something else, which is why a line-number citation is a poor way to point at a string.
 
 **Trigger: before the app is promoted anywhere.** Deploying it at a URL is not promotion; item 4a's
 search work is.
@@ -1929,12 +1937,6 @@ this entry was filed under the wrong idea. Two different features have been shar
 **Trigger: Momin's own framing — people want it, so it goes in.** Not "whenever readings matter more
 than they do today", which is what this entry said while the feature was the point of §7.8 all along.
 
-§7.8 specified reading entry as *"One field, one button, available from the home screen and offered
-automatically after any band C or band D block"*, with an optional `note` from a fixed list — *before
-bed*, *overnight*, *felt low*, *after exercise*. **Only the post-block half shipped.**
-`COPY.reading.noteQuestion` has no consumer, and `ViewState.readingNote` is never set by any control,
-so the fixed list renders only for rows that arrived by import.
-
 **The line that governs it: these entries are RECORD ONLY.** §7.8's *"not an input to anything"* —
 a reading never clears suspect provenance, never enters a dose, never moves a gate. That property is
 what makes the feature safe to add freely, and note 62 is what happens when it is weakened by
@@ -2044,7 +2046,7 @@ the only question is when the migration gets paid.* **That is a deferral, not a 
 verdict in a heading over a conceded argument is advocacy rather than a record.
 
 **So: the cost, plainly, and nothing recommended.** The script
-is **5486 lines** carrying **48 checks** and **160 seeded mutations** that each prove a specific
+is **5,846 lines** carrying **50 checks** and **160 seeded mutations** that each prove a specific
 check still bites — figures as of 2026-09-23, and they had rotted to 2742/27/104 in an entry whose
 argument rests on the mutation count, in a file whose doctrine forbids hand-copied figures; `python3 check-plan.py --self-test` prints the
 current one. That self-test is the asset, more than the checks are. A rewrite is only finished
@@ -2113,8 +2115,16 @@ The constraints above are the brief for whichever he picks.
 
 ### T15. The deployed path is stated sixteen times and guarded three — IN PROGRESS
 
-**Count was eighteen. Four are now generated** (2026-09-21): the manifest's three and
-`robots.txt`'s one. **Fourteen remain**, and the fonts are the next real piece of work.
+**Count today is SIXTEEN**, measured 2026-09-26 across shipping files outside `vite.config.ts`
+(`index.html` 8, `tools/smoke.mjs` 3, `public/404.html` 3, `src/sw.ts` 1, `docs/design` 1). Tests
+state it 19 more times, which is correct — they assert the path.
+
+⚠ **This entry carried three incompatible counts until 2026-09-26** — "sixteen" in the heading,
+"fourteen remain" here, and "now eighteen" further down — with the paragraphs in anti-chronological
+order, so a reader met the newest claim last. The heading was the right one. The history, in order:
+**it was 18; `public/404.html` added two on 2026-09-17 taking it to 20; four became generated on
+2026-09-21** (the manifest's three and `robots.txt`'s one), **leaving 16.** The fonts are still the
+next real piece of work.
 
 | Done | How |
 |---|---|
@@ -2131,7 +2141,7 @@ validates `src/sw.ts`'s `NOT_THE_APP` against — so the worker was suddenly exc
 vouched for. Its job had not changed; only where it is written had. There is a
 `GENERATED_CRAWLER_ONLY` set now, holding it and the sitemap.
 
-**Count is now eighteen, seventeen of them in files that cannot be generated.** `public/404.html` added two on 2026-09-17; both are guarded, because `public/` is copied verbatim and the page whose job is to offer the way back offering a broken one is the worst version of this defect.
+**`public/404.html` added two on 2026-09-17; both are guarded, because `public/` is copied verbatim and the page whose job is to offer the way back offering a broken one is the worst version of this defect.
 
 **Found 2026-09-17, while costing a possible move to `mealunits.github.io`.** Momin asked the right
 question — *"when we move, do we have to change it everywhere?"* — and the answer today is yes, in
@@ -2765,8 +2775,17 @@ why the plate is where this should start.
 
 An un-tared plate is **+5.1 to +10.2 units**. Un-tared during CALIBRATION doubles every dose in that
 vessel, permanently. No threshold can catch the katori case — un-tared entries of 180–270 g sit
-inside the genuine 100–250 g serving range. So: **weigh empty, then full, app subtracts**, with the
-stored empty weight doubling as the detector.
+inside the genuine 100–250 g serving range. So: **weigh empty, then serve what you would actually
+eat, app subtracts**, with the stored empty weight doubling as the detector.
+
+⚠ **The wording above is a correction, and the original was a defect — 2026-09-26.** This paragraph
+said *"weigh empty, then FULL"*. A reader reads "full" as **filled to capacity**. Someone whose plate
+holds 450 g but who habitually serves 300 g would calibrate at 1.5× for a meal that never changes:
+`rice-plate` 84 → **126 g, +4.2 units**; `tahiri-plate` 90 → **135 g, +4.5 units**. That is larger
+than the entire error this feature exists to remove, and it would be **introduced by the act of
+calibrating** — which also defeats the "a default that reproduces the status quo cannot make
+anything worse" argument below. The default is harmless; the calibration was not. **The ratio is a
+usual-serving ratio, not a capacity ratio**, and the interface copy must say so in those words.
 
 **Per-food calibration must always beat vessel-derived**, or it silently re-adds up to +1.7 units of
 the density error that feature exists to remove.
@@ -2944,9 +2963,20 @@ and **dead, no replacement found** said plainly.
 - **`check_reference_data` now fails on a net loss of citation links** (`CARBS_URL_FLOOR`), which is
   the mechanical half of the never-delete rule. It cannot see a swap, and says so.
 
-**Still open from this item:** the Internet Archive's CDX backend was intermittently returning 503
-during the audit, so the Open Government Licence link's archive status is inconclusive and the 15
-USDA "no snapshot exists" result deserves one re-check.
+**Both archive questions are now CLOSED — rechecked 2026-09-26 on a healthy index.** No Wayback
+snapshot of the USDA pages exists (spot-checked on a second id), so that finding rests on an answer
+rather than an outage. The Open Government Licence link **is** archived, at a 2026-09-24 snapshot
+returning 200.
+
+**What remains open from T30, stated so it is not mistaken for finished:**
+
+| | |
+|---|---|
+| `[SJSU]` | An **unfinished search**, not a concluded one. "Wagle et al." has no author initial, year, institution page or URL, and it is cited on about ten rows. The pass that looked had every consumer search engine broken or exhausted; SJSU's own repository blocks automated access. Needs retrying with working search. |
+| `[LIT]` ×4 | taftan, khoya, falsa, khoa-jalebi. Plausible candidate papers exist for three, all paywalled, so none can be claimed as *the* source. PubMed, OpenAlex and Crossref queries are exhausted; what is missing is full-text access. |
+| Roghni naan | Dawn's own historical catalogue sold Lahori and Tandoori naan and **no roghni naan**, and no "Sufi" bakery could be identified at all. **A physical packet settles this faster than any search.** |
+| Three rows unattributable | `kheer-home`, `bread-brown` and `besan-coating` print `[USDA; CoFID]` or similar with no per-100 g figure for either source, so neither the setting source nor the conversion basis can be established from the document. |
+| 64 CoFID rows | Still do not declare a divisor. Ratcheted by `CARBS_COFID_UNDECLARED_CEILING`, so the number can only fall — but the sweep corrected the rows that were *wrong*, not every row that is *undeclared*. |
 
 #### Momin's rules for this work, stated 2026-09-25 — binding
 

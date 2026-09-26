@@ -629,6 +629,16 @@ page is gone. Snapshots confirm the first three still carried the cited figures 
 months. Tesco is the second citation in this file with nothing behind it: bot-gated, never archived,
 and the pack weight it supports is not stated on the manufacturer's own page either.
 
+**The two archive questions left open on 2026-09-25 are now closed — rechecked 2026-09-26.** The
+Internet Archive's index was returning 503 during the original audit, which made both inconclusive:
+
+- **No Wayback snapshot of the USDA pages exists.** Confirmed on a healthy index, spot-checked on a
+  second id. The original finding stands, and it now rests on an answer rather than an outage —
+  which matters, because "no snapshot" is the reason those rows lean on the `portal-data` endpoint.
+- **The Open Government Licence link IS archived**, at
+  [a 2026-09-24 snapshot](http://web.archive.org/web/20260924202823/https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/)
+  which returns 200. That one was recorded as unknown and is simply fine.
+
 **What was checked and found healthy:** the LFAC book (live, 56 pages, its title page reads
 *Pakistani Foods – Edition 1, 2024*, matching the citation; a byte-identical re-upload and a
 snapshot are now linked beside it, so the source behind 199 rows has three addresses instead of

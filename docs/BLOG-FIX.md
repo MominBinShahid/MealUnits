@@ -145,6 +145,12 @@ Same trap as build note 45's smoke profile: the measurement was real, the settin
 ## 7. Open
 
 - The blog is to be rebuilt later; this is explicitly a temporary fix, so elegance is not the goal.
-- Momin mentioned "one more thing to check" on the blog and has not yet said what it is.
+  **The rebuild now has a real home:** `BACKLOG.md` **T16** carries it with a date and its blocker,
+  which is more than this line could hold. Follow it there.
+- ~~Momin mentioned "one more thing to check" on the blog and has not yet said what it is.~~
+  **Retired 2026-09-26.** It sat here since the file was written with no referent anybody could act
+  on, and a permanently dangling placeholder is worse than nothing: it makes the section look open
+  when it is not. If the thing resurfaces it can be written down then, with what it actually is.
 - The avatar change proposed here was **withdrawn** — out of scope, and the critique was wrong on
-  the substance. That file is his and is untouched.
+  the substance. That file is his and is untouched. **Kept**, because it records a rejected change
+  and this file exists so nobody re-proposes one.
