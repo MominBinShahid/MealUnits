@@ -30,6 +30,7 @@ export default defineConfig({
       'test/decimal.test.ts',
       'test/divergence.test.ts',
       'test/foods.test.ts',
+      'test/portion.test.ts',
       'test/golden.test.ts',
       'test/history.test.ts',
       'test/ids.test.ts',
