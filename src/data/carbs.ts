@@ -1628,12 +1628,12 @@ export const FOODS: readonly Food[] = [
     category: 'rice',
     text: {
       en: {
-        name: 'Pulao, meat, full plate',
+        name: 'Pulao, meat, plate',
         portion: '1 plate, 300\u00A0g',
         varies: 'The rice-to-meat ratio decides which end. Meat in most bites puts you near 54; a plate that is mostly rice puts you near 73.',
       },
       ur: {
-        name: 'پلاؤ، گوشت والا، بھری پلیٹ',
+        name: 'پلاؤ، گوشت والا، پلیٹ',
         portion: '1 پلیٹ، 300\u00A0گرام',
         varies: 'چاول اور گوشت کا تناسب طے کرتا ہے کہ کون سا سرا۔ ہر نوالے میں گوشت ہو تو 54 کے قریب؛ پلیٹ زیادہ تر چاول ہو تو 73 کے قریب۔',
       },
@@ -1789,12 +1789,12 @@ export const FOODS: readonly Food[] = [
     category: 'rice',
     text: {
       en: {
-        name: 'Aloo tahiri, full plate',
+        name: 'Aloo tahiri, plate',
         portion: '1 plate, 300\u00A0g',
         varies: 'Plate size and the potato load.',
       },
       ur: {
-        name: 'آلو تہاری، بھری پلیٹ',
+        name: 'آلو تہاری، پلیٹ',
         portion: '1 پلیٹ، 300\u00A0گرام',
         varies: 'پلیٹ کا سائز اور آلو کتنا ہے۔',
       },
