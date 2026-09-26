@@ -8,7 +8,7 @@
  */
 
 import { META_KEY, SETTINGS_SCOPE, STORE } from './schema.js';
-import type { DosingHistoryRow, SettingsHistoryRow } from './schema.js';
+import type { CalibrationRow, DosingHistoryRow, SettingsHistoryRow } from './schema.js';
 import { add, get, getAll, maxKey, put, runTransaction } from './tx.js';
 import { planMerge } from './envelope.js';
 import type { Envelope } from './envelope.js';
@@ -85,6 +85,30 @@ export function importEnvelope(
         text: incoming.text,
         answeredAtMs: incoming.answeredAtMs,
       } satisfies DosingHistoryRow);
+    }
+
+    // T34 — the reader's own measured grams. MERGED, with a LOCAL entry
+    // winning any collision.
+    //
+    // The rule is deliberately not the one above it. `dosingHistory` keeps the
+    // local answer "because it describes a different install's history" — but a
+    // calibration describes the reader's own kitchen, their roti and their
+    // plate, and that travels with the person rather than the install. So the
+    // imported entries are as legitimate as the local ones.
+    //
+    // Merge rather than replace, and local rather than incoming, because that
+    // is the only combination that cannot destroy a figure somebody weighed:
+    // restoring onto a fresh install has nothing local to collide with and
+    // recovers everything, while restoring onto a device already in use keeps
+    // the work done there. Neither direction loses a measurement, which is what
+    // `readCalibrationEntry` refuses to invent one for.
+    if (envelope.calibration !== undefined) {
+      const existing = await get<CalibrationRow>(tx, STORE.meta, META_KEY.calibration);
+      const merged = { ...envelope.calibration, ...(existing?.foods ?? {}) };
+      await put(tx, STORE.meta, {
+        key: META_KEY.calibration,
+        foods: merged,
+      } satisfies CalibrationRow);
     }
 
     // §7.5 — the import makes provenance suspect until this install logs an

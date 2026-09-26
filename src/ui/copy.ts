@@ -925,7 +925,7 @@ export const COPY = {
     recordAction: 'Delete the record',
     startOverTitle: 'Start over?',
     startOverBody:
-      'Everything goes: the record, your prescription, its history, and the note about how you dosed before. Setup will run again. This cannot be undone.',
+      'Everything goes: the record, your prescription, its history, your own weighed figures, and the note about how you dosed before. Setup will run again. This cannot be undone.',
     startOverAction: 'Start over',
     /** §7.9 — three states, and the third is NOT the second. */
     stackingKnown: (at: string): string =>

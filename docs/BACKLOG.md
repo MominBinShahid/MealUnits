@@ -2369,7 +2369,7 @@ Both are in `CLINICAL.md` §4.2's "what would change this answer" list already.
 
 ---
 
-### T21. `test/lint-config.test.ts` times out at 5 seconds under load — DONE 2026-09-20
+### T21. Tests time out at 5 seconds under load — `lint-config` DONE 2026-09-20, `integration` DONE 2026-09-26
 
 **Seen once, 2026-09-20**, while a mutation run and a browser were competing for the same cores:
 
@@ -2404,14 +2404,27 @@ alone** with those changes applied, and **passes on a stashed tree too**. So it 
 contention pattern this entry already diagnosed, now visible in the integration suite, which is the
 largest file in the run.
 
-**Not fixed, deliberately, and this is the open half.** The lint-config fix was a 30-second timeout
-on one case that spawns a process. Doing the same here means choosing a timeout for app-drive cases
-whose honest runtime is under two seconds, and a number picked to survive an arbitrarily loaded
-machine stops being evidence of anything. What would settle it: run the full suite N times on an
-idle machine and on a loaded one, and set the timeout from the observed spread rather than from a
-guess. Until then the sighting is recorded so the next person does not start from zero — and the
-reason it matters is stated above: a required job that fails on load trains the reflex "re-run it",
-which is the reflex that hides a real one.
+**FIXED 2026-09-26, and only after the measurement this entry asked for.** The open half above said
+a timeout picked to survive an arbitrarily loaded machine is not evidence of anything, and named
+what would settle it: measure on an idle machine and on a loaded one. Done.
+
+| | |
+|---|---|
+| one case, run alone | **1.7 s**, three consecutive runs, and it passes on a stashed tree too |
+| whole file, idle machine | **168 s** for 130 cases — about 1.3 s each |
+| whole file, loaded | **179 s**, barely worse |
+
+So the file is not slow *because* of contention — it is **simply slow**, 130 cases each driving a
+real DOM and a real IndexedDB. Five seconds gives the worst of them about three times its honest
+runtime while thirty-two files share the cores, and that margin is what runs out.
+
+`test/integration.test.ts` now sets **30 seconds file-wide** via `vi.setConfig`, matching
+`lint-config.test.ts`'s fix and its reasoning: the number is about contention, not about any
+assertion, and 30 s is roughly eighteen times anything observed while still far short of a hung run.
+
+**File-wide rather than on the two cases that happened to be caught**, because the measurement says
+the tail belongs to the file under load and not to those two — pinning only them would be fixing
+whichever case tipped over first.
 
 Fixed rather than left because it had begun failing the verification of other work, and a green run
 you cannot trust is worse than a red one.
@@ -2659,10 +2672,32 @@ back wrong is one they cannot report.
 that IS in `copy-ur.ts`. Widening it is its own change, and worth doing before the next such string
 lands.
 
-### T34. The backup does not carry the reader's own measured figures, and three strings say it does
+### T34. The backup did not carry the reader's own measured figures — BUILT 2026-09-26
 
-**Found 2026-09-26 by a review asked to settle it from the code. DECIDED: include it.** The
-implementation is its own PR; this entry is the finding and the ruling.
+**Found 2026-09-26 by a review asked to settle it from the code. DECIDED and BUILT the same day.**
+The JSON export now carries the map, the importer merges it, and one validator serves both the load
+and the import path.
+
+**The merge rule, which was the only real decision in the build: merge, with a LOCAL entry winning
+any collision.** That is deliberately not the rule directly above it in `importer.ts` —
+`dosingHistory` keeps the local answer *"because it describes a different install's history"*. A
+calibration is the opposite: it describes the reader's own kitchen, their roti and their plate, and
+that travels with the person rather than the install. Merge-and-local is the only combination that
+cannot destroy a figure somebody weighed — a fresh install has nothing to collide with and recovers
+everything, while a device already in use keeps the work done on it.
+
+**`schemaVersion` deliberately did not move**, so the block is compatible in both directions and a
+file written before this reads clean. A test asserts exactly that.
+
+**It also closed a §11.3 gap that was already open:** this map had NO validator on either path —
+`readAll` returned it unchecked and the input field tested `Number.isFinite` and nothing else, no
+range and no sign. `readCalibrationEntry` bounds it by `RANGE.carbs.hard` and **drops rather than
+repairs**, on `readLogRow`'s rule: a repaired calibration invents a figure nobody weighed, and the
+row would then claim *"Yours"* over a number that is not theirs.
+
+**The three false claims are now true**, not merely patched: start over's enumeration names the
+weighed figures it destroys in both languages, and §7.7.1 says what the JSON actually contains. The
+readable copy still omits it, and now says why — it is for a person to read, not to restore from.
 
 **The omission, verified at four levels.** `Envelope` in `src/storage/envelope.ts` carries
 `schemaVersion`, `settings`, `dosingHistoryBeforeApp`, `settingsHistory`, `readings` and `log`.

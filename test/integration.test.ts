@@ -18,7 +18,7 @@
 
 import { IDBFactory } from 'fake-indexeddb';
 import { JSDOM } from 'jsdom';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { start } from '../src/ui/app.js';
 import { DATABASE_NAME, DATABASE_VERSION } from '../src/storage/schema.js';
 import { FOODS } from '../src/data/carbs.js';
@@ -35,6 +35,33 @@ import {
   STACK_ADVISE_HOURS,
   STACK_SUPPRESS_HOURS,
 } from '../src/config.js';
+
+/**
+ * T21 — vitest's default five seconds is not enough for THIS file, and the
+ * number below is about contention rather than about any assertion.
+ *
+ * Measured 2026-09-26, after two cases timed out during a full `npm run check`
+ * under load: a single case runs in **1.7 seconds alone**, consistently across
+ * three runs, and passes on a stashed tree too — so it was never the change in
+ * flight. The whole file takes **168 seconds on an idle machine** against 179
+ * loaded, so it is simply slow: 130 cases driving a real DOM and a real
+ * IndexedDB, averaging 1.3 seconds each. Five seconds gives the worst of them
+ * barely three times its honest runtime, and thirty-two files share the cores.
+ *
+ * T21 diagnosed this same contention once before in `lint-config.test.ts` and
+ * fixed it the same way, for the reason stated there: this file is inside
+ * `npm run check`, a required CI job, and **a required job that fails on
+ * machine load fails for a reason the log does not name — the reflex it trains
+ * is "re-run it", which is the reflex that hides a real failure.**
+ *
+ * Thirty seconds is about eighteen times anything observed and still far short
+ * of a hung run. It is deliberately file-wide rather than on the two cases that
+ * happened to be caught: the measurement says the tail belongs to the file
+ * under contention, not to those two, so pinning only them would be treating
+ * whichever case tipped over first.
+ */
+const CONTENDED_CASE_MS = 30_000;
+vi.setConfig({ testTimeout: CONTENDED_CASE_MS });
 
 const KARACHI = 'Asia/Karachi';
 /** 6 Sep 2026, 7:00 PM in Karachi. Fixed: nothing here reads a real clock. */

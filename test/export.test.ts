@@ -108,6 +108,7 @@ describe('§7.7 the envelope', () => {
       log: [injection()],
       readings: [],
       dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
+      calibration: {},
     });
     expect(envelope.settings).toMatchObject({ target: 150, isf: 30, icr: 10 });
     // §1.3 legislated that the basal regimen must appear in it, and an
@@ -123,6 +124,7 @@ describe('§7.7 the envelope', () => {
       log: [],
       readings: [],
       dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
+      calibration: {},
     });
     expect(envelope.settings).toEqual({});
     expect('settings' in envelope).toBe(true);
@@ -149,6 +151,7 @@ describe('§7.7 the envelope', () => {
       log: [],
       readings: [],
       dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
+      calibration: {},
     });
     expect(Object.keys(envelope.settings)).toContain('roundingMode');
     expect(envelope.settings).toMatchObject({ roundingMode: SETTINGS.roundingMode });
@@ -170,6 +173,7 @@ describe('§7.7 the envelope', () => {
       log: [],
       readings: [],
       dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
+      calibration: {},
     });
     expect(Object.keys(envelope.settingsHistory[0] ?? {}).sort()).toEqual(
       ['changedAtMs', 'icr', 'bolusId', 'isf', 'revision', 'roundingMode', 'target'].sort(),
@@ -177,10 +181,11 @@ describe('§7.7 the envelope', () => {
   });
 
   it('§6.7 — carries the dosing note only when ANSWERED, and never the state', () => {
-    const base = { settings: SETTINGS, settingsHistory: [], log: [], readings: [] };
+    const base = { settings: SETTINGS, settingsHistory: [], log: [], readings: [], calibration: {} };
     const answered = buildEnvelope({
       ...base,
       dosingHistory: { state: 'answered', text: '24-25 units regardless', answeredAtMs: NOW },
+      calibration: {},
     });
     expect(answered.dosingHistoryBeforeApp).toEqual({
       answeredAtMs: NOW,
@@ -205,6 +210,7 @@ describe('§7.7 the envelope', () => {
       log: [injection(), tombstone],
       readings: [{ id: 'r1', timestamp: NOW, bloodSugar: 65, note: 'felt_low' }],
       dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
+      calibration: {},
     });
     const parsed = parseEnvelope(JSON.parse(JSON.stringify(envelope)));
     expect(parsed.ok).toBe(true);
@@ -701,5 +707,68 @@ describe('§7.7.1 the readable export', () => {
   it('renders an empty period rather than pretending it is not there', () => {
     const html = buildReadableExport({ ...input, log: [], readings: [] });
     expect(html).toContain('Nothing recorded in this period');
+  });
+});
+
+describe('T34 — the backup carries the reader\'s own measured figures', () => {
+  const base = {
+    settings: SETTINGS,
+    settingsHistory: [],
+    log: [],
+    readings: [],
+    dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
+  };
+
+  it('round-trips a calibration through build and parse', () => {
+    const envelope = buildEnvelope({
+      ...base,
+      calibration: { 'roti-medium': { grams: 28, setAt: NOW } },
+    });
+    expect(envelope.calibration).toEqual({ 'roti-medium': { grams: 28, setAt: NOW } });
+
+    const parsed = parseEnvelope(JSON.parse(JSON.stringify(envelope)));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    // The whole point: the figure the reader measured survives the file.
+    expect(parsed.envelope.calibration).toEqual({ 'roti-medium': { grams: 28, setAt: NOW } });
+  });
+
+  it('omits the block entirely when nothing is calibrated', () => {
+    // A reader who never calibrated exports what they exported before T34, so
+    // the change is invisible to everyone it does not affect.
+    const envelope = buildEnvelope({ ...base, calibration: {} });
+    expect('calibration' in envelope).toBe(false);
+  });
+
+  it('drops a bad entry rather than repairing it, on both paths', () => {
+    // §11.3, and the same rule readLogRow states: a repaired calibration would
+    // invent a figure nobody weighed, and the row would then claim "Yours"
+    // over a number that is not theirs. Falling back to the table is honest.
+    const bad = {
+      negative: { grams: -5, setAt: NOW },
+      huge: { grams: 9999, setAt: NOW },          // outside RANGE.carbs.hard
+      notFinite: { grams: Number.NaN, setAt: NOW },
+      noSetAt: { grams: 30 },
+      notAnObject: 42,
+      good: { grams: 30, setAt: NOW },
+    } as unknown as Record<string, { grams: number; setAt: number }>;
+
+    const built = buildEnvelope({ ...base, calibration: bad });
+    expect(built.calibration).toEqual({ good: { grams: 30, setAt: NOW } });
+
+    const parsed = parseEnvelope({ ...JSON.parse(JSON.stringify(built)), calibration: bad });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.envelope.calibration).toEqual({ good: { grams: 30, setAt: NOW } });
+  });
+
+  it('reads a file written before T34 without complaint', () => {
+    // schemaVersion deliberately did not move, so an older file has no block
+    // and must parse clean rather than reporting a problem.
+    const old = buildEnvelope({ ...base, calibration: {} });
+    const parsed = parseEnvelope(JSON.parse(JSON.stringify(old)));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.envelope.calibration).toBeUndefined();
   });
 });

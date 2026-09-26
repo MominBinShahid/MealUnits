@@ -714,6 +714,21 @@ neither the setting source nor the basis can be established from the document. N
 foods where the conversion cannot move the shipped integer. Three would matter and are recorded as
 open: `kheer-home`, `bread-brown` and `besan-coating`.
 
+**Every CoFID row now declares its divisor — all 84, completed 2026-09-26.** The sweep above
+corrected the rows that were *wrong*; this closes the rows that were merely *silent*, which is a
+different thing and was the larger set. Each row now says one of three things:
+
+- **`CoFID converted at N`** — CoFID sets the figure and this is the divisor that produced it,
+  component-wise from the dataset's own starch and sugar columns.
+- **`CoFID corroborating only — no divisor applies`** — another source sets the figure and CoFID
+  merely agrees with it, so there is nothing to convert.
+- **`CoFID divisor unestablished`** — the document gives no per-100 g figure for either source, so
+  neither the setter nor the basis can be recovered. Named rather than guessed.
+
+`check_reference_data` enforces it at **zero**: it shipped as a ratchet pinned at 64 and reached
+zero the same day, so it is now an invariant rather than a target. A row that goes silent again
+fails the build.
+
 ### 17.3 The CALC rows, with the working shown — 2026-09-25
 
 A `[CALC]` row whose arithmetic is written nowhere cannot be checked by anybody, including whoever
