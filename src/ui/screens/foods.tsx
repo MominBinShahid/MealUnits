@@ -160,12 +160,26 @@ function Matrix({ matrix, tally, calibration, onAdd, onRemove }: {
 /**
  * What the tally comes to.
  *
- * `grams` — the typical — rather than either end of a row's band, and the
- * phase 3 ruling is why: the total arrives as a number the reader confirms, so
- * the range beside each row is information that informs their edit rather than
- * a decision the app has to make for them. Taking the low end of every row
- * would under-dose every meal; taking the high end would over-dose it, and
- * over-dosing is the hypo.
+ * `grams`, which for a banded row IS the low end — and this comment used to say
+ * the opposite, naming "taking the low end of every row" as a rejected
+ * alternative while the code did exactly that. Corrected 2026-09-26.
+ *
+ * The low end is right, and the reason is stronger than the one that was here.
+ * A midpoint is not available: `docs/CARBS.md` opens by ruling that where
+ * sources disagree the range is shown and **never averaged into a false
+ * midpoint**, and **100 of the 130 banded rows have a band that spans two or
+ * more sources** — `rice-cup` is 45–50 because USDA-SR sets the floor and LFAC
+ * the top. Averaging those is the forbidden operation, performed silently, a
+ * hundred times. Only 30 bands are one source's own portion spread, and nothing
+ * in the data distinguishes the two kinds.
+ *
+ * So the choice is between two figures a source actually stated, and the low
+ * one wins: under-dosing is meter-correctable, over-dosing is the hypo. The
+ * cost is real and measured — a six-item plate of banded rows lands about 24 g
+ * below its own midpoint, 2.4 units at an ICR of 10 — and it is paid back by
+ * the phase 3 ruling: the total arrives as a number the reader CONFIRMS, with
+ * the range printed beside every row, so it informs their edit rather than
+ * being a decision the app makes for them.
  *
  * Rounded once, at the end. Rounding each row first and summing would drift by
  * up to half a gram per food, which on a six-item plate is a whole unit at some
