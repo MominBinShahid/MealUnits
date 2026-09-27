@@ -194,14 +194,24 @@ number for all seven, which is what makes the plate the right vessel to start wi
 measured through any one of them transfers correctly to the other six, because they all divide by
 the same reference.
 
-⚠ **Three rows that also print "1 plate, 300 g" are deliberately excluded**, and the exclusion costs
-something worth stating. `meal-biryani-mid-raita`, `meal-biryani-degh-raita` and
-`meal-biryani-meat-raita` are **composites** — a plate of biryani plus a katori of raita — so scaling
-them by the plate's ratio would scale the raita too, and the raita is not on the plate. But at a
-1.5× plate, `biryani-mid-plate` reads **76.5 g** while `meal-biryani-mid-raita` stays at **55** — a
-21.5 g gap, **+2.15 units**, for the same plate of food, and the reader gets whichever row their
-search surfaced. Today those two agree within 4 g. **The interface has to say so; the answer is not
-to scale the composite.**
+⚠ **Three composite rows were excluded, and the exclusion was reversed on 2026-09-27.** The passage
+here used to end "the answer is not to scale the composite." It was wrong, and the way it was wrong
+is worth keeping: it computed ONE direction. `meal-biryani-mid-raita`, `meal-biryani-degh-raita` and
+`meal-biryani-meat-raita` are a plate of biryani **plus a katori of raita**, so scaling them by the
+plate's ratio scales the raita too, and the raita is not on the plate. That reasoning is sound and it
+only bites above a ratio of 1, where not scaling UNDER-doses — the 21.5 g gap the old text described.
+
+Below 1 it over-doses, which nobody worked out. The raita is **4–5 g** of carbohydrate; the biryani
+is **41–57 g**. Not scaling protects the small figure and lets the large one go wrong: at a 200 g
+plate (ratio 0.67) `meal-biryani-degh-raita` said **62 g** against a true **43 g** — +19 g, **+1.9
+units at an ICR of 10**, past the ±10 g tolerance, and reached from `biryani`, the commonest alias in
+this table. At a 150 g plate it is +2.9 units.
+
+Scaling carries the raita's 5 g along, wrong by at most **2.5 g** at a 1.5× plate and **10 g** at
+`VESSEL_RATIO_MAX`. Smaller error in every direction and at every ratio, so the drift is the better
+trade and the three rows now scale with the rest. A reader who wants it exact still has the better
+path, which is the one the rows were bundling in the first place: pick `biryani-mid-plate` and
+`raita` separately and let the tally add them.
 
 **`check_vessel_rows` holds three things**: every row declares the field, so a new one cannot default
 into scaling; only the seven above carry a vessel, so the set is a reviewed diff in the checker

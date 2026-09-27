@@ -4155,6 +4155,18 @@ VESSEL_ROWS = {
     # the width-to-dose ratio is invariant, and band width never reaches a dose
     # because the tally sums `grams` alone.
     "biryani-unknown-pot": ("plate", 300),
+    # The three raita composites JOINED 2026-09-27. They were excluded because
+    # the raita is a separate katori that does not grow with the plate — true,
+    # but every note justifying it worked out only the ratio-above-1 case, where
+    # NOT scaling under-doses. Below 1 it over-doses: at a 200 g plate
+    # `meal-biryani-degh-raita` said 62 g against a true 43, +1.9 units at an ICR
+    # of 10, past the 10 g tolerance and reached from the commonest search on
+    # this table. Scaling drags the raita's 5 g along, wrong by at most 2.5 g at
+    # a 1.5x plate and 10 g at the cap — smaller error in every direction and at
+    # every ratio, so the drift is the better trade. Momin's call.
+    "meal-biryani-mid-raita": ("plate", 300),
+    "meal-biryani-degh-raita": ("plate", 300),
+    "meal-biryani-meat-raita": ("plate", 300),
 }
 
 

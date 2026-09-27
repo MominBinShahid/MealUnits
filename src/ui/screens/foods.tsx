@@ -230,7 +230,7 @@ function SourceTags({ source, onTerm }: {
  */
 function FoodRow({
   food, count, mine, editing, draft, onAdd, onRemove, onEditMine, onMineDraft,
-  onSaveMine, onTerm, timeZone, vesselRatioSet, vesselSetAt, plateActive,
+  onSaveMine, onTerm, timeZone, vesselRatioSet, vesselSetAt,
 }: {
   readonly food: Food;
   readonly count: number;
@@ -252,7 +252,6 @@ function FoodRow({
   readonly vesselSetAt: number | null;
   /** Whether a plate ratio is in force at all — the raita rows have no vessel
    *  of their own, so they cannot tell from `vesselRatioSet`. */
-  readonly plateActive: boolean;
   readonly onMineDraft: (text: string) => void;
   readonly onSaveMine: (id: string, grams: number | null) => void;
   readonly onTerm: (key: string) => void;
@@ -329,12 +328,6 @@ function FoodRow({
               formatDayAndMonth(vesselSetAt, timeZone),
             )}
           </div>
-        ) : null}
-        {/* The three raita rows are a plate PLUS a katori, so they deliberately
-            do not scale. Marked only while a plate is set, because until then
-            there is nothing to be inconsistent with. */}
-        {plateActive && COMPOSITE_PLATE.has(food.id) ? (
-          <div class="hint">{COPY.foods.plateCompositeNote}</div>
         ) : null}
         <div class="clinical">
           {`${COPY.foods.confidenceLabel[food.confidence]} · ${COPY.foods.sourcePrefix}`}
@@ -450,15 +443,6 @@ function FoodRow({
  * three raita composites it deliberately does not scale.
  */
 /**
- * The three rows that print "1 plate, 300 g" and deliberately do NOT scale.
- *
- * Each is a plate of biryani PLUS a katori of raita, and the raita does not
- * grow with the plate. At a 1.5x plate `biryani-mid-plate` reads 76.5 g while
- * `meal-biryani-mid-raita` stays 55 — a 21.5 g gap, about 2 units, for what
- * looks like the same plate of food. The row says so rather than the app
- * pretending the two agree.
- */
-/**
  * The row the plate panel quotes as its worked example, and the dawat row that
  * bounds it.
  *
@@ -492,10 +476,6 @@ const plateAdvisoryGrams =
   PLATE_DAWAT === undefined || PLATE_REFERENCE === undefined
     ? 0
     : Math.round((PLATE_REFERENCE.vessel?.grams ?? 0) * PLATE_DAWAT.grams / PLATE_REFERENCE.grams);
-
-const COMPOSITE_PLATE: ReadonlySet<string> = new Set([
-  'meal-biryani-mid-raita', 'meal-biryani-degh-raita', 'meal-biryani-meat-raita',
-]);
 
 function PlatePanel({
   vesselGrams, dawatGrams, exampleName, exampleGrams, ratio, setAt,
@@ -838,7 +818,7 @@ export function FoodListScreen({
                           vesselRatioSet={food.vessel === null
                             ? null
                             : (vessels[food.vessel.id]?.ratio ?? null)}
-                          vesselSetAt={plateSetAt} plateActive={plateRatio !== null} />
+                          vesselSetAt={plateSetAt} />
                       ))}
                       </ul>
                     </div>
@@ -895,7 +875,7 @@ export function FoodListScreen({
               vesselRatioSet={food.vessel === null
                 ? null
                 : (vessels[food.vessel.id]?.ratio ?? null)}
-              vesselSetAt={plateSetAt} plateActive={plateRatio !== null} />
+              vesselSetAt={plateSetAt} />
           ))}
         </ul>
       )}

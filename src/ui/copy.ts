@@ -458,8 +458,6 @@ export const COPY = {
       'That is not a weight this can read. Type the grams as digits, for example 450.',
     plateOrderWrong:
       'These two weights say the food weighs less than nothing. The empty plate goes first — start again.',
-    plateCompositeNote:
-      'Not sized to your serving — this row is the table\'s plate plus a katori of raita. To count your plate, add the biryani row and the raita row separately.',
     addOne: 'Add one',
     removeOne: 'Remove one',
     tallyCount: (n: number): string => `${String(n)}×`,

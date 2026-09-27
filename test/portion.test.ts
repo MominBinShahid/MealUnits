@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { displayGrams, gramsFor, tallyGrams, vesselRatio } from '../src/core/portion.js';
 import { VESSEL_RATIO_MAX } from '../src/config.js';
+import { FOODS } from '../src/data/carbs.js';
 import type { Portioned } from '../src/core/portion.js';
 
 /**
@@ -248,5 +249,23 @@ describe('refusals and the read-side cap', () => {
       expect(gramsFor(PLATE, { foods: {}, vessels: { plate: { ratio } } }))
         .toEqual({ grams: 84, from: 'table' });
     }
+  });
+});
+
+describe('the raita composites scale with the plate', () => {
+  // Reversed on 2026-09-27: not scaling over-doses below a ratio of 1, which is
+  // the direction every note justifying the exclusion left out.
+  const COMPOSITE = 'meal-biryani-degh-raita';
+  it('is tagged as a plate row in the table', () => {
+    const row = FOODS.find((food) => food.id === COMPOSITE);
+    expect(row?.vessel).toEqual({ id: 'plate', grams: 300 });
+  });
+  it('scales down with a smaller plate instead of standing still', () => {
+    const row = FOODS.find((food) => food.id === COMPOSITE);
+    if (row === undefined) throw new Error('row missing');
+    const small = gramsFor(row, { foods: {}, vessels: { plate: { ratio: 0.5 } } });
+    expect(small.from).toBe('vessel');
+    // Standing still at 62 g against a true ~34 is +2.9 units at an ICR of 10.
+    expect(small.grams).toBeLessThan(row.grams);
   });
 });
