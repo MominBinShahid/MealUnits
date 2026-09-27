@@ -90,6 +90,17 @@ export function gramsFor(
   const vessel = own.vessels[food.vessel.id];
   if (vessel === undefined) return { grams: food.grams, from: 'table' };
 
+  // The cap again, on the READ. `vesselRatio` refuses above it on the way in,
+  // but the build that shipped before this one had no cap on save at all, so a
+  // ratio of 5 can already be sitting in a reader's browser and would dose
+  // `rice-plate` at 420 g. The fallback is the TABLE figure — the 300 g
+  // reference every plate row is written against — because that is the agreed
+  // default and the only figure here with a source behind it.
+  if (!Number.isFinite(vessel.ratio) || vessel.ratio <= 0) {
+    return { grams: food.grams, from: 'table' };
+  }
+  if (vessel.ratio > VESSEL_RATIO_MAX) return { grams: food.grams, from: 'table' };
+
   return { grams: food.grams * vessel.ratio, from: 'vessel' };
 }
 

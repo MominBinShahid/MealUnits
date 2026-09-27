@@ -224,3 +224,29 @@ describe('the cap, and the whole gram on screen', () => {
     expect(displayGrams(51 * 1.5) * 2).toBe(154);
   });
 });
+
+describe('refusals and the read-side cap', () => {
+  const PLATE = { id: 'rice-plate', grams: 84, vessel: { id: 'plate', grams: 300 } };
+  it('refuses NaN, not returns it', () => {
+    expect(vesselRatio({ emptyGrams: 0, fullGrams: Number.NaN }, 300)).toBeNull();
+    expect(vesselRatio({ emptyGrams: Number.NaN, fullGrams: 450 }, 300)).toBeNull();
+  });
+  it('falls back to the table figure for a stored ratio above the cap', () => {
+    // The build that shipped before this one had no cap on save, so this can
+    // already exist in a browser. 84 x 5 = 420 g would be the dose.
+    expect(gramsFor(PLATE, { foods: {}, vessels: { plate: { ratio: 5 } } }))
+      .toEqual({ grams: 84, from: 'table' });
+    expect(gramsFor(PLATE, { foods: {}, vessels: { plate: { ratio: VESSEL_RATIO_MAX } } }))
+      .toEqual({ grams: 252, from: 'vessel' });
+  });
+  it('falls back for a nonsense stored ratio, and SAYS it is the table', () => {
+    // `from` is asserted, not just `grams`: the row reads it to decide whether
+    // to print "Counted for your 450 g serving". A fallback that returned the
+    // table figure while still claiming 'vessel' would put that line on a row
+    // that did not scale — the provenance saying one thing, the number another.
+    for (const ratio of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(gramsFor(PLATE, { foods: {}, vessels: { plate: { ratio } } }))
+        .toEqual({ grams: 84, from: 'table' });
+    }
+  });
+});

@@ -434,6 +434,10 @@ export const COPY = {
     plateNoTare: 'My scale has no 0 or TARE button',
     plateNoTareLead:
       'Then weigh twice and the app subtracts: the empty plate first, then the plate with your serving on it.',
+    plateHasTare: 'My scale does have a 0 or TARE button',
+    plateEmptyRequired: 'The empty plate is needed too — without it the plate\u2019s weight is counted as food.',
+    plateWorking: (total: string, empty: string, food: string): string =>
+      `${total}\u00A0g − ${empty}\u00A0g = ${food}\u00A0g of food.`,
     plateEmptyLabel: 'The empty plate, in grams',
     plateTotalLabel: 'Plate and food together, in grams',
     plateSave: 'Save my serving',
@@ -448,6 +452,8 @@ export const COPY = {
     plateTooHeavy: (fill: string, ref: string): string =>
       `${fill}\u00A0g is a very large serving — more than the ${ref}\u00A0g dawat plate this table describes. Scales often show the plate and the food together. Check the scale read 0 with the empty plate on it, before the food went on.`,
     plateAssert: 'It is food only — save it',
+    plateAboveCap: (fill: string, most: string): string =>
+      `${fill}\u00A0g is more than ${most}\u00A0g — more than this can treat as one serving. If that was the pot, or the plate with the food on it, weigh just the food.`,
     plateUnreadable:
       'That is not a weight this can read. Type the grams as digits, for example 450.',
     plateOrderWrong:

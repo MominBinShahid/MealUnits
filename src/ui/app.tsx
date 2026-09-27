@@ -1493,9 +1493,15 @@ export async function start(host: Host): Promise<void> {
               view.plateAsserted = false;
               render();
             }}
-            onPlateNoTare={(): void => {
-              view.plateNoTare = true;
+            onPlateNoTare={(on): void => {
+              view.plateNoTare = on;
+              // The food field means a different thing in each mode — "the food"
+              // in one, "plate and food together" in the other — so the number
+              // does not carry across. Keeping it would silently reinterpret a
+              // 450 that meant food as a 450 that meant plate-plus-food.
               view.plateFoodDraft = '';
+              view.plateEmptyDraft = '';
+              view.plateAsserted = false;
               render();
             }}
             onPlateAssert={(): void => { view.plateAsserted = true; render(); }}

@@ -2898,6 +2898,27 @@ vessel, permanently. No threshold can catch the katori case — un-tared entries
 inside the genuine 100–250 g serving range. So: **weigh empty, then serve what you would actually
 eat, app subtracts**, with the stored empty weight doubling as the detector.
 
+**The four residuals T31 accepts, and why each is accepted — 2026-09-27.** None changes a
+number; all four are recorded so the next reader does not rediscover them as bugs.
+
+- **The ratio is a habit, set once and dated.** A plate weighed at a dawat over-doses every home
+  meal by (dawat − home) ÷ 300 until re-weighed — 400 against a true 300 is +2.8 units on
+  `rice-plate` at an ICR of 10. "Back to the table's 300 g serving" is one tap. **No time expiry**,
+  deliberately: a ratio that silently reverts on day N is a silent dose change, which §7.5 and §7.7
+  exist to prevent. At a dawat, use the biryani grid's dawat column, which does not scale, and leave
+  the home ratio alone.
+- **When someone else fills the plate**, the ratio describes the reader's own serving, not that
+  meal. Over-dose only when their habit exceeds what they were served — a reader at 390 g given
+  240 g is +4.2 units on `rice-plate`. The tally already says the number can be changed after it
+  lands in the box. The app cannot see who served; this is meal-time judgement.
+- **One reader per install.** Prescription, record, own figures and plate ratio are one set. A second
+  person dosing off this install is already using someone else's ICR and ISF, which dwarfs any plate
+  mismatch. No fix belongs in the plate feature.
+- **A swapped pair in two-field mode is refused** (the fill comes out at or below zero). What that
+  cannot catch is a typed `0` in the empty-plate box, which makes the fill the whole total — risk 1
+  through another door. A zero-refusal is NOT the answer: a reader whose scale does tare will
+  correctly type 0 there and their entry is right, so refusing it breaks a correct path for nothing.
+
 ⚠ **What T31 actually shipped, and what it traded away — 2026-09-27.** The one-field design
 asks for the food weight and relies on the scale's TARE button, so the empty weight is NOT stored
 in the common path and cannot serve as the detector this section proposes. That trade is deliberate

@@ -2,6 +2,7 @@ import type { JSX } from 'preact';
 import { asksAboutSugarFree, matchFoods } from '../../core/foods.js';
 import { displayGrams, gramsFor, tallyGrams, vesselRatio } from '../../core/portion.js';
 import { formatDayAndMonth } from '../../core/calendar.js';
+import { VESSEL_RATIO_MAX } from '../../config.js';
 import type { Category, Food } from '../../data/carbs.js';
 import { FOODS } from '../../data/carbs.js';
 import { IN_A_MATRIX, MATRICES } from '../matrices.js';
@@ -38,7 +39,7 @@ export interface FoodListProps {
   readonly onPlateOpen: (open: boolean) => void;
   readonly onPlateFoodDraft: (text: string) => void;
   readonly onPlateEmptyDraft: (text: string) => void;
-  readonly onPlateNoTare: () => void;
+  readonly onPlateNoTare: (on: boolean) => void;
   readonly onPlateAssert: () => void;
   readonly onPlateSave: (ratio: number, empty: number, total: number) => void;
   readonly onPlateClear: () => void;
@@ -515,7 +516,7 @@ function PlatePanel({
   readonly onOpen: (open: boolean) => void;
   readonly onFoodDraft: (value: string) => void;
   readonly onEmptyDraft: (value: string) => void;
-  readonly onNoTare: () => void;
+  readonly onNoTare: (on: boolean) => void;
   readonly onAssert: () => void;
   readonly onSave: (ratio: number, empty: number, total: number) => void;
   readonly onClear: () => void;
@@ -533,6 +534,9 @@ function PlatePanel({
   const total = noTare ? typed : typed + empty;
   const next = vesselRatio({ emptyGrams: empty, fullGrams: total }, vesselGrams);
   const fill = total - empty;
+  // Blank ONLY in the two-field mode, and only worth saying once the reader has
+  // started typing the other number — otherwise the panel opens shouting.
+  const emptyMissing = noTare && emptyText === '' && foodDraft.trim() !== '';
   // Above the largest serving this table describes. The dawat rows are the
   // everyday rows times exactly 400/300, so that figure is the last ratio the
   // data corroborates — past it, ask, never block.
@@ -567,14 +571,36 @@ function PlatePanel({
           <p class="hint">{COPY.foods.plateNoTareLead}</p>
           <div class="field">
             <TextInput value={emptyDraft} onValue={onEmptyDraft}
-              aria-label={COPY.foods.plateEmptyLabel} inputMode="decimal" />
+              aria-label={COPY.foods.plateEmptyLabel} inputMode="decimal"
+              aria-required="true" aria-invalid={emptyMissing ? 'true' : undefined} />
           </div>
-          <p class="hint">{COPY.foods.plateEmptyLabel}</p>
+          <p class={`hint ${emptyMissing ? 'refused' : ''}`}>
+            {emptyMissing ? COPY.foods.plateEmptyRequired : COPY.foods.plateEmptyLabel}
+          </p>
           <div class="field">
             <TextInput value={foodDraft} onValue={onFoodDraft}
-              aria-label={COPY.foods.plateTotalLabel} inputMode="decimal" />
+              aria-label={COPY.foods.plateTotalLabel} inputMode="decimal"
+              aria-required="true" />
           </div>
           <p class="hint">{COPY.foods.plateTotalLabel}</p>
+          {/* The subtraction, written out. Momin asked for it: if he enters 500
+              and the plate was 200, he should be able to SEE 300 rather than
+              trust that the app got it right. It is also the clearest possible
+              confirmation that the fields went in the right boxes. */}
+          {next !== null ? (
+            <p class="hint">
+              {COPY.foods.plateWorking(
+                String(displayGrams(total)), String(displayGrams(empty)),
+                String(displayGrams(fill)),
+              )}
+            </p>
+          ) : null}
+          {/* The way back. Tapping the no-TARE link used to be one-way: the only
+              escape was closing the whole panel, which is not a thing a reader
+              would guess. */}
+          <Button class="go quiet" onPress={() => { onNoTare(false); }}>
+            {COPY.foods.plateHasTare}
+          </Button>
         </>
       ) : (
         <>
@@ -584,15 +610,27 @@ function PlatePanel({
           </div>
           <p class="hint">{COPY.foods.plateFieldLabel}</p>
           <p class="hint">{COPY.foods.plateFoodOnly}</p>
-          <Button class="go quiet" onPress={onNoTare}>{COPY.foods.plateNoTare}</Button>
+          <Button class="go quiet" onPress={() => { onNoTare(true); }}>
+            {COPY.foods.plateNoTare}
+          </Button>
         </>
       )}
       <p class="hint">{COPY.foods.plateUsual}</p>
       {foodDraft.trim() !== '' && next === null ? (
         <p class="hint refused">
-          {noTare && emptyText !== '' && Number.isFinite(empty) && Number.isFinite(typed)
-            ? COPY.foods.plateOrderWrong
-            : COPY.foods.plateUnreadable}
+          {/* Three different refusals, and saying the wrong one is its own
+              defect: 1500 g IS readable, it is just more than this can treat
+              as one serving, and telling that reader to "type the grams as
+              digits" sends them to fix a thing that is not wrong. */}
+          {Number.isFinite(typed) && typed > 0 && (!noTare || Number.isFinite(empty))
+            && fill > vesselGrams * VESSEL_RATIO_MAX
+            ? COPY.foods.plateAboveCap(
+                String(displayGrams(fill)),
+                String(displayGrams(vesselGrams * VESSEL_RATIO_MAX)),
+              )
+            : noTare && emptyText !== '' && Number.isFinite(empty) && Number.isFinite(typed)
+              ? COPY.foods.plateOrderWrong
+              : COPY.foods.plateUnreadable}
         </p>
       ) : null}
       {heavy && !asserted ? (

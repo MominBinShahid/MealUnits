@@ -392,6 +392,10 @@ export const COPY_UR: Copy = {
     plateNoTare: 'میرے ترازو پر 0 یا TARE کا بٹن نہیں ہے',
     plateNoTareLead:
       'تو دو بار تولیں، فرق ایپ خود نکال لے گی: پہلے خالی پلیٹ، پھر کھانے سمیت پلیٹ۔',
+    plateHasTare: 'میرے سکیل میں 0 یا TARE کا بٹن ہے',
+    plateEmptyRequired: 'خالی پلیٹ کا وزن بھی ضروری ہے — اس کے بغیر پلیٹ کا وزن کھانے میں گن جائے گا۔',
+    plateWorking: (total: string, empty: string, food: string): string =>
+      isolate(`${total}\u00A0گرام − ${empty}\u00A0گرام = ${food}\u00A0گرام کھانا۔`),
     plateEmptyLabel: 'خالی پلیٹ، گرام میں',
     plateTotalLabel: 'پلیٹ اور کھانا ملا کر، گرام میں',
     plateSave: 'اپنا حصہ محفوظ کریں',
@@ -406,6 +410,8 @@ export const COPY_UR: Copy = {
     plateTooHeavy: (fill: string, ref: string): string =>
       isolate(`${fill}\u00A0گرام بہت بڑا حصہ ہے — اس فہرست کی ${ref}\u00A0گرام والی دعوت کی پلیٹ سے بھی زیادہ۔ ترازو اکثر پلیٹ اور کھانا ملا کر دکھاتا ہے۔ چیک کریں کہ کھانا رکھنے سے پہلے، خالی پلیٹ کے ساتھ، ترازو 0 پر تھا۔`),
     plateAssert: 'یہ صرف کھانے کا وزن ہے — محفوظ کریں',
+    plateAboveCap: (fill: string, most: string): string =>
+      isolate(`${fill}\u00A0گرام ، ${most}\u00A0گرام سے زیادہ ہے — اسے ایک سرونگ نہیں مانا جا سکتا۔ اگر یہ دیگ یا پلیٹ سمیت وزن تھا تو صرف کھانے کا وزن کریں۔`),
     plateUnreadable:
       'یہ وزن پڑھا نہیں جا سکتا۔ گرام ہندسوں میں لکھیں، مثلاً 450۔',
     plateOrderWrong:
