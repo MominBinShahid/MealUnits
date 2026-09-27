@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { gramsFor, tallyGrams, vesselRatio } from '../src/core/portion.js';
+import { displayGrams, gramsFor, tallyGrams, vesselRatio } from '../src/core/portion.js';
+import { VESSEL_RATIO_MAX } from '../src/config.js';
 import type { Portioned } from '../src/core/portion.js';
 
 /**
@@ -169,5 +170,57 @@ describe('gramsFor with a vessel — T31 phase 5', () => {
 
   it('carries the ratio through a tally', () => {
     expect(tallyGrams([PLATE, POPCORN], { biryani: 1, popcorn: 1 }, BIG)).toBe(91);
+  });
+});
+
+describe('the cap, and the whole gram on screen', () => {
+  const PLATE: Portioned = { id: 'biryani', grams: 51, vessel: { id: 'plate', grams: 300 } };
+
+  it('refuses a ratio above VESSEL_RATIO_MAX instead of returning it', () => {
+    // 1500 g typed into the one field — a pot weighed, or a scale read in the
+    // wrong unit. The cap lived ONLY at the JSON import boundary, so this
+    // returned 5 and doses `rice-plate` at 420 g against a true 84.
+    expect(vesselRatio({ emptyGrams: 0, fullGrams: 1500 }, 300)).toBeNull();
+  });
+
+  it('admits the cap exactly, and refuses just past it', () => {
+    // The boundary is spelled out rather than written as `300 *
+    // VESSEL_RATIO_MAX`, which would move WITH the constant and let a mutated
+    // cap pass its own test — the survivor that took the mutation score to
+    // 99.95. This pins the value; the assertion below pins the name to it.
+    expect(vesselRatio({ emptyGrams: 0, fullGrams: 900 }, 300)).toBe(3);
+    expect(vesselRatio({ emptyGrams: 0, fullGrams: 901 }, 300)).toBeNull();
+    expect(VESSEL_RATIO_MAX).toBe(3);
+  });
+
+  it('refuses a zero reference on its own, not by way of the cap', () => {
+    // The cap now MASKS this guard for +0: the division gives Infinity, which
+    // the cap refuses anyway, so both a `<= 0` and a `< 0` test read the same.
+    // Negative zero is what separates them — `-0 < 0` is false, so without the
+    // `<=` the division returns -Infinity and sails past a cap that only looks
+    // upwards. The guard is what refuses a reference of zero; this pins that.
+    expect(vesselRatio({ emptyGrams: 0, fullGrams: 450 }, 0)).toBeNull();
+    expect(vesselRatio({ emptyGrams: 0, fullGrams: 450 }, -0)).toBeNull();
+  });
+
+  it('caps on the FILL, so a heavy plate does not buy headroom', () => {
+    // 285 g plate, 1200 g of food: the fill is 1200, ratio 4, still refused.
+    expect(vesselRatio({ emptyGrams: 285, fullGrams: 1485 }, 300)).toBeNull();
+  });
+
+  it('rounds a scaled figure to the whole gram for display', () => {
+    // 51 x (450.5 / 300) is 76.58500000000001, which is what the matrix cell
+    // and the result screen's working line printed.
+    expect(displayGrams(51 * (450.5 / 300))).toBe(77);
+    expect(displayGrams(76.5)).toBe(77);
+    expect(displayGrams(51)).toBe(51);
+  });
+
+  it('does not round the figure the dose is summed from', () => {
+    // §5.3 — display rounding must not become a second rounding engine.
+    // Two rows at 76.5 sum to 153 and round to 153, not to 77 + 77 = 154.
+    const own = { foods: {}, vessels: { plate: { ratio: 1.5 } } };
+    expect(tallyGrams([PLATE], { biryani: 2 }, own)).toBe(153);
+    expect(displayGrams(51 * 1.5) * 2).toBe(154);
   });
 });

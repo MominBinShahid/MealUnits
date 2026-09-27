@@ -18,7 +18,7 @@ import {
   WIZARD_STEPS,
 } from '../../config.js';
 import { formatClockTime } from '../../core/calendar.js';
-import { gramsFor } from '../../core/portion.js';
+import { displayGrams, gramsFor } from '../../core/portion.js';
 import { formatHundredths } from '../../core/decimal.js';
 import { elapsedHours } from '../../core/stacking.js';
 import { eatWindow } from '../../core/timing.js';
@@ -196,7 +196,7 @@ function Working({
         };
 
   return (
-    <div class="working">
+    <div>
       {correction === null ? null : breakdown.correctionSuppressed ? (
         // §10.3 — struck through, WITH ITS REASON. Never silently omitted, and
         // never left as a line that visibly fails to reach the total.
@@ -234,7 +234,7 @@ function Working({
        * breakdown of the number beside it or it is absent.
        */}
       {Object.keys(tally).length === 0 ? null : (
-        <div class="tally-working">
+        <div class="working">
           {FOODS.filter((food) => tally[food.id] !== undefined).map((food) => (
             <div key={food.id} class="row sub">
               <span>{COPY.calculator.tallyLine(String(tally[food.id]), displayName(food, COPY))}</span>
@@ -245,7 +245,7 @@ function Working({
                   The comment above claims the two cannot disagree; phase 2 is
                   what made them, and the claim was written before it existed. */}
               <b>{COPY.foods.gramsOne(String(
-                gramsFor(food, { foods: calibration, vessels }).grams * (tally[food.id] ?? 0),
+                displayGrams(gramsFor(food, { foods: calibration, vessels }).grams) * (tally[food.id] ?? 0),
               ))}</b>
             </div>
           ))}

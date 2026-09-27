@@ -189,7 +189,7 @@ Weight captures diameter and thickness together; density is stable at ≈ 0.43�
 that 300 g is the figure a reader's own weighed fill will be divided by.
 
 **Where the 300 g comes from.** Section 2's household defaults set it: *"plate of rice/biryani =
-300 g"*, raised from 250 g on 2026-09-25 after Momin's own measurement. It is deliberately the same
+300 g"*. ⚠ **It is a convention, not a measurement — corrected 2026-09-27.** This line claimed the 300 was "raised from 250 after Momin's own measurement"; his correction was the opposite, that the 250 was an offhand example he gave and NOT a measurement. Nobody has weighed a household plate. It is deliberately the same
 number for all seven, which is what makes the plate the right vessel to start with — a ratio
 measured through any one of them transfers correctly to the other six, because they all divide by
 the same reference.

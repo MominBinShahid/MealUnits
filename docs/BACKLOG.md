@@ -2893,10 +2893,22 @@ why the plate is where this should start.
 
 #### The tare problem needs a structural answer, not a warning
 
-An un-tared plate is **+5.1 to +10.2 units**. Un-tared during CALIBRATION doubles every dose in that
+An un-tared plate is **+9.8 to +27 units** — the heaviest plate row (90 g at the 300 g reference) against sourced crockery of 326–450 g, at an ICR of 10 down to 5. Un-tared during CALIBRATION doubles every dose in that
 vessel, permanently. No threshold can catch the katori case — un-tared entries of 180–270 g sit
 inside the genuine 100–250 g serving range. So: **weigh empty, then serve what you would actually
 eat, app subtracts**, with the stored empty weight doubling as the detector.
+
+⚠ **What T31 actually shipped, and what it traded away — 2026-09-27.** The one-field design
+asks for the food weight and relies on the scale's TARE button, so the empty weight is NOT stored
+in the common path and cannot serve as the detector this section proposes. That trade is deliberate
+— Momin's call, and the right one for a scale that tares — but its cost is precise and should not
+be forgotten: **the advisory fires on the TOTAL, while the error is constant per plate.** A 200 g
+plate is +6.0 units at an ICR of 10 whether the serving is 50 g or 300 g, and 200 + 150 = 350 never
+trips the 400 g threshold. No threshold can fix this; only the empty weight can, and the two-field
+path is the only place it exists. What stands in its place is a live line showing what the entered
+number DOES to a worked row before Save — a reader who served half a plate and reads "51 g now
+counts as 67 g" is watching the figure move the wrong way. It is a weaker check than the stored
+empty weight, and it is the strongest one available that costs no second weighing.
 
 ⚠ **The wording above is a correction, and the original was a defect — 2026-09-26.** This paragraph
 said *"weigh empty, then FULL"*. A reader reads "full" as **filled to capacity**. Someone whose plate

@@ -449,6 +449,7 @@ CONSTANTS = {
     "BAND_B_CORRECTION_UNITS": "-1.5",
     "INCREMENT": "{ nearest: 1, half: 0.5, ceil: 1, floor: 1, off: 0.01 }",
     "HUNDREDTHS_SCALE": "100",
+    "VESSEL_RATIO_MAX": "3",
     "CLOCK_SKEW_TOLERANCE_HOURS": "1",
     # §8.5 — ALIASES onto INSULIN_TIMING's regular row, not literals. The
     # values themselves are pinned by INSULIN_TIMINGS below, row by row, which
@@ -4157,6 +4158,57 @@ VESSEL_ROWS = {
 }
 
 
+# Classes that carry no stylesheet rule on purpose: `problem` and `value` are
+# selector hooks the tests query. The four inert leftovers that were here —
+# `groups`, `matrix-what`, `search`, `tally-working` — were stripped from the
+# markup on 2026-09-27 rather than pinned, on Momin's call once he saw they
+# styled nothing. Keep this list as short as the truth allows.
+UNSTYLED_CLASSES = {"problem", "value"}
+
+
+def check_class_has_style(_doc: str) -> list[str]:
+    """A class used in markup that no stylesheet rule ever mentions.
+
+    T31's plate panel shipped with `class="plate sheet"` and no `.plate` rule,
+    so it inherited `.sheet` — the screen's bottom bar, `margin-top: auto` —
+    and sank to the foot of a long scrolling list. Momin could not find the
+    feature in the live app. Every gate passed: the strings existed, the
+    handlers were wired, the tests asserted on state and never on where the
+    thing landed. A class with no rule of its own is silently wearing some
+    other element's rule, which is how that happens.
+    """
+    sheet = os.path.join(HERE, "src", "ui", "styles.css")
+    if not os.path.isfile(sheet):
+        return []
+    with open(sheet, encoding="utf-8") as handle:
+        css = handle.read()
+    styled = set(re.findall(r"\.([a-zA-Z][a-zA-Z0-9_-]*)", css))
+    problems: list[str] = []
+    screens = os.path.join(HERE, "src", "ui")
+    paths: list[str] = []
+    for root, _dirs, names in os.walk(screens):
+        paths.extend(os.path.join(root, n) for n in names if n.endswith(".tsx"))
+    for path in sorted(paths):
+        with open(path, encoding="utf-8") as handle:
+            body = handle.read()
+        shown = os.path.relpath(path, HERE)
+        for line_no, line in enumerate(body.splitlines(), start=1):
+            # Only a quoted literal. `class={draft.icr === '' ? ...}` was
+            # being read as a class named `draft`, which put two JSX variable
+            # names on the unstyled list and hid what the check is for.
+            for group in re.findall(r"class(?:Name)?=\"([a-z0-9 \-]+)\"", line):
+                for name in group.split():
+                    if name in styled or name in UNSTYLED_CLASSES:
+                        continue
+                    problems.append(
+                        f"{shown}:{line_no} uses class `{name}`, which no rule in "
+                        "styles.css mentions. It is wearing whatever its "
+                        "siblings wear. Give it a rule, or add it to "
+                        "UNSTYLED_CLASSES with the reason."
+                    )
+    return problems
+
+
 def check_vessel_rows(_plan):
     r"""Every food row decides about vessels, and only the pinned set scales.
 
@@ -5063,6 +5115,7 @@ CHECKS = [
     ("10a: a stylesheet declaration that names a side", check_logical_properties, "plan"),
     ("10a: a number range that bidi will reverse", check_rtl_ranges_isolated, "plan"),
     ("vessel rows that scale without being pinned", check_vessel_rows, "plan"),
+    ("a class in markup with no stylesheet rule", check_class_has_style, "plan"),
     ("a backlog number used twice", check_backlog_numbers_unique, "plan"),
     ("tests missing from the mutation run", check_mutation_coverage_list, "plan"),
     ("§20.5 listing vs the directory", check_file_listing, "plan"),

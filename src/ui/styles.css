@@ -2406,3 +2406,49 @@ p {
 
 
 
+
+/*
+ * T31 — the plate panel.
+ *
+ * It had NO rule at all on first ship, so it inherited `.sheet` — the screen's
+ * bottom bar, with `margin-top: auto` — and fell to the foot of a long
+ * scrolling list where nobody found it. `.flag.mint` is the right furniture:
+ * the quiet informational panel this screen already uses, in the flow, at the
+ * head of the group whose rows it governs.
+ */
+.plate-panel {
+  display: grid;
+  gap: var(--gap);
+  margin-block-end: var(--gap);
+}
+
+/* §10.7 — the touch floor, through the token rather than a literal 48px, so
+   this moves with `--touch` like every other control. Tremor is a low-blood-
+   sugar symptom, and this panel is reached holding a plate in the other hand. */
+.plate-panel .go {
+  min-block-size: var(--touch);
+}
+
+/* The inputs are wrapped in `.field`, so they inherit the app's control styling
+   and its 9rem cap — a width sized so a four-digit typo is visible. Nothing
+   more is needed here. */
+
+/*
+ * The panel's two advisory tones.
+ *
+ * `.hint.warn` and `.hint.halt` were used before these existed. `.warn` had no
+ * rule that could match a `<p>` — the only `.warn` in this file is
+ * `.prompt-bar.warn` — so the un-tared warning painted as an ordinary grey
+ * hint, indistinguishable from the field labels beside it. `.halt` DID match:
+ * §3's medical-stop panel, `flex: 1`, centred, 1.25rem radius, halt-red. That
+ * is the trap the comment above `.flag.stop` already records once, repeated.
+ */
+.plate-panel .hint.warn {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.plate-panel .hint.refused {
+  color: var(--halt);
+  font-weight: 600;
+}

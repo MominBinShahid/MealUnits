@@ -30,6 +30,8 @@
  */
 
 /** The part of a food row this arithmetic reads. */
+import { VESSEL_RATIO_MAX } from '../config.js';
+
 export interface Portioned {
   readonly id: string;
   /** Grams of carbohydrate, and for a banded row this is the FLOOR. */
@@ -117,6 +119,21 @@ export function tallyGrams(
 }
 
 /**
+ * The whole gram to PRINT for one row, never the figure to dose from.
+ *
+ * A vessel ratio is the first thing in this app that makes a row's grams
+ * fractional: 51 x 1.5 is 76.5, and 51 x (450.5 / 300) is 76.58500000000001,
+ * which is what the matrix cell and the result screen's working line printed.
+ * §5.3 says formatting is not a second rounding engine, and this does not
+ * become one — `tallyGrams` still sums the UNROUNDED figures and rounds once at
+ * the end, so the dose is unchanged. This only stops the screen showing a
+ * reader a number with a tail on it that no dose will ever use.
+ */
+export function displayGrams(grams: number): number {
+  return Math.round(grams);
+}
+
+/**
  * The ratio a weighing produces, or null when no honest one exists.
  *
  * `null` rather than a fallback, because every plausible fallback is wrong.
@@ -125,8 +142,12 @@ export function tallyGrams(
  * belongs. A refusal is the only answer that cannot be mistaken for a result.
  *
  * The subtraction is the tare, and it is the reason this is a function rather
- * than a division at the call site. An un-tared plate is **+5.1 to +10.2
- * units**, and un-tared during calibration doubles every dose in that vessel
+ * than a division at the call site. An un-tared plate adds the plate's whole weight to the
+ * ratio: on the heaviest plate row (`tahiri-plate`, 90 g at the 300 g
+ * reference) the lightest steel thali this table sourced, 326 g, is **+98 g of
+ * carbohydrate — +9.8 units at an ICR of 10, +19.6 at an ICR of 5**, and a
+ * 450 g plate is +13.5 and +27. `VESSEL_RATIO_MAX`, enforced below, is the only
+ * thing bounding it. Un-tared during calibration doubles every dose in that vessel
  * permanently — so the empty weight is a required input, not an option.
  */
 export function vesselRatio(
@@ -140,5 +161,12 @@ export function vesselRatio(
   // A fill at or below zero is a reading taken in the wrong order, or the same
   // number typed twice. Neither is a vessel.
   if (fill <= 0) return null;
-  return fill / referenceGrams;
+  const ratio = fill / referenceGrams;
+  // The cap lives HERE, not only at the import boundary. It used to guard the
+  // JSON parse alone, while this function — the one every save goes through —
+  // returned any ratio at all: 1500 g typed into the field wrote a ratio of 5
+  // and doses `rice-plate` at 420 g. The docstring above already claimed this
+  // cap bounded the hazard, which made the comment the only thing enforcing it.
+  if (ratio > VESSEL_RATIO_MAX) return null;
+  return ratio;
 }

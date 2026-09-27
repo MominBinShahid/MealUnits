@@ -125,6 +125,19 @@ export const BAND_B_CORRECTION_UNITS = -1.5; // at or below: caution copy
 export const INCREMENT = { nearest: 1, half: 0.5, ceil: 1, floor: 1, off: 0.01 } as const;
 export const HUNDREDTHS_SCALE = 100; // §2.2 integer representation
 
+// ─── THE PLATE (§11.8, T31) ────────────────────────────────
+// A stored plate ratio above this is refused on read and on write. It is a
+// CORRUPTION bound, not an advisory: a ratio of 3 is a 900 g serving, beyond
+// any plate anybody has described, and an unbounded one multiplies every plate
+// row — at 10, `rice-plate` reads 840 g.
+//
+// Deliberately looser than the advisory threshold, which is a different
+// question. The largest serving this table describes is the 400 g dawat plate,
+// and the dawat rows are the everyday rows times exactly 400/300 — so 4/3 is
+// the largest ratio the data corroborates, and anything above it is worth
+// asking about without being worth refusing.
+export const VESSEL_RATIO_MAX = 3;
+
 // ─── CLOCK AND TIMING (§7.6, §8.1) ─────────────────────────
 export const CLOCK_SKEW_TOLERANCE_HOURS = 1; // §7.6 future-timestamp bound
 

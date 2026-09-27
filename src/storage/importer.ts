@@ -8,7 +8,7 @@
  */
 
 import { META_KEY, SETTINGS_SCOPE, STORE } from './schema.js';
-import type { CalibrationRow, DosingHistoryRow, SettingsHistoryRow } from './schema.js';
+import type { CalibrationRow, DosingHistoryRow, SettingsHistoryRow, VesselRow } from './schema.js';
 import { add, get, getAll, maxKey, put, runTransaction } from './tx.js';
 import { planMerge } from './envelope.js';
 import type { Envelope } from './envelope.js';
@@ -109,6 +109,18 @@ export function importEnvelope(
         key: META_KEY.calibration,
         foods: merged,
       } satisfies CalibrationRow);
+    }
+
+    // T31 — the plate ratio, on the same merge rule as the per-food map above
+    // and for the same reason: a plate belongs to the reader's kitchen, not to
+    // the install, so the imported entries are as legitimate as the local ones
+    // and a collision keeps whichever the device already had.
+    if (envelope.vessels !== undefined) {
+      const existingVessels = await get<VesselRow>(tx, STORE.meta, META_KEY.vessel);
+      await put(tx, STORE.meta, {
+        key: META_KEY.vessel,
+        vessels: { ...envelope.vessels, ...(existingVessels?.vessels ?? {}) },
+      } satisfies VesselRow);
     }
 
     // §7.5 — the import makes provenance suspect until this install logs an
