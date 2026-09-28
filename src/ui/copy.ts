@@ -2118,6 +2118,16 @@ export const COPY = {
   staleConnection: {
     title: 'This app was updated in another window.',
     body: 'Close this one and open it again before you log anything else. Nothing has been lost.',
+    /**
+     * Said INSTEAD of `body` when a logged dose has not reached the record.
+     *
+     * The advice to close and reopen is still right — the connection cannot be
+     * repaired in this tab — so this does not argue against it. It names the
+     * one thing that survives the close, which is the reader writing the number
+     * down.
+     */
+    unsavedBody: (amount: string): string =>
+      `Close this one and open it again. ${amount} has not been saved and closing will lose it — write it down first.`,
   },
 
   /** §11.3 — another tab deleted the record while this one was open. */

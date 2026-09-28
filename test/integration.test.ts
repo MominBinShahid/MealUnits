@@ -2630,6 +2630,16 @@ describe('§7.2 a failed write retries, and escalates only when retrying stops h
     // It must report again rather than silently doing nothing.
     expect(stuckPrompts.length).toBeGreaterThan(1);
     expect(buzzes).toBe(0);
+
+    // And once the stuck bar is dismissed, the stale bar underneath must not
+    // claim the dose is safe. Its ordinary body ends "Nothing has been lost",
+    // which is true when only the connection died — and false here, because
+    // `state.committing` is the only copy of this dose and the bar's own
+    // advice, close and reopen, is what destroys it.
+    await tapShell(COPY.log.stuckDismiss);
+    expect(shellText()).toContain(COPY.staleConnection.title);
+    expect(shellText()).not.toContain(COPY.staleConnection.body);
+    expect(shellText()).toContain('has not been saved');
   });
 
   it('and the bar\'s retry writes the FROZEN payload once the disk comes back', async () => {

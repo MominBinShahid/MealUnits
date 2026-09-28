@@ -2078,6 +2078,8 @@ export const COPY_UR: Copy = {
   staleConnection: {
     title: 'یہ ایپ کسی دوسری ونڈو میں اپ ڈیٹ ہو گئی ہے۔',
     body: 'کچھ بھی اور درج کرنے سے پہلے یہ والی ونڈو بند کر کے دوبارہ کھولیں۔ کچھ بھی ضائع نہیں ہوا۔',
+    unsavedBody: (amount: string): string =>
+      isolate(`اسے بند کر کے دوبارہ کھولیں۔ ${amount} محفوظ نہیں ہوئی اور بند کرنے پر ضائع ہو جائے گی — پہلے لکھ لیں۔`),
   },
 
   /** §11.3 — another tab deleted the record while this one was open. */

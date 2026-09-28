@@ -401,7 +401,19 @@ export interface Host {
    * another. Neither set `--prompt-h`, so the page was not padded and the bar
    * covered the primary action.
    */
-  readonly onStale: (show: boolean) => void;
+  /**
+   * `unsaved` is the dose that has NOT reached the record, or null.
+   *
+   * The bar's ordinary body ends "Nothing has been lost", which is true when
+   * the only casualty is this tab's connection — everything already written is
+   * safe and reopening restores it. It is false in one overlap: a logged dose
+   * whose write failed lives in `state.committing` and nowhere else, so closing
+   * the window, which is exactly what the bar tells the reader to do, discards
+   * it. The next session's stacking check reads the record, so a dose that
+   * never reached it is invisible and the NEXT dose is worked out as if that
+   * insulin were not in the body.
+   */
+  readonly onStale: (show: boolean, unsaved: string | null) => void;
   readonly onWriteFailed: (show: boolean, startOver: () => void) => void;
   /**
    * `10a` — which language the SHELL's own strings are in.
@@ -2104,7 +2116,14 @@ export async function start(host: Host): Promise<void> {
         // the only one anybody could reach, and this one went quiet. A tab that
         // cannot write must say so rather than look ordinary.
         if (newVersion !== null) {
-          host.onStale(true);
+          // The pending dose, if there is one, so the bar can stop claiming
+          // nothing was lost at the one moment that is untrue.
+          host.onStale(
+            true,
+            state.committing !== null && state.save.kind === 'pending'
+              ? copy.units(state.committing.injectedUnits)
+              : null,
+          );
         }
         if (newVersion === null) {
           state = initialState();
