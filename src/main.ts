@@ -20,7 +20,7 @@ import type { Copy } from './ui/copy.js';
 /**
  * `10a` — the words the SHELL's own bars are in.
  *
- * Everything inside the app root reads through `CopyContext`; these three bars
+ * Everything inside the app root reads through `CopyContext`; these five bars
  * cannot, because they live OUTSIDE it — fixed to the foot, offsetting the page
  * through `--prompt-h` — and are built in plain closures where no hook can
  * answer. So `start()` tells this file instead, through `onCopy`, once at boot
@@ -130,12 +130,16 @@ const hooks = barHooks(
   (kind, spec) => { bars.raise(kind, spec); },
   (kind) => { bars.retire(kind); },
   () => copy,
+  // Into the same map `update` and `install` use, so `onCopy` repaints these
+  // three as well. They had no entry at all, which is how a failed-write bar
+  // could sit in English under an Urdu interface.
+  (kind, paint) => { redraw.set(kind, paint); },
 );
 
 /**
  * How a standing bar learns the language, keyed by kind.
  *
- * `10a` taught these three bars to READ their words from `copy`; it did not
+ * `10a` taught these five bars to READ their words from `copy`; it did not
  * teach them to read them AGAIN. They are raised once and latched — `offered`
  * and `shown` exist so a bar cannot stack on itself — and the update offer is
  * raised from `whenLoaded`, which runs SYNCHRONOUSLY on a revisit served from

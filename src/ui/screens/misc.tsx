@@ -584,7 +584,7 @@ export function ClearScreen({
  * nothing deciding which won — and neither set `--prompt-h`, the variable
  * whose whole job is stopping a bottom bar from covering the primary action.
  *
- * They are `BarSpec`s in `main.ts` now, raised through the same slot as
+ * They are `BarSpec`s in `prompt-bar.ts` now, raised through the same slot as
  * `stuck`, `update` and `install`, with `BAR_ORDER` deciding which single one
  * is up. Their words did not change and neither did their furniture: the title,
  * the body, the hint said BEFORE the control it warns about, and the danger

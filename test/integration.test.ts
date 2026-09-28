@@ -229,10 +229,25 @@ afterEach(() => {
  * be queued in front of the next one's.
  */
 let bars = createBarSlot<BarSpec>((spec, gone) => paintBar(spec, gone));
+/** The language redraw map, so a standing bar can be repainted as the shell does. */
+const redraws = new Map<string, () => void>();
+let stuckHook = barHooks(
+  (kind, spec) => { bars.raise(kind, spec); },
+  (kind) => { bars.retire(kind); },
+  () => COPY,
+  (kind, paint) => { redraws.set(kind, paint); },
+);
 
 async function boot(indexedDB: IDBFactory = new IDBFactory()): Promise<void> {
   generation += 1;
   bars = createBarSlot<BarSpec>((spec, gone) => paintBar(spec, gone));
+  redraws.clear();
+  stuckHook = barHooks(
+    (kind, spec) => { bars.raise(kind, spec); },
+    (kind) => { bars.retire(kind); },
+    () => COPY,
+    (kind, paint) => { redraws.set(kind, paint); },
+  );
   const mine = generation;
   const live = (): boolean => generation === mine;
   await start({
@@ -259,9 +274,10 @@ async function boot(indexedDB: IDBFactory = new IDBFactory()): Promise<void> {
     // here would let this file pass while a reader saw nothing. `text()` reads
     // the document, so it sees what `paintBar` appends exactly as it is.
     ...barHooks(
-      (kind, spec) => { bars.raise(kind, spec); },
-      (kind) => { bars.retire(kind); },
+      (kind, spec) => { if (live()) bars.raise(kind, spec); },
+      (kind) => { if (live()) bars.retire(kind); },
       () => COPY,
+      (kind, paint) => { redraws.set(kind, paint); },
     ),
     storagePersisted: Promise.resolve(storageAnswer),
     onStorageAtRisk: (show) => {
@@ -272,7 +288,15 @@ async function boot(indexedDB: IDBFactory = new IDBFactory()): Promise<void> {
     syncHistory: (can, path) => { if (live()) { canGoBack = can; currentPath = path; } },
     onNavigate: (handler) => { if (live()) hardwareBack = handler; },
     initialPath: startPath,
-    onSaveStuck: (amount, retry) => { stuckPrompts.push({ amount, retry }); },
+    // Records AND paints. This override used to sit after the spread and win
+    // outright, so `stuck` — the bar that says a dose is not in the record —
+    // was the one kind no test ever put through the real slot. Every claim
+    // about it (that it outranks `stale`, that a retry repaints it, that it
+    // sets `--prompt-h`) was being checked against a string spy.
+    onSaveStuck: (amount, retry) => {
+      stuckPrompts.push({ amount, retry });
+      stuckHook.onSaveStuck(amount, retry);
+    },
   });
   await settle();
 }

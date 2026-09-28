@@ -383,7 +383,7 @@ export interface Host {
    * Called AGAIN if that retry also fails, which is what lets a bar that closes
    * on tap come back rather than vanishing on a failure.
    */
-  readonly onSaveStuck?: ((amount: string, retry: () => void) => void) | undefined;
+  readonly onSaveStuck: (amount: string, retry: () => void) => void;
   /**
    * The two bottom-edge messages this file used to render itself.
    *
@@ -407,8 +407,8 @@ export interface Host {
    * `10a` — which language the SHELL's own strings are in.
    *
    * Everything inside the app root reads its words through `CopyContext`, which
-   * is the seam #74 built. `main.ts` cannot: the update bar, the storage bar and
-   * the stuck-dose bar live OUTSIDE the root — fixed to the foot and offsetting
+   * is the seam #74 built. `main.ts` cannot: all FIVE bars — update, install,
+   * stuck, and since 2026-09-28 stale and write-failed — live OUTSIDE the root — fixed to the foot and offsetting
    * the page through `--prompt-h` — so no provider reaches them, and they are
    * built in plain closures where no hook can answer.
    *
@@ -832,7 +832,7 @@ export async function start(host: Host): Promise<void> {
       }
       // Twice is not transient. Hand it to something that follows him off this
       // screen, because `committing` now outlives the logged step.
-      host.onSaveStuck?.(copy.units(payload.injectedUnits), retryPendingSave);
+      host.onSaveStuck(copy.units(payload.injectedUnits), retryPendingSave);
     }
   };
 
@@ -957,6 +957,13 @@ export async function start(host: Host): Promise<void> {
     const connection = db;
     if (connection === null) {
       host.onWriteFailed(true, () => { void startOver(); });
+      // The `render()` this used to do, kept. Three callers set view state and
+      // THEN call this — `onChooseLanguage` and `onConfirmUrdu` clear
+      // `confirmingUrdu`, `onResetMine` clears `resettingMine` — so dropping it
+      // left the confirm panel on screen while the model said it was closed,
+      // and the next tap on it did nothing. That is the dead control the
+      // comment above `confirmingUrdu` records being fixed once already.
+      render();
       return;
     }
     // Captured, so the narrowing survives into the closure — `db` is reassigned
@@ -2047,9 +2054,6 @@ export async function start(host: Host): Promise<void> {
        * not one call site changes.
        */
       <CopyContext.Provider value={copy}>
-        {/* ABOVE the screen, not inside one, because three of the four writes it
-            reports fire from different screens and a panel each would be three
-            places for the wording to drift. */}
         {/* `stale` and `write-failed` used to render here on a plain
             condition. They are raised through the shell's bar slot now — one
             queue, one thing at the bottom, `--prompt-h` set whichever it is. */}

@@ -57,6 +57,14 @@ export interface BarSpec {
  */
 export function paintBar(options: BarSpec, onGone: () => void): () => void {
   const bar = document.createElement('div');
+  // ANNOUNCED, not just painted. The two panels this replaced carried
+  // `role="alert"`; `paintBar` did not, so a reader using a screen reader got
+  // no announcement when "That did not save." appeared — and the message is now
+  // appended after `#app`, so in reading order it went from the first thing on
+  // the page to the last. `alert` for the two that report a failure, `status`
+  // for the rest: an install offer interrupting speech is not the same event as
+  // a dose that is not in the record.
+  bar.setAttribute('role', options.variant === 'stop' ? 'alert' : 'status');
   bar.className = options.variant === undefined ? 'prompt-bar' : `prompt-bar ${options.variant}`;
 
   const text = document.createElement('b');
@@ -81,22 +89,22 @@ export function paintBar(options: BarSpec, onGone: () => void): () => void {
   const danger = options.dangerLabel === undefined ? null : document.createElement('button');
   if (danger !== null) {
     danger.type = 'button';
-    // `classList`, not a `'go danger'` string: §11.x's text check reads
-    // main.ts and this file is pinned at zero English strings, so a two-word
-    // literal here reads as prose to it. Two tokens, each its own word.
+    // `classList`, not a `'go danger'` string: the text check walks `src/ui`
+    // and reads a two-word literal as prose. Two tokens, each its own word.
+    // (`'go quiet'` below survives only because it is in `UI_TEXT_OK`.)
     danger.classList.add('go', 'danger');
     danger.textContent = options.dangerLabel ?? '';
   }
 
   const dismiss = options.dismissLabel === undefined ? null : document.createElement('button');
   if (dismiss !== null) {
-  dismiss.type = 'button';
+    dismiss.type = 'button';
   // A LINK beside a real action, a BUTTON when it is the only control. The
   // quiet link reads as secondary next to "Add it"; alone in the bar it reads
   // as text nobody thought to style, and the one thing a person can do here
   // stops looking like a thing they can do.
-  dismiss.className = options.actionLabel === undefined ? 'go quiet' : 'link';
-  dismiss.textContent = options.dismissLabel ?? '';
+    dismiss.className = options.actionLabel === undefined ? 'go quiet' : 'link';
+    dismiss.textContent = options.dismissLabel ?? '';
   }
 
   const close = (): void => {
@@ -155,6 +163,20 @@ export function barHooks(
   raise: (kind: 'stuck' | 'stale' | 'write-failed', spec: BarSpec) => void,
   retire: (kind: 'stuck' | 'stale' | 'write-failed') => void,
   getCopy: () => Copy,
+  /**
+   * How a standing bar re-reads its words when the language changes.
+   *
+   * These three were NOT in the redraw map, and the comment here used to claim
+   * they were. Before the move they were Preact components reading `useCopy()`,
+   * so they followed a language change for free; after it they were built from
+   * words read once at raise time and never again. A failed write, then Settings
+   * → Urdu, and the bar stayed in English over an Urdu interface — which is the
+   * exact defect this project already shipped once with the install bar.
+   *
+   * Each hook registers a closure that raises ITSELF again, so the repaint goes
+   * through the same builder rather than a second copy of the spec.
+   */
+  onRedraw: (kind: 'stuck' | 'stale' | 'write-failed', paint: () => void) => void,
 ): {
   readonly onStale: (show: boolean) => void;
   readonly onWriteFailed: (show: boolean, startOver: () => void) => void;
@@ -162,35 +184,47 @@ export function barHooks(
 } {
   return {
     onStale: (show) => {
-      const copy = getCopy();
       if (!show) { retire('stale'); return; }
-      raise('stale', {
+      const paint = (): void => {
+        const copy = getCopy();
+        raise('stale', {
         text: copy.staleConnection.title,
         body: copy.staleConnection.body,
-        variant: 'stop',
-      });
+          variant: 'stop',
+        });
+      };
+      onRedraw('stale', paint);
+      paint();
     },
     onWriteFailed: (show, startOver) => {
-      const copy = getCopy();
       if (!show) { retire('write-failed'); return; }
-      raise('write-failed', {
+      const paint = (): void => {
+        const copy = getCopy();
+        raise('write-failed', {
         text: copy.writeFailed.title,
         body: copy.writeFailed.body,
         hint: copy.writeFailed.startOverHint,
         dismissLabel: copy.writeFailed.dismiss,
         dangerLabel: copy.failClosed.escape,
-        onDanger: startOver,
-        variant: 'stop',
-      });
+          onDanger: startOver,
+          variant: 'stop',
+        });
+      };
+      onRedraw('write-failed', paint);
+      paint();
     },
     onSaveStuck: (amount, retry) => {
-      const copy = getCopy();
-      raise('stuck', {
+      const paint = (): void => {
+        const copy = getCopy();
+        raise('stuck', {
         text: copy.log.stuck(amount),
         actionLabel: copy.log.stuckAction,
         onAction: retry,
-        dismissLabel: copy.log.stuckDismiss,
-      });
+          dismissLabel: copy.log.stuckDismiss,
+        });
+      };
+      onRedraw('stuck', paint);
+      paint();
     },
   };
 }
