@@ -2037,7 +2037,7 @@ button:disabled { cursor: default; }
      the browser; this is what was wrong with it. Longhands only, so a future
      shorthand cannot quietly eat it again. */
   padding-block-start: 0.75rem;
-     Once a prompt bar is up THAT is the element at the edge, and its own
+  /* Once a prompt bar is up THAT is the element at the edge, and its own
      clearance is already inside the height we measure, so a full inset here
      would stack two of them — the doubling the note above `.flag .sheet`
      records fixing once. Subtracting `--prompt-h` spends the inset only on the
