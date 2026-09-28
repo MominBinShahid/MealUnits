@@ -2179,7 +2179,12 @@ export const COPY = {
    * seconds and ends the moment the reader taps either button.
    */
   update: {
-    ready: 'A newer version is ready.',
+    /* Names the reason rather than the event. "A newer version is ready"
+       is true and gives nobody a reason to act now, so `Later` was always
+       the cheaper tap — and this bar sits SECOND in `BAR_ORDER` precisely
+       because a newer build may be fixing a calculation, which is a latent
+       wrong number. `may` because plenty of updates only move pixels. */
+    ready: 'An update is ready \u2014 it may correct a figure.',
     useNow: 'Use it now',
     later: 'Later',
   },

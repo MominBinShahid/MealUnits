@@ -17,6 +17,9 @@
  */
 
 import { IDBFactory } from 'fake-indexeddb';
+import { createBarSlot } from '../src/ui/bar-slot.js';
+import { barHooks, paintBar } from '../src/ui/prompt-bar.js';
+import type { BarSpec } from '../src/ui/prompt-bar.js';
 import { JSDOM } from 'jsdom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { start } from '../src/ui/app.js';
@@ -220,8 +223,16 @@ afterEach(() => {
   dom.window.close();
 });
 
+/**
+ * Rebuilt per boot. A module-level slot would carry a `close` pointing into a
+ * document the previous test tore down, and a bar standing from one test would
+ * be queued in front of the next one's.
+ */
+let bars = createBarSlot<BarSpec>((spec, gone) => paintBar(spec, gone));
+
 async function boot(indexedDB: IDBFactory = new IDBFactory()): Promise<void> {
   generation += 1;
+  bars = createBarSlot<BarSpec>((spec, gone) => paintBar(spec, gone));
   const mine = generation;
   const live = (): boolean => generation === mine;
   await start({
@@ -242,6 +253,16 @@ async function boot(indexedDB: IDBFactory = new IDBFactory()): Promise<void> {
     // testable: `canGoBack` records what the shell claims, and `pressBack`
     // fires the gesture. jsdom's own history would not tell us either.
     buzz: () => { buzzes += 1; },
+    // The REAL slot, the REAL painter, the REAL spec builders — the same three
+    // the shell wires. These two bars stopped being rendered by `app.tsx` on
+    // 2026-09-28 and became bars raised through the queue, and wiring a stub
+    // here would let this file pass while a reader saw nothing. `text()` reads
+    // the document, so it sees what `paintBar` appends exactly as it is.
+    ...barHooks(
+      (kind, spec) => { bars.raise(kind, spec); },
+      (kind) => { bars.retire(kind); },
+      () => COPY,
+    ),
     storagePersisted: Promise.resolve(storageAnswer),
     onStorageAtRisk: (show) => {
       if (!live()) return;
@@ -296,6 +317,18 @@ function text(): string {
 }
 
 /**
+ * What the reader sees INCLUDING the prompt bars.
+ *
+ * `text()` reads the app root, and the bars are appended to the body on
+ * purpose — "outside the app root and no provider reaches them". Asserting a
+ * bar through `text()` therefore asserts nothing, which is how three checks in
+ * this file passed on a screen with no message on it at all.
+ */
+function shellText(): string {
+  return plain(document.body.textContent ?? '');
+}
+
+/**
  * Buttons are found by the WORDS on them, with decorative glyphs stripped —
  * `Back` carries a leading arrow, and a test that had to spell the arrow would
  * be asserting a typographic choice rather than a label. The words are what the
@@ -313,6 +346,25 @@ function buttonLabel(button: Element): string {
  * §8.5's picker — a row's accessible name is the brand AND the molecule, which
  * is deliberate for a screen reader and unwieldy for an exact match here.
  */
+/**
+ * Taps a control in a prompt bar, which lives OUTSIDE the app root by design.
+ *
+ * `tap` searches `root`, and the bars are appended to the body — so a test that
+ * dismissed one through `tap` was looking in the wrong tree and would report
+ * "no button" rather than a wrong number. Separate helper rather than widening
+ * `tap`, because widening it would let every other test find a control the
+ * reader's thumb reaches in a different place.
+ */
+async function tapShell(label: string): Promise<void> {
+  const buttons = [...document.body.querySelectorAll<HTMLButtonElement>('.prompt-bar button')];
+  const found = buttons.find((button) => buttonLabel(button) === label);
+  if (!found) {
+    throw new Error(`No bar button "${label}". Buttons: ${buttons.map((b) => buttonLabel(b)).join(', ')}`);
+  }
+  found.click();
+  await settle();
+}
+
 async function tapStartingWith(prefix: string): Promise<void> {
   const buttons = [...root.querySelectorAll('button')];
   const found = buttons.find((button) => buttonLabel(button).startsWith(prefix));
@@ -1038,17 +1090,17 @@ describe('§10.6 the five terms the app used and never explained', () => {
     await tap('Settings');
 
     // Nothing on screen before the failure — the panel must not be furniture.
-    expect(text()).not.toContain(COPY.writeFailed.title);
+    expect(shellText()).not.toContain(COPY.writeFailed.title);
 
     blocked.on = true;
     await typeInto('What should a correction aim for', '140');
     await tap(COPY.settings.save);
 
-    expect(text()).toContain(COPY.writeFailed.title);
-    expect(text()).toContain(COPY.writeFailed.body);
+    expect(shellText()).toContain(COPY.writeFailed.title);
+    expect(shellText()).toContain(COPY.writeFailed.body);
     // §7.9's escape, offered with what it costs stated before the control.
-    expect(text()).toContain(COPY.writeFailed.startOverHint);
-    expect(text()).toContain(COPY.failClosed.escape);
+    expect(shellText()).toContain(COPY.writeFailed.startOverHint);
+    expect(shellText()).toContain(COPY.failClosed.escape);
   });
 
   it('and the failure panel can be dismissed, because the app still works', async () => {
@@ -1058,10 +1110,10 @@ describe('§10.6 the five terms the app used and never explained', () => {
     blocked.on = true;
     await typeInto('What should a correction aim for', '140');
     await tap(COPY.settings.save);
-    expect(text()).toContain(COPY.writeFailed.title);
+    expect(shellText()).toContain(COPY.writeFailed.title);
 
-    await tap(COPY.writeFailed.dismiss);
-    expect(text()).not.toContain(COPY.writeFailed.title);
+    await tapShell(COPY.writeFailed.dismiss);
+    expect(shellText()).not.toContain(COPY.writeFailed.title);
   });
 
   it('defines stacking, the word seven user-facing strings already use', async () => {
@@ -2514,10 +2566,10 @@ describe('§7.2 a failed write retries, and escalates only when retrying stops h
     await tap('Work out the dose');
     await tap('I injected this');
 
-    expect(text()).not.toContain(COPY.staleConnection.title);
+    expect(shellText()).not.toContain(COPY.staleConnection.title);
     await upgradeFromAnotherTab(idb);
-    expect(text()).toContain(COPY.staleConnection.title);
-    expect(text()).toContain(COPY.staleConnection.body);
+    expect(shellText()).toContain(COPY.staleConnection.title);
+    expect(shellText()).toContain(COPY.staleConnection.body);
 
     await tap('Log this injection');
     // Inert, and that is the point: no claim that a dose was recorded.

@@ -26,11 +26,26 @@
  *
  * `stuck` leads because an unrecorded dose is live harm: §7.2's write failed
  * AND its automatic retry failed, so the dose is not in the record and the
- * stacking check cannot see it. `update` next — a newer build may be fixing a
- * calculation, which is a latent wrong number against the stuck bar's actual
- * one. `install` last: it is about a record that may be deleted next week.
+ * stacking check cannot see it.
+ *
+ * `stale` and `write-failed` JOINED on 2026-09-28. They were rendered straight
+ * from `app.tsx` on a plain condition, which meant two systems owned the bottom
+ * edge and neither could see the other: both are `position: fixed; bottom: 0`
+ * at the same z-index, so a dropped connection AND a failed write painted on
+ * top of each other with nothing deciding which won. Neither set `--prompt-h`
+ * either, so while one was up the page was not padded and it covered the
+ * primary action — the exact thing that variable exists to prevent.
+ *
+ * `stale` above `write-failed` because it is the CAUSE of the failures that
+ * follow it. Once the connection is closed `db` is null, so every write from
+ * then on raises `write-failed`; showing the symptom while hiding the cause
+ * would have the reader retrying when the fix is to reopen the window.
+ *
+ * `update` next — a newer build may be fixing a calculation, which is a latent
+ * wrong number against the stuck bar's actual one. `install` last: it is about
+ * a record that may be deleted next week.
  */
-export const BAR_ORDER = ['stuck', 'update', 'install'] as const;
+export const BAR_ORDER = ['stuck', 'stale', 'write-failed', 'update', 'install'] as const;
 
 export type BarKind = (typeof BAR_ORDER)[number];
 

@@ -33,6 +33,8 @@ import type { Copy } from './ui/copy.js';
 let copy: Copy = COPY;
 
 import { createBarSlot } from './ui/bar-slot.js';
+import { barHooks, paintBar } from './ui/prompt-bar.js';
+import type { BarSpec } from './ui/prompt-bar.js';
 
 /**
  * §12 — `persist()` is three lines: call it and SURFACE `persisted()` HONESTLY.
@@ -121,19 +123,14 @@ function pickFile(): Promise<string | null> {
  * published as a custom property and `#app` pads by it while a prompt is up.
  * That is the difference between overlaying the PAGE and overlaying a BUTTON.
  */
-/**
- * The slot itself lives in `bar-slot.ts`, free of the DOM: what is hard is the
- * ORDER, and order is what a test can pin. This wires it to pixels.
- */
-interface BarSpec {
-  readonly text: string;
-  readonly actionLabel?: string | undefined;
-  readonly onAction?: (() => void) | undefined;
-  readonly dismissLabel: string;
-  readonly variant?: 'warn' | undefined;
-}
 
 const bars = createBarSlot<BarSpec>((spec, gone) => paintBar(spec, gone));
+// The SAME builders the tests wire, so a test cannot pass against a fake.
+const hooks = barHooks(
+  (kind, spec) => { bars.raise(kind, spec); },
+  (kind) => { bars.retire(kind); },
+  () => copy,
+);
 
 /**
  * How a standing bar learns the language, keyed by kind.
@@ -156,69 +153,6 @@ const bars = createBarSlot<BarSpec>((spec, gone) => paintBar(spec, gone));
  */
 const redraw = new Map<string, () => void>();
 
-/**
- * Builds one bar and returns its close. Knows nothing about priority or the
- * queue — `reconcileBar` owns which bar exists, this owns what it looks like.
- *
- * `onGone` fires when the bar leaves for ANY reason the reader caused, so the
- * queue can hand the slot to the next one.
- */
-function paintBar(options: BarSpec, onGone: () => void): () => void {
-  const bar = document.createElement('div');
-  bar.className = options.variant === undefined ? 'prompt-bar' : `prompt-bar ${options.variant}`;
-
-  const text = document.createElement('b');
-  text.textContent = options.text;
-
-  const action = options.actionLabel === undefined ? null : document.createElement('button');
-  if (action !== null) {
-    action.type = 'button';
-    action.className = 'go';
-    action.textContent = options.actionLabel ?? '';
-  }
-
-  const dismiss = document.createElement('button');
-  dismiss.type = 'button';
-  // A LINK beside a real action, a BUTTON when it is the only control. The
-  // quiet link reads as secondary next to "Add it"; alone in the bar it reads
-  // as text nobody thought to style, and the one thing a person can do here
-  // stops looking like a thing they can do.
-  dismiss.className = options.actionLabel === undefined ? 'go quiet' : 'link';
-  dismiss.textContent = options.dismissLabel;
-
-  const close = (): void => {
-    bar.remove();
-    // Only ever one bar, so the padding belongs to the slot and clearing it
-    // here is now correct. It was not when bars could overlap: whichever closed
-    // first un-padded the page while another was still on screen.
-    document.documentElement.style.removeProperty('--prompt-h');
-  };
-
-  action?.addEventListener('click', () => {
-    close();
-    onGone();
-    options.onAction?.();
-  });
-  /**
-   * DISMISSAL IS IN MEMORY AND NOTHING ELSE. It is gone for this session and
-   * returns on the next launch.
-   *
-   * Persisting it would let one tap suppress a version's prompt forever, which
-   * is the "acknowledgement dropped, value kept" state §7.9 refuses elsewhere.
-   * And it costs nothing to omit: the waiting worker activates on the next full
-   * restart regardless, so dismissing defers the tap rather than the update.
-   */
-  dismiss.addEventListener('click', () => {
-    close();
-    onGone();
-  });
-
-  bar.append(...(action === null ? [text, dismiss] : [text, action, dismiss]));
-  document.body.append(bar);
-  // Measured after insertion, because the text wraps differently by width.
-  document.documentElement.style.setProperty('--prompt-h', `${String(bar.offsetHeight)}px`);
-  return close;
-}
 
 function registerServiceWorker(): void {
   if (!('serviceWorker' in navigator)) return;
@@ -599,14 +533,7 @@ if (root) {
       const standing = bars.showing();
       if (standing !== null) redraw.get(standing)?.();
     },
-    onSaveStuck: (amount, retry) => {
-      bars.raise('stuck', {
-        text: copy.log.stuck(amount),
-        actionLabel: copy.log.stuckAction,
-        onAction: retry,
-        dismissLabel: copy.log.stuckDismiss,
-      });
-    },
+    ...hooks,
   }).catch((cause: unknown) => {
     // `COPY`, deliberately, not `copy`. This fires when `start()` itself
     // rejected — so the database was never read, no language was ever loaded,

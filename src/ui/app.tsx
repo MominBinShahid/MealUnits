@@ -75,8 +75,6 @@ import {
   ExportScreen,
   FailClosedScreen,
   HistoryScreen,
-  StaleConnectionPanel,
-  WriteFailedPanel,
   HowItWorksScreen,
   SettingsAsTextScreen,
 } from './screens/misc.js';
@@ -236,16 +234,6 @@ interface ViewState {
    * a fail-closed state — the app goes on working and the reader can carry on
    * or start over. What it must never do again is nothing at all.
    */
-  writeFailed: boolean;
-  /**
-   * Another tab upgraded the database, so this tab's connection was closed and
-   * every write here will now fail — added 2026-09-21.
-   *
-   * NOT dismissible, unlike `writeFailed`: dismissing it would leave someone
-   * carrying on in a tab that cannot record anything, and the condition does
-   * not improve until the app is reopened.
-   */
-  staleConnection: boolean;
   /**
    * §8.5 — the insulin row the reader has TAPPED but not yet confirmed.
    *
@@ -397,6 +385,25 @@ export interface Host {
    */
   readonly onSaveStuck?: ((amount: string, retry: () => void) => void) | undefined;
   /**
+   * The two bottom-edge messages this file used to render itself.
+   *
+   * REQUIRED, not optional, and that is the whole safety of this change. When
+   * they were `onStale?.()` the integration tests were a host that wired
+   * neither, so three of them stopped asserting anything and still passed — on
+   * a screen where "that dose did not save" never appeared. An optional hook
+   * carrying the app's most critical message is a silent mute waiting to
+   * happen. A required one is a compile error instead.
+   *
+   * They are raised through the shell's bar slot now rather than rendered on a
+   * plain condition, because two systems owning the bottom of the screen meant
+   * neither could see the other: both were `fixed; bottom: 0` at the same
+   * z-index, so a closed connection AND a rejected write painted on top of one
+   * another. Neither set `--prompt-h`, so the page was not padded and the bar
+   * covered the primary action.
+   */
+  readonly onStale: (show: boolean) => void;
+  readonly onWriteFailed: (show: boolean, startOver: () => void) => void;
+  /**
    * `10a` — which language the SHELL's own strings are in.
    *
    * Everything inside the app root reads its words through `CopyContext`, which
@@ -530,8 +537,6 @@ export async function start(host: Host): Promise<void> {
     resettingMine: false,
     glossaryTerm: null,
     recordDeletedElsewhere: false,
-    writeFailed: false,
-    staleConnection: false,
     pendingInsulin: null,
   };
 
@@ -930,7 +935,7 @@ export async function start(host: Host): Promise<void> {
    */
   const guardWrite = (write: () => Promise<unknown>): void => {
     void write().catch(() => {
-      view.writeFailed = true;
+      host.onWriteFailed(true, () => { void startOver(); });
       render();
     });
   };
@@ -951,8 +956,7 @@ export async function start(host: Host): Promise<void> {
   const guardConnectedWrite = (write: (connection: IDBDatabase) => Promise<unknown>): void => {
     const connection = db;
     if (connection === null) {
-      view.writeFailed = true;
-      render();
+      host.onWriteFailed(true, () => { void startOver(); });
       return;
     }
     // Captured, so the narrowing survives into the closure — `db` is reassigned
@@ -2046,13 +2050,9 @@ export async function start(host: Host): Promise<void> {
         {/* ABOVE the screen, not inside one, because three of the four writes it
             reports fire from different screens and a panel each would be three
             places for the wording to drift. */}
-        {view.staleConnection ? <StaleConnectionPanel /> : null}
-        {view.writeFailed ? (
-          <WriteFailedPanel
-            onStartOver={() => { void startOver(); }}
-            onDismiss={() => { view.writeFailed = false; render(); }}
-          />
-        ) : null}
+        {/* `stale` and `write-failed` used to render here on a plain
+            condition. They are raised through the shell's bar slot now — one
+            queue, one thing at the bottom, `--prompt-h` set whichever it is. */}
         {screenFor()}
         {/* Over the screen you are on, not a page of its own. The reader is in
             the middle of something — the result they are reading expires — and
@@ -2100,8 +2100,7 @@ export async function start(host: Host): Promise<void> {
         // the only one anybody could reach, and this one went quiet. A tab that
         // cannot write must say so rather than look ordinary.
         if (newVersion !== null) {
-          view.staleConnection = true;
-          render();
+          host.onStale(true);
         }
         if (newVersion === null) {
           state = initialState();
