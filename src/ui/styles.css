@@ -1993,7 +1993,26 @@ button:disabled { cursor: default; }
    reader keeps scrolling the list that feeds it. */
 .tally-bar {
   position: sticky;
-  bottom: 0;
+  /*
+   * ABOVE THE PROMPT BAR, NOT UNDER IT.
+   *
+   * `#app` already pads its foot by `--prompt-h` so a bar fixed to the bottom
+   * of the window never covers the primary action — "Work out the dose", "Log
+   * this injection". That works for content in normal flow. It does NOT work
+   * here, because `position: sticky` sticks to the scrollport rather than to
+   * the padding box: the page moved up and this bar stayed where it was.
+   *
+   * So the one control on this screen that the padding exists to protect was
+   * the one it did not protect. Measured on the deployed build: the update bar
+   * starting at y=963 with "Use this total" spanning 984-1057, and a hit test
+   * at the centre of that button returning the bar's own text — the button was
+   * not clipped, it was unreachable.
+   *
+   * `--prompt-h` is set by `paintBar` after insertion and removed on close, and
+   * since 2026-09-28 exactly one bar can exist, so it always describes the bar
+   * actually on screen. 0 when there is none.
+   */
+  bottom: var(--prompt-h, 0);
   display: grid;
   gap: 0.5rem;
   justify-items: stretch;
