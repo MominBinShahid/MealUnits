@@ -182,6 +182,7 @@ silenced rather than killed**, and that is the table.
 | `resolve.ts` (low-reading ternary arm) | Equivalent | Forcing the arm yields `undefined`, and `classifyLowBand(undefined)` answers null exactly as the `null` arm does |
 | `history.ts`, `baseline.ts` (tombstone filters) | Coercion-equivalent | A tombstone carries no `bloodSugar` and no `carbs`; `undefined >= 250` and `undefined > 0` are both false. The type system needs the filters regardless |
 | `divergence.ts` (zero branch) | Equivalent | With a calculated dose of zero the ratio clause reduces to `injected >= 0`, already true past the absolute floor. §7.1 declares the branch anyway |
+| `machine.ts` (unsaved tie-break) | Equivalent | Two payloads with the SAME timestamp AND the same units are one dose as far as `inSessionLastDose` reports them — same hundredths, same time, same class — so `>` and `>=` return objects no caller can tell apart. Added 2026-09-29 with the pending-dose list. |
 | `calculate.ts` (`> 0` on suppression) | Equivalent | `>` and `>=` differ only at a correction of exactly zero, and suppressing zero is arithmetically identical to applying it |
 | `decimal.ts` (`exponent < 0`) | Unreachable boundary | `(1e0).toString()` is `"1"`, never `"1e+0"`. Verified by scanning 200,000 magnitudes plus every extreme |
 | `resolve.ts` (empty advisory array) | Equivalent by design | Seeding it with a bogus entry changes nothing, because `rankAdvisories` is a **whitelist**. That is the property §10.5 wants |

@@ -182,6 +182,24 @@ export interface AppState {
   readonly injectedDraft: string;
   /** §7.2 step 1 — the frozen payload. Null until the second tap begins. */
   readonly committing: FrozenLogPayload | null;
+  /**
+   * Every frozen payload that has NOT reached the record, oldest first.
+   *
+   * `committing` was doing this job alone and it is a slot, not a list, so a
+   * second dose overwrote the first. `commit_log` has no guard on `save.kind`:
+   * dose 1 fails twice and raises its bar, the reader eats again three hours
+   * later in the same session — the app open on a phone all day is the normal
+   * case — and dose 2's commit replaces the payload. If dose 2 then saves,
+   * dose 1 is gone from the record AND from the stacking gate, while its bar
+   * sits there with a "Try again" that reads `committing`, finds dose 2, and
+   * silently does nothing.
+   *
+   * The gate reading one dose short is the hazard: §7.4's stacking check
+   * releases a correction it should have held, on top of insulin that is in
+   * him. `committing` keeps its other job — the payload the logged screen
+   * shows and a retry persists — and this carries what is still owed.
+   */
+  readonly unsaved: readonly FrozenLogPayload[];
   readonly save: SaveState;
   /** §8.2 — the result is stale and says so. */
   readonly expired: boolean;
@@ -231,6 +249,7 @@ export function initialState(): AppState {
     largeDoseConfirmed: false,
     injectedDraft: '',
     committing: null,
+    unsaved: [],
     save: { kind: 'none' },
     expired: false,
   };
@@ -264,7 +283,7 @@ export type Action =
   | { readonly type: 'injected_draft_changed'; readonly value: string }
   /** §7.2 — the SECOND tap. Freezes, stamps, records and writes. */
   | { readonly type: 'commit_log'; readonly payload: FrozenLogPayload }
-  | { readonly type: 'log_saved'; readonly record: RecordContext }
+  | { readonly type: 'log_saved'; readonly record: RecordContext; readonly id: string }
   | { readonly type: 'log_save_failed' }
   | { readonly type: 'offer_reading' }
   /**
@@ -305,6 +324,12 @@ function invalidate(state: AppState): AppState {
     // discard it, or §7.2's in-session gate loses its only input at precisely
     // the moment it is needed: the next calculation. Anything not pending is a
     // finished or never-started write and clears with the result as before.
+    // `unsaved` is NEVER cleared here, whatever `save.kind` says. Discarding a
+    // result must not discard a dose that is owed: the old guard kept
+    // `committing` only while `pending`, so a result invalidated during the
+    // `saving` window took the payload with it and the gate lost a dose that
+    // had already been injected. What is owed leaves this list one way, by
+    // being written.
     ...(state.save.kind === 'pending'
       ? {}
       : { committing: null, save: { kind: 'none' } as const }),
@@ -597,10 +622,20 @@ export function reduce(state: AppState, action: Action): AppState {
       // in whole; step 2 marks the result consumed IN MEMORY before the write
       // is attempted, which is why `save` goes to `saving` and the step goes to
       // `logged` here rather than after the write returns.
-      return { ...state, committing: action.payload, save: { kind: 'saving' }, step: 'logged' };
+      return { ...state,
+        committing: action.payload,
+        unsaved: [...state.unsaved, action.payload],
+        save: { kind: 'saving' }, step: 'logged' };
 
     case 'log_saved':
-      return { ...state, save: { kind: 'saved' }, record: action.record };
+      // By id, not "the last one": a retry can land out of order, and the
+      // payload that saved is not always the payload most recently committed.
+      return {
+        ...state,
+        unsaved: state.unsaved.filter((payload) => payload.id !== action.id),
+        save: { kind: 'saved' },
+        record: action.record,
+      };
 
     case 'log_save_failed': {
       // §7.2 v4/v5 — the in-session stacking gate still knows about the dose,
@@ -654,7 +689,12 @@ export function reduce(state: AppState, action: Action): AppState {
  * is "what is the most recent insulin", not "what did this session do".
  */
 function gateLastDose(state: AppState): LastDose | null {
-  if (state.save.kind !== 'pending') return state.record.lastDose;
+  // NO `save.kind` test, and no length test either. `save.kind` was the bug:
+  // two doses could put the machine in `saving` (dose 2 in flight) while dose 1
+  // was still owed, and this returned the record alone, missing insulin that is
+  // in him. A `length === 0` guard replacing it was redundant — the mutation
+  // gate said so by surviving its removal — because an empty list already makes
+  // `inSessionLastDose` null, which the next line answers.
   const pending = inSessionLastDose(state);
   if (pending === null) return state.record.lastDose;
   const recorded = state.record.lastDose;
@@ -663,10 +703,30 @@ function gateLastDose(state: AppState): LastDose | null {
 
 /** §11.3 — the in-session dose the gate still knows about after a failed write. */
 export function inSessionLastDose(state: AppState): LastDose | null {
-  if (state.committing === null) return null;
+  // The NEWEST unsaved dose, because the gate's question is "what is the most
+  // recent insulin". Reduce rather than assume the list is ordered: `commit_log`
+  // appends in tap order, but a payload removed by a late `log_saved` can leave
+  // any shape behind.
+  const newest = state.unsaved.reduce<FrozenLogPayload | null>((best, payload) => {
+    if (best === null) return payload;
+    if (payload.timestamp > best.timestamp) return payload;
+    if (payload.timestamp < best.timestamp) return best;
+    // Same millisecond. Take the LARGER dose rather than whichever the list
+    // happened to hold first: the gate's question is how much insulin is
+    // acting, and overstating it withholds a correction while understating it
+    // releases one. Only one of those directions is survivable.
+    //
+    // Stryker disable next-line EqualityOperator: equivalent. With the
+    // timestamps equal AND the units equal, the two payloads are the same dose
+    // as far as this function reports it — same hundredths, same time, same
+    // class — so `>` and `>=` return objects no caller can tell apart. The
+    // mutant is unkillable rather than uncaught.
+    return payload.injectedUnits > best.injectedUnits ? payload : best;
+  }, null);
+  if (newest === null) return null;
   return {
-    injectedHundredths: state.committing.injectedUnits,
-    atMs: state.committing.timestamp,
+    injectedHundredths: newest.injectedUnits,
+    atMs: newest.timestamp,
     // This dose was given MINUTES ago under the settings in force now, so the
     // current answer is the right one — unlike `deriveHistory`'s rows, which
     // read their class from the revision that stamped them.
