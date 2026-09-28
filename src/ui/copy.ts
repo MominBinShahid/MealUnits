@@ -198,13 +198,13 @@ export const COPY = {
     stackingTitle: 'What "stacking" means',
     stackingBody: [
       'Fast insulin does not finish when your blood sugar comes down. It goes on working for hours after you inject it. If you take a correction while an earlier dose is still acting, the two add together, so the total can take you lower than either one was meant to. That is stacking, and it is the word the app uses on the result screen and in Settings.',
-      `For the first ${String(STACK_SUPPRESS_HOURS)} hours after a dose you logged, the app holds the correction back and gives you the meal dose alone. It says "Correction held back", and the correction is still there in the working, struck through, with its reason. The meal part is never held back — food needs covering no matter how much insulin is still working. And when you are at or below target the correction makes the dose smaller; that kind is always applied in full, because holding it back would give you more insulin, not less.`,
+      `For the first ${String(STACK_SUPPRESS_HOURS)} hours after a dose you recorded, the app holds the correction back and gives you the meal dose alone. It says "Correction held back", and the correction is still there in the working, struck through, with its reason. The meal part is never held back — food needs covering no matter how much insulin is still working. And when you are at or below target the correction makes the dose smaller; that kind is always applied in full, because holding it back would give you more insulin, not less.`,
       `Between ${String(STACK_SUPPRESS_HOURS)} and ${String(STACK_ADVISE_HOURS)} hours the correction is applied in full and the app tells you the last dose may still be acting. After ${String(STACK_ADVISE_HOURS)} hours it says nothing. None of this is a model of how much insulin is left in you — how long a dose lasts depends on how big it was, so the app refuses to draw that curve.`,
       'If you need the correction anyway — because the injection site did not absorb it, or the insulin has been in the heat, or you are ill — "Why is this smaller?" on the result screen adds it back. It tells you first how far the earlier dose could still lower you on its own. Using it is recorded on the entry, so the pattern is in your history.',
     ] as const,
 
     missingTitle: '"No recent dose recorded"',
-    missingBody: `The stacking check knows one thing: what you logged. That line appears only when two things are both true: the app has no recent dose it can reason from, and it has no confidence in the record either. It does not mean you have no insulin still working. The app will not tell you that, because it cannot know it. If you injected within the last ${String(STACK_SUPPRESS_HOURS)} hours, nothing has been held back from the dose in front of you — read it as a correction sitting on top of insulin that is still working, and decide from there. If you log every injection, this check never has to appear.`,
+    missingBody: `The stacking check knows one thing: what you recorded. That line appears only when two things are both true: the app has no recent dose it can reason from, and it has no confidence in the record either. It does not mean you have no insulin still working. The app will not tell you that, because it cannot know it. If you injected within the last ${String(STACK_SUPPRESS_HOURS)} hours, nothing has been held back from the dose in front of you — read it as a correction sitting on top of insulin that is still working, and decide from there. If you record every injection, this check never has to appear.`,
     /**
      * BOTH halves of the condition are load-bearing and were got wrong once: the
      * caveat fires only when there is no usable record AND provenance is suspect
@@ -213,7 +213,7 @@ export const COPY = {
      * gap. Enumerating them is what stops the copy describing v4's bug.
      */
     missingConditions: [
-      'nothing logged at all',
+      'nothing recorded at all',
       'the newest entry is from before this app was installed',
       'the history was just imported',
       'an entry has a time the app cannot believe, so it was set aside',
@@ -222,7 +222,7 @@ export const COPY = {
 
     expiryTitle: `Why a result expires after ${String(RESULT_EXPIRY_MINUTES)} minutes`,
     expiryBody: [
-      `A dose is only as good as the reading it came from. ${String(RESULT_EXPIRY_MINUTES)} minutes after it is worked out the result dims, the screen says what time it was from, and "Check again" becomes the first thing on it. Nothing is deleted. The number is still there to read, and if you have already injected you can still log it — the entry records the time you tap, not the time the dose was worked out, and the button says so.`,
+      `A dose is only as good as the reading it came from. ${String(RESULT_EXPIRY_MINUTES)} minutes after it is worked out the result dims, the screen says what time it was from, and "Check again" becomes the first thing on it. Nothing is deleted. The number is still there to read, and if you have already injected you can still record it — the entry records the time you tap, not the time the dose was worked out, and the button says so.`,
       `A double-check you already tapped through does not carry over. If you work the dose out again, the app asks again, because by then the ${String(STACK_SUPPRESS_HOURS)}-hour window may have passed, a correction that was being held back can come back, and the new total can be larger than the one you confirmed. A low reading goes stale the same way: the screen tells you what time that reading was and asks for a fresh one, and it goes on telling you to treat first.`,
     ] as const,
 
@@ -363,7 +363,7 @@ export const COPY = {
      */
     mineSet: 'Use my own figure',
     mineChange: 'Change my figure',
-    mineClear: 'Back to the reference',
+    mineClear: "Back to the table's figure",
     mineLabel: 'Grams of carbohydrate in mine',
     /**
      * The reference, beside the empty box. Momin's idea, and the reason is
@@ -379,7 +379,7 @@ export const COPY = {
      * types the weight is out by a factor of two.
      */
     mineHint: (reference: string): string =>
-      `The reference is ${reference} — carbohydrate, not what it weighs.`,
+      `The table says ${reference} — carbohydrate, not what it weighs.`,
     mineSave: 'Save mine',
     /**
      * Clearing ALL of them, once. Per-row clearing already exists inside each
@@ -391,12 +391,12 @@ export const COPY = {
      * is one a person can judge before pressing.
      */
     mineResetAll: (n: number): string => (n === 1
-      ? 'Reset that one to the reference figure'
-      : `Reset all ${String(n)} to the reference figures`),
-    mineResetConfirm: 'Yes, use the reference figures again',
+      ? "Reset that one to the table's figure"
+      : `Reset all ${String(n)} to the table's figures`),
+    mineResetConfirm: "Yes, back to the table's figures",
     mineResetCancel: 'Keep mine',
     mineWas: (reference: string, date: string): string =>
-      `Yours. The reference is ${reference}\u00A0g — you set this on ${date}.`,
+      `Yours. The table says ${reference}\u00A0g — you set this on ${date}.`,
     /**
      * T31 — the plate, and every string the two-step weighing needs.
      *
@@ -856,7 +856,7 @@ export const COPY = {
     mealOnly: 'Covering carbohydrates only',
     overrideAction: (candidate: string): string => `Add the correction anyway → ${candidate}`,
     /** §7.4.1 v4 — when either figure reaches the threshold, NO numbers show. */
-    overrideWithheld: 'Add the correction anyway',
+    overrideWithheld: 'I understand \u2014 add the correction',
     held: 'held back, you injected recently',
   },
 
@@ -878,7 +878,7 @@ export const COPY = {
       `${carbs}\u00A0g is larger than your usual meals, which are around ${baseline}\u00A0g. Check that's right.`,
     /** §6.5 — "disabled and declared", as a settings status line. */
     notEnoughHistory: (eligible: number, needed: number): string =>
-      `Meal-size check: not enough history yet (${String(eligible)} of ${String(needed)} meals logged).`,
+      `Meal-size check: not enough history yet (${String(eligible)} of ${String(needed)} meals recorded).`,
     highDisabled: 'Upper check off — your meals are large enough that it could never trigger.',
     active: (baseline: string): string => `Meal-size check: on, against a usual meal of ${baseline}\u00A0g.`,
   },
@@ -902,7 +902,7 @@ export const COPY = {
      * back could not record the injection at all, and §7.4's gate went blind on
      * a real dose. Losing a row is worse than logging a late one.
      */
-    injectedAfterExpiry: 'I already injected — log it at the current time',
+    injectedAfterExpiry: 'I already injected — record it at the current time',
     amountQuestion: 'How many units did you actually inject?',
     amountHint:
       'Starts at what the app worked out. Change it if you injected something different — the record should say what happened.',
@@ -910,7 +910,7 @@ export const COPY = {
       'Set it now — this is the only moment it can be changed. Afterwards an entry can be deleted, but never edited.',
     commitIsHere:
       'Tapping below is what saves it. The entry and the stacking clock both start at that tap.',
-    commit: 'Log this injection',
+    commit: 'Record this injection',
     /** §7.1 — the divergence confirmation, which v9 named and never defined. */
     divergent: (calculated: string, injected: string): string =>
       `The app worked out ${calculated} and you have entered ${injected}. That is a large difference — check it before recording.`,
@@ -920,8 +920,8 @@ export const COPY = {
      * the record should say what happened (§7.1) and a bare "yes" invites a
      * tap-through.
      */
-    divergentAction: 'It is what I injected — log it',
-    saved: (amount: string, at: string): string => `Logged ${amount} at ${at}`,
+    divergentAction: 'It is what I injected — record it',
+    saved: (amount: string, at: string): string => `Recorded ${amount} at ${at}`,
     /**
      * §7.2 — "the injection has already happened. A failed disk write does not
      * make it unknown to the running session." And the timer starts regardless.
@@ -1152,7 +1152,7 @@ export const COPY = {
      * `config.ts` would imply this app can change it.
      */
     atRiskWhy:
-      'On an iPhone or iPad, a browser clears apps it has not seen for about a week \u2014 including everything logged here. Adding this to your home screen stops that.',
+      'On an iPhone or iPad, a browser clears apps it has not seen for about a week \u2014 including everything recorded here. Adding this to your home screen stops that.',
     /**
      * ONE bar, and it is the install offer wearing an honest reason.
      *
@@ -1426,7 +1426,7 @@ export const COPY = {
      * own record must not read this as the app locking them out of it.
      */
     unsupportedRecord:
-      'Nothing has happened to your record. Everything you have logged is still here, you can still read it, and you can still save a copy to give your doctor.',
+      'Nothing has happened to your record. Everything you have recorded is still here, you can still read it, and you can still save a copy to give your doctor.',
     unsupportedChange: 'Pick a different insulin',
     unsupportedOpenRecord: 'Open my record',
     unsupportedFeedback:
@@ -1860,7 +1860,7 @@ export const COPY = {
     stepOf: (step: string, total: string): string => `${step} of ${total}`,
     stepCheck: 'Check',
     stepRecording: 'Recording',
-    stepLogged: 'Logged',
+    stepLogged: 'Recorded',
     rowBloodSugar: 'Blood sugar',
     rowCarbohydrate: 'Carbohydrate',
     rowTotal: 'Total',
@@ -1948,7 +1948,7 @@ export const COPY = {
     dosingAnsweredAt: (at: string): string =>
       `Answered ${at}. Editing it replaces the answer and re-dates it.`,
     mealCheckNeeds: (meals: string): string =>
-      `It needs ${meals} logged meals before it can say anything.`,
+      `It needs ${meals} recorded meals before it can say anything.`,
     /** Label, then figure — the word says which number this is, the figure is what is sought. */
     historyDose: (calculated: string, injected: string): readonly {
       readonly label: string;
@@ -2117,7 +2117,7 @@ export const COPY = {
    */
   staleConnection: {
     title: 'This app was updated in another window.',
-    body: 'Close this one and open it again before you log anything else. Nothing has been lost.',
+    body: 'Close this one and open it again before you record anything else. Nothing has been lost.',
     /**
      * Said INSTEAD of `body` when a logged dose has not reached the record.
      *
@@ -2312,7 +2312,7 @@ export const COPY = {
    */
   back: 'Back',
   next: 'Next',
-  workItOut: 'Work out the dose',
+  workItOut: 'Calculate the dose',
   cancel: 'Cancel',
   done: 'Done',
 } as const;

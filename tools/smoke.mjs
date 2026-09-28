@@ -14,7 +14,7 @@
  *     column, putting Settings and History in opposite corners of a desktop.
  *   * the app RELOADED ITSELF on a first visit, because `controllerchange`
  *     fires when the first worker claims a page as well as when a new one
- *     replaces an old one. Tapping "Log this injection" at the wrong moment
+ *     replaces an old one. Tapping "Record this injection" at the wrong moment
  *     blanked the screen and looked like the tap was ignored.
  *
  * Run it:  npm run smoke:serve      builds, serves, tests, cleans up
@@ -68,7 +68,7 @@ const CHROME = process.env.SMOKE_CHROME ?? [
  * `localhost` is a SECURE CONTEXT. A LAN address is not. Some APIs simply do not
  * exist on an insecure origin — `crypto.randomUUID` among them — and the phone
  * reaches this app over a LAN address. Every check here passed on localhost
- * while "Log this injection" threw on the phone, silently, because the id for
+ * while "Record this injection" threw on the phone, silently, because the id for
  * the row could not be generated.
  *
  * So the everyday path is driven over both. Testing only the secure origin is
@@ -307,8 +307,8 @@ const tapper = ({ ev }) => async (re) => {
  *
  * §10.4 puts U+00A0 between every number and its unit so "2 units" cannot break
  * across a line and rejoin in the reader's head as "2Units". The logged screen
- * therefore reads `Logged 2\u00A0units at 9:35 PM`, and the check polled for
- * `/Logged 2 units/` with an ordinary space. It could never match. It has been
+ * therefore reads `Recorded 2\u00A0units at 9:35 PM`, and the check polled for
+ * `/Recorded 2 units/` with an ordinary space. It could never match. It has been
  * failing since the day the no-break space landed, on a check whose own name is
  * "AND IT LOGS — the defect this run exists for".
  *
@@ -707,7 +707,7 @@ for (const [width, port] of [[412, 9302], [1440, 9303]]) {
       await ev(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), true);
     for (const d of ['1', '8', '0']) await tap(`/^${d}$/`);
     await tap('/^Next$/'); for (const d of ['5', '0']) await tap(`/^${d}$/`);
-    await tap('/Work out the dose/'); await wait(500); await tap('/I injected this/'); await wait(600);
+    await tap('/Calculate the dose/'); await wait(500); await tap('/I injected this/'); await wait(600);
     check(`${width}px: the +/- keys are square and meet §10.7's 48px floor`,
       await ev(`JSON.stringify([...document.querySelectorAll('.stepper .key')].map(k=>{const r=k.getBoundingClientRect();return [Math.round(r.width),Math.round(r.height)]}))`),
       JSON.stringify([[68, 68], [68, 68]]));
@@ -720,7 +720,7 @@ for (const [width, port] of [[412, 9302], [1440, 9303]]) {
     await wait(600);
     for (const d of ['0']) await tap(`/^${d}$/`);
     await tap('/^Next$/'); for (const d of ['5', '0']) await tap(`/^${d}$/`);
-    await tap('/Work out the dose/'); await wait(600);
+    await tap('/Calculate the dose/'); await wait(600);
     // `innerText`, not `textContent`, and that is the whole reason this one is
     // not a duplicate of the integration test that asserts the same words:
     // jsdom does not implement `innerText` at all, and `textContent` includes
@@ -859,15 +859,15 @@ await session('/tmp/mealunits-smoke-path', 9304, 412, async ({ send, ev, open })
   const tap = await setUp({ ev, send });
   for (const d of ['1', '2', '0']) await tap(`/^${d}$/`);
   await tap('/^Next$/'); for (const d of ['2', '5']) await tap(`/^${d}$/`);
-  await tap('/Work out the dose/'); await wait(500);
+  await tap('/Calculate the dose/'); await wait(500);
   check('120 mg/dL with 25 g gives 2 units', await ev(`document.querySelector('.result .n')?.textContent`), '2');
   await tap('/I injected this/'); await wait(500);
-  await tap('/Log this injection/');
+  await tap('/Record this injection/');
   // Poll: the commit is a chain of IndexedDB round trips (§7.2), and how long
   // that takes is not ours to predict.
   let logged = false;
   for (let i = 0; i < 60; i++) {
-    logged = (await ev(`/Logged 2 units/.test(${bodyText})`)) === true;
+    logged = (await ev(`/Recorded 2 units/.test(${bodyText})`)) === true;
     if (logged) break;
     await wait(100);
   }
@@ -937,13 +937,13 @@ if (LAN_URL === null) {
     const tap = await setUp({ ev, send });
     for (const d of ['1', '2', '0']) await tap(`/^${d}$/`);
     await tap('/^Next$/'); for (const d of ['2', '5']) await tap(`/^${d}$/`);
-    await tap('/Work out the dose/'); await wait(500);
+    await tap('/Calculate the dose/'); await wait(500);
     check('insecure origin: 120 with 25 g still gives 2 units', await ev(`document.querySelector('.result .n')?.textContent`), '2');
     await tap('/I injected this/'); await wait(500);
-    await tap('/Log this injection/');
+    await tap('/Record this injection/');
     let logged = false;
     for (let i = 0; i < 60; i++) {
-      logged = (await ev(`/Logged 2 units/.test(${bodyText})`)) === true;
+      logged = (await ev(`/Recorded 2 units/.test(${bodyText})`)) === true;
       if (logged) break;
       await wait(100);
     }
@@ -1112,7 +1112,7 @@ await session('/tmp/mealunits-smoke-upgrade', 9308, 412, async ({ ev, send, open
   // same stores the repair rebuilt.
   for (const d of ['1', '2', '0']) await tap(`/^${d}$/`);
   await tap('/^Next$/'); for (const d of ['2', '5']) await tap(`/^${d}$/`);
-  await tap('/Work out the dose/'); await wait(500);
+  await tap('/Calculate the dose/'); await wait(500);
   check('upgrade: and a dose can be worked out afterwards',
     await ev(`/units/.test(${bodyText})`), true);
 });

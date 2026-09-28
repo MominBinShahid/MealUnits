@@ -4,7 +4,7 @@ import { newId } from '../src/core/ids.js';
 describe('row identifiers, without a secure context', () => {
   /**
    * The defect: `crypto.randomUUID()` is secure-context only. Every test passed
-   * on localhost and "Log this injection" did nothing on a phone reaching the
+   * on localhost and "Record this injection" did nothing on a phone reaching the
    * app over a LAN address, because the commit threw before writing.
    */
   it('does not touch crypto.randomUUID, which does not exist on a plain http origin', () => {
