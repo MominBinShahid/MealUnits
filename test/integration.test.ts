@@ -360,7 +360,7 @@ function shellText(): string {
  */
 function buttonLabel(button: Element): string {
   // `plain` too, for the same reason the glyphs go: a label carrying a dose
-  // ("Add the correction anyway") would otherwise need its no-break space
+  // ("I understand — add the correction") would otherwise need its no-break space
   // spelled out at the call site, and `tap('… 4 units')` would fail for a
   // reason invisible in the source.
   return plain(button.textContent ?? '').replace(/[\u2190\u2192\u200a]/g, '').trim();
@@ -894,12 +894,12 @@ describe('§11.8 the food list — read-only by design', () => {
     expect(carbs?.textContent).toContain('36');
     // Still on the carbohydrate step, with the keypad under it: the number was
     // filled in, not acted on.
-    expect(text()).toContain('Work out the dose');
+    expect(text()).toContain('Calculate the dose');
 
     // And the provenance reaches the result. §7.7's argument applied to food:
     // "36 g" tells a doctor reading the photograph nothing that "2 × Home
     // flatbread, medium" does not tell them better.
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain('2 × Home flatbread, medium');
   });
 
@@ -928,7 +928,7 @@ describe('§11.8 the food list — read-only by design', () => {
     // BACKLOG 18's second constraint, which is the whole reason the date is
     // stored: the reference figure it replaced stays on screen beside it. A
     // number whose provenance is gone is the class §7.7 exists to prevent.
-    expect(text()).toContain('The reference is 18');
+    expect(text()).toContain('The table says 18');
 
     // And phase 2 has to reach phase 3, or calibrating a food would change what
     // the row says and not what the dose says.
@@ -1007,9 +1007,9 @@ describe('§11.8 the food list — read-only by design', () => {
     expect(root.querySelector('.entry')?.textContent).toContain('18');
 
     // Work it out, then start the next calculation — the meal is over.
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
     await tap('Done');
 
     // The next meal, from the top: a reading, then the carbohydrate step, which
@@ -1089,7 +1089,7 @@ describe('§11.8 the food list — read-only by design', () => {
     const back = text();
     expect(back).toContain('50');
     expect(back).not.toContain('How much carbohydrate is in it');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     // 180 mg/dL, 50 g, ISF 30, ICR 10, target 150 -> 1 + 5 = 6 units.
     expect(text()).toContain('6');
   });
@@ -1309,7 +1309,7 @@ describe('the name, which changes nothing the app calculates', () => {
     // §10.5 — the greeting must not follow the flow toward the dose.
     expect(text()).not.toContain('Hey Ahmed');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain('units of Humulin R');
     expect(text()).not.toContain('Hey Ahmed');
   });
@@ -1335,9 +1335,9 @@ describe('the name, which changes nothing the app calculates', () => {
     await keys('180');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
     await tap('Done');
     await tap('History');
     await tap('Save a copy');
@@ -1366,9 +1366,9 @@ describe('the name, which changes nothing the app calculates', () => {
     await keys('180');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
     await tap('Done');
     await tap('History');
     await tap('Save a copy');
@@ -1383,7 +1383,7 @@ describe('the name, which changes nothing the app calculates', () => {
 
 describe('dead ends — every action must move or explain', () => {
   /**
-   * THE CLASS, not the instance. Momin typed 7090, tapped "Work out the dose",
+   * THE CLASS, not the instance. Momin typed 7090, tapped "Calculate the dose",
    * and nothing happened: no crash, no message, clean console, no way forward.
    * The core was right — `above_range` with a golden case pinning it — and the
    * interface had no slot to render it in, so `stepFor` sent him to a screen
@@ -1400,7 +1400,7 @@ describe('dead ends — every action must move or explain', () => {
     await keys('7');
 
     const before = text();
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
 
     // The two failures this covers, separately: something must CHANGE, and the
     // change must SAY something.
@@ -1415,7 +1415,7 @@ describe('dead ends — every action must move or explain', () => {
     await keys('7090');
     await tap('Next');
     await keys('7');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     // §18.14 — being sent back to fix a field must not discard it. Deleting the
     // stray digit is the whole repair.
     expect(root.querySelector('.entry .n')?.textContent).toBe('7090');
@@ -1428,7 +1428,7 @@ describe('dead ends — every action must move or explain', () => {
     await keys('9999');
 
     const before = text();
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).not.toBe(before);
     expect(text()).toContain('more than 300 grams');
     expect(text()).toContain('How much carbohydrate');
@@ -1440,7 +1440,7 @@ describe('dead ends — every action must move or explain', () => {
    * on the everyday path — reading 120 with 10 g of carbohydrate on the shipped
    * prescription is -1 + 1 — and stepping any dose down to 0.00 gets there too.
    *
-   * "Log this injection" then returned silently: `commitLog` guards on
+   * "Record this injection" then returned silently: `commitLog` guards on
    * `injected <= 0` and rendered nothing, enforcing §7.2's "a zero-unit result
    * cannot be logged" by exactly the mechanism note 38 condemned — a control
    * that stops responding. The words written for it (`COPY.range.injectedZero`)
@@ -1451,7 +1451,7 @@ describe('dead ends — every action must move or explain', () => {
     await keys('180');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
     // 6 units, stepped down in half-units until the amount is 0.00.
     tapFast('−', 12);
@@ -1461,10 +1461,10 @@ describe('dead ends — every action must move or explain', () => {
     expect(root.querySelector('.entry .n')?.textContent).toBe('0');
 
     const before = text();
-    await tap('Log this injection');
+    await tap('Record this injection');
     expect(text()).not.toBe(before);
     expect(text()).toContain(COPY.range.injectedZero);
-    expect(text()).not.toContain('Logged');
+    expect(text()).not.toContain('Recorded');
   });
 
   /**
@@ -1475,13 +1475,13 @@ describe('dead ends — every action must move or explain', () => {
    */
   it('no tap on the everyday path leaves the screen unchanged and silent', async () => {
     await setUpAsHisBrother();
-    // EXTENDED 2026-09-11 past "Work out the dose" and through the amount step.
+    // EXTENDED 2026-09-11 past "Calculate the dose" and through the amount step.
     // Stopping at the result is why this sweep could not see the zero-unit dead
     // end below: the defect lived on a screen the script never reached, which
     // is the same shape as the 7090 defect that caused the sweep to exist.
     const script: readonly string[] = [
-      '1', '8', '0', 'Next', '5', '0', 'Work out the dose',
-      'I injected this', '+', '−', 'Log this injection',
+      '1', '8', '0', 'Next', '5', '0', 'Calculate the dose',
+      'I injected this', '+', '−', 'Record this injection',
     ];
     for (const label of script) {
       const before = text();
@@ -1491,7 +1491,7 @@ describe('dead ends — every action must move or explain', () => {
         throw new Error(`Tapping "${label}" changed nothing on screen and said nothing.`);
       }
     }
-    expect(text()).toContain('Logged');
+    expect(text()).toContain('Recorded');
   });
 });
 
@@ -1709,17 +1709,17 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     await keys('120');
     await tap('Next');
     await keys('25');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     // Not for a calculation. A dose on screen is not a dose recorded.
     expect(buzzes).toBe(0);
     await tap('I injected this');
     expect(buzzes).toBe(0);
 
-    await tap('Log this injection');
+    await tap('Record this injection');
     // Once, after the write resolved — §7.2's commit is one transaction, and a
     // buzz before it lands would be a lie about a dosing record.
     expect(buzzes).toBe(1);
-    expect(text()).toContain('Logged 2 units');
+    expect(text()).toContain('Recorded 2 units');
   });
 
   it('§10.4 joins every number to its unit with a no-break space', async () => {
@@ -1732,7 +1732,7 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     await keys('180');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
 
     const raw = root.textContent ?? '';
     expect(raw).toMatch(/\d\u00A0units/);
@@ -1762,7 +1762,7 @@ describe('interaction continuity — the class of defect §13 does not cover', (
   it('never asks the browser to navigate on the shell\'s own accounting', async () => {
     // The defect this pins: reaching a screen with no back path used to trigger
     // a `history.back()` to tidy the spent sentinel, and when the bookkeeping
-    // was off by one that navigated PAST the app — tapping "Log this injection"
+    // was off by one that navigated PAST the app — tapping "Record this injection"
     // landed on about:blank. Reproduced roughly one run in three.
     //
     // The contract is now push-only: `setCanGoBack(false)` must ask for
@@ -1771,14 +1771,14 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     await keys('120');
     await tap('Next');
     await keys('25');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(canGoBack).toBe(true);
 
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
     // The logged screen has no back path, and the app is STILL HERE.
     expect(canGoBack).toBe(false);
-    expect(text()).toContain('Logged 2 units');
+    expect(text()).toContain('Recorded 2 units');
     expect(text()).toContain('Eat around');
   });
 
@@ -1787,14 +1787,14 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     await keys('180');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain('units of Humulin R');
 
     // Two routes to the same place: the button, then the gesture, must land on
     // the same screen. They read one `backAction`, and this is what pins that.
     await tap('Back');
     const viaButton = text();
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     hardwareBack?.(currentPath);
     await settle();
     expect(text()).toBe(viaButton);
@@ -1805,7 +1805,7 @@ describe('interaction continuity — the class of defect §13 does not cover', (
     await keys('65');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain(COPY.bandC.title);
     expect(root.className).toBe('mood-halt');
 
@@ -2029,7 +2029,7 @@ describe('§13.6 interface-to-core mapping', () => {
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
 
     expect(text()).toContain('11');
     expect(text()).toContain('units of Humulin R');
@@ -2047,7 +2047,7 @@ describe('§13.6 interface-to-core mapping', () => {
     await keys('50');
     await tap('Next');
     await keys('330');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain(COPY.bandD.title);
     expect(text()).not.toContain('units of Humulin R');
   });
@@ -2059,7 +2059,7 @@ describe('§8.2 — a block goes stale too', () => {
     await keys('65');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain(COPY.bandC.title);
     expect(text()).not.toContain('Check your blood sugar again before deciding');
 
@@ -2088,9 +2088,9 @@ describe('§8.2 + §6.2 — a confirmation dies with the result it authorised', 
     await keys('150');
     await tap('Next');
     await keys('60');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
     await tap('Done');
     clock += 2 * 60 * 60_000;
 
@@ -2099,7 +2099,7 @@ describe('§8.2 + §6.2 — a confirmation dies with the result it authorised', 
     await keys('300');
     await tap('Next');
     await keys('250');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain('That will be a large dose');
     await tap('Show the dose');
     expect(text()).toContain('25units of Humulin R');
@@ -2118,7 +2118,7 @@ describe('§8.2 + §6.2 — a confirmation dies with the result it authorised', 
     // acknowledgement.
     await tap('Back');
     clock += 5 * 60 * 60_000;
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain('That will be a large dose');
     expect(text()).not.toContain('30units of your mealtime insulin');
     expect(text()).not.toContain('units of Humulin R');
@@ -2131,7 +2131,7 @@ describe('§13.6 band-to-message pairing', () => {
     await keys('65');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
 
     const screen = text();
     // §3.3 — the block suppresses every INSULIN quantity: the main result, the
@@ -2152,7 +2152,7 @@ describe('§13.6 band-to-message pairing', () => {
     await keys('40');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain('This is very low');
     expect(text()).toContain('Get help if you cannot treat yourself');
     expect(text()).not.toContain('units of Humulin R');
@@ -2163,7 +2163,7 @@ describe('§13.6 band-to-message pairing', () => {
     await keys('65');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     const screen = text();
     expect(screen.indexOf(COPY.bandC.title)).toBeLessThan(screen.indexOf('Record this reading'));
   });
@@ -2175,7 +2175,7 @@ describe('§13.6 band-to-message pairing', () => {
     await keys('105');
     await tap('Next');
     await keys('60');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain('You are well below target');
     expect(text()).toContain('units of Humulin R');
     // §8.1 — band B INVERTS the timing instruction.
@@ -2188,7 +2188,7 @@ describe('§13.6 band-to-message pairing', () => {
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     // §3.1's asymmetry: blocking at the low end, advisory at the high end.
     expect(text()).toContain('Above 250 — check ketones');
     expect(text()).toContain('11');
@@ -2201,7 +2201,7 @@ describe('§13.6 the confirmation flow', () => {
     await keys('350');
     await tap('Next');
     await keys('250');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
 
     const screen = text();
     expect(screen).toContain('That will be a large dose');
@@ -2217,7 +2217,7 @@ describe('§13.6 the confirmation flow', () => {
     await keys('350');
     await tap('Next');
     await keys('250');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('Show the dose');
     expect(text()).toContain('32');
     expect(text()).toContain('units of Humulin R');
@@ -2230,7 +2230,7 @@ describe('§13.6 the confirmation flow', () => {
     await keys('150');
     await tap('Next');
     await keys('250');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain('That will be a large dose');
   });
 
@@ -2238,7 +2238,7 @@ describe('§13.6 the confirmation flow', () => {
     await setUpAsHisBrother();
     await tap('Next');
     await keys('60');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain('No reading entered');
     await tap('I understand — carbohydrates only');
     expect(text()).toContain('6');
@@ -2254,7 +2254,7 @@ describe('§4.3 step 3 — an impossible reading combines with the possible low,
     await keys('0');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain(COPY.bandD.title);
     expect(text()).toContain(COPY.blockedInvalidReading);
     expect(text()).not.toContain('units of Humulin R');
@@ -2265,7 +2265,7 @@ describe('§4.3 step 3 — an impossible reading combines with the possible low,
     await keys('19');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain(COPY.bandD.title);
     expect(text()).toContain(COPY.blockedInvalidReading);
   });
@@ -2275,7 +2275,7 @@ describe('§4.3 step 3 — an impossible reading combines with the possible low,
     await keys('65');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain(COPY.bandC.title);
     expect(text()).not.toContain(COPY.blockedInvalidReading);
   });
@@ -2285,7 +2285,7 @@ describe('§4.3 step 3 — an impossible reading combines with the possible low,
     await keys('65');
     await tap('Next');
     await keys('999');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain(COPY.bandC.title);
     // §10.5 rank 1 — nothing shows beside a band C/D block, and 65 is a real
     // reading, so the blood-sugar half has no business here either.
@@ -2313,7 +2313,7 @@ describe('§4.5 the HI/LO meter guidance is reachable, not merely written', () =
     await keys('7090');
     await tap('Next');
     await keys('7');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain('A meter does not read above 600');
     await tap('Meter showing HI or LO?');
     expect(text()).toContain('treat it as a minimum, not the answer');
@@ -2349,10 +2349,10 @@ describe('§10.5 the band E full card is spaced by a rolling window, not a date'
     await keys('280');
     await tap('Next');
     await keys('40');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain('check ketones');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
 
     // 12:20 AM, the next DATE, forty minutes later. Under the old day key this
     // rendered a second full card — the failure the ruling names first.
@@ -2361,7 +2361,7 @@ describe('§10.5 the band E full card is spaced by a rolling window, not a date'
     await keys('280');
     await tap('Next');
     await keys('40');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
 
     expect(bandECard()).toBeDefined();
     expect(bandECard()?.className).toBe('flag compact');
@@ -2378,9 +2378,9 @@ describe('§10.5 the band E full card is spaced by a rolling window, not a date'
     await keys('280');
     await tap('Next');
     await keys('40');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
 
     // Thirteen hours on, same session, NO record change in between. The shell
     // derived the flag at log time; only re-deriving at calculate time gets
@@ -2390,7 +2390,7 @@ describe('§10.5 the band E full card is spaced by a rolling window, not a date'
     await keys('280');
     await tap('Next');
     await keys('40');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
 
     expect(bandECard()).toBeDefined();
     expect(bandECard()?.className).toBe('flag');
@@ -2416,7 +2416,7 @@ describe('§7.9 a cross-tab delete returns this tab to the first-run gate', () =
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(text()).toContain('units of Humulin R');
 
     // Another tab starts over. `open.ts` closes our connection on
@@ -2451,7 +2451,7 @@ describe('§7.2 a tap after expiry is permitted, and the row takes the tap time'
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     clock += 20 * 60_000;
     dom.window.document.dispatchEvent(new dom.window.Event('visibilitychange'));
     await settle();
@@ -2466,14 +2466,14 @@ describe('§7.2 a tap after expiry is permitted, and the row takes the tap time'
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     const calculatedAt = clock;
     clock += 20 * 60_000;
     dom.window.document.dispatchEvent(new dom.window.Event('visibilitychange'));
     await settle();
     await tap(COPY.log.injectedAfterExpiry);
-    await tap('Log this injection');
-    expect(text()).toContain('Logged 11 units');
+    await tap('Record this injection');
+    expect(text()).toContain('Recorded 11 units');
     await tap('History');
     // 7:00 PM + 20 min in Karachi. The calculation time must NOT be what landed.
     expect(text()).toContain('7:20');
@@ -2492,10 +2492,10 @@ describe('§7.2 a failed write retries, and escalates only when retrying stops h
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
-    expect(text()).toContain('Logged 11 units');
+    await tap('Record this injection');
+    expect(text()).toContain('Recorded 11 units');
     expect(stuckPrompts).toHaveLength(0);
     // §7.2 — the buzz fires only after a write RESOLVED, so exactly one.
     expect(buzzes).toBe(1);
@@ -2512,9 +2512,9 @@ describe('§7.2 a failed write retries, and escalates only when retrying stops h
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
     expect(stuckPrompts).toHaveLength(1);
     expect(plain(stuckPrompts[0]?.amount ?? '')).toBe('11 units');
     expect(text()).toContain('still counts toward your next calculation while the app is open');
@@ -2587,7 +2587,7 @@ describe('§7.2 a failed write retries, and escalates only when retrying stops h
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
 
     expect(shellText()).not.toContain(COPY.staleConnection.title);
@@ -2595,7 +2595,7 @@ describe('§7.2 a failed write retries, and escalates only when retrying stops h
     expect(shellText()).toContain(COPY.staleConnection.title);
     expect(shellText()).toContain(COPY.staleConnection.body);
 
-    await tap('Log this injection');
+    await tap('Record this injection');
     // Inert, and that is the point: no claim that a dose was recorded.
     expect(buzzes).toBe(0);
     expect(stuckPrompts).toHaveLength(0);
@@ -2616,9 +2616,9 @@ describe('§7.2 a failed write retries, and escalates only when retrying stops h
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
     expect(stuckPrompts).toHaveLength(1);
 
     // The disk is healthy again by now — only the connection is the problem.
@@ -2654,13 +2654,13 @@ describe('§7.2 a failed write retries, and escalates only when retrying stops h
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
     expect(stuckPrompts).toHaveLength(1);
     stuckPrompts[0]?.retry();
     await settle();
-    expect(text()).toContain('Logged 11 units');
+    expect(text()).toContain('Recorded 11 units');
     await tap('History');
     expect(text()).toContain('injected 11 units');
   });
@@ -2672,17 +2672,17 @@ describe('§7.1 the amount gate at commit — §13.6\'s confirmation flow', () =
     await keys('150');
     await tap('Next');
     await keys('10');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
     tapFast('+', 10); // 1 unit stepped up to 6: |6-1| >= 5 and 6 >= 3x1
     await settle();
-    await tap('Log this injection');
+    await tap('Record this injection');
     expect(text()).toContain('The app worked out 1 unit and you have entered 6 units');
     // Not committed: still on the amount screen, no logged row.
     expect(text()).toContain('How many units did you actually inject?');
-    expect(text()).not.toContain('Logged 6 units');
-    await tap('It is what I injected — log it');
-    expect(text()).toContain('Logged 6 units');
+    expect(text()).not.toContain('Recorded 6 units');
+    await tap('It is what I injected — record it');
+    expect(text()).toContain('Recorded 6 units');
     await tap('History');
     expect(text()).toContain('calculated 1 unit · injected 6 units');
   });
@@ -2692,16 +2692,16 @@ describe('§7.1 the amount gate at commit — §13.6\'s confirmation flow', () =
     await keys('150');
     await tap('Next');
     await keys('10');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
     tapFast('+', 10);
     await settle();
-    await tap('Log this injection');
+    await tap('Record this injection');
     expect(text()).toContain('That is a large difference');
     await tap('−'); // 6 -> 5.5: the difference is 4.5, under the 5-unit floor
     expect(text()).not.toContain('That is a large difference');
-    await tap('Log this injection');
-    expect(text()).toContain('Logged 5.5 units');
+    await tap('Record this injection');
+    expect(text()).toContain('Recorded 5.5 units');
   });
 
   it('the 100-unit hard cap refuses with no way through', async () => {
@@ -2709,12 +2709,12 @@ describe('§7.1 the amount gate at commit — §13.6\'s confirmation flow', () =
     await keys('600');
     await tap('Next');
     await keys('300');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('Show the dose'); // 45 units clears §6.2's gate first
     await tap('I injected this');
     tapFast('+', 111); // 45 stepped to 100.5
     await settle();
-    await tap('Log this injection');
+    await tap('Record this injection');
     expect(text()).toContain('A syringe does not hold more than 100 units');
     expect(text()).toContain('How many units did you actually inject?');
     // A hard refusal offers no confirm-anyway control (§4.5: hard rejects).
@@ -2728,13 +2728,13 @@ describe('§7.1 the amount gate at commit — §13.6\'s confirmation flow', () =
     await keys('150');
     await tap('Next');
     await keys('10');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
     await tap('−');
     await tap('−'); // 1 -> 0.5 -> 0
-    await tap('Log this injection');
+    await tap('Record this injection');
     expect(text()).toContain('Tapping this says you injected. Enter how much.');
-    expect(text()).not.toContain('Logged');
+    expect(text()).not.toContain('Recorded');
   });
 });
 
@@ -2744,7 +2744,7 @@ describe('§7.2 the two taps, through the interface', () => {
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
 
     await tap('I injected this');
     expect(text()).toContain('How many units did you actually inject?');
@@ -2752,10 +2752,10 @@ describe('§7.2 the two taps, through the interface', () => {
     // taps and no typing.
     expect(text()).toContain('11');
     // Nothing is in the history yet.
-    expect(text()).not.toContain('Logged');
+    expect(text()).not.toContain('Recorded');
 
-    await tap('Log this injection');
-    expect(text()).toContain('Logged 11 units');
+    await tap('Record this injection');
+    expect(text()).toContain('Recorded 11 units');
     // §8.1 — the eat-by clock starts at THIS tap. 7:00 PM plus thirty minutes.
     expect(text()).toContain('7:30 PM');
   });
@@ -2765,13 +2765,13 @@ describe('§7.2 the two taps, through the interface', () => {
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
     // §7.1 — he injected more than the app worked out, which is the routine
     // case until his prescription is revisited.
     await tap('+');
     await tap('+');
-    await tap('Log this injection');
+    await tap('Record this injection');
     await tap('History');
 
     expect(text()).toContain('calculated 11 units');
@@ -2785,9 +2785,9 @@ describe('§7.4 the stacking gate, end to end', () => {
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
     await tap('Done');
 
     // Two hours later, the same reading and meal.
@@ -2795,7 +2795,7 @@ describe('§7.4 the stacking gate, end to end', () => {
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
 
     const screen = text();
     // The meal term alone.
@@ -2812,16 +2812,16 @@ describe('§7.4 the stacking gate, end to end', () => {
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
     await tap('Done');
 
     clock += 2 * 3_600_000;
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('Why is this smaller?');
 
     // 11 injected units x 30 mg/dL per unit = 330.
@@ -2836,9 +2836,9 @@ describe('§7.4 the stacking gate, end to end', () => {
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
     await tap('Done');
 
     clock += 2 * 3_600_000;
@@ -2847,7 +2847,7 @@ describe('§7.4 the stacking gate, end to end', () => {
     await keys('100');
     await tap('Next');
     await keys('60');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
 
     expect(text()).toContain('Total4 units');
     expect(text()).not.toContain('Correction held back');
@@ -2861,9 +2861,9 @@ describe('§7.7.1 both exports, from the interface', () => {
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
     await tap('History');
     await tap('Save a copy');
 
@@ -2899,7 +2899,7 @@ describe('§7.7.1 both exports, from the interface', () => {
     await keys('65');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('Record this reading');
     await tap('Save this reading');
     await tap('Save a copy');
@@ -2923,9 +2923,9 @@ describe('§7.3 delete, with its consequence', () => {
     await keys('330');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
     await tap('History');
     await tap('Delete');
 
@@ -2969,7 +2969,7 @@ describe('BACKLOG 24 — the four screens that have an address', () => {
     expect(currentPath).toBe('/MealUnits/');
 
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     expect(currentPath).toBe('/MealUnits/');
   });
 
@@ -3057,9 +3057,9 @@ describe('§12 — what this browser promises about the record', () => {
     await keys('180');
     await tap('Next');
     await keys('50');
-    await tap('Work out the dose');
+    await tap('Calculate the dose');
     await tap('I injected this');
-    await tap('Log this injection');
+    await tap('Record this injection');
   }
 
   it('offers it as soon as a PRESCRIPTION is stored, not waiting for a dose', async () => {

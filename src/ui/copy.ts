@@ -363,7 +363,7 @@ export const COPY = {
      */
     mineSet: 'Use my own figure',
     mineChange: 'Change my figure',
-    mineClear: 'Back to the reference',
+    mineClear: "Back to the table's figure",
     mineLabel: 'Grams of carbohydrate in mine',
     /**
      * The reference, beside the empty box. Momin's idea, and the reason is
@@ -379,7 +379,7 @@ export const COPY = {
      * types the weight is out by a factor of two.
      */
     mineHint: (reference: string): string =>
-      `The reference is ${reference} — carbohydrate, not what it weighs.`,
+      `The table says ${reference} — carbohydrate, not what it weighs.`,
     mineSave: 'Save mine',
     /**
      * Clearing ALL of them, once. Per-row clearing already exists inside each
@@ -391,12 +391,12 @@ export const COPY = {
      * is one a person can judge before pressing.
      */
     mineResetAll: (n: number): string => (n === 1
-      ? 'Reset that one to the reference figure'
-      : `Reset all ${String(n)} to the reference figures`),
-    mineResetConfirm: 'Yes, use the reference figures again',
+      ? "Reset that one to the table's figure"
+      : `Reset all ${String(n)} to the table's figures`),
+    mineResetConfirm: "Yes, back to the table's figures",
     mineResetCancel: 'Keep mine',
     mineWas: (reference: string, date: string): string =>
-      `Yours. The reference is ${reference}\u00A0g — you set this on ${date}.`,
+      `Yours. The table says ${reference}\u00A0g — you set this on ${date}.`,
     /**
      * T31 — the plate, and every string the two-step weighing needs.
      *
@@ -856,7 +856,7 @@ export const COPY = {
     mealOnly: 'Covering carbohydrates only',
     overrideAction: (candidate: string): string => `Add the correction anyway → ${candidate}`,
     /** §7.4.1 v4 — when either figure reaches the threshold, NO numbers show. */
-    overrideWithheld: 'Add the correction anyway',
+    overrideWithheld: 'I understand \u2014 add the correction',
     held: 'held back, you injected recently',
   },
 
@@ -902,7 +902,7 @@ export const COPY = {
      * back could not record the injection at all, and §7.4's gate went blind on
      * a real dose. Losing a row is worse than logging a late one.
      */
-    injectedAfterExpiry: 'I already injected — log it at the current time',
+    injectedAfterExpiry: 'I already injected — record it at the current time',
     amountQuestion: 'How many units did you actually inject?',
     amountHint:
       'Starts at what the app worked out. Change it if you injected something different — the record should say what happened.',
@@ -910,7 +910,7 @@ export const COPY = {
       'Set it now — this is the only moment it can be changed. Afterwards an entry can be deleted, but never edited.',
     commitIsHere:
       'Tapping below is what saves it. The entry and the stacking clock both start at that tap.',
-    commit: 'Log this injection',
+    commit: 'Record this injection',
     /** §7.1 — the divergence confirmation, which v9 named and never defined. */
     divergent: (calculated: string, injected: string): string =>
       `The app worked out ${calculated} and you have entered ${injected}. That is a large difference — check it before recording.`,
@@ -920,8 +920,8 @@ export const COPY = {
      * the record should say what happened (§7.1) and a bare "yes" invites a
      * tap-through.
      */
-    divergentAction: 'It is what I injected — log it',
-    saved: (amount: string, at: string): string => `Logged ${amount} at ${at}`,
+    divergentAction: 'It is what I injected — record it',
+    saved: (amount: string, at: string): string => `Recorded ${amount} at ${at}`,
     /**
      * §7.2 — "the injection has already happened. A failed disk write does not
      * make it unknown to the running session." And the timer starts regardless.
@@ -1860,7 +1860,7 @@ export const COPY = {
     stepOf: (step: string, total: string): string => `${step} of ${total}`,
     stepCheck: 'Check',
     stepRecording: 'Recording',
-    stepLogged: 'Logged',
+    stepLogged: 'Recorded',
     rowBloodSugar: 'Blood sugar',
     rowCarbohydrate: 'Carbohydrate',
     rowTotal: 'Total',
@@ -1948,7 +1948,7 @@ export const COPY = {
     dosingAnsweredAt: (at: string): string =>
       `Answered ${at}. Editing it replaces the answer and re-dates it.`,
     mealCheckNeeds: (meals: string): string =>
-      `It needs ${meals} logged meals before it can say anything.`,
+      `It needs ${meals} recorded meals before it can say anything.`,
     /** Label, then figure — the word says which number this is, the figure is what is sought. */
     historyDose: (calculated: string, injected: string): readonly {
       readonly label: string;
@@ -2117,7 +2117,7 @@ export const COPY = {
    */
   staleConnection: {
     title: 'This app was updated in another window.',
-    body: 'Close this one and open it again before you log anything else. Nothing has been lost.',
+    body: 'Close this one and open it again before you record anything else. Nothing has been lost.',
     /**
      * Said INSTEAD of `body` when a logged dose has not reached the record.
      *
@@ -2312,7 +2312,7 @@ export const COPY = {
    */
   back: 'Back',
   next: 'Next',
-  workItOut: 'Work out the dose',
+  workItOut: 'Calculate the dose',
   cancel: 'Cancel',
   done: 'Done',
 } as const;

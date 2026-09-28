@@ -326,7 +326,7 @@ the defect the first version of this created.
 
 Three small interface fixes, all found on a real device.
 
-## 38. A dead end: an out-of-range reading made "Work out the dose" do nothing
+## 38. A dead end: an out-of-range reading made "Calculate the dose" do nothing
 
 `stepFor` routed `invalid_input` to `carbs` unconditionally, so an out-of-range READING landed on a
 screen with no reading on it, which could not show the error. It now routes to the field that is
@@ -467,7 +467,7 @@ alternative is worse.**
 
 `document.body.prepend(bar)` put the bar in normal flow, so it displaced everything below it. Now one
 `promptBar` component, fixed to the FOOT, publishing its height as `--prompt-h` so `#app` pads by it:
-**overlaying the page is fine; overlaying "Work out the dose" is not.**
+**overlaying the page is fine; overlaying "Calculate the dose" is not.**
 
 **Momin's ruling on the dismissal: in memory only, and it comes back on the next launch.** His
 reason, which is the one to keep: **updates in this app are not optional**, so being asked again
@@ -488,7 +488,7 @@ still the likeliest reading of an old low.
 **The remainder is no longer a build note.** `overrideScreen` still does not read `expired`, and
 looking at it showed the question is bigger than one screen: taking the override invalidates, sets
 `expired: false` and recalculates, so a 20-minute-old reading yields a result the app considers
-fresh — and re-tapping "Work out the dose" does the same. **The app expires results, never inputs.**
+fresh — and re-tapping "Calculate the dose" does the same. **The app expires results, never inputs.**
 That is a §8.2 question, and it is `BACKLOG.md` entry 20.
 
 ## 61. §7.2's pending-save promise was two lies and a dead function
@@ -1552,3 +1552,42 @@ Momin, on being asked: *"it's basically use the installedAtMs or use the now, it
 condition."* Which is right, and is exactly why it needed writing down — a fallback simple enough
 to read past is a fallback whose value nobody re-examines. When provenance cannot be established,
 claiming less of it is the only safe way to be wrong.
+
+## 80. Three words the interface was using and one it was hiding behind
+
+Renamed 2026-09-29, and the old names are here so the notes above stay findable.
+
+**"Work out the dose" → "Calculate the dose."** Momin raised it and the reason
+turned out to be stronger than taste: in Pakistani English *work out* reads
+first as exercise, on a screen that also says "Eat around 7:30 PM". The Urdu had
+never had the ambiguity — «ڈوز کا حساب لگائیں» has said *calculate* since it was
+written, so the translation had already made the choice the English was avoiding.
+
+**"Log this injection" → "Record this injection."** He suggested *save*, and
+save was the one word it could not be: this app spends *save* on data the reader
+typed — `Save mine`, `Save this reading`, `Save a copy` — and *log* on insulin
+that is in the body. Collapsing them would make a dosing record look like a
+saved value. *Record* keeps the distinction and is the app's own noun for that
+store, in `Save the record`, `Clear the record`, `Delete the record`. Six more
+strings moved with it, because a verb changed in one control and left everywhere
+else is worse than either word: `divergentAction`, `injectedAfterExpiry`,
+`saved`, `stepLogged`, `staleConnection.body` and `mealCheckNeeds`. The Urdu
+again needed nothing — «درج کریں» was already *record*.
+
+**"The reference" → "the table."** Four strings, all on the per-food calibration
+row, and the word was never defined anywhere the reader could reach it. `plateClear`
+had already solved the same problem with "Back to the table's 300 g serving", and
+CARBS.md calls itself the table throughout, so this is the existing word replacing
+an orphan rather than a new one. The button stays generic — "Back to the table's
+figure" — because the figure differs per row and `mineWas` states it one line
+above. «حوالہ» went to «فہرست» to match; `sourcePrefix` keeps «حوالہ» because
+there it means a citation.
+
+**"Add the correction anyway" → "I understand — add the correction."** This fires
+when §7.4.1 withholds a correction and shows NO numbers, which makes it the most
+consequential override in the app, and *anyway* is a shrug. `I understand —
+carbohydrates only`, `I understand — always round up` and `I understand — use at
+my own risk` are the house form for exactly this, and this was the one button that
+belonged in that family and was not in it. `overrideAction` keeps *anyway*: it
+shows the candidate figure beside it, so the reader is agreeing to a number
+rather than to a silence.

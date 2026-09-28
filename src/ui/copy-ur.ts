@@ -367,20 +367,20 @@ export const COPY_UR: Copy = {
     matrixPicked: (n: number): string => isolate(`${String(n)} لیے`),
     mineSet: 'اپنا عدد استعمال کریں',
     mineChange: 'اپنا عدد بدلیں',
-    mineClear: 'واپس حوالہ والے عدد پر',
+    mineClear: 'واپس فہرست والے عدد پر',
     mineLabel: 'آپ والے میں کتنے گرام کاربوہائیڈریٹ ہیں',
     mineHint: (reference: string): string =>
-      isolate(`حوالہ ${reference} ہے — یہ کاربوہائیڈریٹ ہے، وزن نہیں۔`),
+      isolate(`فہرست کے مطابق ${reference} — یہ کاربوہائیڈریٹ ہے، وزن نہیں۔`),
     mineSave: 'اپنا عدد محفوظ کریں',
     // Urdu takes no plural here — «اعداد» is already the plural — so the branch
     // exists only so the sentence reads naturally for a single row.
     mineResetAll: (n: number): string => (n === 1
-      ? 'اسے واپس حوالہ والے عدد پر لے آئیں'
-      : isolate(`سب ${String(n)} کو واپس حوالہ والے اعداد پر لے آئیں`)),
-    mineResetConfirm: 'ہاں، دوبارہ حوالہ والے اعداد استعمال کریں',
+      ? 'اسے واپس فہرست والے عدد پر لے آئیں'
+      : isolate(`سب ${String(n)} کو واپس فہرست والے اعداد پر لے آئیں`)),
+    mineResetConfirm: 'ہاں، واپس فہرست والے اعداد پر',
     mineResetCancel: 'میرے اپنے رہنے دیں',
     mineWas: (reference: string, date: string): string =>
-      isolate(`آپ کا اپنا۔ حوالہ ${reference}\u00A0گرام ہے — آپ نے یہ ${date} کو رکھا۔`),
+      isolate(`آپ کا اپنا۔ فہرست کے مطابق ${reference}\u00A0گرام ہے — آپ نے یہ ${date} کو رکھا۔`),
     plateLead: (ref: string): string =>
       isolate(`یہاں پلیٹ والی ہر لائن ${ref}\u00A0گرام کے حصے کی ہے۔ اگر آپ اس سے کم یا زیادہ نکالتے ہیں تو اپنا حصہ ایک بار تول لیں — پھر پلیٹ والی ہر لائن اسی کے حساب سے چلے گی۔`),
     plateSet: 'اپنا حصہ ایک بار تولیں',
@@ -775,7 +775,7 @@ export const COPY_UR: Copy = {
     /** Urdu: the arrow is written ← so it still points from the action to the candidate in an RTL line (arrows do not bidi-mirror). */
     overrideAction: (candidate: string): string => `پھر بھی کریکشن شامل کریں ← ${candidate}`,
     /** §7.4.1 v4 — when either figure reaches the threshold, NO numbers show. */
-    overrideWithheld: 'پھر بھی کریکشن شامل کریں',
+    overrideWithheld: 'سمجھ آ گئی — کریکشن شامل کریں',
     held: 'روک لی گئی، آپ نے کچھ دیر پہلے انسولین لگائی',
   },
 

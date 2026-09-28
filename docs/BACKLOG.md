@@ -72,7 +72,7 @@ any code regardless of where it sits.
 
 **What the app does today.** §8.2 flips `expired` fifteen minutes after a result, and the result
 screen and the block screen both say so. It clears nothing: the typed reading stays in the field.
-So any path that recalculates — "Work out the dose" again, or §7.4.1's override, which invalidates,
+So any path that recalculates — "Calculate the dose" again, or §7.4.1's override, which invalidates,
 sets `expired: false` and recomputes — produces a result the app considers **fresh**, from a reading
 that is not.
 
