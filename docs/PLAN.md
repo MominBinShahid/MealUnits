@@ -1600,7 +1600,7 @@ under-counted previous meal. In those cases the gate's assumption is simply fals
 > That insulin may still lower you by up to **180 mg/dL** on its own.
 >
 > Covering carbohydrates only: **4 units**
-> [ I understand — add the correction → 10 units ]
+> [ Add the correction anyway → 10 units ]
 
 **The candidate dose is hidden when it would need confirmation — NEW IN v4** [R2-F2, R1-M5].
 v3's button printed the resulting total unconditionally. At blood sugar 600 with 200 g the

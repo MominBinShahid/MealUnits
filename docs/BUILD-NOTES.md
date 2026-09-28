@@ -1564,18 +1564,29 @@ never had the ambiguity — «ڈوز کا حساب لگائیں» has said *calc
 written, so the translation had already made the choice the English was avoiding.
 
 **"Log this injection" → "Record this injection."** He suggested *save*, and
-save was the one word it could not be: this app spends *save* on data the reader
-typed — `Save mine`, `Save this reading`, `Save a copy` — and *log* on insulin
-that is in the body. Collapsing them would make a dosing record look like a
-saved value. *Record* keeps the distinction and is the app's own noun for that
+save was the one word it could not be, though the distinction is weaker than the
+first draft of this note claimed. The app spends *save* on data the reader typed
+— `Save mine`, `Save this reading`, `Save a copy` — and reserved *log* for the
+act of committing insulin to the record. It does NOT reserve it absolutely:
+`log.pending` says "Couldn't save this dose" and `log.stuck` "is still not
+saved", both about a dose and both right, because there the subject is whether
+bytes reached the disk. The line is between the ACT and the STORAGE rather than
+between two kinds of data, and "Save this injection" sits on the wrong side of
+it. *Record* keeps the distinction and is the app's own noun for that
 store, in `Save the record`, `Clear the record`, `Delete the record`. Six more
-strings moved with it, because a verb changed in one control and left everywhere
-else is worse than either word: `divergentAction`, `injectedAfterExpiry`,
-`saved`, `stepLogged`, `staleConnection.body` and `mealCheckNeeds`. The Urdu
-again needed nothing — «درج کریں» was already *record*.
+strings moved with it — `divergentAction`, `injectedAfterExpiry`, `saved`,
+`stepLogged`, `staleConnection.body` and `mealCheckNeeds` — and then seven more
+in prose, because the first pass left "If you record every injection" one screen
+away from a paragraph still saying *logged*, and `notEnoughHistory` counting
+"meals logged" beside `mealCheckNeeds` counting "meals recorded" in the same
+§6.5 feature. A verb changed in one control and left everywhere else is worse
+than either word, and a note saying so while the survivors stood was worse
+again. The Urdu needed nothing — «درج کریں» was already *record*.
 
-**"The reference" → "the table."** Four strings, all on the per-food calibration
-row, and the word was never defined anywhere the reader could reach it. `plateClear`
+**"The reference" → "the table."** Five keys and six literals — `mineClear`,
+`mineHint`, `mineWas`, `mineResetConfirm` and `mineResetAll`'s two branches — the
+last two of which render in the list-level footer rather than on a row. The word
+was never defined anywhere the reader could reach it. `plateClear`
 had already solved the same problem with "Back to the table's 300 g serving", and
 CARBS.md calls itself the table throughout, so this is the existing word replacing
 an orphan rather than a new one. The button stays generic — "Back to the table's

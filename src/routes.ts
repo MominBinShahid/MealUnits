@@ -76,7 +76,7 @@ export const ROUTES: readonly Route[] = [
     screen: 'history',
     title: 'Your record — MealUnits',
     description:
-      'Every dose logged on this device, with the reading and the carbohydrate it was worked out from.',
+      'Every dose recorded on this device, with the reading and the carbohydrate it was worked out from.',
   },
   {
     segment: 'settings',
