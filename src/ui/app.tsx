@@ -816,7 +816,7 @@ export async function start(host: Host): Promise<void> {
       await appendInjection(db, row, payload.timestamp);
       stored = await readAll(db, host.now());
       watch.announce();
-      dispatch({ type: 'log_saved', record: contextFrom(stored) });
+      dispatch({ type: 'log_saved', record: contextFrom(stored), id: payload.id });
       // AFTER the write resolved, and only here. §7.2's commit is "one
       // transaction"; a buzz before it lands would be a lie about a dosing
       // record, and one on the failure path would be a lie about a worse thing.
@@ -864,19 +864,29 @@ export async function start(host: Host): Promise<void> {
    * carrying the words it was raised with — "Nothing has been lost" — about a
    * dose that by then is only in memory.
    */
-  const unsavedDose = (): string | null =>
-    state.committing !== null && state.save.kind === 'pending'
-      ? copy.units(state.committing.injectedUnits)
-      : null;
+  const unsavedDose = (): string | null => {
+    // From the LIST. `committing` is the payload most recently committed, which
+    // after a second dose is not the one still owed.
+    const newest = state.unsaved.reduce<{ readonly injectedUnits: number; readonly timestamp: number } | null>(
+      (best, payload) => (best === null || payload.timestamp > best.timestamp ? payload : best),
+      null,
+    );
+    return newest === null ? null : copy.units(newest.injectedUnits);
+  };
 
   /** Whether the stale bar is standing, so a later pending dose can refresh it. */
   let staleShowing = false;
 
   /** The frozen payload, never a re-read draft (§7.1). */
   const retryPendingSave = (): void => {
-    const pending = state.committing;
-    if (pending === null || state.save.kind !== 'pending') return;
-    void attemptWrite(pending);
+    // EVERY payload still owed. Retrying `committing` alone meant a bar raised
+    // for dose 1 called a retry that wrote dose 2 — or, once dose 2 had saved,
+    // wrote nothing at all and looked broken.
+    const owed = [...state.unsaved];
+    if (owed.length === 0) return;
+    void (async (): Promise<void> => {
+      for (const payload of owed) await attemptWrite(payload);
+    })();
   };
 
   const saveReading = async (): Promise<void> => {

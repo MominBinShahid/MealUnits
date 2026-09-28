@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { COPY } from '../src/ui/copy.js';
-import { EMPTY_RECORD, initialState, reduce } from '../src/state/machine.js';
+import { EMPTY_RECORD, inSessionLastDose, initialState, reduce } from '../src/state/machine.js';
 import type { Action, AppState, FrozenLogPayload, RecordContext } from '../src/state/machine.js';
 import type { Settings } from '../src/core/types.js';
 
@@ -451,7 +451,7 @@ describe('§7.2 a failed() write does not un-inject anything', () => {
   it('but a SAVED write leaves the record to speak, so nothing double-counts', () => {
     // `committing` deliberately survives a successful save (§7.2 freezes the
     // payload for a retry), so `save.kind` is the only honest signal.
-    const saved = run([{ type: 'log_saved', record: RECORD }], failed());
+    const saved = run([{ type: 'log_saved', record: RECORD, id: 'dose-1' }], failed());
     expect(saved.committing).not.toBeNull();
     const recalculated = run(
       [
@@ -653,6 +653,7 @@ describe('§13.4 — the reducer seams the mutation gate now covers', () => {
       largeDoseConfirmed: false,
       injectedDraft: '',
       committing: null,
+      unsaved: [],
       save: { kind: 'none' },
       expired: false,
     });
@@ -721,10 +722,81 @@ describe('§13.4 — the reducer seams the mutation gate now covers', () => {
     expect(afterPending.committing).toEqual(payload);
     expect(afterPending.save).toEqual({ kind: 'pending', attempts: 1 });
 
-    const saved = reduce(base, { type: 'log_saved', record: RECORD });
+    const saved = reduce(base, { type: 'log_saved', record: RECORD, id: 'd' });
     expect(saved.save).toEqual({ kind: 'saved' });
     expect(reduce(saved, { type: 'new_calculation' }).committing).toBeNull();
     expect(reduce(saved, { type: 'new_calculation' }).save).toEqual({ kind: 'none' });
+  });
+
+  it('§7.2 — a SECOND dose does not overwrite the first one still owed', () => {
+    // The over-dose path this list exists to close. `commit_log` has no guard
+    // on `save.kind`, so with a slot the second commit replaced the first —
+    // and if the second then saved, the first was gone from the record AND
+    // from the stacking gate, which is §7.4 releasing a correction on top of
+    // insulin that is in him.
+    const one: FrozenLogPayload = {
+      id: 'one', timestamp: NOW, bloodSugar: 330, carbs: 50, calculatedUnits: 1100,
+      injectedUnits: 1100, settingsRevision: 1, overrodeStacking: false,
+      timingAdvice: 'before', advisoryFlagged: false,
+    };
+    const two: FrozenLogPayload = { ...one, id: 'two', timestamp: NOW + 3 * 3_600_000, injectedUnits: 600 };
+
+    const first = run([...typed('330', '50'), { type: 'calculate', nowMs: NOW },
+      { type: 'begin_logging' }, { type: 'commit_log', payload: one },
+      { type: 'log_save_failed' }, { type: 'log_save_failed' }]);
+    expect(first.unsaved).toEqual([one]);
+
+    // Three hours later, a second meal in the same session.
+    const second = reduce(reduce(first, { type: 'new_calculation' }), { type: 'commit_log', payload: two });
+    expect(second.unsaved).toEqual([one, two]);
+
+    // The second saves. The first is STILL owed, and still visible to the gate.
+    const saved = reduce(second, { type: 'log_saved', record: RECORD, id: 'two' });
+    expect(saved.unsaved).toEqual([one]);
+    expect(inSessionLastDose(saved)).not.toBeNull();
+    expect(inSessionLastDose(saved)?.injectedHundredths).toBe(1100);
+  });
+
+  it('§7.2 — the gate reads the NEWEST dose still owed, not the last committed', () => {
+    const older: FrozenLogPayload = {
+      id: 'older', timestamp: NOW, bloodSugar: 330, carbs: 50, calculatedUnits: 1100,
+      injectedUnits: 1100, settingsRevision: 1, overrodeStacking: false,
+      timingAdvice: 'before', advisoryFlagged: false,
+    };
+    const newer: FrozenLogPayload = { ...older, id: 'newer', timestamp: NOW + 60_000, injectedUnits: 250 };
+    const state = run([...typed('330', '50'), { type: 'calculate', nowMs: NOW },
+      { type: 'begin_logging' }, { type: 'commit_log', payload: newer },
+      { type: 'log_save_failed' }, { type: 'commit_log', payload: older }]);
+    expect(state.unsaved).toEqual([newer, older]);
+    // Committed last, but older by the clock — the gate wants the most recent
+    // insulin, so the order of taps must not decide it.
+    expect(inSessionLastDose(state)?.injectedHundredths).toBe(250);
+  });
+
+  it('§7.4 — two doses in the same millisecond: the gate takes the LARGER', () => {
+    // Not reachable by tapping, but the tie has to resolve deliberately rather
+    // than by whichever the list held first. Overstating insulin on board
+    // withholds a correction; understating it releases one. Only one of those
+    // directions is survivable, so the tie goes to the bigger dose.
+    const small: FrozenLogPayload = {
+      id: 'small', timestamp: NOW, bloodSugar: 330, carbs: 50, calculatedUnits: 1100,
+      injectedUnits: 200, settingsRevision: 1, overrodeStacking: false,
+      timingAdvice: 'before', advisoryFlagged: false,
+    };
+    const large: FrozenLogPayload = { ...small, id: 'large', injectedUnits: 1400 };
+
+    // Both orders, so neither comparison can pass by sitting still.
+    const smallFirst = { ...initialState(), unsaved: [small, large] };
+    const largeFirst = { ...initialState(), unsaved: [large, small] };
+    expect(inSessionLastDose(smallFirst)?.injectedHundredths).toBe(1400);
+    expect(inSessionLastDose(largeFirst)?.injectedHundredths).toBe(1400);
+
+    // And with the clock actually differing, the later dose wins from EITHER
+    // position in the list — the earlier test only ever had the newer one
+    // first, so the comparison was never asked to switch.
+    const later: FrozenLogPayload = { ...small, id: 'later', timestamp: NOW + 1, injectedUnits: 50 };
+    expect(inSessionLastDose({ ...initialState(), unsaved: [small, later] })?.injectedHundredths).toBe(50);
+    expect(inSessionLastDose({ ...initialState(), unsaved: [later, small] })?.injectedHundredths).toBe(50);
   });
 
   it('§4.3 — every outcome lands on the step that can show it', () => {
@@ -912,12 +984,12 @@ describe('§13.4 — the remaining reducer branches', () => {
     expect(pending.snapshot?.lastDose).toEqual({ injectedHundredths: 1100, atMs: NOW - HOUR, insulinClass: 'regular' as const });
 
     // Saved: the record speaks, even though `committing` still stands.
-    const saved = run([{ type: 'calculate', nowMs: NOW }], upTo({ type: 'log_saved', record: older }));
+    const saved = run([{ type: 'calculate', nowMs: NOW }], upTo({ type: 'log_saved', id: 'd', record: older }));
     expect(saved.committing).not.toBeNull();
     expect(saved.snapshot?.lastDose).toEqual({ injectedHundredths: 300, atMs: NOW - 3 * HOUR, insulinClass: 'regular' as const });
 
     // Pending with NOTHING frozen falls back to the record rather than throwing.
-    const noPayload = { ...upTo({ type: 'log_save_failed' }), committing: null };
+    const noPayload = { ...upTo({ type: 'log_save_failed' }), committing: null, unsaved: [] };
     expect(run([{ type: 'calculate', nowMs: NOW }], noPayload).snapshot?.lastDose)
       .toEqual({ injectedHundredths: 300, atMs: NOW - 3 * HOUR, insulinClass: 'regular' as const });
 
