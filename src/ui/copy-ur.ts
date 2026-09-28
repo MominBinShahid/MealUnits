@@ -2120,7 +2120,7 @@ export const COPY_UR: Copy = {
 
   /** §11.4's update offer and §12's install offer — the shell's two bars. */
   update: {
-    ready: 'نیا ورژن تیار ہے۔',
+    ready: 'اپ ڈیٹ تیار ہے — ہو سکتا ہے کوئی عدد درست ہو۔',
     useNow: 'ابھی استعمال کریں',
     later: 'بعد میں',
   },

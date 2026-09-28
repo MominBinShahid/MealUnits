@@ -151,6 +151,13 @@ describe('§10.5 — one bar at a time, by priority, the rest queued', () => {
   });
 
   it('orders by hazard, and the order is stated rather than incidental', () => {
-    expect([...BAR_ORDER]).toEqual(['stuck', 'update', 'install']);
+    // Five since 2026-09-28. `stale` and `write-failed` were rendered straight
+    // from `app.tsx`, so they were in no order at all — two `fixed; bottom: 0`
+    // panels at one z-index, painting over each other and over the shell's
+    // bars. `stale` sits above `write-failed` because it is the CAUSE of the
+    // failures that follow: once the connection closes every write raises
+    // `write-failed`, and showing the symptom while hiding the cause has the
+    // reader retrying when the fix is to reopen the window.
+    expect([...BAR_ORDER]).toEqual(['stuck', 'stale', 'write-failed', 'update', 'install']);
   });
 });

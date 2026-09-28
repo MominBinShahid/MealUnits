@@ -574,67 +574,24 @@ export function ClearScreen({
  * and no export is possible without a connection. "That screen is the last place
  * those three numbers exist, so it says so."
  */
-/**
- * The tab whose connection another tab closed — added 2026-09-21.
+/*
+ * `StaleConnectionPanel` and `WriteFailedPanel` LIVED HERE until 2026-09-28.
  *
- * It wears the same furniture as the write-failure prompt and carries no
- * control, because there is nothing this tab can do: its connection is gone
- * until the app is opened again. A button here would have to either lie or do
- * nothing.
+ * They were Preact components rendered from `app.tsx` on a plain condition,
+ * and that made two systems own the bottom edge of the screen. Both were
+ * `position: fixed; bottom: 0` at the same z-index as the shell's bars, so a
+ * closed connection AND a rejected write painted on top of each other with
+ * nothing deciding which won — and neither set `--prompt-h`, the variable
+ * whose whole job is stopping a bottom bar from covering the primary action.
+ *
+ * They are `BarSpec`s in `prompt-bar.ts` now, raised through the same slot as
+ * `stuck`, `update` and `install`, with `BAR_ORDER` deciding which single one
+ * is up. Their words did not change and neither did their furniture: the title,
+ * the body, the hint said BEFORE the control it warns about, and the danger
+ * styling on a button that destroys the record all survived the move, which is
+ * why `paintBar` grew `body`, `hint` and `dangerLabel` rather than the copy
+ * being flattened to fit it.
  */
-export function StaleConnectionPanel(): JSX.Element {
-  const COPY = useCopy();
-  return (
-    <div class="prompt-bar stop" role="alert">
-      <b>{COPY.staleConnection.title}</b>
-      <p>{COPY.staleConnection.body}</p>
-    </div>
-  );
-}
-
-/**
- * A write that rejected, reported where the reader is — added 2026-09-21.
- *
- * NOT a screen and not a fail-closed state. The app goes on working; one
- * action did not happen, and before this the only trace of that was a console
- * message on a device with no console. `app.tsx`'s `guardWrite` decides when it
- * appears.
- *
- * The escape is offered with what it costs stated FIRST, which is §7.9's rule
- * about `copyThemDown` applied one floor down: starting over is the only repair
- * available from here and it is also the one that takes everything.
- */
-export function WriteFailedPanel({
-  onStartOver,
-  onDismiss,
-}: {
-  readonly onStartOver: () => void;
-  readonly onDismiss: () => void;
-}): JSX.Element {
-  const COPY = useCopy();
-  return (
-    /*
-      `prompt-bar` and NOT `flag`, and it took a screenshot to learn why.
-      Rendered in flow it sat at the top of the settings screen — correct in the
-      DOM, invisible to the reader, because "Save and start" is at the FOOT of a
-      long screen and nobody scrolls back up to look for a message they do not
-      know exists. The test passed throughout: `textContent` does not have a
-      viewport.
-
-      §11.4's update offer already made this argument and wrote it down — "a
-      prompt is an interruption; it should sit over the page rather than
-      rearrange it", fixed to the foot because that is what a thumb can reach.
-      The same furniture, for the same reason, one floor down.
-    */
-    <div class="prompt-bar stop" role="alert">
-      <b>{COPY.writeFailed.title}</b>
-      <p>{COPY.writeFailed.body}</p>
-      <p class="hint">{COPY.writeFailed.startOverHint}</p>
-      <Button class="go quiet" onPress={onDismiss}>{COPY.writeFailed.dismiss}</Button>
-      <Button class="go danger" onPress={onStartOver}>{COPY.failClosed.escape}</Button>
-    </div>
-  );
-}
 
 export function FailClosedScreen({
   recovery,
