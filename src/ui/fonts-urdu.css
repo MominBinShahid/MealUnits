@@ -193,13 +193,28 @@
  * sets it SMALLER, and the reader most likely to be reading Urdu here is the
  * one least able to afford that.
  *
- * 1.25 for the three Nastaliq faces. Naskh and Sans sit closer to Latin
- * proportions and take 1.1. This multiplies with `--text-scale`, the reader's
- * own setting, so the two compose.
+ * 1.1 for every face, Nastaliq included, LOWERED FROM 1.25 on 2026-09-28.
+ * The correction was right in direction and too strong in size, and the reason
+ * is that it multiplies with `--text-scale` rather than replacing it. At 1.25
+ * an Urdu reader on "Normal" was at 1.25 against an English reader's 1.0 — and
+ * `TEXT_SCALES` tops out at 1.3, so the SMALLEST Urdu setting was almost the
+ * LARGEST English one. There was no normal-density view to choose; the whole
+ * range had been shifted up a step and a half, and the reader with good sight
+ * had nowhere to go. Momin, looking at the settings screen: "if somebody with
+ * good eye sight what's that normal view we can't because of this."
+ *
+ * 1.1 keeps a correction and returns the three steps: Urdu Normal now lands
+ * between English Normal and Larger, and a reader who wants the old size picks
+ * Larger, which is what that control is for. Full compensation for the 65%
+ * width would be about 1.54, so this remains deliberately partial.
+ *
+ * The LEADING is a separate lever and is NOT touched here: Nastaliq climbs
+ * steeply right to left and the 2.3 line box is what keeps one line out of the
+ * next, measured at 41px of collision when it was tighter.
  */
 :root[data-urdu-face='nastaliq'] {
   --urdu-family: 'Noto Nastaliq Urdu';
-  --script-scale: 1.25;
+  --script-scale: 1.1;
   --lh-body: 2.3;
   --lh-prose: 2.2;
   --lh-ask: 1.9;
@@ -208,7 +223,7 @@
 
 :root[data-urdu-face='gulzar'] {
   --urdu-family: 'Gulzar';
-  --script-scale: 1.25;
+  --script-scale: 1.1;
   --lh-body: 2.3;
   --lh-prose: 2.2;
   --lh-ask: 1.9;
@@ -217,7 +232,7 @@
 
 :root[data-urdu-face='beaconhouse'] {
   --urdu-family: 'Beaconhouse Nastaliq';
-  --script-scale: 1.25;
+  --script-scale: 1.1;
   /* Nastaliq leading, because it is Nastaliq: the script climbs steeply from
      right to left and a tight setting puts one line inside the next. */
   --lh-body: 2.3;

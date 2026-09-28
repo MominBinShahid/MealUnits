@@ -5,7 +5,7 @@
  * against the compositions §13.3 names.
  */
 
-import { HUNDREDTHS_SCALE, RANGE, SCHEMA_VERSION, MAX_NAME_LENGTH } from '../config.js';
+import { HUNDREDTHS_SCALE, RANGE, SCHEMA_VERSION, MAX_NAME_LENGTH, VESSEL_RATIO_MAX } from '../config.js';
 import { UNKNOWN_INSULIN } from '../core/insulin.js';
 import { INSULINS } from '../data/insulins.js';
 import { isTombstone } from '../core/types.js';
@@ -122,11 +122,40 @@ export interface Envelope {
    * never have written.
    */
   readonly calibration?: Readonly<Record<string, { readonly grams: number; readonly setAt: number }>>;
+  /**
+   * T31 — the reader's own vessels, as ratios. Added 2026-09-27, and it was
+   * missing for the same reason `calibration` was: the feature shipped, the
+   * envelope was not revisited, and nothing checked. T34 fixed exactly this
+   * defect for the per-food map two phases earlier, which is what makes
+   * repeating it worth writing down rather than quietly patching.
+   *
+   * Dose-bearing: a plate ratio of 1.5 moves `rice-plate` from 84 to 126 g.
+   * Losing it on restore silently returns all seven rows to the table's
+   * figures, and §7.7.1 claims the JSON restores everything.
+   */
+  readonly vessels?: Readonly<Record<string, {
+    readonly ratio: number;
+    readonly emptyGrams: number;
+    readonly fullGrams: number;
+    readonly tared: 'subtracted' | 'scale';
+    readonly sourceFoodId: string;
+    readonly referenceGrams: number;
+    readonly setAt: number;
+  }>>;
 }
 
 export interface ExportInput {
   readonly settings: Settings | null;
   readonly calibration: Readonly<Record<string, { readonly grams: number; readonly setAt: number }>>;
+  readonly vessels: Readonly<Record<string, {
+    readonly ratio: number;
+    readonly emptyGrams: number;
+    readonly fullGrams: number;
+    readonly tared: 'subtracted' | 'scale';
+    readonly sourceFoodId: string;
+    readonly referenceGrams: number;
+    readonly setAt: number;
+  }>>;
   readonly settingsHistory: readonly SettingsPeriod[];
   readonly log: readonly LogRow[];
   readonly readings: readonly Reading[];
@@ -178,17 +207,22 @@ export function buildEnvelope(input: ExportInput): Envelope {
   );
   const withCalibration: Envelope =
     Object.keys(calibration).length === 0 ? envelope : { ...envelope, calibration };
+  const vessels = Object.fromEntries(
+    Object.entries(input.vessels).filter(([, row]) => readVesselEntry(row) !== null),
+  );
+  const withVessels: Envelope =
+    Object.keys(vessels).length === 0 ? withCalibration : { ...withCalibration, vessels };
 
   if (input.dosingHistory.state === 'answered' && input.dosingHistory.answeredAtMs !== null) {
     return {
-      ...withCalibration,
+      ...withVessels,
       dosingHistoryBeforeApp: {
         answeredAtMs: input.dosingHistory.answeredAtMs,
         text: input.dosingHistory.text,
       },
     };
   }
-  return withCalibration;
+  return withVessels;
 }
 
 // ─── import ─────────────────────────────────────────────────────────────────
@@ -325,6 +359,34 @@ export function readCalibrationEntry(
   const [low, high] = RANGE.carbs.hard;
   if (value.grams < low || value.grams > high) return null;
   return { grams: value.grams, setAt: value.setAt };
+}
+
+/**
+ * One vessel's stored ratio, or null.
+ *
+ * Same drop-don't-repair rule as `readCalibrationEntry`: a repaired ratio would
+ * invent a plate nobody weighed. Bounded because an unbounded one multiplies
+ * every plate row — a ratio of 10 turns `rice-plate` into 840 g.
+ */
+export function readVesselEntry(value: unknown): Readonly<{
+  ratio: number; emptyGrams: number; fullGrams: number;
+  tared: 'subtracted' | 'scale'; sourceFoodId: string;
+  referenceGrams: number; setAt: number;
+}> | null {
+  if (!isRecord(value)) return null;
+  if (!finiteNumber(value.ratio) || !finiteNumber(value.setAt)) return null;
+  if (value.ratio <= 0 || value.ratio > VESSEL_RATIO_MAX) return null;
+  if (!finiteNumber(value.emptyGrams) || !finiteNumber(value.fullGrams)) return null;
+  if (!finiteNumber(value.referenceGrams) || value.referenceGrams <= 0) return null;
+  if (value.tared !== 'subtracted' && value.tared !== 'scale') return null;
+  if (typeof value.sourceFoodId !== 'string') return null;
+  // The working is carried so a restored row stays auditable — a ratio with no
+  // weighings behind it is the provenance loss §7.7 exists to prevent.
+  return {
+    ratio: value.ratio, emptyGrams: value.emptyGrams, fullGrams: value.fullGrams,
+    tared: value.tared, sourceFoodId: value.sourceFoodId,
+    referenceGrams: value.referenceGrams, setAt: value.setAt,
+  };
 }
 
 export function readLogRow(value: unknown): LogRow | null {
@@ -470,6 +532,14 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
     }
   }
 
+  const vessels: Record<string, NonNullable<ReturnType<typeof readVesselEntry>>> = {};
+  if (isRecord(raw.vessels)) {
+    for (const [id, entry] of Object.entries(raw.vessels)) {
+      const row = readVesselEntry(entry);
+      if (row !== null) vessels[id] = row;
+    }
+  }
+
   const base: Envelope = {
     schemaVersion: schemaVersion as number,
     settings,
@@ -477,8 +547,10 @@ export function parseEnvelope(raw: unknown): ParsedEnvelope {
     readings,
     log,
   };
-  const envelope: Envelope =
+  const withCal: Envelope =
     Object.keys(calibration).length === 0 ? base : { ...base, calibration };
+  const envelope: Envelope =
+    Object.keys(vessels).length === 0 ? withCal : { ...withCal, vessels };
 
   const dosing = raw.dosingHistoryBeforeApp;
   if (isRecord(dosing) && finiteNumber(dosing.answeredAtMs) && typeof dosing.text === 'string') {

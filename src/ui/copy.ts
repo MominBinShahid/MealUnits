@@ -410,51 +410,64 @@ export const COPY = {
      * Every number is interpolated from the vessel record, never written as a
      * literal here (§11.8).
      */
+    /**
+     * T31 — the plate, rebuilt 2026-09-27 as ONE control with ONE field.
+     *
+     * The first attempt put a three-screen flow on each of seven rows. It was
+     * one setting wearing the clothes of seven, and Momin said so: "if the
+     * plan was one field, not per food, then why have you done that". It was
+     * also asking for the empty plate to support scales without a tare button,
+     * which made everyone pay for a minority case.
+     *
+     * So: one field for the food, and a link for the reader whose scale has no
+     * zero button, which reveals the second field beside it. One screen either
+     * way. Numbers are interpolated from the vessel record, never literals.
+     */
     plateLead: (ref: string): string =>
-      `Every plate row here describes a ${ref}\u00A0g serving. If yours is different, weigh your plate once — every plate row then follows your serving.`,
-    plateSet: 'Weigh my plate once',
-    plateStep1Title: 'First, the empty plate',
-    plateStep1Question:
-      'Put the plate you eat from on the scale — completely empty, nothing on it. What does the scale show?',
-    plateStep1Hint:
-      'This weight gets subtracted, so the plate itself is never counted as food.',
-    plateStep1Tared: 'My scale shows 0 with the empty plate on it',
-    plateStep2Title: 'Now, what you actually eat',
-    plateStep2Question:
-      'Serve yourself the rice or biryani you would eat at an ordinary meal — your usual amount, nothing added for the measuring. Put the plate back on the scale. What does it show now?',
-    plateStep2Hint:
-      'Not a plate filled to the brim. This measures how much you serve yourself, not how much the plate can hold — heap it now and every dose from these rows comes out too big, meal after meal, until you change it.',
-    plateStep2TaredHint:
-      'If the scale switched itself off, or you pressed the zero or TARE button again, go back and start from the empty plate — a changed zero makes this number wrong in a way the app cannot see.',
-    plateShow: 'Show what changes',
-    plateConfirmTitle: 'Check the working before you save it.',
-    plateWorking: (served: string, empty: string, fill: string): string =>
-      `Plate and food together: ${served}\u00A0g. The empty plate: ${empty}\u00A0g. The food alone: ${fill}\u00A0g — that is one serving, for you.`,
-    plateWorkingTared: (fill: string): string =>
-      `Your scale was at zero with the plate on it, so the whole reading is food: ${fill}\u00A0g — that is one serving, for you.`,
-    plateRatioLine: (fill: string, ref: string, ratio: string): string =>
-      `The table's plate rows describe a ${ref}\u00A0g serving. Yours is ${fill}\u00A0g, so every plate row is multiplied by ${ratio}.`,
-    plateExample: (name: string, before: string, after: string): string =>
-      `${name}: ${before}\u00A0g of carbohydrate now counts as ${after}\u00A0g.`,
-    plateTrust: (fill: string): string =>
-      `Every plate row will trust this. If ${fill}\u00A0g is not what you actually eat at one meal, change the weights before you save.`,
-    plateSave: 'Save my plate',
-    plateChangeWeights: 'Change the weights',
+      `Every plate row here describes a ${ref}\u00A0g serving. If you serve yourself more or less, weigh yours once — every plate row then follows it.`,
+    plateSet: 'Weigh my serving once',
+    plateFieldLabel: 'The food you serve yourself, in grams',
+    plateFoodOnly:
+      'Food only, not the plate: put the empty plate on the scale, press 0 or TARE so it reads 0, then serve.',
+    plateUsual:
+      'Your usual amount, not a plate filled to the brim. Heap it now and every dose from these rows comes out too big, meal after meal.',
+    plateNoTare: 'My scale has no 0 or TARE button',
+    plateNoTareLead:
+      'Then weigh twice and the app subtracts: the empty plate first, then the plate with your serving on it.',
+    plateHasTare: 'My scale does have a 0 or TARE button',
+    plateEmptyRequired: 'The empty plate is needed too — without it the plate\u2019s weight is counted as food.',
+    plateWorking: (total: string, empty: string, food: string): string =>
+      `${total}\u00A0g − ${empty}\u00A0g = ${food}\u00A0g of food.`,
+    plateEmptyLabel: 'The empty plate, in grams',
+    plateTotalLabel: 'Plate and food together, in grams',
+    plateSave: 'Save my serving',
+    plateInForce: (fill: string, name: string, before: string, after: string): string =>
+      `Your serving: ${fill}\u00A0g. Every plate row is counted for it — ${name}: ${before}\u00A0g now counts as ${after}\u00A0g.`,
+    platePreview: (fill: string, name: string, before: string, after: string): string =>
+      `Save this and your serving becomes ${fill}\u00A0g — ${name}: ${before}\u00A0g would count as ${after}\u00A0g.`,
+    plateAgain: 'Weigh it again',
+    plateClear: (ref: string): string => `Back to the table's ${ref}\u00A0g serving`,
+    plateRowYours: (fill: string, date: string): string =>
+      `Counted for your ${fill}\u00A0g serving — weighed on ${date}.`,
+    plateTooHeavy: (fill: string, ref: string): string =>
+      `${fill}\u00A0g is a very large serving — more than the ${ref}\u00A0g dawat plate this table describes. Scales often show the plate and the food together. Check the scale read 0 with the empty plate on it, before the food went on.`,
+    plateAssert: 'It is food only — save it',
+    plateAboveCap: (fill: string, most: string): string =>
+      `${fill}\u00A0g is more than ${most}\u00A0g — more than this can treat as one serving. If that was the pot, or the plate with the food on it, weigh just the food.`,
+    plateUnreadable:
+      'That is not a weight this can read. Type the grams as digits, for example 450.',
     plateOrderWrong:
-      'These two weights say the food weighs less than nothing. The empty plate goes first and the served plate second — start the weighing again.',
-    plateWas: (reference: string, ref: string, fill: string, date: string): string =>
-      `Your plate. The reference is ${reference}\u00A0g for a ${ref}\u00A0g serving — you weighed ${fill}\u00A0g on ${date}.`,
-    plateAgain: 'Weigh my plate again',
-    plateClear: 'Back to the reference plate',
-    plateCompositeNote:
-      'Rows that say "with a katori of raita" are not sized to your plate — to count your plate, add the biryani row and the raita row separately.',
+      'These two weights say the food weighs less than nothing. The empty plate goes first — start again.',
     addOne: 'Add one',
     removeOne: 'Remove one',
     tallyCount: (n: number): string => `${String(n)}×`,
     tallyTotal: (foods: number, grams: string): string =>
       `${String(foods)} ${foods === 1 ? 'food' : 'foods'} · ${grams}\u00A0grams`,
     tallyUse: 'Use this total',
-    tallyClear: 'Start the list again',
+    tallyClear: 'Clear the list',
+    tallyClearAsk: 'Remove all of it?',
+    tallyClearYes: 'Yes, remove',
+    tallyClearNo: 'Keep it',
     /** Under the total, because a tally of estimates is still estimates. */
     tallyCheck: 'You can change the number after it lands in the box.',
     estimateLabel: 'nobody has measured this one properly',

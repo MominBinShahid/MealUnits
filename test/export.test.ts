@@ -108,7 +108,7 @@ describe('§7.7 the envelope', () => {
       log: [injection()],
       readings: [],
       dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
-      calibration: {},
+      calibration: {}, vessels: {},
     });
     expect(envelope.settings).toMatchObject({ target: 150, isf: 30, icr: 10 });
     // §1.3 legislated that the basal regimen must appear in it, and an
@@ -124,7 +124,7 @@ describe('§7.7 the envelope', () => {
       log: [],
       readings: [],
       dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
-      calibration: {},
+      calibration: {}, vessels: {},
     });
     expect(envelope.settings).toEqual({});
     expect('settings' in envelope).toBe(true);
@@ -151,7 +151,7 @@ describe('§7.7 the envelope', () => {
       log: [],
       readings: [],
       dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
-      calibration: {},
+      calibration: {}, vessels: {},
     });
     expect(Object.keys(envelope.settings)).toContain('roundingMode');
     expect(envelope.settings).toMatchObject({ roundingMode: SETTINGS.roundingMode });
@@ -173,7 +173,7 @@ describe('§7.7 the envelope', () => {
       log: [],
       readings: [],
       dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
-      calibration: {},
+      calibration: {}, vessels: {},
     });
     expect(Object.keys(envelope.settingsHistory[0] ?? {}).sort()).toEqual(
       ['changedAtMs', 'icr', 'bolusId', 'isf', 'revision', 'roundingMode', 'target'].sort(),
@@ -181,11 +181,11 @@ describe('§7.7 the envelope', () => {
   });
 
   it('§6.7 — carries the dosing note only when ANSWERED, and never the state', () => {
-    const base = { settings: SETTINGS, settingsHistory: [], log: [], readings: [], calibration: {} };
+    const base = { settings: SETTINGS, settingsHistory: [], log: [], readings: [], calibration: {}, vessels: {} };
     const answered = buildEnvelope({
       ...base,
       dosingHistory: { state: 'answered', text: '24-25 units regardless', answeredAtMs: NOW },
-      calibration: {},
+      calibration: {}, vessels: {},
     });
     expect(answered.dosingHistoryBeforeApp).toEqual({
       answeredAtMs: NOW,
@@ -210,7 +210,7 @@ describe('§7.7 the envelope', () => {
       log: [injection(), tombstone],
       readings: [{ id: 'r1', timestamp: NOW, bloodSugar: 65, note: 'felt_low' }],
       dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
-      calibration: {},
+      calibration: {}, vessels: {},
     });
     const parsed = parseEnvelope(JSON.parse(JSON.stringify(envelope)));
     expect(parsed.ok).toBe(true);
@@ -716,13 +716,15 @@ describe('T34 — the backup carries the reader\'s own measured figures', () => 
     settingsHistory: [],
     log: [],
     readings: [],
+    calibration: {},
+    vessels: {},
     dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
   };
 
   it('round-trips a calibration through build and parse', () => {
     const envelope = buildEnvelope({
       ...base,
-      calibration: { 'roti-medium': { grams: 28, setAt: NOW } },
+      calibration: { 'roti-medium': { grams: 28, setAt: NOW } }, vessels: {},
     });
     expect(envelope.calibration).toEqual({ 'roti-medium': { grams: 28, setAt: NOW } });
 
@@ -753,7 +755,7 @@ describe('T34 — the backup carries the reader\'s own measured figures', () => 
       good: { grams: 30, setAt: NOW },
     } as unknown as Record<string, { grams: number; setAt: number }>;
 
-    const built = buildEnvelope({ ...base, calibration: bad });
+    const built = buildEnvelope({ ...base, calibration: bad, vessels: {} });
     expect(built.calibration).toEqual({ good: { grams: 30, setAt: NOW } });
 
     const parsed = parseEnvelope({ ...JSON.parse(JSON.stringify(built)), calibration: bad });
@@ -770,5 +772,56 @@ describe('T34 — the backup carries the reader\'s own measured figures', () => 
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
     expect(parsed.envelope.calibration).toBeUndefined();
+  });
+});
+
+describe('T31 — the backup carries the plate too', () => {
+  const PLATE = {
+    ratio: 1.5, emptyGrams: 285, fullGrams: 735, tared: 'subtracted' as const,
+    sourceFoodId: 'biryani-mid-plate', referenceGrams: 300, setAt: NOW,
+  };
+  const base = {
+    settings: SETTINGS, settingsHistory: [], log: [], readings: [], calibration: {},
+    dosingHistory: { state: 'unanswered', text: '', answeredAtMs: null },
+  };
+
+  it('round-trips a plate ratio with its working', () => {
+    // The working travels, not just the number: a ratio with no weighings
+    // behind it is the provenance loss §7.7 exists to prevent.
+    const env = buildEnvelope({ ...base, vessels: { plate: PLATE } });
+    const parsed = parseEnvelope(JSON.parse(JSON.stringify(env)));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.envelope.vessels).toEqual({ plate: PLATE });
+  });
+
+  it('omits the block when no plate is set', () => {
+    expect('vessels' in buildEnvelope({ ...base, vessels: {} })).toBe(false);
+  });
+
+  it('refuses a ratio that would multiply every plate row out of range', () => {
+    // Unbounded, a ratio of 10 turns rice-plate's 84 g into 840.
+    const bad = { plate: { ...PLATE, ratio: 10 } };
+    expect(buildEnvelope({ ...base, vessels: bad }).vessels).toBeUndefined();
+  });
+
+  it('refuses a ratio of zero or below rather than storing it', () => {
+    for (const ratio of [0, -1.5]) {
+      expect(buildEnvelope({ ...base, vessels: { plate: { ...PLATE, ratio } } }).vessels)
+        .toBeUndefined();
+    }
+  });
+
+  it('drops an entry whose working is missing', () => {
+    const half = { plate: { ratio: 1.5, setAt: NOW } } as unknown as Record<string, typeof PLATE>;
+    expect(buildEnvelope({ ...base, vessels: half }).vessels).toBeUndefined();
+  });
+
+  it('reads a file written before the plate existed', () => {
+    const old = buildEnvelope({ ...base, vessels: {} });
+    const parsed = parseEnvelope(JSON.parse(JSON.stringify(old)));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.envelope.vessels).toBeUndefined();
   });
 });

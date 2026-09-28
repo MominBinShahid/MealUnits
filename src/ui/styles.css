@@ -1739,12 +1739,21 @@ button:disabled { cursor: default; }
   display: grid;
   gap: 0.125rem;
   justify-items: center;
-  /* GRAM FIGURES ON ONE LINE ACROSS THE ROW. A picked cell carries a count
-     underneath, an unpicked one does not, and with the default alignment the
-     lone figure centred itself in the taller box — so "41 g" sat lower than the
-     "54 g" beside it for no reason a reader could see. Pinned to the top, the
-     numbers line up and only the count hangs below. */
-  align-content: start;
+  /* WHATEVER THE CELL HOLDS, CENTRED — one line or two.
+     This took four tries and the history is the useful part. `align-content:
+     start` lined the figures up across the row and left every unpicked cell
+     top-heavy. Reserving an empty second track kept them lined up and still
+     sat the figure near the top, because an empty track still pushes. Taking
+     the count out of the flow entirely centred the figure perfectly and jammed
+     the count against the bottom border.
+     Plain centring of whatever is there is what Momin asked for in the end:
+     "for one it's center but for 2 the first one shifts up". It costs the
+     cross-row alignment the first note was protecting — a picked figure sits
+     a few pixels above its unpicked neighbour — and that is the right trade,
+     decided at the screen rather than from the rule. The picked cell already
+     carries a mint border and a count, so nobody is reading the two as one
+     line. */
+  align-content: center;
   min-width: 3.75rem;
   min-height: var(--touch);
   width: 100%;
@@ -1765,6 +1774,7 @@ button:disabled { cursor: default; }
 
 .matrix .cell-n {
   font-size: 0.625rem;
+  line-height: 1.2;
   color: var(--mark);
 }
 
@@ -1989,7 +1999,16 @@ button:disabled { cursor: default; }
   justify-items: stretch;
   background: var(--bg);
   border-block-start: 1px solid var(--line);
-  padding-block: 0.75rem;
+  /* THE SAFE AREA, back. `.sheet` clears the iPhone home indicator with
+     `max(0.75rem, env(safe-area-inset-bottom))`, and `padding-block` here was
+     overriding that shorthand with a flat 0.75rem — so this bar, the ONE thing
+     on the screen pinned to the bottom edge, was the one that lost the
+     clearance. On a phone with a gesture bar the hint under the button sat
+     beneath it. Momin asked what happens where this sticks to the bottom of
+     the browser; this is what was wrong with it. Longhands only, so a future
+     shorthand cannot quietly eat it again. */
+  padding-block-start: 0.75rem;
+  padding-block-end: max(0.75rem, env(safe-area-inset-bottom));
 }
 
 /*
@@ -2002,8 +2021,17 @@ button:disabled { cursor: default; }
  * §10.7's floor does not bend for a control that only LOOKS small — with the
  * height coming from padding so the text itself stays modest.
  */
+/* The total on one side, the throw-away on the other. `wrap` so a long total
+   and a long label in Urdu fall to two lines rather than colliding. */
+.tally-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+}
+
 .tally-clear {
-  justify-self: center;
   min-height: var(--touch);
   padding: 0 1rem;
   color: var(--warn);
@@ -2014,7 +2042,6 @@ button:disabled { cursor: default; }
   font-size: 1.125rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  text-align: center;
 }
 
 /*
@@ -2406,3 +2433,91 @@ p {
 
 
 
+
+/*
+ * T31 — the plate panel.
+ *
+ * It had NO rule at all on first ship, so it inherited `.sheet` — the screen's
+ * bottom bar, with `margin-top: auto` — and fell to the foot of a long
+ * scrolling list where nobody found it. `.flag.mint` is the right furniture:
+ * the quiet informational panel this screen already uses, in the flow, at the
+ * head of the group whose rows it governs.
+ */
+.plate-panel {
+  display: grid;
+  gap: var(--gap);
+  margin-block-end: var(--gap);
+}
+
+/* §10.7 — the touch floor, through the token rather than a literal 48px, so
+   this moves with `--touch` like every other control. Tremor is a low-blood-
+   sugar symptom, and this panel is reached holding a plate in the other hand. */
+.plate-panel .go {
+  min-block-size: var(--touch);
+}
+
+/* The inputs are wrapped in `.field`, so they inherit the app's control styling
+   and its 9rem cap — a width sized so a four-digit typo is visible. Nothing
+   more is needed here. */
+
+/*
+ * The panel's two advisory tones.
+ *
+ * `.hint.warn` and `.hint.halt` were used before these existed. `.warn` had no
+ * rule that could match a `<p>` — the only `.warn` in this file is
+ * `.prompt-bar.warn` — so the un-tared warning painted as an ordinary grey
+ * hint, indistinguishable from the field labels beside it. `.halt` DID match:
+ * §3's medical-stop panel, `flex: 1`, centred, 1.25rem radius, halt-red. That
+ * is the trap the comment above `.flag.stop` already records once, repeated.
+ */
+.plate-panel .hint.warn {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.plate-panel .hint.refused {
+  color: var(--halt);
+  font-weight: 600;
+}
+
+/* The throw-away's confirm, in the line it replaces rather than on a screen of
+   its own. Amber throughout: it is a warning, not a medical stop.
+   `margin-inline-start: auto` keeps it at the inline END — where the link it
+   replaces sat. Three controls rarely fit beside the total, so it wraps to its
+   own line, and without this it wrapped to the START and the question appeared
+   on the opposite side of the screen from the control that raised it. Logical,
+   so it follows the inline end in Urdu too. */
+.tally-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  margin-inline-start: auto;
+  gap: 0.5rem;
+}
+
+.tally-ask {
+  color: var(--warn);
+  font-size: 0.875rem;
+}
+
+.tally-yes,
+.tally-no {
+  min-height: var(--touch);
+  padding: 0 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* The ACT is red, the question that offers it is amber. That is the split this
+   app already draws: `.go.danger` spends `--halt` on the confirm for clearing
+   every calibration and for clearing the record, while the link that raises
+   the question stays amber. The earlier note here — "amber rather than the halt
+   red, which this app spends on medical stops" — is about the OFFER, and it
+   still holds for `.tally-clear` above. It was never meant to keep the red off
+   the button that actually throws the list away. */
+.tally-yes {
+  color: var(--halt);
+  font-weight: 600;
+}
+
+.tally-no { color: var(--ink-2); }

@@ -284,7 +284,7 @@ export interface CalibrationRow {
  * store would drag both hazards in for a feature that needs neither.
  *
  * **`emptyGrams` is not bookkeeping, it is the tare detector.** An un-tared
- * plate is +5.1 to +10.2 units, and un-tared during CALIBRATION doubles every
+ * plate is +9.8 to +27 units, and un-tared during CALIBRATION doubles every
  * dose in that vessel permanently. No threshold can catch it — un-tared katori
  * entries of 180–270 g sit inside the genuine 100–250 g serving range — so the
  * structure catches it instead: the reader weighs empty, then serves what they

@@ -1,7 +1,8 @@
 import type { JSX } from 'preact';
 import { asksAboutSugarFree, matchFoods } from '../../core/foods.js';
-import { gramsFor, tallyGrams, vesselRatio } from '../../core/portion.js';
+import { displayGrams, gramsFor, tallyGrams, vesselRatio } from '../../core/portion.js';
 import { formatDayAndMonth } from '../../core/calendar.js';
+import { VESSEL_RATIO_MAX } from '../../config.js';
 import type { Category, Food } from '../../data/carbs.js';
 import { FOODS } from '../../data/carbs.js';
 import { IN_A_MATRIX, MATRICES } from '../matrices.js';
@@ -26,17 +27,24 @@ export interface FoodListProps {
   readonly onRemove: (id: string) => void;
   readonly onUseTotal: (grams: number) => void;
   readonly onClearTally: () => void;
+  readonly clearing: boolean;
+  readonly onClearing: (on: boolean) => void;
   readonly onEditMine: (id: string | null) => void;
-  /** T31 — the plate weighing: which step is open, the drafts, and the save. */
-  readonly plateStep: 'empty' | 'served' | 'confirm' | null;
+  /** T31 — one plate control: its ratio, its drafts, and the save. */
+  readonly plateRatio: number | null;
+  readonly plateSetAt: number | null;
+  readonly plateOpen: boolean;
+  readonly plateFoodDraft: string;
   readonly plateEmptyDraft: string;
-  readonly plateServedDraft: string;
-  readonly plateTared: boolean;
-  readonly onPlateStep: (step: 'empty' | 'served' | 'confirm' | null) => void;
+  readonly plateNoTare: boolean;
+  readonly plateAsserted: boolean;
+  readonly onPlateOpen: (open: boolean) => void;
+  readonly onPlateFoodDraft: (text: string) => void;
   readonly onPlateEmptyDraft: (text: string) => void;
-  readonly onPlateServedDraft: (text: string) => void;
-  readonly onPlateTared: () => void;
-  readonly onPlateSave: (ratio: number, empty: number, served: number) => void;
+  readonly onPlateNoTare: (on: boolean) => void;
+  readonly onPlateAssert: () => void;
+  readonly onPlateSave: (ratio: number, empty: number, total: number) => void;
+  readonly onPlateClear: () => void;
   readonly onMineDraft: (text: string) => void;
   readonly onTerm: (key: string) => void;
   readonly onSaveMine: (id: string, grams: number | null) => void;
@@ -78,7 +86,7 @@ function Matrix({ matrix, tally, calibration, vessels, onAdd, onRemove }: {
       return [{
         id,
         count,
-        grams: gramsFor(food, { foods: calibration, vessels }).grams,
+        grams: displayGrams(gramsFor(food, { foods: calibration, vessels }).grams),
         label: `${axis[row] ?? ''} · ${axis[matrix.columns[columnIndex] ?? ''] ?? ''}`,
       }];
     })
@@ -90,7 +98,7 @@ function Matrix({ matrix, tally, calibration, vessels, onAdd, onRemove }: {
           as the weight of the plate, which is the only sensible reading of a
           gram figure sitting under a serving name. The cells are carbohydrate,
           like every other number on this screen, and now say so. */}
-      <p class="hint matrix-what">{COPY.foods.matrixWhat}</p>
+      <p class="hint">{COPY.foods.matrixWhat}</p>
       {/* `overflow-x` on the wrapper, not the page: a four-column table at
           320px is the one thing here that can outgrow the column, and the body
           must never scroll sideways. */}
@@ -110,7 +118,7 @@ function Matrix({ matrix, tally, calibration, vessels, onAdd, onRemove }: {
                 if (id === null) return <td key={column} />;
                 const food = FOODS.find((candidate) => candidate.id === id);
                 if (food === undefined) return <td key={column} />;
-                const grams = gramsFor(food, { foods: calibration, vessels }).grams;
+                const grams = displayGrams(gramsFor(food, { foods: calibration, vessels }).grams);
                 const count = tally[id] ?? 0;
                 return (
                   <td key={column}>
@@ -224,7 +232,7 @@ function SourceTags({ source, onTerm }: {
  */
 function FoodRow({
   food, count, mine, editing, draft, onAdd, onRemove, onEditMine, onMineDraft,
-  onSaveMine, onTerm, timeZone, vesselRatioSet, onWeighPlate,
+  onSaveMine, onTerm, timeZone, vesselRatioSet, vesselSetAt,
 }: {
   readonly food: Food;
   readonly count: number;
@@ -243,7 +251,9 @@ function FoodRow({
    * of showing a plate line.
    */
   readonly vesselRatioSet: number | null;
-  readonly onWeighPlate: () => void;
+  readonly vesselSetAt: number | null;
+  /** Whether a plate ratio is in force at all — the raita rows have no vessel
+   *  of their own, so they cannot tell from `vesselRatioSet`. */
   readonly onMineDraft: (text: string) => void;
   readonly onSaveMine: (id: string, grams: number | null) => void;
   readonly onTerm: (key: string) => void;
@@ -255,11 +265,23 @@ function FoodRow({
   // the reference moves to the line beneath with the date it was set. It is
   // not shown alongside as an alternative — a row offering two numbers is a
   // question, and this screen exists to answer one.
+  // A vessel ratio scales the headline for the same reason a per-food figure
+  // replaces it: the row must state the number the app will dose. It did not,
+  // and the result was a row reading "84–94 g" while the tally counted 126 —
+  // on a screen whose whole design is "you read a number and type it yourself".
+  // A reader who typed what the row said would have under-dosed at ratios
+  // above 1 and OVER-dosed at ratios below it.
+  //
+  // `gramsMax` scales too, and stays display-only: the dose comes off the
+  // floor, scaled, exactly as it does on every unscaled row.
+  const scale = mine === null && vesselRatioSet !== null ? vesselRatioSet : 1;
+  const low = displayGrams(food.grams * scale);
+  const high = food.gramsMax === null ? null : displayGrams(food.gramsMax * scale);
   const amount = mine !== null
     ? COPY.foods.gramsOne(String(mine.grams))
-    : food.gramsMax === null
-      ? COPY.foods.gramsOne(String(food.grams))
-      : COPY.foods.gramsRange(String(food.grams), String(food.gramsMax));
+    : high === null
+      ? COPY.foods.gramsOne(String(low))
+      : COPY.foods.gramsRange(String(low), String(high));
 
   return (
     <li class="li food">
@@ -298,22 +320,17 @@ function FoodRow({
             calibrated AND the reader has NOT set a per-food figure, because
             per-food beats vessel and two provenance lines on one row is a
             question rather than an answer. */}
-        {mine === null && vesselRatioSet !== null && food.vessel !== null ? (
+        {/* Once a plate is set, "1 plate, 300 g" beside a 77 g figure is a
+            false sentence. This line is what makes the row true again — and it
+            is only on the rows that actually scaled, never on all seven. */}
+        {mine === null && vesselRatioSet !== null && vesselSetAt !== null && food.vessel !== null ? (
           <div class="hint mine-was">
-            {COPY.foods.plateWas(
-              String(food.grams), String(food.vessel.grams),
-              String(Math.round(food.vessel.grams * vesselRatioSet)), '',
+            {COPY.foods.plateRowYours(
+              String(displayGrams(food.vessel.grams * vesselRatioSet)),
+              formatDayAndMonth(vesselSetAt, timeZone),
             )}
           </div>
         ) : null}
-        {/* The entry point sits on the portion line's row, where a WEIGHT is
-            already stated — the one place on the row that already talks about
-            grams of food rather than grams of carbohydrate. */}
-        {food.vessel === null ? null : (
-          <Button class="go quiet plate-set" onPress={onWeighPlate}>
-            {vesselRatioSet === null ? COPY.foods.plateSet : COPY.foods.plateAgain}
-          </Button>
-        )}
         <div class="clinical">
           {`${COPY.foods.confidenceLabel[food.confidence]} · ${COPY.foods.sourcePrefix}`}
           <SourceTags source={food.source} onTerm={onTerm} />
@@ -413,128 +430,230 @@ function FoodRow({
  * being asked at that exact moment, and it is noise anywhere else.
  */
 /**
- * T31 — the two-step plate weighing.
+ * T31 — the plate, as ONE control with ONE field.
  *
- * The ORDER is the safety mechanism, not the copy. Step two does not render
- * until step one has an answer, because an un-tared plate is +5.1 to +10.2
- * units and, weighed into a calibration, doubles every dose in that vessel
- * permanently. No threshold catches it afterwards: un-tared katori entries of
- * 180–270 g sit inside the genuine serving range. So there is no path that
- * produces a fill weight with no empty weight.
+ * This replaced a three-screen flow that sat on each of seven rows. It was one
+ * setting wearing the clothes of seven, and it asked everybody for the empty
+ * plate to support the minority of scales with no tare button.
  *
- * And the confirmation is not a courtesy. It prints the subtraction, the
- * ratio, and what happens to one real row, because a reader who transposed the
- * two weighings cannot tell from the numbers alone — but they can tell from
- * "the food alone: 450 g" whether that is their dinner.
+ * So the default path is one number — the food you serve yourself — and the
+ * reader whose scale cannot zero taps one link to get the second field beside
+ * it. Same screen either way.
+ *
+ * It lives at the head of the rice group because every row it touches is in
+ * that group: four list rows, the biryani grid's three plate cells, and the
+ * three raita composites it deliberately does not scale.
  */
 /**
- * The row the plate sheet quotes as its worked example.
+ * The row the plate panel quotes as its worked example, and the dawat row that
+ * bounds it.
  *
- * `biryani-mid-plate` because it is the middle of the biryani grid and the row
- * T31's own arithmetic is stated against — and because a reader calibrating a
- * plate is almost certainly looking at biryani. Read from the table rather
- * than written here, so the example moves when the figure does.
+ * Read from the table rather than written here, so both move when the figures
+ * do. The dawat rows are the everyday rows times exactly 400/300 — 51 → 68,
+ * 57 → 76 — which is why that ratio is the last one this table's own data
+ * corroborates, and the right place to ask "is that really your serving?".
  */
 const PLATE_REFERENCE = FOODS.find((food) => food.id === 'biryani-mid-plate');
+const PLATE_DAWAT = FOODS.find((food) => food.id === 'biryani-mid-dawat');
+/**
+ * Every category that holds at least one row served in a calibrated vessel.
+ *
+ * Derived, not written down. Today every plate row is in `rice`, so this is
+ * `{'rice'}` — but it was `PLATE_REFERENCE.category`, which followed ONE row,
+ * and a plate row added to salan would have left the panel behind in rice with
+ * no way to reach the setting the new row obeys.
+ */
+const PLATE_GROUPS: ReadonlySet<string> = new Set(
+  FOODS.filter((food) => food.vessel !== null).map((food) => food.category),
+);
 
-function PlateSheet({
-  vesselGrams, exampleName, exampleGrams, step, emptyDraft, servedDraft, tared,
-  onEmptyDraft, onServedDraft, onTared, onStep, onSave, onClose,
+/**
+ * The serving above which the panel asks whether the plate got weighed too.
+ *
+ * The dawat rows are the everyday rows scaled by 400/300, so 400 g is the
+ * largest serving this table's own figures corroborate. Computed from the two
+ * rows rather than written as 400, so it moves if they ever do.
+ */
+const plateAdvisoryGrams =
+  PLATE_DAWAT === undefined || PLATE_REFERENCE === undefined
+    ? 0
+    : Math.round((PLATE_REFERENCE.vessel?.grams ?? 0) * PLATE_DAWAT.grams / PLATE_REFERENCE.grams);
+
+function PlatePanel({
+  vesselGrams, dawatGrams, exampleName, exampleGrams, ratio, setAt,
+  open, foodDraft, emptyDraft, noTare, asserted,
+  onOpen, onFoodDraft, onEmptyDraft, onNoTare, onAssert, onSave, onClear,
 }: {
   readonly vesselGrams: number;
+  readonly dawatGrams: number;
   readonly exampleName: string;
   readonly exampleGrams: number;
-  readonly step: 'empty' | 'served' | 'confirm';
+  readonly ratio: number | null;
+  readonly setAt: number | null;
+  readonly open: boolean;
+  readonly foodDraft: string;
   readonly emptyDraft: string;
-  readonly servedDraft: string;
-  readonly tared: boolean;
+  readonly noTare: boolean;
+  readonly asserted: boolean;
+  readonly onOpen: (open: boolean) => void;
+  readonly onFoodDraft: (value: string) => void;
   readonly onEmptyDraft: (value: string) => void;
-  readonly onServedDraft: (value: string) => void;
-  readonly onTared: () => void;
-  readonly onStep: (step: 'empty' | 'served' | 'confirm') => void;
-  readonly onSave: (ratio: number, empty: number, served: number) => void;
-  readonly onClose: () => void;
+  readonly onNoTare: (on: boolean) => void;
+  readonly onAssert: () => void;
+  readonly onSave: (ratio: number, empty: number, total: number) => void;
+  readonly onClear: () => void;
 }): JSX.Element {
   const COPY = useCopy();
-  const empty = tared ? 0 : Number(emptyDraft.trim());
-  const served = Number(servedDraft.trim());
-  const emptyAnswered = tared || (emptyDraft.trim() !== '' && Number.isFinite(empty) && empty >= 0);
-  const ratio = vesselRatio({ emptyGrams: empty, fullGrams: served }, vesselGrams);
-  const fill = served - empty;
+  const typed = Number(foodDraft.trim());
+  // `Number('')` is 0, and a blank empty-plate field therefore used to mean
+  // "the plate weighs nothing" — the app stored the un-subtracted plate+food
+  // weight as if it were the food. 380 g typed for a 200 g plate holding 180 g
+  // of rice saved a ratio of 1.27 against a true 0.6, and doses `rice-plate` at
+  // 106 g against a true 50: +5.6 units at an ICR of 10. NaN, not 0, so
+  // `vesselRatio` refuses it like any other unreadable weighing.
+  const emptyText = emptyDraft.trim();
+  const empty = noTare ? (emptyText === '' ? Number.NaN : Number(emptyText)) : 0;
+  const total = noTare ? typed : typed + empty;
+  const next = vesselRatio({ emptyGrams: empty, fullGrams: total }, vesselGrams);
+  const fill = total - empty;
+  // Blank ONLY in the two-field mode, and only worth saying once the reader has
+  // started typing the other number — otherwise the panel opens shouting.
+  const emptyMissing = noTare && emptyText === '' && foodDraft.trim() !== '';
+  // Above the largest serving this table describes. The dawat rows are the
+  // everyday rows times exactly 400/300, so that figure is the last ratio the
+  // data corroborates — past it, ask, never block.
+  const heavy = next !== null && fill > dawatGrams;
+
+  if (!open) {
+    return (
+      <div class="flag mint plate-panel">
+        {ratio === null || setAt === null ? (
+          <>
+            <p>{COPY.foods.plateLead(String(vesselGrams))}</p>
+            <Button class="go" onPress={() => { onOpen(true); }}>{COPY.foods.plateSet}</Button>
+          </>
+        ) : (
+          <>
+            <p>{COPY.foods.plateInForce(
+              String(displayGrams(vesselGrams * ratio)), exampleName,
+              String(exampleGrams), String(displayGrams(exampleGrams * ratio)),
+            )}</p>
+            <Button class="go quiet" onPress={() => { onOpen(true); }}>{COPY.foods.plateAgain}</Button>
+            <Button class="go quiet" onPress={onClear}>{COPY.foods.plateClear(String(vesselGrams))}</Button>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div class="sheet plate" role="dialog" aria-modal="false" aria-live="polite">
-      {step === 'empty' ? (
+    <div class="flag mint plate-panel" role="group">
+      {noTare ? (
         <>
-          <b>{COPY.foods.plateStep1Title}</b>
-          <p>{COPY.foods.plateStep1Question}</p>
-          <TextInput value={emptyDraft} onValue={onEmptyDraft}
-            aria-label={COPY.foods.plateStep1Title} inputMode="decimal" />
-          <p class="hint">{COPY.foods.plateStep1Hint}</p>
-          <Button class="go quiet" onPress={onTared}>{COPY.foods.plateStep1Tared}</Button>
-          {emptyAnswered ? (
-            <Button class="go" onPress={() => { onStep('served'); }}>{COPY.next}</Button>
+          <p class="hint">{COPY.foods.plateNoTareLead}</p>
+          <div class="field">
+            <TextInput value={emptyDraft} onValue={onEmptyDraft}
+              aria-label={COPY.foods.plateEmptyLabel} inputMode="decimal"
+              aria-required="true" aria-invalid={emptyMissing ? 'true' : undefined} />
+          </div>
+          <p class={`hint ${emptyMissing ? 'refused' : ''}`}>
+            {emptyMissing ? COPY.foods.plateEmptyRequired : COPY.foods.plateEmptyLabel}
+          </p>
+          <div class="field">
+            <TextInput value={foodDraft} onValue={onFoodDraft}
+              aria-label={COPY.foods.plateTotalLabel} inputMode="decimal"
+              aria-required="true" />
+          </div>
+          <p class="hint">{COPY.foods.plateTotalLabel}</p>
+          {/* The subtraction, written out. Momin asked for it: if he enters 500
+              and the plate was 200, he should be able to SEE 300 rather than
+              trust that the app got it right. It is also the clearest possible
+              confirmation that the fields went in the right boxes. */}
+          {next !== null ? (
+            <p class="hint">
+              {COPY.foods.plateWorking(
+                String(displayGrams(total)), String(displayGrams(empty)),
+                String(displayGrams(fill)),
+              )}
+            </p>
           ) : null}
+          {/* The way back. Tapping the no-TARE link used to be one-way: the only
+              escape was closing the whole panel, which is not a thing a reader
+              would guess. */}
+          <Button class="go quiet" onPress={() => { onNoTare(false); }}>
+            {COPY.foods.plateHasTare}
+          </Button>
+        </>
+      ) : (
+        <>
+          <div class="field">
+            <TextInput value={foodDraft} onValue={onFoodDraft}
+              aria-label={COPY.foods.plateFieldLabel} inputMode="decimal" />
+          </div>
+          <p class="hint">{COPY.foods.plateFieldLabel}</p>
+          <p class="hint">{COPY.foods.plateFoodOnly}</p>
+          <Button class="go quiet" onPress={() => { onNoTare(true); }}>
+            {COPY.foods.plateNoTare}
+          </Button>
+        </>
+      )}
+      <p class="hint">{COPY.foods.plateUsual}</p>
+      {foodDraft.trim() !== '' && next === null ? (
+        <p class="hint refused">
+          {/* Three different refusals, and saying the wrong one is its own
+              defect: 1500 g IS readable, it is just more than this can treat
+              as one serving, and telling that reader to "type the grams as
+              digits" sends them to fix a thing that is not wrong. */}
+          {Number.isFinite(typed) && typed > 0 && (!noTare || Number.isFinite(empty))
+            && fill > vesselGrams * VESSEL_RATIO_MAX
+            ? COPY.foods.plateAboveCap(
+                String(displayGrams(fill)),
+                String(displayGrams(vesselGrams * VESSEL_RATIO_MAX)),
+              )
+            : noTare && emptyText !== '' && Number.isFinite(empty) && Number.isFinite(typed)
+              ? COPY.foods.plateOrderWrong
+              : COPY.foods.plateUnreadable}
+        </p>
+      ) : null}
+      {heavy && !asserted ? (
+        <>
+          <p class="hint warn">{COPY.foods.plateTooHeavy(String(displayGrams(fill)), String(dawatGrams))}</p>
+          <Button class="go quiet" onPress={onAssert}>{COPY.foods.plateAssert}</Button>
         </>
       ) : null}
-
-      {step === 'served' ? (
-        <>
-          <b>{COPY.foods.plateStep2Title}</b>
-          <p>{COPY.foods.plateStep2Question}</p>
-          <TextInput value={servedDraft} onValue={onServedDraft}
-            aria-label={COPY.foods.plateStep2Title} inputMode="decimal" />
-          {/* The serve-versus-hold sentence. This is the +4.2 unit defect. */}
-          <p class="hint">{COPY.foods.plateStep2Hint}</p>
-          {tared ? <p class="hint">{COPY.foods.plateStep2TaredHint}</p> : null}
-          {ratio === null ? null : (
-            <Button class="go" onPress={() => { onStep('confirm'); }}>
-              {COPY.foods.plateShow}
-            </Button>
+      {/* The consequence, live, before Save rather than after it.
+          The advisory tests the TOTAL, so it cannot see a forgotten tare on a
+          small serving: a 200 g plate is +6.0 units at an ICR of 10 whether
+          the serving is 50 g or 300 g, and 200 + 150 = 350 never trips 400.
+          Nothing derivable from one number can separate plate from food — but
+          this line shows what the number DOES, and a reader who served half a
+          plate and reads "51 g now counts as 67 g" is watching the figure move
+          the wrong way. It is the only check available that costs no second
+          weighing. */}
+      {next !== null ? (
+        <p class="hint">
+          {COPY.foods.platePreview(
+            String(displayGrams(fill)), exampleName, String(exampleGrams),
+            String(displayGrams(exampleGrams * next)),
           )}
-          {/* The core already refuses this input; a refusal with no words is
-              the dead-end class notes 38/47/51 keep finding. */}
-          {servedDraft.trim() !== '' && ratio === null ? (
-            <p class="hint halt">{COPY.foods.plateOrderWrong}</p>
-          ) : null}
-        </>
+        </p>
       ) : null}
-
-      {step === 'confirm' && ratio !== null ? (
-        <>
-          <b>{COPY.foods.plateConfirmTitle}</b>
-          <p>{tared
-            ? COPY.foods.plateWorkingTared(String(fill))
-            : COPY.foods.plateWorking(String(served), String(empty), String(fill))}</p>
-          <p>{COPY.foods.plateRatioLine(
-            String(fill), String(vesselGrams), String(Math.round(ratio * 100) / 100),
-          )}</p>
-          {/* The WHOLE gram, because that is what the app will count. Showing
-              76.5 here and then dosing 77 would be a third rounding of the
-              same figure, and §5.3 allows one. */}
-          <p>{COPY.foods.plateExample(
-            exampleName, String(exampleGrams), String(Math.round(exampleGrams * ratio)),
-          )}</p>
-          <p class="hint">{COPY.foods.plateTrust(String(fill))}</p>
-          <Button class="go" onPress={() => { onSave(ratio, empty, served); }}>
-            {COPY.foods.plateSave}
-          </Button>
-          <Button class="go quiet" onPress={() => { onStep('empty'); }}>
-            {COPY.foods.plateChangeWeights}
-          </Button>
-        </>
+      {next !== null && (!heavy || asserted) ? (
+        <Button class="go" onPress={() => { onSave(next, empty, total); }}>
+          {COPY.foods.plateSave}
+        </Button>
       ) : null}
-
-      <Button class="go quiet" onPress={onClose}>{COPY.glossaryClose}</Button>
+      <Button class="go quiet" onPress={() => { onOpen(false); }}>{COPY.glossaryClose}</Button>
     </div>
   );
 }
 
 export function FoodListScreen({
   query, openGroup, tally, calibration, vessels, editingMine, mineDraft, timeZone, resetting,
-  plateStep, plateEmptyDraft, plateServedDraft, plateTared,
-  onPlateStep, onPlateEmptyDraft, onPlateServedDraft, onPlateTared, onPlateSave,
-  onQuery, onToggleGroup, onAdd, onRemove, onUseTotal, onClearTally, onEditMine, onMineDraft,
+  plateRatio, plateSetAt, plateOpen, plateFoodDraft, plateEmptyDraft, plateNoTare, plateAsserted,
+  onPlateOpen, onPlateFoodDraft, onPlateEmptyDraft, onPlateNoTare, onPlateAssert,
+  onPlateSave, onPlateClear,
+  onQuery, onToggleGroup, onAdd, onRemove, onUseTotal, onClearTally, clearing, onClearing, onEditMine, onMineDraft,
   onSaveMine, onTerm, onResetting, onResetMine,
 }: FoodListProps): JSX.Element {
   const COPY = useCopy();
@@ -565,7 +684,7 @@ export function FoodListScreen({
           size meant for a screen's SINGLE question, and this screen already has
           its h1 — the same defect Momin caught on the settings rounding
           question, arriving on a different screen. */}
-      <div class="field wide search">
+      <div class="field wide">
         {/* A real `<label for>` rather than the `aria-label` this carried. The
             accessible name is identical; the difference is that a visible label
             is also a tap target that focuses the field.
@@ -640,7 +759,7 @@ export function FoodListScreen({
          */
         <>
           <p class="hint">{COPY.foods.browseHint}</p>
-          <ul class="list groups">
+          <ul class="list">
             {GROUPS.map((group) => {
               const rows = FOODS.filter((food) => food.category === group);
               const open = openGroup === group;
@@ -661,6 +780,27 @@ export function FoodListScreen({
                   </Button>
                   {open ? (
                     <div class="group-body">
+                      {/* T31 — ONE control, at the head of the group that owns
+                          every row it touches: four list rows, the biryani
+                          grid's three plate cells, and the three raita
+                          composites it deliberately does not scale. It was on
+                          each of seven rows before, which made one setting
+                          look like seven. */}
+                      {PLATE_GROUPS.has(group) ? (
+                        <PlatePanel
+                          vesselGrams={PLATE_REFERENCE?.vessel?.grams ?? 0}
+                          dawatGrams={plateAdvisoryGrams}
+                          exampleName={PLATE_REFERENCE === undefined ? '' : displayName(PLATE_REFERENCE, COPY)}
+                          exampleGrams={PLATE_REFERENCE?.grams ?? 0}
+                          ratio={plateRatio} setAt={plateSetAt}
+                          open={plateOpen} foodDraft={plateFoodDraft}
+                          emptyDraft={plateEmptyDraft} noTare={plateNoTare}
+                          asserted={plateAsserted}
+                          onOpen={onPlateOpen} onFoodDraft={onPlateFoodDraft}
+                          onEmptyDraft={onPlateEmptyDraft} onNoTare={onPlateNoTare}
+                          onAssert={onPlateAssert} onSave={onPlateSave} onClear={onPlateClear}
+                        />
+                      ) : null}
                       {/* The two-dimensional families first, as tables. Their
                           rows are then skipped below — the same food cannot be
                           in the table AND under it, or the tally would offer
@@ -680,7 +820,7 @@ export function FoodListScreen({
                           vesselRatioSet={food.vessel === null
                             ? null
                             : (vessels[food.vessel.id]?.ratio ?? null)}
-                          onWeighPlate={() => { onPlateStep('empty'); }} />
+                          vesselSetAt={plateSetAt} />
                       ))}
                       </ul>
                     </div>
@@ -703,6 +843,27 @@ export function FoodListScreen({
           <p>{COPY.foods.sugarFreeSweets}</p>
         </div>
       ) : null}
+      {/* T31 — the same one panel, above the hits, when a search turns up a
+          row the plate setting governs. It used to render only inside the
+          group body, so a reader who always searches "biryani" never met the
+          control that decides what their biryani row counts as. Same state,
+          same handlers: it is one setting shown in the two places it is
+          relevant, not two settings. */}
+      {!browsing && shown.some((food) => food.vessel !== null) ? (
+        <PlatePanel
+          vesselGrams={PLATE_REFERENCE?.vessel?.grams ?? 0}
+          dawatGrams={plateAdvisoryGrams}
+          exampleName={PLATE_REFERENCE === undefined ? '' : displayName(PLATE_REFERENCE, COPY)}
+          exampleGrams={PLATE_REFERENCE?.grams ?? 0}
+          ratio={plateRatio} setAt={plateSetAt}
+          open={plateOpen} foodDraft={plateFoodDraft}
+          emptyDraft={plateEmptyDraft} noTare={plateNoTare}
+          asserted={plateAsserted}
+          onOpen={onPlateOpen} onFoodDraft={onPlateFoodDraft}
+          onEmptyDraft={onPlateEmptyDraft} onNoTare={onPlateNoTare}
+          onAssert={onPlateAssert} onSave={onPlateSave} onClear={onPlateClear}
+        />
+      ) : null}
       {browsing ? null : shown.length === 0 ? (
         <p class="flag">{COPY.foods.empty(query)}</p>
       ) : (
@@ -716,7 +877,7 @@ export function FoodListScreen({
               vesselRatioSet={food.vessel === null
                 ? null
                 : (vessels[food.vessel.id]?.ratio ?? null)}
-              onWeighPlate={() => { onPlateStep('empty'); }} />
+              vesselSetAt={plateSetAt} />
           ))}
         </ul>
       )}
@@ -730,38 +891,38 @@ export function FoodListScreen({
        * `.sheet` is the screen's bottom bar, the same shape the settings save
        * uses — so it sits where the reader's thumb already expects a commit.
        */}
-      {/* T31 — the plate weighing. One vessel ships, so the reference and the
-          worked example are read from the rows themselves rather than named
-          here: §11.8 keeps numbers out of the interface, and a literal 300
-          would be a second place to update when the table moves. */}
-      {plateStep === null ? null : (
-        <PlateSheet
-          vesselGrams={PLATE_REFERENCE?.vessel?.grams ?? 0}
-          exampleName={PLATE_REFERENCE === undefined ? '' : displayName(PLATE_REFERENCE, COPY)}
-          exampleGrams={PLATE_REFERENCE?.grams ?? 0}
-          step={plateStep}
-          emptyDraft={plateEmptyDraft}
-          servedDraft={plateServedDraft}
-          tared={plateTared}
-          onEmptyDraft={onPlateEmptyDraft}
-          onServedDraft={onPlateServedDraft}
-          onTared={onPlateTared}
-          onStep={onPlateStep}
-          onSave={onPlateSave}
-          onClose={() => { onPlateStep(null); }}
-        />
-      )}
-
       {picked === 0 ? null : (
         <div class="sheet tally-bar" aria-live="polite">
-          <div class="tally-sum">{COPY.foods.tallyTotal(picked, String(total))}</div>
+          {/* The total and the throw-away share a line. They were stacked,
+              and with the button and the hint under them the bar was four
+              full-width blocks deep — on a 320px screen that is most of what
+              is left below the list. Side by side costs one row instead of
+              two and takes nothing away: the link keeps its own 48px target,
+              it is just no longer alone on its own line. */}
+          <div class="tally-head">
+            <div class="tally-sum">{COPY.foods.tallyTotal(picked, String(total))}</div>
+            {/* Asks before it throws the list away, in the SAME place rather
+                than on a screen of its own — Momin's shape: "not another UI,
+                but on the same place where the start list again is written".
+                A mis-tap now costs one more tap, not the whole list. The same
+                two-step the calibration reset already uses. */}
+            {clearing ? (
+              <span class="tally-confirm">
+                <b class="tally-ask">{COPY.foods.tallyClearAsk}</b>
+                <Button class="link tally-yes" onPress={() => { onClearing(false); onClearTally(); }}>
+                  {COPY.foods.tallyClearYes}
+                </Button>
+                <Button class="link tally-no" onPress={() => { onClearing(false); }}>
+                  {COPY.foods.tallyClearNo}
+                </Button>
+              </span>
+            ) : (
+              <Button class="link tally-clear" onPress={() => { onClearing(true); }}>
+                {COPY.foods.tallyClear}
+              </Button>
+            )}
+          </div>
           <Button class="go" onPress={() => { onUseTotal(total); }}>{COPY.foods.tallyUse}</Button>
-          {/* Centred, compact and in the warning colour, because it THROWS THE
-              LIST AWAY. It read as a quiet left-aligned link with the same
-              weight as the hint below it — Momin's point: "this will remove the
-              list, so warn colour is better." Amber rather than the halt red,
-              which this app spends on medical stops. */}
-          <Button class="link tally-clear" onPress={onClearTally}>{COPY.foods.tallyClear}</Button>
           <p class="hint">{COPY.foods.tallyCheck}</p>
         </div>
       )}

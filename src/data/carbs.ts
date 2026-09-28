@@ -6590,7 +6590,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 60,
     confidence: 'medium',
     source: 'LFAC-anchored biryani plus the raita row',
-    vessel: null,
+    vessel: { id: 'plate', grams: 300 },
   },
   {
     id: 'meal-biryani-degh-raita',
@@ -6613,7 +6613,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 75,
     confidence: 'medium',
     source: 'CoFID and KHAN biryani plus the raita row, CoFID converted at 1.094',
-    vessel: null,
+    vessel: { id: 'plate', grams: 300 },
   },
   {
     id: 'meal-biryani-meat-raita',
@@ -6636,7 +6636,7 @@ export const FOODS: readonly Food[] = [
     gramsMax: 54,
     confidence: 'medium',
     source: 'FNDDS and CoFID biryani plus the raita row, CoFID converted at 1.085',
-    vessel: null,
+    vessel: { id: 'plate', grams: 300 },
   },
   {
     id: 'meal-nihari-two-naan',

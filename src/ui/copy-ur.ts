@@ -382,50 +382,50 @@ export const COPY_UR: Copy = {
     mineWas: (reference: string, date: string): string =>
       isolate(`آپ کا اپنا۔ حوالہ ${reference}\u00A0گرام ہے — آپ نے یہ ${date} کو رکھا۔`),
     plateLead: (ref: string): string =>
-      isolate(`یہاں پلیٹ والی ہر لائن ${ref}\u00A0گرام کے حصے کی ہے۔ اگر آپ کا حصہ اس سے الگ ہے تو اپنی پلیٹ ایک بار تولیں — پھر پلیٹ والی ہر لائن آپ کے حصے کے حساب سے چلے گی۔`),
-    plateSet: 'اپنی پلیٹ ایک بار تولیں',
-    plateStep1Title: 'پہلے خالی پلیٹ',
-    plateStep1Question:
-      'جس پلیٹ میں آپ کھاتے ہیں وہ ترازو پر رکھیں — بالکل خالی، اس پر کچھ نہ ہو۔ ترازو کیا دکھا رہا ہے؟',
-    plateStep1Hint:
-      'یہ وزن بعد میں گھٹا دیا جائے گا، تاکہ پلیٹ کا اپنا وزن کبھی کھانے میں نہ گنا جائے۔',
-    plateStep1Tared: 'خالی پلیٹ رکھنے پر میرا ترازو 0 ہی دکھاتا ہے',
-    plateStep2Title: 'اب اتنا کھانا جتنا آپ واقعی کھاتے ہیں',
-    plateStep2Question:
-      'اسی پلیٹ میں اتنے چاول یا بریانی نکالیں جتنا آپ عام دن کے کھانے میں لیتے ہیں — آپ کی روز کی مقدار، ناپ کے لیے کچھ بڑھایا نہیں۔ پھر پلیٹ واپس ترازو پر رکھیں۔ اب ترازو کیا دکھا رہا ہے؟',
-    plateStep2Hint:
-      'پلیٹ لبالب نہ بھریں۔ یہاں یہ ناپا جا رہا ہے کہ آپ اپنے لیے کتنا نکالتے ہیں، یہ نہیں کہ پلیٹ میں کتنا سما سکتا ہے — آج ڈھیر لگا دیا تو ان لائنوں سے بننے والی ہر ڈوز بڑی آئے گی، ہر کھانے پر، جب تک آپ اسے بدل نہ دیں۔',
-    plateStep2TaredHint:
-      'اگر بیچ میں ترازو خود بند ہو گیا، یا آپ نے دوبارہ zero یا TARE کا بٹن دبایا، تو واپس جا کر خالی پلیٹ سے شروع کریں — بدلے ہوئے zero کی غلطی ایپ کو نظر نہیں آ سکتی۔',
-    plateShow: 'دیکھیں کیا بدلے گا',
-    plateConfirmTitle: 'محفوظ کرنے سے پہلے حساب دیکھ لیں۔',
-    plateWorking: (served: string, empty: string, fill: string): string =>
-      isolate(`پلیٹ اور کھانا ملا کر: ${served}\u00A0گرام۔ خالی پلیٹ: ${empty}\u00A0گرام۔ صرف کھانا: ${fill}\u00A0گرام — یہی آپ کا ایک حصہ ہے۔`),
-    plateWorkingTared: (fill: string): string =>
-      isolate(`پلیٹ رکھنے پر آپ کا ترازو 0 پر تھا، اس لیے پوری ریڈنگ کھانا ہی ہے: ${fill}\u00A0گرام — یہی آپ کا ایک حصہ ہے۔`),
-    plateRatioLine: (fill: string, ref: string, ratio: string): string =>
-      isolate(`فہرست کی پلیٹ والی لائنیں ${ref}\u00A0گرام کے حصے کی ہیں۔ آپ کا حصہ ${fill}\u00A0گرام ہے، اس لیے پلیٹ والی ہر لائن کو ${ratio} سے ضرب دی جائے گی۔`),
-    plateExample: (name: string, before: string, after: string): string =>
-      isolate(`${name}: ${before}\u00A0گرام کاربوہائیڈریٹ اب ${after}\u00A0گرام گنا جائے گا۔`),
-    plateTrust: (fill: string): string =>
-      isolate(`پلیٹ والی ہر لائن اسی پر چلے گی۔ اگر ${fill}\u00A0گرام واقعی اتنا نہیں جتنا آپ ایک کھانے میں کھاتے ہیں، تو محفوظ کرنے سے پہلے وزن بدل لیں۔`),
-    plateSave: 'اپنی پلیٹ محفوظ کریں',
-    plateChangeWeights: 'وزن بدلیں',
+      isolate(`یہاں پلیٹ والی ہر لائن ${ref}\u00A0گرام کے حصے کی ہے۔ اگر آپ اس سے کم یا زیادہ نکالتے ہیں تو اپنا حصہ ایک بار تول لیں — پھر پلیٹ والی ہر لائن اسی کے حساب سے چلے گی۔`),
+    plateSet: 'اپنا حصہ ایک بار تولیں',
+    plateFieldLabel: 'جتنا کھانا آپ اپنے لیے نکالتے ہیں، گرام میں',
+    plateFoodOnly:
+      'صرف کھانا، پلیٹ نہیں: خالی پلیٹ ترازو پر رکھ کر 0 یا TARE دبائیں تاکہ ترازو 0 دکھائے، پھر کھانا نکالیں۔',
+    plateUsual:
+      'آپ کی روز کی مقدار، پلیٹ لبالب نہ بھریں۔ آج ڈھیر لگا دیا تو ان لائنوں کی ہر ڈوز بڑی آئے گی، ہر کھانے پر۔',
+    plateNoTare: 'میرے ترازو پر 0 یا TARE کا بٹن نہیں ہے',
+    plateNoTareLead:
+      'تو دو بار تولیں، فرق ایپ خود نکال لے گی: پہلے خالی پلیٹ، پھر کھانے سمیت پلیٹ۔',
+    plateHasTare: 'میرے سکیل میں 0 یا TARE کا بٹن ہے',
+    plateEmptyRequired: 'خالی پلیٹ کا وزن بھی ضروری ہے — اس کے بغیر پلیٹ کا وزن کھانے میں گن جائے گا۔',
+    plateWorking: (total: string, empty: string, food: string): string =>
+      isolate(`${total}\u00A0گرام − ${empty}\u00A0گرام = ${food}\u00A0گرام کھانا۔`),
+    plateEmptyLabel: 'خالی پلیٹ، گرام میں',
+    plateTotalLabel: 'پلیٹ اور کھانا ملا کر، گرام میں',
+    plateSave: 'اپنا حصہ محفوظ کریں',
+    plateInForce: (fill: string, name: string, before: string, after: string): string =>
+      isolate(`آپ کا حصہ: ${fill}\u00A0گرام۔ پلیٹ والی ہر لائن اسی حساب سے گنی جائے گی — ${name}: ${before}\u00A0گرام اب ${after}\u00A0گرام گنا جائے گا۔`),
+    platePreview: (fill: string, name: string, before: string, after: string): string =>
+      isolate(`اسے محفوظ کریں تو آپ کی سرونگ ${fill}\u00A0گرام ہو جائے گی — ${name}: ${before}\u00A0گرام ${after}\u00A0گرام شمار ہوگا۔`),
+    plateAgain: 'دوبارہ تولیں',
+    plateClear: (ref: string): string => isolate(`واپس فہرست کے ${ref}\u00A0گرام والے حصے پر`),
+    plateRowYours: (fill: string, date: string): string =>
+      isolate(`آپ کے ${fill}\u00A0گرام کے حصے کے حساب سے — ${date} کو تولا۔`),
+    plateTooHeavy: (fill: string, ref: string): string =>
+      isolate(`${fill}\u00A0گرام بہت بڑا حصہ ہے — اس فہرست کی ${ref}\u00A0گرام والی دعوت کی پلیٹ سے بھی زیادہ۔ ترازو اکثر پلیٹ اور کھانا ملا کر دکھاتا ہے۔ چیک کریں کہ کھانا رکھنے سے پہلے، خالی پلیٹ کے ساتھ، ترازو 0 پر تھا۔`),
+    plateAssert: 'یہ صرف کھانے کا وزن ہے — محفوظ کریں',
+    plateAboveCap: (fill: string, most: string): string =>
+      isolate(`${fill}\u00A0گرام ، ${most}\u00A0گرام سے زیادہ ہے — اسے ایک سرونگ نہیں مانا جا سکتا۔ اگر یہ دیگ یا پلیٹ سمیت وزن تھا تو صرف کھانے کا وزن کریں۔`),
+    plateUnreadable:
+      'یہ وزن پڑھا نہیں جا سکتا۔ گرام ہندسوں میں لکھیں، مثلاً 450۔',
     plateOrderWrong:
-      isolate('ان دو وزنوں کے حساب سے کھانے کا وزن 0 سے بھی کم بنتا ہے۔ پہلے خالی پلیٹ، پھر کھانے والی پلیٹ — تولنا دوبارہ شروع کریں۔'),
-    plateWas: (reference: string, ref: string, fill: string, date: string): string =>
-      isolate(`آپ کی پلیٹ کے حساب سے۔ حوالہ ${ref}\u00A0گرام کے حصے پر ${reference}\u00A0گرام ہے — آپ نے ${date} کو ${fill}\u00A0گرام تولا۔`),
-    plateAgain: 'پلیٹ دوبارہ تولیں',
-    plateClear: 'واپس حوالہ والی پلیٹ پر',
-    plateCompositeNote:
-      isolate('جن لائنوں پر «رائتے کے ساتھ» لکھا ہے وہ آپ کی پلیٹ کے حساب پر نہیں ہیں — اپنی پلیٹ گننے کے لیے بریانی کی لائن اور رائتے کی لائن الگ الگ جوڑیں۔'),
+      isolate('ان دو وزنوں کے حساب سے کھانے کا وزن 0 سے بھی کم بنتا ہے۔ پہلے خالی پلیٹ — دوبارہ شروع کریں۔'),
     addOne: 'ایک اور',
     removeOne: 'ایک کم',
     tallyCount: (n: number): string => `${String(n)}×`,
     tallyTotal: (foods: number, grams: string): string =>
       isolate(`${String(foods)} کھانے · ${grams}\u00A0گرام`),
     tallyUse: 'یہ ٹوٹل استعمال کریں',
-    tallyClear: 'فہرست دوبارہ شروع کریں',
+    tallyClear: 'فہرست صاف کریں',
+    tallyClearAsk: 'سب کچھ ہٹا دیں؟',
+    tallyClearYes: 'ہاں، ہٹا دیں',
+    tallyClearNo: 'رہنے دیں',
     tallyCheck: 'باکس میں آنے کے بعد بھی آپ یہ عدد بدل سکتے ہیں۔',
     estimateLabel: 'اسے کسی نے ٹھیک سے ناپا نہیں',
     estimateNote: '⚠ کا مطلب ہے کہ اس کھانے کو کسی نے ٹھیک سے ناپا نہیں۔ جو عدد لکھا ہے وہ سب سے بہتر اندازہ ہے، اور ساتھ دی گئی رینج ایمانداری سے بتاتی ہے کہ یہ کتنا اوپر نیچے ہو سکتا ہے۔',

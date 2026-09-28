@@ -3758,6 +3758,7 @@ export const INCREMENT = { nearest: 1, half: 0.5, ceil: 1, floor: 1, off: 0.01 }
                           // granularity for both, and v9's map could not
                           // drive them [R1]
 export const HUNDREDTHS_SCALE = 100;          // §2.2 integer representation
+export const VESSEL_RATIO_MAX = 3;            // T31 — a stored plate ratio above this is corrupt
 
 // ─── CLOCK AND TIMING (§7.6, §8.1) ─────────────────────────
 export const CLOCK_SKEW_TOLERANCE_HOURS = 1;  // §7.6 future-timestamp bound
