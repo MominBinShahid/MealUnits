@@ -161,3 +161,36 @@ describe('§10.5 — one bar at a time, by priority, the rest queued', () => {
     expect([...BAR_ORDER]).toEqual(['stuck', 'stale', 'write-failed', 'update', 'install']);
   });
 });
+
+describe('the stale bar follows the pending dose, not the moment it was raised', () => {
+  // Reading the pending dose once, when the connection closes, covers only one
+  // ordering. Upgrade first and the bar is raised with nothing pending; the
+  // reader then logs in this tab, the write fails against the null connection,
+  // `stuck` hides `stale`, and dismissing `stuck` surfaces a bar still carrying
+  // the words it was raised with — "Nothing has been lost" — about a dose that
+  // by then exists only in memory.
+  const painted: string[] = [];
+  const slot = createBarSlot<{ readonly body: string }>((spec, _gone) => {
+    painted.push(spec.body);
+    return () => { /* removed */ };
+  });
+
+  it('re-raising a QUEUED kind replaces the words it will be painted with', () => {
+    slot.raise('stale', { body: 'nothing lost' });
+    expect(painted).toEqual(['nothing lost']);
+
+    // `stuck` outranks it and takes the slot.
+    slot.raise('stuck', { body: 'not saved' });
+    expect(painted).toEqual(['nothing lost', 'not saved']);
+
+    // The dose is pending now, so the app re-raises stale. It is queued, not
+    // showing, so nothing repaints yet — but the spec must be the new one.
+    slot.raise('stale', { body: 'write it down' });
+    expect(painted).toEqual(['nothing lost', 'not saved']);
+
+    // Dismissing stuck hands the slot back, and what surfaces is the CURRENT
+    // truth rather than the one from before the dose existed.
+    slot.retire('stuck');
+    expect(painted[painted.length - 1]).toBe('write it down');
+  });
+});

@@ -845,8 +845,32 @@ export async function start(host: Host): Promise<void> {
       // Twice is not transient. Hand it to something that follows him off this
       // screen, because `committing` now outlives the logged step.
       host.onSaveStuck(copy.units(payload.injectedUnits), retryPendingSave);
+      // The stale bar, if it is standing, was raised before this dose existed.
+      // Re-raising updates the spec it will be painted from — `raise` on a kind
+      // that is queued rather than showing only replaces its words.
+      if (staleShowing) host.onStale(true, unsavedDose());
     }
   };
+
+  /**
+   * The dose that is NOT in the record, or null — read at the moment it is
+   * asked for rather than once.
+   *
+   * The stale bar's body depends on this, and computing it only when the
+   * connection closes covers one ordering and not the other. Upgrade first and
+   * the bar is raised with nothing pending; the reader then logs a dose in this
+   * tab, the write fails against the null connection, `stuck` outranks `stale`
+   * and hides it, and when they dismiss `stuck` the stale bar surfaces still
+   * carrying the words it was raised with — "Nothing has been lost" — about a
+   * dose that by then is only in memory.
+   */
+  const unsavedDose = (): string | null =>
+    state.committing !== null && state.save.kind === 'pending'
+      ? copy.units(state.committing.injectedUnits)
+      : null;
+
+  /** Whether the stale bar is standing, so a later pending dose can refresh it. */
+  let staleShowing = false;
 
   /** The frozen payload, never a re-read draft (§7.1). */
   const retryPendingSave = (): void => {
@@ -2116,14 +2140,8 @@ export async function start(host: Host): Promise<void> {
         // the only one anybody could reach, and this one went quiet. A tab that
         // cannot write must say so rather than look ordinary.
         if (newVersion !== null) {
-          // The pending dose, if there is one, so the bar can stop claiming
-          // nothing was lost at the one moment that is untrue.
-          host.onStale(
-            true,
-            state.committing !== null && state.save.kind === 'pending'
-              ? copy.units(state.committing.injectedUnits)
-              : null,
-          );
+          staleShowing = true;
+          host.onStale(true, unsavedDose());
         }
         if (newVersion === null) {
           state = initialState();
