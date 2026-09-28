@@ -59,6 +59,16 @@ export interface BarSlot<Spec> {
   readonly retire: (kind: BarKind) => void;
   /** The bar occupying the slot, for tests and for reasoning about state. */
   readonly showing: () => BarKind | null;
+  /**
+   * Every kind currently in the queue, shown or waiting.
+   *
+   * `showing()` alone was not enough for the language switch: `onCopy` repaints
+   * the standing bar and left the ones behind it holding the words they were
+   * raised with, so dismissing the top one surfaced English under an Urdu
+   * interface. That is the defect §10a already fixed once for the standing bar
+   * and did not follow into the queue.
+   */
+  readonly queued: () => readonly BarKind[];
 }
 
 /**
@@ -133,5 +143,8 @@ export function createBarSlot<Spec>(
       reconcile();
     },
     showing: () => showing,
+    // BAR_ORDER rather than the Map's own order, so the answer is the hazard
+    // order the rest of this file is written in.
+    queued: () => BAR_ORDER.filter((kind) => queued.has(kind)),
   };
 }
