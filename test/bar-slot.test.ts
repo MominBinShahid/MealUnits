@@ -170,7 +170,7 @@ describe('the stale bar follows the pending dose, not the moment it was raised',
   // the words it was raised with — "Nothing has been lost" — about a dose that
   // by then exists only in memory.
   const painted: string[] = [];
-  const slot = createBarSlot<{ readonly body: string }>((spec, _gone) => {
+  const slot = createBarSlot<{ readonly body: string }>((spec) => {
     painted.push(spec.body);
     return () => { /* removed */ };
   });
