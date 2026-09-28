@@ -1659,7 +1659,17 @@ button:disabled { cursor: default; }
  */
 .glossary {
   position: sticky;
-  bottom: 0;
+  /*
+   * ABOVE THE PROMPT BAR, for the same reason `.tally-bar` is.
+   *
+   * `#app` pads its foot by `--prompt-h` so a bar fixed to the bottom of the
+   * window never covers the primary action, and `position: sticky` does not
+   * benefit: it sticks to the scrollport rather than the padding box. This
+   * panel's only control is its Close button, at its foot, so a prompt bar
+   * covered the one way out of it — the same defect as the tally bar's, found
+   * in the same sweep and one rule away from it.
+   */
+  bottom: var(--prompt-h, 0);
   z-index: 2;
   display: grid;
   gap: 0.5rem;
@@ -2027,7 +2037,13 @@ button:disabled { cursor: default; }
      the browser; this is what was wrong with it. Longhands only, so a future
      shorthand cannot quietly eat it again. */
   padding-block-start: 0.75rem;
-  padding-block-end: max(0.75rem, env(safe-area-inset-bottom));
+     Once a prompt bar is up THAT is the element at the edge, and its own
+     clearance is already inside the height we measure, so a full inset here
+     would stack two of them — the doubling the note above `.flag .sheet`
+     records fixing once. Subtracting `--prompt-h` spends the inset only on the
+     part not already covered, and needs no condition: at 0 it is the plain
+     `max` it replaces. */
+  padding-block-end: max(0.75rem, calc(env(safe-area-inset-bottom) - var(--prompt-h, 0px)));
 }
 
 /*

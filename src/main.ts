@@ -534,8 +534,13 @@ if (root) {
     // learn it even when they were raised before the database was read.
     onCopy: (next) => {
       copy = next;
-      const standing = bars.showing();
-      if (standing !== null) redraw.get(standing)?.();
+      // EVERY bar in the queue, not only the one on screen. Repainting the
+      // standing one alone left the rest holding the words they were raised
+      // with, so dismissing the top bar surfaced English under an Urdu
+      // interface — the same defect §10a fixed for the standing bar, which
+      // never followed into the queue. Repainting a queued kind only replaces
+      // the spec it will be painted from; nothing is torn down.
+      for (const kind of bars.queued()) redraw.get(kind)?.();
     },
     ...hooks,
   }).catch((cause: unknown) => {

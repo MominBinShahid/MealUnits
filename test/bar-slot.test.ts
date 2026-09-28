@@ -194,3 +194,23 @@ describe('the stale bar follows the pending dose, not the moment it was raised',
     expect(painted[painted.length - 1]).toBe('write it down');
   });
 });
+
+describe('every bar in the queue can be found, not only the one on screen', () => {
+  it('lists shown and waiting alike, in hazard order', () => {
+    const slot = createBarSlot<{ readonly body: string }>(() => () => { /* removed */ });
+    expect(slot.queued()).toEqual([]);
+
+    // Raised low-first, to prove the answer is BAR_ORDER and not arrival order.
+    slot.raise('install', { body: 'install' });
+    slot.raise('stuck', { body: 'stuck' });
+    expect(slot.showing()).toBe('stuck');
+    expect(slot.queued()).toEqual(['stuck', 'install']);
+
+    // The language switch repaints what this returns. Before it existed only
+    // the standing bar was repainted, so `install` kept the words it was raised
+    // with and surfaced in the old language once `stuck` was answered.
+    slot.retire('stuck');
+    expect(slot.showing()).toBe('install');
+    expect(slot.queued()).toEqual(['install']);
+  });
+});
