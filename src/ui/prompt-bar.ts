@@ -178,18 +178,25 @@ export function barHooks(
    */
   onRedraw: (kind: 'stuck' | 'stale' | 'write-failed', paint: () => void) => void,
 ): {
-  readonly onStale: (show: boolean) => void;
+  readonly onStale: (show: boolean, unsaved: string | null) => void;
   readonly onWriteFailed: (show: boolean, startOver: () => void) => void;
   readonly onSaveStuck: (amount: string, retry: () => void) => void;
 } {
   return {
-    onStale: (show) => {
+    onStale: (show, unsaved) => {
       if (!show) { retire('stale'); return; }
       const paint = (): void => {
         const copy = getCopy();
         raise('stale', {
-        text: copy.staleConnection.title,
-        body: copy.staleConnection.body,
+          text: copy.staleConnection.title,
+          // "Nothing has been lost" is true when the only casualty is this
+          // tab's connection. It is false when a dose is sitting unwritten in
+          // memory, because the bar's own advice — close and reopen — is what
+          // destroys it, and the next session's stacking check will not see a
+          // dose that never reached the record.
+          body: unsaved === null
+            ? copy.staleConnection.body
+            : copy.staleConnection.unsavedBody(unsaved),
           variant: 'stop',
         });
       };

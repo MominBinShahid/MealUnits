@@ -2630,7 +2630,24 @@ describe('§7.2 a failed write retries, and escalates only when retrying stops h
     // It must report again rather than silently doing nothing.
     expect(stuckPrompts.length).toBeGreaterThan(1);
     expect(buzzes).toBe(0);
+
+    // And once the stuck bar is dismissed, the stale bar underneath must not
+    // claim the dose is safe. Its ordinary body ends "Nothing has been lost",
+    // which is true when only the connection died — and false here, because
+    // `state.committing` is the only copy of this dose and the bar's own
+    // advice, close and reopen, is what destroys it.
+    await tapShell(COPY.log.stuckDismiss);
+    expect(shellText()).toContain(COPY.staleConnection.title);
+    expect(shellText()).not.toContain(COPY.staleConnection.body);
+    // The copy function, not a substring of it: a literal here passes or fails
+    // on wording rather than on whether the right body was chosen.
+    // `units()` takes HUNDREDTHS — 11 units is 1100, and `units(11)` is 0.11.
+    // Through `plain()` on BOTH sides: `units()` puts a no-break space between
+    // the number and the unit (§10.4) and `shellText()` normalises it, so the
+    // raw string would never match what is on screen.
+    expect(shellText()).toContain(plain(COPY.staleConnection.unsavedBody(COPY.units(1100))));
   });
+
 
   it('and the bar\'s retry writes the FROZEN payload once the disk comes back', async () => {
     await setUpAsHisBrother(failingWrites(2));

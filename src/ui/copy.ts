@@ -2118,6 +2118,25 @@ export const COPY = {
   staleConnection: {
     title: 'This app was updated in another window.',
     body: 'Close this one and open it again before you log anything else. Nothing has been lost.',
+    /**
+     * Said INSTEAD of `body` when a logged dose has not reached the record.
+     *
+     * It has to kill an assumption the TITLE invites. "Updated in another
+     * window" reads as though the other window has the dose; the ordinary body
+     * then says nothing was lost. Neither is true here, and "reopening will not
+     * bring it back" is the plainest way to say so — closing loses it is also
+     * true, but leaves the hope that the other window kept it.
+     *
+     * Ends on the repair, so the last thing read is close-and-reopen. That is
+     * still the right advice: the connection cannot be mended in this tab, and
+     * the dose is lost either way. Writing it down is what saves it.
+     *
+     * Every phrase is already house copy — "is not saved" from `log.stuck`,
+     * "write it down" from `log.pending`, and the closing instruction word for
+     * word from `body` above.
+     */
+    unsavedBody: (amount: string): string =>
+      `${amount} is not saved, and reopening will not bring it back. Write it down, then close this one and open it again.`,
   },
 
   /** §11.3 — another tab deleted the record while this one was open. */

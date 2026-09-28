@@ -2078,6 +2078,12 @@ export const COPY_UR: Copy = {
   staleConnection: {
     title: 'یہ ایپ کسی دوسری ونڈو میں اپ ڈیٹ ہو گئی ہے۔',
     body: 'کچھ بھی اور درج کرنے سے پہلے یہ والی ونڈو بند کر کے دوبارہ کھولیں۔ کچھ بھی ضائع نہیں ہوا۔',
+    /* `${amount} والی ڈوز`, the shape `log.stuck` uses: یونٹ is
+       masculine, so agreeing the verb with the AMOUNT would be wrong. Naming
+       the dose keeps the agreement on ڈوز, which is feminine. No `isolate()`:
+       one lone number in a sentence has nothing to reorder. */
+    unsavedBody: (amount: string): string =>
+      `${amount} والی ڈوز محفوظ نہیں ہوئی، اور دوبارہ کھولنے سے واپس نہیں آئے گی۔ اسے کہیں لکھ لیں، پھر یہ والی ونڈو بند کر کے دوبارہ کھولیں۔`,
   },
 
   /** §11.3 — another tab deleted the record while this one was open. */

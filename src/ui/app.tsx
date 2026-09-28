@@ -401,7 +401,19 @@ export interface Host {
    * another. Neither set `--prompt-h`, so the page was not padded and the bar
    * covered the primary action.
    */
-  readonly onStale: (show: boolean) => void;
+  /**
+   * `unsaved` is the dose that has NOT reached the record, or null.
+   *
+   * The bar's ordinary body ends "Nothing has been lost", which is true when
+   * the only casualty is this tab's connection — everything already written is
+   * safe and reopening restores it. It is false in one overlap: a logged dose
+   * whose write failed lives in `state.committing` and nowhere else, so closing
+   * the window, which is exactly what the bar tells the reader to do, discards
+   * it. The next session's stacking check reads the record, so a dose that
+   * never reached it is invisible and the NEXT dose is worked out as if that
+   * insulin were not in the body.
+   */
+  readonly onStale: (show: boolean, unsaved: string | null) => void;
   readonly onWriteFailed: (show: boolean, startOver: () => void) => void;
   /**
    * `10a` — which language the SHELL's own strings are in.
@@ -833,8 +845,32 @@ export async function start(host: Host): Promise<void> {
       // Twice is not transient. Hand it to something that follows him off this
       // screen, because `committing` now outlives the logged step.
       host.onSaveStuck(copy.units(payload.injectedUnits), retryPendingSave);
+      // The stale bar, if it is standing, was raised before this dose existed.
+      // Re-raising updates the spec it will be painted from — `raise` on a kind
+      // that is queued rather than showing only replaces its words.
+      if (staleShowing) host.onStale(true, unsavedDose());
     }
   };
+
+  /**
+   * The dose that is NOT in the record, or null — read at the moment it is
+   * asked for rather than once.
+   *
+   * The stale bar's body depends on this, and computing it only when the
+   * connection closes covers one ordering and not the other. Upgrade first and
+   * the bar is raised with nothing pending; the reader then logs a dose in this
+   * tab, the write fails against the null connection, `stuck` outranks `stale`
+   * and hides it, and when they dismiss `stuck` the stale bar surfaces still
+   * carrying the words it was raised with — "Nothing has been lost" — about a
+   * dose that by then is only in memory.
+   */
+  const unsavedDose = (): string | null =>
+    state.committing !== null && state.save.kind === 'pending'
+      ? copy.units(state.committing.injectedUnits)
+      : null;
+
+  /** Whether the stale bar is standing, so a later pending dose can refresh it. */
+  let staleShowing = false;
 
   /** The frozen payload, never a re-read draft (§7.1). */
   const retryPendingSave = (): void => {
@@ -2104,7 +2140,8 @@ export async function start(host: Host): Promise<void> {
         // the only one anybody could reach, and this one went quiet. A tab that
         // cannot write must say so rather than look ordinary.
         if (newVersion !== null) {
-          host.onStale(true);
+          staleShowing = true;
+          host.onStale(true, unsavedDose());
         }
         if (newVersion === null) {
           state = initialState();
