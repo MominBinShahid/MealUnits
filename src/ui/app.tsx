@@ -212,6 +212,7 @@ interface ViewState {
    */
   plateNoTare: boolean;
   plateAsserted: boolean;
+  clearingTally: boolean;
   /**
    * Which hard word is open, or null. ONE at a time — the panel explains the
    * word you tapped, and two open would be two answers to one question.
@@ -525,6 +526,7 @@ export async function start(host: Host): Promise<void> {
     plateEmptyDraft: '',
     plateNoTare: false,
     plateAsserted: false,
+    clearingTally: false,
     resettingMine: false,
     glossaryTerm: null,
     recordDeletedElsewhere: false,
@@ -1590,6 +1592,8 @@ export async function start(host: Host): Promise<void> {
               render();
             }}
             onClearTally={(): void => { view.foodTally = {}; render(); }}
+            clearing={view.clearingTally}
+            onClearing={(on): void => { view.clearingTally = on; render(); }}
             onUseTotal={(grams: number): void => {
               /*
                * The moment phase 3 exists. Everything before this is a list;

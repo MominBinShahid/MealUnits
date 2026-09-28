@@ -464,7 +464,10 @@ export const COPY = {
     tallyTotal: (foods: number, grams: string): string =>
       `${String(foods)} ${foods === 1 ? 'food' : 'foods'} · ${grams}\u00A0grams`,
     tallyUse: 'Use this total',
-    tallyClear: 'Start the list again',
+    tallyClear: 'Clear the list',
+    tallyClearAsk: 'Remove all of it?',
+    tallyClearYes: 'Yes, remove',
+    tallyClearNo: 'Keep it',
     /** Under the total, because a tally of estimates is still estimates. */
     tallyCheck: 'You can change the number after it lands in the box.',
     estimateLabel: 'nobody has measured this one properly',

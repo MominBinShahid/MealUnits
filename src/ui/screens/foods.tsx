@@ -27,6 +27,8 @@ export interface FoodListProps {
   readonly onRemove: (id: string) => void;
   readonly onUseTotal: (grams: number) => void;
   readonly onClearTally: () => void;
+  readonly clearing: boolean;
+  readonly onClearing: (on: boolean) => void;
   readonly onEditMine: (id: string | null) => void;
   /** T31 — one plate control: its ratio, its drafts, and the save. */
   readonly plateRatio: number | null;
@@ -651,7 +653,7 @@ export function FoodListScreen({
   plateRatio, plateSetAt, plateOpen, plateFoodDraft, plateEmptyDraft, plateNoTare, plateAsserted,
   onPlateOpen, onPlateFoodDraft, onPlateEmptyDraft, onPlateNoTare, onPlateAssert,
   onPlateSave, onPlateClear,
-  onQuery, onToggleGroup, onAdd, onRemove, onUseTotal, onClearTally, onEditMine, onMineDraft,
+  onQuery, onToggleGroup, onAdd, onRemove, onUseTotal, onClearTally, clearing, onClearing, onEditMine, onMineDraft,
   onSaveMine, onTerm, onResetting, onResetMine,
 }: FoodListProps): JSX.Element {
   const COPY = useCopy();
@@ -891,14 +893,36 @@ export function FoodListScreen({
        */}
       {picked === 0 ? null : (
         <div class="sheet tally-bar" aria-live="polite">
-          <div class="tally-sum">{COPY.foods.tallyTotal(picked, String(total))}</div>
+          {/* The total and the throw-away share a line. They were stacked,
+              and with the button and the hint under them the bar was four
+              full-width blocks deep — on a 320px screen that is most of what
+              is left below the list. Side by side costs one row instead of
+              two and takes nothing away: the link keeps its own 48px target,
+              it is just no longer alone on its own line. */}
+          <div class="tally-head">
+            <div class="tally-sum">{COPY.foods.tallyTotal(picked, String(total))}</div>
+            {/* Asks before it throws the list away, in the SAME place rather
+                than on a screen of its own — Momin's shape: "not another UI,
+                but on the same place where the start list again is written".
+                A mis-tap now costs one more tap, not the whole list. The same
+                two-step the calibration reset already uses. */}
+            {clearing ? (
+              <span class="tally-confirm">
+                <b class="tally-ask">{COPY.foods.tallyClearAsk}</b>
+                <Button class="link tally-yes" onPress={() => { onClearing(false); onClearTally(); }}>
+                  {COPY.foods.tallyClearYes}
+                </Button>
+                <Button class="link tally-no" onPress={() => { onClearing(false); }}>
+                  {COPY.foods.tallyClearNo}
+                </Button>
+              </span>
+            ) : (
+              <Button class="link tally-clear" onPress={() => { onClearing(true); }}>
+                {COPY.foods.tallyClear}
+              </Button>
+            )}
+          </div>
           <Button class="go" onPress={() => { onUseTotal(total); }}>{COPY.foods.tallyUse}</Button>
-          {/* Centred, compact and in the warning colour, because it THROWS THE
-              LIST AWAY. It read as a quiet left-aligned link with the same
-              weight as the hint below it — Momin's point: "this will remove the
-              list, so warn colour is better." Amber rather than the halt red,
-              which this app spends on medical stops. */}
-          <Button class="link tally-clear" onPress={onClearTally}>{COPY.foods.tallyClear}</Button>
           <p class="hint">{COPY.foods.tallyCheck}</p>
         </div>
       )}
