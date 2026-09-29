@@ -371,6 +371,32 @@ function buttonLabel(button: Element): string {
  * is deliberate for a screen reader and unwieldy for an exact match here.
  */
 /**
+ * Asserts a message is ANNOUNCED, not merely present.
+ *
+ * Every other assertion in this file reads `textContent`, which is why the two
+ * safety bars could lose `role="alert"` in #154 and nothing went red: the words
+ * were still there, and a screen reader had stopped saying them. "That did not
+ * save" is about a dose that is not in the record, so silence is the one failure
+ * mode that matters for it.
+ *
+ * Walks up from the text, because the role sits on the bar and the words sit in
+ * a child of it.
+ */
+function announced(text: string): void {
+  const holder = [...document.body.querySelectorAll('*')]
+    .reverse()
+    .find((el) => plain(el.textContent ?? '').includes(plain(text)));
+  if (holder === undefined) throw new Error(`Not on screen at all: "${text.slice(0, 40)}"`);
+  let node: Element | null = holder;
+  while (node !== null) {
+    const role = node.getAttribute('role');
+    if (role === 'alert' || node.getAttribute('aria-live') === 'assertive') return;
+    node = node.parentElement;
+  }
+  throw new Error(`On screen but not announced: "${text.slice(0, 40)}" — no role="alert" on it or any ancestor`);
+}
+
+/**
  * Taps a control in a prompt bar, which lives OUTSIDE the app root by design.
  *
  * `tap` searches `root`, and the bars are appended to the body — so a test that
@@ -1121,6 +1147,9 @@ describe('§10.6 the five terms the app used and never explained', () => {
     await tap(COPY.settings.save);
 
     expect(shellText()).toContain(COPY.writeFailed.title);
+    // Announced, not merely present — the defect #154 introduced and
+    // #155 fixed, which every textContent assertion was blind to.
+    announced(COPY.writeFailed.title);
     expect(shellText()).toContain(COPY.writeFailed.body);
     // §7.9's escape, offered with what it costs stated before the control.
     expect(shellText()).toContain(COPY.writeFailed.startOverHint);
@@ -2593,6 +2622,9 @@ describe('§7.2 a failed write retries, and escalates only when retrying stops h
     expect(shellText()).not.toContain(COPY.staleConnection.title);
     await upgradeFromAnotherTab(idb);
     expect(shellText()).toContain(COPY.staleConnection.title);
+    // Announced, not merely present — the defect #154 introduced and
+    // #155 fixed, which every textContent assertion was blind to.
+    announced(COPY.staleConnection.title);
     expect(shellText()).toContain(COPY.staleConnection.body);
 
     await tap('Record this injection');

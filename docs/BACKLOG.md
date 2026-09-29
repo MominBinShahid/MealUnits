@@ -1505,7 +1505,7 @@ five independent maintainers with no corporate guarantor; React is Meta and Verc
 exist in ten years. The counterweight is that Preact's entire source is ~12 KB of readable code this
 project could vendor and patch indefinitely — an option `react-dom`'s ~600 KB source does not offer.
 
-**The count that a check still reads from this entry, and therefore stays.** There are **19 structural
+**The count that a check still reads from this entry, and therefore stays.** There are **20 structural
 queries** in `test/integration.test.ts` — selectors depending on a class, id, attribute or descendant
 combinator, plus `parentElement` traversals. They are the assertions that constrain what a port may
 change: class names, element ids and the `.entry .n` nesting have to survive one.
@@ -2790,15 +2790,22 @@ in headless Chrome, since `navigator.storage.persist()` probably resolves false
 on a fresh profile. If so every existing smoke session has been running with a
 bar over the bottom edge and nobody knew.
 
-**8. Two safety messages lost `role="alert"` and nothing noticed.** When the
+**8. Two safety messages lost `role="alert"` and nothing noticed — DONE 2026-09-29.** When the
 stale and write-failed panels became imperatively painted bars in #154, the role
 went with them, so a screen reader stopped announcing "that dose did not save".
 #155 restored it. The class — a semantic attribute lost across a refactor — is
 review-only in general, but the two messages this project has already called
-safety-critical can be pinned: a unit test on `paintBar` that `stop` yields
-`role="alert"` and anything else `status`, and an `announced(text)` helper in the
-integration suite replacing `shellText().toContain(...)` for those two. That
-assertion would have gone red the moment the panels became bars.
+safety-critical are pinned now. The integration suite has an `announced(text)`
+helper: it finds the words, walks up from them, and fails unless `role="alert"`
+or `aria-live="assertive"` sits on the element or an ancestor. It guards
+`writeFailed.title` and `staleConnection.title`.
+
+Verified against the real defect rather than assumed — deleting the
+`setAttribute` line in `prompt-bar.ts` makes it fail with *"On screen but not
+announced: 'That did not save.'"*. The `paintBar` unit test also suggested was
+not added: vitest runs `environment: 'node'` and the integration suite already
+has the DOM, so the same assertion there costs nothing extra and exercises the
+real painting path rather than a stub.
 
 **Not worth building, with the reason:** pixel-diff visual regression (a project
 that rewords copy weekly spends more on baselines than on defects); `axe-core` (a
