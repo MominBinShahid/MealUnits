@@ -2672,6 +2672,205 @@ back wrong is one they cannot report.
 that IS in `copy-ur.ts`. Widening it is its own change, and worth doing before the next such string
 lands.
 
+### T35. A dose can still be lost, and the gates that would have seen it do not exist yet — OPEN 2026-09-29
+
+Everything below came out of one session's review after T31 shipped. Two Fable
+reviews and the mutation gate found most of it; Momin found the rest by looking
+at the screen. Ordered cheapest first, which is not the same as most important —
+**5 is the only remaining way a dose is lost**, and **3 is the only remaining
+over-dose path**.
+
+**0. Edit discipline, and it is free.** Three of this session's six defects came
+from a scripted string replacement that did not match, or matched too much, and
+was not verified afterwards: a swallowed `/*` that made six lines of prose into
+bare CSS (#159), seven props clobbered out of `app.tsx`'s `FoodListScreen` call,
+and an edit to `barHooks.onStale` that silently did not apply and was caught only
+because a test read the painted body. No gate fixes this. Assert the match is
+unique before replacing, and read `git diff` after every scripted edit.
+`CLAUDE.md` already says "When you change the interface, open it in a browser",
+and that rule was not followed either.
+
+**1. `npm run check` does not build, so a CSS error passes every gate.** #159's
+missing `/*` passed lint, typecheck and 996 tests and failed only in CI's
+`smoke`, minutes later. Appending `npm run build` to `check` is the wrong fix —
+`build` is `tsc -b --force && vite build` and `typecheck` is `tsc -b --force`, so
+that compiles twice locally and three times in `deploy.yml`. The shape is:
+
+```
+"build": "npm run typecheck && vite build",
+"check": "npm run build && npm run lint && npm test",
+```
+
+Same coverage, one compile, and a parse error fails in about six seconds instead
+of after the two-and-a-half-minute test run. `deploy.yml` can then drop its
+separate build line.
+
+**2. §20.3's RETIRED pins for #157's four renames, which that PR did not add.**
+"Work out the dose", "Log this injection", "Back to the reference" and "Add the
+correction anyway" are gone from the interface and nothing stops them coming
+back. `grep -in "work out\|log this injection" check-plan.py` returns nothing.
+CONTRIBUTING requires the pin in the same edit; this is five minutes of debt.
+
+**3. The plate panel never says to weigh the RICE, and that is an over-dose.**
+`plateFieldLabel` says "The food you serve yourself, in grams" and
+`plateFoodOnly` says "Food only, not the plate". Neither says "the rice alone,
+before the salan goes on". A reader who weighs a daal-chawal plate at 450 g where
+the rice is 300 g saves a ratio of 1.5, and `rice-plate` then reads 126 g against
+a true 84: **+42 g, +4.2 units at an ICR of 10, on every rice meal, caused by
+calibrating**. One sentence in the panel. It is also the reason the plate ratio
+must not spread to salan rows — see T36.
+
+**4. `check_class_has_style` cannot be proven to work.** Shipped in #153 and it
+breaks §20.3 three ways: it reads the stylesheet with `open()` rather than
+`load()`, so the self-test harness cannot reach it; it therefore has no seeded
+mutation, which CONTRIBUTING requires of every new check; and its `styled` set is
+built over the whole file including comments, so a class named only in a comment
+counts as styled — `without_block_comments` exists and is not used. It also walks
+`.tsx` only and matches `class="literal"`, so `className =` and `classList.add(`
+are invisible to it, which is exactly the layer the lost `role="alert"` lived in.
+
+**5. A write-ahead journal for the pending dose.** The service worker calls
+`window.location.reload()` on `controllerchange`, so tapping "Use it now" in ANY
+tab reloads every tab and destroys `state.unsaved` with no prompt. On the
+deployed origin this is a likelier way to lose a dose than the connection case
+T31 fixed. Write each frozen payload to `localStorage` under its own key at
+`commit_log`, BEFORE the write is attempted; seed `state.unsaved` from it on
+boot so the stacking gate sees the dose even if the replay fails again; replay
+through the normal write, which §7.2 already makes idempotent on `id`; delete the
+key on that id's `log_saved`. Wrap every access in try/catch — disk-full can
+cause both failures — and never let a failed spill block the commit.
+
+This narrows §11.3's "v4 abandons localStorage" rather than reversing it: that
+argument is against a single shared blob with two writers racing on one key, and
+a journal with one key per payload has one writer per key and nothing to merge.
+Say so in the PR. It also makes two documented sentences false, which §20.3 wants
+changed in the same edit: PLAN §7.2's "Only a restart before a successful write
+loses it", and `copy.log.pending`'s "closing the app will lose it — write it
+down". And it makes `staleConnection.unsavedBody`'s "reopening will not bring it
+back" false, which is why **T35.5 must be decided before T35.6**.
+
+Also guard `main.ts`'s `controllerchange` handler so a tab with unsaved doses
+does not reload — cheap, worth doing regardless, and not sufficient alone: if the
+new build moved the database version the old tab cannot write anyway.
+
+**6. Retire `stuck` while `stale` is showing.** With `db` null every "Try again"
+is futile, and `stuck` outranks `stale`, so the dead button hides the only advice
+that works. Do it by reordering `BAR_ORDER` to `stale, stuck, write-failed,
+update, install` rather than retiring imperatively at two call sites: `stale` has
+no dismiss, so `stuck` never surfaces under it, and `writeFailed` already
+refreshes stale's body with the amount. The comment's own argument for putting
+`stale` above `write-failed` — that it is the CAUSE — applies to `stuck` word for
+word. This reverses the expectation pinned at `integration.test.ts` ("must report
+again rather than silently doing nothing"); re-express it as "no stuck bar is up
+and the stale bar shows `unsavedBody(amount)`", which keeps the intent.
+
+**7. The three screens T31 added have NO smoke coverage.** `grep -ci` for tally,
+plate, glossary and prompt-bar in `tools/smoke.mjs` returns zero for all four.
+The diagnosis "the gates check the model, not the rendered result" is only half
+right: `smoke` IS a rendered-result layer — it already measures painted key
+sizes, scroll positions and above-the-fold placement — it was simply never
+pointed at the bottom edge or run with a prompt bar up. The truer sentence is
+**new interface ships with no smoke coverage, and the reader's eyes are the
+gate.**
+
+What to add: sessions for the foods screen with one food picked (raises the tally
+bar), the glossary open, and the plate panel visible with a position assertion
+that its top is above the first group's top — that last one is the only check
+that would have caught the panel shipping invisible, because a reachability test
+cannot evaluate "rendered somewhere useless". Then a reachability sweep in the
+bar-up state: for every enabled rendered control, scroll it into view, re-read
+its rect, and assert `elementFromPoint` at its centre returns it or a descendant.
+`pointer-events: none` is correctly skipped; an overlay that does block taps is a
+true positive. Raise the bar state for real by opening the database at
+`version + 1` from the page rather than appending a synthetic `.prompt-bar`,
+which would test the CSS and not the code that sets `--prompt-h`.
+
+Worth checking first, and free if true: the storage-at-risk bar may already be up
+in headless Chrome, since `navigator.storage.persist()` probably resolves false
+on a fresh profile. If so every existing smoke session has been running with a
+bar over the bottom edge and nobody knew.
+
+**8. Two safety messages lost `role="alert"` and nothing noticed.** When the
+stale and write-failed panels became imperatively painted bars in #154, the role
+went with them, so a screen reader stopped announcing "that dose did not save".
+#155 restored it. The class — a semantic attribute lost across a refactor — is
+review-only in general, but the two messages this project has already called
+safety-critical can be pinned: a unit test on `paintBar` that `stop` yields
+`role="alert"` and anything else `status`, and an `announced(text)` helper in the
+integration suite replacing `shellText().toContain(...)` for those two. That
+assertion would have gone red the moment the panels became bars.
+
+**Not worth building, with the reason:** pixel-diff visual regression (a project
+that rewords copy weekly spends more on baselines than on defects); `axe-core` (a
+`div` with no role is valid, so it would not have caught 8); `stylelint` (the
+build already parses the CSS); a pre-commit hook (`ci.yml` already records why
+this project chose CI over "somebody remembered to type it"). Screenshots
+uploaded as CI artifacts are not a gate but would make "look at it" a ten-second
+act in review, which is the only thing that catches the next invisible panel.
+
+---
+
+### T36. The plate ratio stops at the ten rice rows, and the rule for that is now written — RESOLVED 2026-09-29
+
+Asked whether salan, daal or the composite meals should scale with the reader's
+plate. The answer is no, and the asymmetry decides every marginal case: a row
+left unscaled that should scale UNDER-doses, which a meter corrects; a row tagged
+that should not OVER-doses every reader with a plate above 300 g, on every meal,
+silently. Tagging `meal-nihari-two-naan` would be +6.4 units at an ICR of 10.
+
+The data is unambiguous. Zero daal or salan rows are written against a plate;
+nine of twelve daal rows say "1 katori, 150 g". In the rows' own words the
+carbohydrate is usually not the bulk: "the masala is the number", "the gourd is
+free", "the meat is free". Where it IS the bulk (haleem's grain, kadhi's besan)
+the row is a bowl or a katori — a katori-vessel candidate, which CARBS.md §15
+already lists, not a plate one. Of the seventeen composite rows the three raita
+ones qualified only because the scaled part is over 90% of their carbohydrate and
+the dragged-along part is 5 g; no other composite comes close.
+
+**The rule, for the next row anyone is tempted to tag.** All five must hold:
+
+1. **Unit** — the portion IS the reader's everyday plate, filled by the reader.
+   Not a vendor's (thela), a caterer's (shaadi, dawat), a side plate,
+   "plate-sized" as a diameter, or "beside the plate" as a location.
+2. **Reference** — written against exactly 300 g, with "300 g" in the portion in
+   every language. A row at any other weight cannot take a ratio measured as
+   `fill ÷ 300`; re-basing it first is a dosing change, not a field.
+3. **Bulk** — the carbohydrate IS the bulk, rising linearly with food weight
+   because the carrier fills the plate. A row whose carbohydrate tracks a COUNT
+   (naans, puris, potato chunks) or a recipe variable (thickener, masala, sugar)
+   fails even when eaten off a plate.
+4. **Share**, for composites — the plate-tracking part must be the large majority
+   of the row's carbohydrate, and dragging the rest along must err under ±10 g in
+   BOTH directions at plausible ratios.
+5. **Ownership** — the ratio is the reader's own habit, so the plate must be one
+   they fill themselves at home.
+
+The word "plate" in an id, name or portion is NOT the test: eleven untagged rows
+carry it and every one fails a test above. And `check_vessel_rows`' proxy — that
+"300" appears in the portion string — can be satisfied by coincidence:
+`khow-suey` reads "1 cup noodles with half a cup curry, 300 g" and is a bowl.
+
+**The near miss was `daal-chawal-plate`.** Its contents genuinely track a plate,
+rice and daal both on it, but it is written against LFAC's cup-and-cup at 355 g.
+Tagging it without re-basing doses it by a ratio never measured against its
+portion. Earning the tag means re-basing to 300 g, rewriting the portion in both
+languages, and editing CARBS.md twice — a 12 g dosing change to a row that is
+correct as written, for a path the tally already provides: `rice-plate` +
+`daal-thin` = 84 + 12 = 96 at ratio 1.
+
+**Stale text to fix when this section is next touched, none of it dosing:**
+CARBS.md says "Seven rows now declare a vessel" and "only the seven above carry a
+vessel" — ten since 2026-09-27. `check-plan.py`'s comment above `VESSEL_ROWS`
+still says "SEVEN ROWS" and still carries the retired ruling "the fix is not to
+scale the composite", twenty lines above the three entries that now do — a
+reviewer of the next tag reads the reversed decision first. `foods.tsx` still
+says "the three raita composites it deliberately does not scale". And note that
+`PLATE_GROUPS` derives the panel's position from tagged rows' categories, so a
+tag outside `rice` would move the panel too: a tag is a UI change as well as a
+data change.
+
+---
+
 ### T34. The backup did not carry the reader's own measured figures — BUILT 2026-09-26
 
 **Found 2026-09-26 by a review asked to settle it from the code. DECIDED and BUILT the same day.**
